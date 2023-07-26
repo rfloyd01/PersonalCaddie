@@ -1,1 +1,3 @@
-# PersonalCaddie
+# The Personal Caddie: A Golf Training Aid
+
+The Personal Caddie is a device that attaches to a golf club and gives the user data about their golf swing in real time. A combination of sensors on the device collect data every few milliseconds and transfer it to a phone/computer application via Bluetooth. Unlike other training aids such as launch monitors and simulators, the Personal Caddie transfers data in real time and doesn't require a swing to be completed before giving feedback to the user. This is invaluable as the application can emmit a warning as soon as the golf club starts to move in an undesirable direction, allowing the golfer to make corrections before hitting an errant shot.
