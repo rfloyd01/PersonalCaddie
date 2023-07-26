@@ -1,0 +1,143 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Midl Include="App.idl" />
+    <Midl Include="MainPage.idl" />
+    <Midl Include="Project.idl">
+      <Filter>Pages</Filter>
+    </Midl>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="pch.cpp" />
+    <ClCompile Include="App.cpp" />
+    <ClCompile Include="MainPage.cpp" />
+    <ClCompile Include="$(GeneratedFilesDir)module.g.cpp" />
+    <ClCompile Include="BluetoothLEDeviceDisplay.cpp">
+      <Filter>Pages</Filter>
+    </ClCompile>
+    <ClCompile Include="GolfChip_Files\GolfChip.cpp">
+      <Filter>GolfChip_Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GolfChip_Files\IMU.cpp">
+      <Filter>GolfChip_Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GolfChip_Files\Sensors\LSM9DS1.cpp">
+      <Filter>GolfChip_Files\Sensors</Filter>
+    </ClCompile>
+    <ClCompile Include="GolfChip_Files\Sensors\Sensor.cpp">
+      <Filter>GolfChip_Files\Sensors</Filter>
+    </ClCompile>
+    <ClCompile Include="GolfChip_Files\Sensors\SensorSettings.cpp">
+      <Filter>GolfChip_Files\Sensors</Filter>
+    </ClCompile>
+    <ClCompile Include="GolfChipSettingsDisplay.cpp">
+      <Filter>Pages</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\DirectXDeviceResources.cpp">
+      <Filter>Graphics</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="pch.h" />
+    <ClInclude Include="BluetoothLEDeviceDisplay.h">
+      <Filter>Pages</Filter>
+    </ClInclude>
+    <ClInclude Include="GolfChip_Files\GolfChip.h">
+      <Filter>GolfChip_Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GolfChip_Files\IMU.h">
+      <Filter>GolfChip_Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GolfChip_Files\Sensors\LSM9DS1.h">
+      <Filter>GolfChip_Files\Sensors</Filter>
+    </ClInclude>
+    <ClInclude Include="GolfChip_Files\Sensors\Sensor.h">
+      <Filter>GolfChip_Files\Sensors</Filter>
+    </ClInclude>
+    <ClInclude Include="GolfChip_Files\Sensors\SensorSettings.h">
+      <Filter>GolfChip_Files\Sensors</Filter>
+    </ClInclude>
+    <ClInclude Include="GolfChipSettingsDisplay.h">
+      <Filter>Pages</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\DirectXDeviceResources.h">
+      <Filter>Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\DirectXSample.h">
+      <Filter>Graphics</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="Assets\Wide310x150Logo.scale-200.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\StoreLogo.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\Square150x150Logo.scale-200.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\Square44x44Logo.targetsize-24_altform-unplated.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\Square44x44Logo.scale-200.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\SplashScreen.scale-200.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\LockScreenLogo.scale-200.png">
+      <Filter>Assets</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <AppxManifest Include="Package.appxmanifest" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Assets">
+      <UniqueIdentifier>{e48dc53e-40b1-40cb-970a-f89935452892}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Pages">
+      <UniqueIdentifier>{403522fa-369a-4399-886f-8f5401a23852}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GolfChip_Files">
+      <UniqueIdentifier>{02a55289-7ea0-4892-bf4e-b0ebea5066c0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GolfChip_Files\Sensors">
+      <UniqueIdentifier>{8f70f38d-0e29-411e-84a7-62decdd6c662}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Graphics">
+      <UniqueIdentifier>{eda9d223-a9a7-4d2e-a5ad-e31b18c0307a}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="PropertySheet.props" />
+    <None Include="packages.config" />
+    <None Include=".gitignore" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="readme.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ApplicationDefinition Include="App.xaml">
+      <Filter>Pages</Filter>
+    </ApplicationDefinition>
+  </ItemGroup>
+  <ItemGroup>
+    <Page Include="MainPage.xaml">
+      <Filter>Pages</Filter>
+    </Page>
+    <Page Include="GolfChipSettings.xaml">
+      <Filter>Pages</Filter>
+    </Page>
+    <Page Include="Styles.xaml">
+      <Filter>Pages</Filter>
+    </Page>
+    <Page Include="CalibrationMode.xaml">
+      <Filter>Pages</Filter>
+    </Page>
+    <Page Include="DirectXPage.xaml">
+      <Filter>Pages</Filter>
+    </Page>
+  </ItemGroup>
+</Project>
