@@ -1,1 +1,2 @@
-# PersonalCaddie
+# Firmware Files
+All information regarding the programming of chips and sensors is located in this folder. All documents regarding the programming of the nRF52840 BLE System on Chip are done in Segger Embedded Studio and require the Nordic Software Development kit installed in order to get the required C and header files. The drivers for the MEMS sensors included here are used in both the programming of the Bluetooth chip and in the actual computer application.
