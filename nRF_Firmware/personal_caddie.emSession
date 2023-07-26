@@ -1,0 +1,46 @@
+<!DOCTYPE CrossStudio_Session_File>
+<session>
+ <Bookmarks/>
+ <Breakpoints groups="Breakpoints" active_group="Breakpoints"/>
+ <ExecutionProfileWindow/>
+ <FrameBufferWindow>
+  <FrameBufferWindow bufferHeight="-1" addressSpace="" addressText="" bufferWidth="-1"/>
+ </FrameBufferWindow>
+ <Memory1/>
+ <Memory2/>
+ <Memory3/>
+ <Memory4/>
+ <Project>
+  <ProjectSessionItem path="personal_caddie"/>
+  <ProjectSessionItem path="personal_caddie;personal_caddie"/>
+  <ProjectSessionItem path="personal_caddie;personal_caddie;Application"/>
+ </Project>
+ <Register1/>
+ <Register2/>
+ <Register3/>
+ <Register4/>
+ <Threads>
+  <ThreadsWindow showLists=""/>
+ </Threads>
+ <TraceWindow>
+  <Trace enabled="Yes"/>
+ </TraceWindow>
+ <Watch1>
+  <Watches active="1" update="Never"/>
+ </Watch1>
+ <Watch2>
+  <Watches active="0" update="Never"/>
+ </Watch2>
+ <Watch3>
+  <Watches active="0" update="Never"/>
+ </Watch3>
+ <Watch4>
+  <Watches active="0" update="Never"/>
+ </Watch4>
+ <Files>
+  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="508" useTextEdit="1" openedFrom="" useBinaryEdit="0" left="0" path="main.c" selected="0" top="473" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="230" useTextEdit="1" openedFrom="D:/Coding/Nordic/Nordic_Templates/BLE_Template/main.c" useBinaryEdit="0" left="0" path="C:/Users/Bobby/Documents/Coding/BLE/nRFSDK17.0.2/components/softdevice/common/nrf_sdh_ble.c" selected="0" top="199" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="116" useTextEdit="1" openedFrom="" useBinaryEdit="0" left="0" path="personal_caddie.emProject" selected="1" top="0" codecName="Default"/>
+ </Files>
+ <ARMCrossStudioWindow activeProject="personal_caddie" fileDialogDefaultFilter="*.c;*.cpp;*.cxx;*.cc;*.h;*.hpp;*.hxx" autoConnectTarget="J-Link" buildConfiguration="Debug" sessionSettings="" debugSearchFileMap="" fileDialogInitialDirectory="D:/Coding/Nordic/Nordic_Templates/BLE_Template/config" debugSearchPath="" autoConnectCapabilities="3199"/>
+</session>
