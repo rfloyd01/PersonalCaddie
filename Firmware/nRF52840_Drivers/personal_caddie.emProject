@@ -133,6 +133,9 @@
       <file file_name="$(IncludeDir)/$(SDKVer)/components/softdevice/common/nrf_sdh_ble.c" />
       <file file_name="$(IncludeDir)/$(SDKVer)/components/softdevice/common/nrf_sdh_soc.c" />
     </folder>
+    <folder Name="MEMS_Sensor_Drivers">
+      <file file_name="../MEMs_Drivers/lsm9ds1_reg.c" />
+    </folder>
   </project>
   <configuration
     Name="Release"
