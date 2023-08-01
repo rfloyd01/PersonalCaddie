@@ -182,6 +182,11 @@ static ble_uuid_t m_adv_uuids[] =                                               
     {BLE_UUID_DEVICE_INFORMATION_SERVICE, BLE_UUID_TYPE_BLE}
 };
 
+static ble_uuid_t m_sr_uuids[] =                                               /**< Universally unique service identifiers. */
+{
+    {BLE_UUID_OUR_SERVICE, BLE_UUID_TYPE_VENDOR_BEGIN}
+};
+
 
 static void advertising_start(bool erase_bonds);
 
@@ -692,10 +697,15 @@ static void advertising_init(void)
     memset(&init, 0, sizeof(init));
 
     init.advdata.name_type               = BLE_ADVDATA_FULL_NAME;
-    init.advdata.include_appearance      = true;
+    //init.advdata.include_appearance      = true;
     init.advdata.flags                   = BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE;
+
+    //original code when there was only one service
     init.advdata.uuids_complete.uuid_cnt = sizeof(m_adv_uuids) / sizeof(m_adv_uuids[0]);
     init.advdata.uuids_complete.p_uuids  = m_adv_uuids;
+
+    init.srdata.uuids_complete.uuid_cnt = sizeof(m_sr_uuids) / sizeof(m_sr_uuids[0]);
+    init.srdata.uuids_complete.p_uuids = m_sr_uuids;
 
     init.config.ble_adv_fast_enabled  = true;
     init.config.ble_adv_fast_interval = APP_ADV_INTERVAL;
@@ -853,8 +863,8 @@ int main(void)
     ble_stack_init();
     gap_params_init();
     gatt_init();
-    advertising_init();
     services_init();
+    advertising_init();
     conn_params_init();
     peer_manager_init();
     twi_init();
