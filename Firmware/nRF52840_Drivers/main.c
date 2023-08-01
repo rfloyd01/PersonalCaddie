@@ -64,6 +64,7 @@
 #include "ble_advdata.h"
 #include "ble_advertising.h"
 #include "ble_conn_params.h"
+#include "nrf_delay.h"
 #include "nrf_sdh.h"
 #include "nrf_sdh_soc.h"
 #include "nrf_sdh_ble.h"
@@ -77,17 +78,21 @@
 #include "nrf_ble_gatt.h"
 #include "nrf_ble_qwr.h"
 #include "nrf_pwr_mgmt.h"
+#include "nrf_drv_twi.h"
 
 #include "nrf_log.h"
 #include "nrf_log_ctrl.h"
 #include "nrf_log_default_backends.h"
 
+#include "lsm9ds1_reg.h"
+#include "our_service.h"
 
-#define DEVICE_NAME                     "Nordic_Template"                       /**< Name of device. Will be included in the advertising data. */
-#define MANUFACTURER_NAME               "NordicSemiconductor"                   /**< Manufacturer. Will be passed to Device Information Service. */
-#define APP_ADV_INTERVAL                300                                     /**< The advertising interval (in units of 0.625 ms. This value corresponds to 187.5 ms). */
+//Bluetooth Parameters
+#define DEVICE_NAME                     "Personal_Caddie"                       /**< Name of device. Will be included in the advertising data. */
+#define MANUFACTURER_NAME               "FloydInc."                             /**< Manufacturer. Will be passed to Device Information Service. */
+#define APP_ADV_INTERVAL                2400                                    /**< The advertising interval (in units of 0.625 ms. This value corresponds to 1.5s). */
 
-#define APP_ADV_DURATION                18000                                   /**< The advertising duration (180 seconds) in units of 10 milliseconds. */
+#define APP_ADV_DURATION                BLE_GAP_ADV_TIMEOUT_GENERAL_UNLIMITED   /**< The advertising time-out (in units of seconds). When set to 0, we will never time out. */
 #define APP_BLE_OBSERVER_PRIO           3                                       /**< Application's BLE observer priority. You shouldn't need to modify this value. */
 #define APP_BLE_CONN_CFG_TAG            1                                       /**< A tag identifying the SoftDevice BLE configuration. */
 
@@ -111,16 +116,65 @@
 
 #define DEAD_BEEF                       0xDEADBEEF                              /**< Value used as error code on stack dump, can be used to identify stack location on stack unwind. */
 
-
 NRF_BLE_GATT_DEF(m_gatt);                                                       /**< GATT module instance. */
 NRF_BLE_QWR_DEF(m_qwr);                                                         /**< Context for the Queued Write module.*/
 BLE_ADVERTISING_DEF(m_advertising);                                             /**< Advertising module instance. */
 
 static uint16_t m_conn_handle = BLE_CONN_HANDLE_INVALID;                        /**< Handle of the current connection. */
 
-/* YOUR_JOB: Declare all services structure your application is using
- *  BLE_XYZ_DEF(m_xyz);
- */
+static ble_os_t m_our_service;                                                  /**< Represents handle to custom service. */
+
+static uint8_t m_data_service_uuid;
+static uint16_t m_data_service_handle;                                          /**<handle for data service. */
+#define DATA_UUID_SERVICE     0x1526 //uuid for data service
+#define DATA_UUID_CHAR        0x1527 //uuid for data characteristic
+#define DATA_SERVICE_UUID_BASE        {0x23, 0xD1, 0xBC, 0xEA, 0x5F, 0x78, 0x23, 0x15, \
+                                       0xDE, 0xEF, 0x12, 0x69, 0x00, 0x00, 0x00, 0x00}
+
+//TWI Parameters
+#if TWI0_ENABLED
+#define TWI_INSTANCE_ID     0
+#elif TWI1_ENABLED
+#define TWI_INSTANCE_ID     1
+#endif
+
+static const nrf_drv_twi_t m_twi = NRF_DRV_TWI_INSTANCE(TWI_INSTANCE_ID);
+static volatile bool m_xfer_done = false; //Indicates if operation on TWI has ended.
+
+//IMU Sensor Parameters
+static stmdev_ctx_t lsm9ds1_imu;                                                /**< LSM9DS1 accelerometer/gyroscope instance. */
+static stmdev_ctx_t lsm9ds1_mag;                                                /**< LSM9DS1 magnetometer instance. */
+
+static int16_t data_raw_accelerometer[3];
+static int16_t data_raw_gyroscope[3];
+static int16_t data_raw_magnetometer[3];
+static float acceleration_g[3];
+static float angular_rate_dps[3];
+static float magnetic_field_gauss[3];
+static lsm9ds1_id_t whoamI;
+static lsm9ds1_status_t reg;
+static uint8_t rst;
+static uint8_t tx_buffer[1000];
+static bool lsm9ds1_register_auto_increment = true;                            /**register auto increment function for multiple byte reads of LSM9DS1 chip **/
+
+static int32_t write_imu(void *handle, uint8_t reg, const uint8_t *bufp, uint16_t len);
+static int32_t read_imu(void *handle, uint8_t reg, uint8_t *bufp, uint16_t len);
+static int32_t write_mag(void *handle, uint8_t reg, const uint8_t *bufp, uint16_t len);
+static int32_t read_mag(void *handle, uint8_t reg, uint8_t *bufp, uint16_t len);
+static void tx_com( uint8_t *tx_buffer, uint16_t len );
+static int32_t get_IMU_data();
+static int32_t get_MAG_data();
+
+//Pin Setup
+#define SENSOR_POWER_PIN        NRF_GPIO_PIN_MAP(1, 11)                         /**< Pin used to power external sensors (mapped to D2 on BLE 33)*/
+#define SCL_PIN                 NRF_GPIO_PIN_MAP(1, 14)                         /**< Pin used for external TWI clock (mapped to D6 on BLE 33) */
+#define SDA_PIN                 NRF_GPIO_PIN_MAP(1, 15)                         /**< Pin used for external TWI data (mapped to D4 on BLE 33) */
+#define BLE_33_SENSOR_POWER_PIN NRF_GPIO_PIN_MAP(0, 22)                         /**< Pin used to power external sensors (mapped to D2 on BLE 33)*/
+#define BLE_33_SCL_PIN          NRF_GPIO_PIN_MAP(0, 15)                         /**< Pin used for internal TWI clock for BLE33*/
+#define BLE_33_SDA_PIN          NRF_GPIO_PIN_MAP(0, 14)                         /**< Pin used for internal TWI data for BLE33*/
+#define BLE_33_PULLUP           NRF_GPIO_PIN_MAP(1, 0)                          /**< Pullup resistors on BLE 33 sense have separate power source*/
+#define BLE_33_GREEN_LED        NRF_GPIO_PIN_MAP(1, 9)                          /**< Green LED Indicator on BLE 33 sense*/
+#define BLE_33_RED_LED          NRF_GPIO_PIN_MAP(0, 24)                         /**< Red LED Indicator on BLE 33 sense*/
 
 // YOUR_JOB: Use UUIDs for service(s) used in your application.
 static ble_uuid_t m_adv_uuids[] =                                               /**< Universally unique service identifiers. */
@@ -167,6 +221,52 @@ static void pm_evt_handler(pm_evt_t const * p_evt)
         default:
             break;
     }
+}
+
+/**@brief Function for the LSM9DS1 initialization.
+ *
+ * @details Initializes the LSM9DS1 accelerometer, gyroscope and magnetometer
+ */
+static void lsm9ds1_init(void)
+{
+    //initialize read/write methods for acc./gyro.
+    lsm9ds1_imu.read_reg = read_imu;
+    lsm9ds1_imu.write_reg = write_imu;
+
+    //initialize read/write methods for mag.
+    lsm9ds1_mag.read_reg = read_mag;
+    lsm9ds1_mag.write_reg = write_mag;
+
+    //before trying to reach the LSM9DS1 via TWI we need to actually power it on.
+    //The BLE33 sense board has multiple sensor tied to the same power pin so high drive 
+    //mode needs to be enabled to ensure enough current gets to the LSM9DS1
+
+    //uncomment to use external sensors
+    //nrf_gpio_cfg_output(SENSOR_POWER_PIN);
+    //nrf_gpio_pin_set(SENSOR_POWER_PIN);
+
+    nrf_gpio_cfg_output(BLE_33_PULLUP); //send power to BLE 33 Sense pullup resistors (they aren't connected to VDD)
+    nrf_gpio_pin_set(BLE_33_PULLUP);    //send power to BLE 33 Sense pullup resistors (they aren't connected to VDD)
+    nrf_gpio_cfg(BLE_33_SENSOR_POWER_PIN, NRF_GPIO_PIN_DIR_OUTPUT, NRF_GPIO_PIN_INPUT_CONNECT, NRF_GPIO_PIN_NOPULL, NRF_GPIO_PIN_S0H1, NRF_GPIO_PIN_NOSENSE);
+    nrf_gpio_pin_set(BLE_33_SENSOR_POWER_PIN);
+    nrf_delay_ms(50); //slight delay so the chip has time to power on
+
+    //confirm that the sensor is powered on, read the whoami register and then turn
+    //on one of the board leds after a successful read
+    uint32_t ret = lsm9ds1_dev_id_get(&lsm9ds1_mag, &lsm9ds1_imu, &whoamI);
+    if (whoamI.imu == LSM9DS1_IMU_ID)
+    {
+        nrf_gpio_cfg_output(BLE_33_RED_LED); //Pin needs to be set low to turn led on
+    }
+
+    //set the odr
+    ret = lsm9ds1_imu_data_rate_set(&lsm9ds1_imu, LSM9DS1_IMU_119Hz);
+    ret = lsm9ds1_mag_data_rate_set(&lsm9ds1_mag, LSM9DS1_MAG_MP_80Hz);
+
+    //set the full scale ranges
+    ret = lsm9ds1_gy_full_scale_set(&lsm9ds1_imu, LSM9DS1_2000dps); // +/-2000 deg/s
+    ret = lsm9ds1_xl_full_scale_set(&lsm9ds1_imu, LSM9DS1_4g);      // +/- 4 g
+    ret = lsm9ds1_mag_full_scale_set(&lsm9ds1_mag, LSM9DS1_4Ga);    // +/- 4 gauss
 }
 
 
@@ -287,28 +387,9 @@ static void services_init(void)
     err_code = nrf_ble_qwr_init(&m_qwr, &qwr_init);
     APP_ERROR_CHECK(err_code);
 
-    /* YOUR_JOB: Add code to initialize the services used by the application.
-       ble_xxs_init_t                     xxs_init;
-       ble_yys_init_t                     yys_init;
-
-       // Initialize XXX Service.
-       memset(&xxs_init, 0, sizeof(xxs_init));
-
-       xxs_init.evt_handler                = NULL;
-       xxs_init.is_xxx_notify_supported    = true;
-       xxs_init.ble_xx_initial_value.level = 100;
-
-       err_code = ble_bas_init(&m_xxs, &xxs_init);
-       APP_ERROR_CHECK(err_code);
-
-       // Initialize YYY Service.
-       memset(&yys_init, 0, sizeof(yys_init));
-       yys_init.evt_handler                  = on_yys_evt;
-       yys_init.ble_yy_initial_value.counter = 0;
-
-       err_code = ble_yy_service_init(&yys_init, &yy_init);
-       APP_ERROR_CHECK(err_code);
-     */
+    // Initialize custom services
+    our_service_init(&m_our_service);
+    APP_ERROR_CHECK(err_code);
 }
 
 
@@ -699,6 +780,64 @@ static void advertising_start(bool erase_bonds)
     }
 }
 
+void twi_handler(nrf_drv_twi_evt_t const * p_event, void * p_context)
+{
+    //I'm not positive on this yet but it seems like any error codes on TWI line are sent to this handler
+    //when an error occurs somewhere incode, err_code is always coming back as NRF_SUCCESS even though this handler is
+    //receiving an Address NACK. Need a good way to handle these situations
+
+    switch (p_event->type)
+    {
+        case NRF_DRV_TWI_EVT_DONE:
+            //NRF_LOG_INFO("Successfully reached slave address 0x%x.\n", p_event->xfer_desc.address);
+            if (p_event->xfer_desc.type == NRF_DRV_TWI_XFER_TXRX | p_event->xfer_desc.type == NRF_DRV_TWI_XFER_RX)
+            {
+                //uncomment below line after the data_handler function has been written
+                //data_handler(m_data);
+            }
+            break;
+        case NRF_DRV_TWI_EVT_ADDRESS_NACK:
+            NRF_LOG_INFO("Address NACK received while trying to reach slave address 0x%x.\n", p_event->xfer_desc.address);
+            break;
+        case NRF_DRV_TWI_EVT_DATA_NACK:
+            NRF_LOG_INFO("Data NACK received while trying to reach slave address 0x%x.\n", p_event->xfer_desc.address);
+            break;
+        default:
+            NRF_LOG_INFO("Something other than Event Done was achieved.");
+            break;
+    }
+    //NRF_LOG_FLUSH();
+    NRF_LOG_PROCESS();
+    m_xfer_done = true;
+}
+
+void  twi_init (void)
+{
+    ret_code_t err_code;
+
+    //const nrf_drv_twi_config_t twi_lsm9ds1_config = {
+    //   .scl                = SCL_PIN,
+    //   .sda                = SDA_PIN,
+    //   .frequency          = NRF_DRV_TWI_FREQ_400K,
+    //   .interrupt_priority = APP_IRQ_PRIORITY_HIGH,
+    //   .clear_bus_init     = false
+    //};
+
+    const nrf_drv_twi_config_t twi_lsm9ds1_config = {
+       .scl                = BLE_33_SCL_PIN,
+       .sda                = BLE_33_SDA_PIN,
+       .frequency          = NRF_DRV_TWI_FREQ_400K,
+       .interrupt_priority = APP_IRQ_PRIORITY_HIGH,
+       .clear_bus_init     = false
+    };
+
+    //A handler method is necessary to enable non-blocking mode. TXRX operations can only be carried 
+    //out when non-blocking mode is enabled so a handler is needed here.
+    err_code = nrf_drv_twi_init(&m_twi, &twi_lsm9ds1_config, twi_handler, NULL);
+    APP_ERROR_CHECK(err_code);
+
+    nrf_drv_twi_enable(&m_twi);
+}
 
 /**@brief Function for application main entry.
  */
@@ -718,9 +857,19 @@ int main(void)
     services_init();
     conn_params_init();
     peer_manager_init();
+    twi_init();
+
+    //Once all nRF and BLE initializations are complete, turn on the on-board LED to show
+    //that the BLE 33 sense is recieving power
+    nrf_gpio_cfg_output(BLE_33_GREEN_LED);
+    nrf_gpio_pin_set(BLE_33_GREEN_LED);
+
+    lsm9ds1_init();
+    NRF_LOG_FLUSH(); //flush out all logs called during initialization
 
     // Start execution.
     NRF_LOG_INFO("Template example started.");
+    NRF_LOG_PROCESS();
     application_timers_start();
 
     advertising_start(erase_bonds);
@@ -728,10 +877,195 @@ int main(void)
     // Enter main loop.
     for (;;)
     {
-        idle_state_handle();
+        idle_state_handle(); //might need to comment this out, I think CPU goes to sleep here and is only woken up from an event trigger
+        get_IMU_data();
+        get_MAG_data();
     }
 }
 
+static int32_t read_imu(void *handle, uint8_t reg, uint8_t *bufp, uint16_t len)
+{
+    //The steps for a single byte read are as follows:
+    //  1. nRF52840 sends start signal by pulling the SDA line low
+    //  2. nRF52840 sends 7-bit slave address followed by a 0 (write) bit
+    //  3. LSM9DS1 responds with an Acknowledge
+    //  4. nRF52840 sends the 8-bit address of the register it wants to read
+    //  5. LSM9DS1 responds with an Acknowledge
+    //  6. nRF52840 sends a repeated start signal
+    //  7. nRG52840 sends 7-bit slave address followed by a 1 (read) bit
+    //  8. LSM9DS1 responds with an Acknowledge
+    //  9. LSM9DS1 sends the requested data
+    // 10. nRF52840 responds with a non-Acknowledge and then sends the stop signal
+    //Since reading the LSM9DS1 requires a repeated start signal the NRF_DRV_TWI_XFER_TXRX transfer type is used
+    ret_code_t err_code = 0;
+
+    //the primary buffer only holds the address of the register we want to read and therefore only has a length of 1 byte
+    //the secondary buffer is where the data will get read into
+    const nrf_drv_twi_xfer_desc_t lsm9ds1_imu_read = {
+        .address = (LSM9DS1_IMU_I2C_ADD_H >> 1),
+        .primary_length = 1,
+        .secondary_length = (uint8_t)len,
+        .p_primary_buf = &reg,
+        .p_secondary_buf = bufp,
+        .type =  NRF_DRV_TWI_XFER_TXRX};
+
+    m_xfer_done = false; //set to false before any read or write operations (this gets set to true in twi_handler when the transfer is complete)
+
+    do
+    {
+        err_code = nrf_drv_twi_xfer(&m_twi, &lsm9ds1_imu_read, 0); //no flags needed here
+    } while (err_code == 0x11); //if the nrf is currently busy doing something else this line will wait until its done before executing
+    while (m_xfer_done == false); //this line forces the program to wait for the TWI transfer to complete before moving on
+
+    APP_ERROR_CHECK(err_code);
+    return (int32_t)err_code;
+}
+static int32_t write_imu(void *handle, uint8_t reg, const uint8_t *bufp, uint16_t len)
+{
+    ret_code_t err_code = 0;
+
+    uint8_t register_and_data[2] = {reg, bufp[0]};
+
+    //the primary buffer will hold the register address, as well as the value to write into it.
+    //for a single write operation, the secondary buffer has no use in a single write command
+    const nrf_drv_twi_xfer_desc_t lsm9ds1_imu_write = {
+        .address = (LSM9DS1_IMU_I2C_ADD_H >> 1),
+        .primary_length = 2,
+        .secondary_length = 0,
+        .p_primary_buf = register_and_data,
+        .p_secondary_buf = NULL,
+        .type =  NRF_DRV_TWI_XFER_TX};
+
+    m_xfer_done = false; //set to false before any read or write operations (this gets set to true in twi_handler when the transfer is complete)
+
+    do
+    {
+        err_code = nrf_drv_twi_xfer(&m_twi, &lsm9ds1_imu_write, 0); //no flags needed here
+    } while (err_code == 0x11); //if the nrf is currently busy doing something else this line will wait until its done before executing
+    while (m_xfer_done == false); //this line forces the program to wait for the TWI transfer to complete before moving on
+
+    APP_ERROR_CHECK(err_code);
+    return (int32_t)err_code;
+}
+static int32_t read_mag(void *handle, uint8_t reg, uint8_t *bufp, uint16_t len)
+{
+    ret_code_t err_code = 0;
+
+    //the logic for handling multiple byte reads must be handled in software for the magnetometer, whereas, the accelerometer
+    //and gyroscope can do it via hardware
+    const nrf_drv_twi_xfer_desc_t lsm9ds1_mag_read = {
+        .address = (((uint8_t)lsm9ds1_register_auto_increment << 7) | (LSM9DS1_MAG_I2C_ADD_H >> 1)),
+        .primary_length = 1,
+        .secondary_length = (uint8_t)len,
+        .p_primary_buf = &reg,
+        .p_secondary_buf = bufp,
+        .type =  NRF_DRV_TWI_XFER_TXRX};
+
+    m_xfer_done = false; //set to false before any read or write operations (this gets set to true in twi_handler when the transfer is complete)
+
+    do
+    {
+        err_code = nrf_drv_twi_xfer(&m_twi, &lsm9ds1_mag_read, 0); //no flags needed here
+    } while (err_code == 0x11); //if the nrf is currently busy doing something else this line will wait until its done before executing
+    while (m_xfer_done == false); //this line forces the program to wait for the TWI transfer to complete before moving on
+
+    APP_ERROR_CHECK(err_code);
+    return (int32_t)err_code;
+}
+static int32_t write_mag(void *handle, uint8_t reg, const uint8_t *bufp, uint16_t len)
+{
+    ret_code_t err_code = 0;
+
+    uint8_t register_and_data[2] = {reg, bufp[0]};
+
+    //the primary buffer will hold the register address, as well as the value to write into it.
+    //for a single write operation, the secondary buffer has no use in a single write command
+    const nrf_drv_twi_xfer_desc_t lsm9ds1_mag_write = {
+        .address = (LSM9DS1_MAG_I2C_ADD_H >> 1),
+        .primary_length = 2,
+        .secondary_length = 0,
+        .p_primary_buf = register_and_data,
+        .p_secondary_buf = NULL,
+        .type =  NRF_DRV_TWI_XFER_TX};
+
+    m_xfer_done = false; //set to false before any read or write operations (this gets set to true in twi_handler when the transfer is complete)
+
+    do
+    {
+        err_code = nrf_drv_twi_xfer(&m_twi, &lsm9ds1_mag_write, 0); //no flags needed here
+    } while (err_code == 0x11); //if the nrf is currently busy doing something else this line will wait until its done before executing
+    while (m_xfer_done == false); //this line forces the program to wait for the TWI transfer to complete before moving on
+
+    APP_ERROR_CHECK(err_code);
+    return (int32_t)err_code;
+}
+
+static void tx_com( uint8_t *tx_buffer, uint16_t len )
+{
+    int x = 5;
+}
+
+static int32_t get_IMU_data()
+{
+    //Reads the raw accelerometer and magnetometer data and stores it in their respective arrays
+    int ret = 0; 
+
+    if (lsm9ds1_register_auto_increment)
+    {
+        ret = lsm9ds1_angular_rate_raw_get(&lsm9ds1_imu, data_raw_gyroscope);
+
+        if (ret == 0)
+        {
+            ret = lsm9ds1_acceleration_raw_get(&lsm9ds1_imu, data_raw_accelerometer);
+
+            if (ret == 0)
+            {
+                //this is temporary to make sure things are working as intended, convert the raw data to actual data.
+                //actual raw data conversion will happen on the application side
+                for (int i = 0; i < 3; i++)
+                {
+                    angular_rate_dps[i] = lsm9ds1_from_fs2000dps_to_mdps(data_raw_gyroscope[i]) / 1000.0;
+                    acceleration_g[i]   = lsm9ds1_from_fs4g_to_mg(data_raw_accelerometer[i]) / 1000.0; 
+                }
+            }
+        }
+    }
+    else
+    {
+        //implement this at some point
+    }
+    
+    
+
+    return ret;
+}
+
+static int32_t get_MAG_data()
+{
+    //Reads the raw magnetometer data and stores it in its respective array
+    int ret = 0;
+    
+    if (lsm9ds1_register_auto_increment)
+    {
+        ret = lsm9ds1_magnetic_raw_get(&lsm9ds1_mag, data_raw_magnetometer);
+
+        if (ret == 0)
+            {
+                //this is temporary to make sure things are working as intended, convert the raw data to actual data.
+                //after testing, actual raw data conversion will happen on the application side
+                for (int i = 0; i < 3; i++)
+                {
+                    magnetic_field_gauss[i] = 1000 * lsm9ds1_from_fs4gauss_to_mG(data_raw_magnetometer[i]);
+                }
+            }
+    }
+    else
+    {
+        //implement this at some point
+    }
+
+    return ret;
+}
 
 /**
  * @}
