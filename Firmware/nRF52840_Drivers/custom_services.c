@@ -50,23 +50,77 @@
  * @param[in]   p_our_service        Our Service structure.
  *
  */
-void data_service_init(ble_os_t * p_data_service)
+uint32_t data_service_init(ble_service_t * p_data_service, ble_gatts_char_handles_t ** p_data_characteristics)
 {
 
     uint32_t err_code;
-    ble_uuid_t service_uuid;
+    p_data_service->service_uuid.uuid = DATA_SERVICE_BLE_UUID;
     ble_uuid128_t base_uuid = PERSONAL_CADDIE_BASE_UUID;
-    service_uuid.uuid = DATA_SERVICE_BLE_UUID;
-    err_code = sd_ble_uuid_vs_add(&base_uuid, &service_uuid.type);
+    p_data_service->service_base_uuid = base_uuid; //If I try to set p_data_service->service_base_uuid directly to PERSONAL_CADDIE_BASE_UUID I get an error, why is this?
+
+    //err_code = sd_ble_uuid_vs_add(&p_data_service->service_base_uuid, &p_data_service->service_uuid.type);
+    err_code = sd_ble_uuid_vs_add(&p_data_service->service_base_uuid, &p_data_service->service_uuid.type);
     APP_ERROR_CHECK(err_code);
 
-    err_code = sd_ble_gatts_service_add(BLE_GATTS_SRVC_TYPE_PRIMARY, &service_uuid, &p_data_service->service_handle);
+    err_code = sd_ble_gatts_service_add(BLE_GATTS_SRVC_TYPE_PRIMARY, &p_data_service->service_uuid, &p_data_service->service_handle);
     APP_ERROR_CHECK(err_code);
 	
     // Print messages to Segger Real Time Terminal
     // UNCOMMENT THE FOUR LINES BELOW AFTER INITIALIZING THE SERVICE OR THE EXAMPLE WILL NOT COMPILE.
     SEGGER_RTT_WriteString(0, "Executing data_service_init().\n"); // Print message to RTT to the application flow
-    SEGGER_RTT_printf(0, "Service UUID: 0x%#04x\n", service_uuid.uuid); // Print service UUID should match definition DATA_SERVICE_BLE_UUID
-    SEGGER_RTT_printf(0, "Service UUID type: 0x%#02x\n", service_uuid.type); // Print UUID type. Should match BLE_UUID_TYPE_VENDOR_BEGIN. Search for BLE_UUID_TYPES in ble_types.h for more info
+    SEGGER_RTT_printf(0, "Service UUID: 0x%#04x\n", p_data_service->service_uuid.uuid); // Print service UUID should match definition DATA_SERVICE_BLE_UUID
+    SEGGER_RTT_printf(0, "Service UUID type: 0x%#02x\n", p_data_service->service_uuid.type); // Print UUID type. Should match BLE_UUID_TYPE_VENDOR_BEGIN. Search for BLE_UUID_TYPES in ble_types.h for more info
     SEGGER_RTT_printf(0, "Service handle: 0x%#04x\n", p_data_service->service_handle); // Print out the service handle. Should match service handle shown in MCP under Attribute values
+
+    //Add custom characteristics to the data service
+    err_code = data_characteristics_init(p_data_service, p_data_characteristics);
+    APP_ERROR_CHECK(err_code);
+}
+
+void settings_service_init(ble_service_t * p_settings_service)
+{
+    uint32_t err_code;
+    ble_uuid128_t base_uuid = PERSONAL_CADDIE_BASE_UUID;
+    p_settings_service->service_uuid.uuid = SETTINGS_SERVICE_BLE_UUID;
+    p_settings_service->service_base_uuid = base_uuid; //If I try to set p_data_service->service_base_uuid directly to PERSONAL_CADDIE_BASE_UUID I get an error, why is this?
+
+    err_code = sd_ble_uuid_vs_add(&p_settings_service->service_base_uuid, &p_settings_service->service_uuid.type);
+    APP_ERROR_CHECK(err_code);
+
+    err_code = sd_ble_gatts_service_add(BLE_GATTS_SRVC_TYPE_PRIMARY, &p_settings_service->service_uuid, &p_settings_service->service_handle);
+    APP_ERROR_CHECK(err_code);
+	
+    // Print messages to Segger Real Time Terminal
+    // UNCOMMENT THE FOUR LINES BELOW AFTER INITIALIZING THE SERVICE OR THE EXAMPLE WILL NOT COMPILE.
+    SEGGER_RTT_WriteString(0, "Executing settings_service_init().\n"); // Print message to RTT to the application flow
+    SEGGER_RTT_printf(0, "Service UUID: 0x%#04x\n", p_settings_service->service_uuid.uuid); // Print service UUID should match definition DATA_SERVICE_BLE_UUID
+    SEGGER_RTT_printf(0, "Service UUID type: 0x%#02x\n", p_settings_service->service_uuid.type); // Print UUID type. Should match BLE_UUID_TYPE_VENDOR_BEGIN. Search for BLE_UUID_TYPES in ble_types.h for more info
+    SEGGER_RTT_printf(0, "Service handle: 0x%#04x\n", p_settings_service->service_handle); // Print out the service handle. Should match service handle shown in MCP under Attribute values
+}
+
+uint32_t data_characteristics_init(ble_service_t * p_data_service, ble_gatts_char_handles_t ** p_data_characteristics)
+{
+    //p_data_characteristics contains three pointers, one each to the accelerometer, gyroscope and magnetometer
+    //characteristic handles. All three characteristics are set up in this method.
+
+    //ALl three characteristics will have the same parameters so initialize them with the same parameter variable
+    uint32_t err_code;
+    ble_add_char_params_t characteristic_parameters;
+    uint8_t number_of_samples = 10; //The number of complete sensor readings to put into the characteristic
+    uint8_t bytes_per_sample  =  6; //There are 6 bytes for a single sample of X, Y and Z data from each sensor
+
+    // Initialize Accelerometer Characteristic and add it to the data service.
+    memset(&characteristic_parameters, 0, sizeof(characteristic_parameters));
+    characteristic_parameters.uuid              = ACC_DATA_CHARACTERISTIC_UUID;
+    characteristic_parameters.uuid_type         = p_data_service->service_uuid.type;
+    characteristic_parameters.init_len          = bytes_per_sample * number_of_samples * sizeof(uint8_t); //initial length of the characteristic value, want to broadcast all acc values so start with 6 * uint8_t
+    characteristic_parameters.max_len           = bytes_per_sample * number_of_samples * sizeof(uint8_t); //maximum length of the characteristic value, want to broadcast all acc values so start with 6 * uint8_t
+    characteristic_parameters.char_props.read   = 1;
+    characteristic_parameters.char_props.notify = 1;
+
+    characteristic_parameters.read_access       = SEC_OPEN;
+    characteristic_parameters.cccd_write_access = SEC_OPEN;
+
+    err_code = characteristic_add(p_data_service->service_handle, &characteristic_parameters, p_data_characteristics[0]);
+    return err_code;
 }

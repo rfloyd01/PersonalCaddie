@@ -38,33 +38,36 @@
  * 
  */
  
-#ifndef OUR_SERVICE_H__
-#define OUR_SERVICE_H__
+#ifndef CUSTOM_SERVICES_H__
+#define CUSTOM_SERVICES_H__
 
 #include <stdint.h>
 #include "ble.h"
 #include "ble_srv_common.h"
 
-//#define BLE_UUID_OUR_BASE_UUID              {0x23, 0xD1, 0x13, 0xEF, 0x5F, 0x78, 0x23, 0x15, 0xDE, 0xEF, 0x12, 0x12, 0x00, 0x00, 0x00, 0x00} // 128-bit base UUID generated during a tutorial
-#define PERSONAL_CADDIE_BASE_UUID              {0xF9, 0xF8, 0xA9, 0x3D, 0x6C, 0x8D, 0x4A, 0x4A, 0x84, 0x32, 0x79, 0x26, 0x00, 0x00, 0x30, 0x2B} // 128-bit base UUID for the personal caddie, randomly generated
+//UUID Definitions
+#define PERSONAL_CADDIE_BASE_UUID            {0xF9, 0xF8, 0xA9, 0x3D, 0x6C, 0x8D, 0x4A, 0x4A, 0x84, 0x32, 0x79, 0x26, 0x00, 0x00, 0x30, 0x2B} // 128-bit base UUID for the personal caddie, randomly generated
 #define DATA_SERVICE_BLE_UUID                0xABCD // Just a random, but recognizable value
+#define SETTINGS_SERVICE_BLE_UUID            0xABCE
+#define ACC_DATA_CHARACTERISTIC_UUID         0x0034
 
-/**
- * @brief This structure contains various status information for our service. 
- * It only holds one entry now, but will be populated with more items as we go.
- * The name is based on the naming convention used in Nordic's SDKs. 
- * 'ble’ indicates that it is a Bluetooth Low Energy relevant structure and 
- * ‘os’ is short for Our Service). 
- */
+//A struct for holding information about custom made services
 typedef struct
 {
-    uint16_t    service_handle;     /**< Handle of Our Service (as provided by the BLE stack). */
-}ble_os_t;
+    uint16_t      service_handle;     /**< Handle of Our Service (as provided by the BLE stack). */
+    ble_uuid_t    service_uuid;       /**< Information about the service uuid */
+    ble_uuid128_t service_base_uuid;    /**< Information about the custom 128-bit base uuid */
+}ble_service_t;
 
 /**@brief Function for initializing our new service.
  *
- * @param[in]   p_our_service       Pointer to Our Service structure.
+ * @param[in]   p_data_service       Pointer to Our Service structure.
  */
-void data_service_init(ble_os_t * p_data_service);
+uint32_t data_service_init(ble_service_t * p_data_service, ble_gatts_char_handles_t ** p_data_characteristics);
 
-#endif  /* _ OUR_SERVICE_H__ */
+void settings_service_init(ble_service_t * p_settings_service);
+
+//characteristic creation functions
+uint32_t data_characteristics_init(ble_service_t * p_data_service, ble_gatts_char_handles_t ** p_data_characteristics);
+
+#endif  /* _ CUSTOM_SERVICES_H__ */

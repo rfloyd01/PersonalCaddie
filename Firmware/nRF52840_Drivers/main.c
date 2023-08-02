@@ -122,14 +122,27 @@ BLE_ADVERTISING_DEF(m_advertising);                                             
 
 static uint16_t m_conn_handle = BLE_CONN_HANDLE_INVALID;                        /**< Handle of the current connection. */
 
-static ble_os_t m_data_service;                                                 /**< Represents handle to custom data service. */
+//BLE Service and Characteristic handles
+static ble_service_t m_data_service;                                                 /**< Represents handle to custom data service. */
+static ble_service_t m_settings_service;                                             /**< Represents handle to custom settings service. */
+static ble_gatts_char_handles_t m_acc_characteristic;                           /**< Represents handle to accelerometer data characteristic. */
+static ble_gatts_char_handles_t m_gyr_characteristic;                           /**< Represents handle to gyroscope data characteristic. */
+static ble_gatts_char_handles_t m_mag_characteristic;                           /**< Represents handle to magnetometer data characteristic. */
+static ble_gatts_char_handles_t* p_data_characteristics[] =                     /**< Group of handles to sensor data characteristic. */
+{
+   &m_acc_characteristic, &m_gyr_characteristic, &m_mag_characteristic
+};
 
-//static uint8_t m_data_service_uuid;
-//static uint16_t m_data_service_handle;                                          /**<handle for data service. */
-//#define DATA_UUID_SERVICE     0x1526 //uuid for data service
-//#define DATA_UUID_CHAR        0x1527 //uuid for data characteristic
-//#define DATA_SERVICE_UUID_BASE        {0x23, 0xD1, 0xBC, 0xEA, 0x5F, 0x78, 0x23, 0x15, \
-//                                       0xDE, 0xEF, 0x12, 0x69, 0x00, 0x00, 0x00, 0x00}
+//BLE Advertising Date
+static ble_uuid_t m_adv_uuids[] =                                               /**< Universally unique service identifiers. */
+{
+    {BLE_UUID_DEVICE_INFORMATION_SERVICE, BLE_UUID_TYPE_BLE}
+};
+
+static ble_uuid_t m_sr_uuids[] =                                               /**< Universally unique service identifiers. */
+{
+    {DATA_SERVICE_BLE_UUID, BLE_UUID_TYPE_VENDOR_BEGIN}
+};
 
 //TWI Parameters
 #if TWI0_ENABLED
@@ -176,16 +189,7 @@ static int32_t get_MAG_data();
 #define BLE_33_GREEN_LED        NRF_GPIO_PIN_MAP(1, 9)                          /**< Green LED Indicator on BLE 33 sense*/
 #define BLE_33_RED_LED          NRF_GPIO_PIN_MAP(0, 24)                         /**< Red LED Indicator on BLE 33 sense*/
 
-// YOUR_JOB: Use UUIDs for service(s) used in your application.
-static ble_uuid_t m_adv_uuids[] =                                               /**< Universally unique service identifiers. */
-{
-    {BLE_UUID_DEVICE_INFORMATION_SERVICE, BLE_UUID_TYPE_BLE}
-};
 
-static ble_uuid_t m_sr_uuids[] =                                               /**< Universally unique service identifiers. */
-{
-    {DATA_SERVICE_BLE_UUID, BLE_UUID_TYPE_VENDOR_BEGIN}
-};
 
 
 static void advertising_start(bool erase_bonds);
@@ -393,7 +397,10 @@ static void services_init(void)
     APP_ERROR_CHECK(err_code);
 
     // Initialize custom services
-    data_service_init(&m_data_service);
+    data_service_init(&m_data_service, p_data_characteristics);
+    APP_ERROR_CHECK(err_code);
+
+    settings_service_init(&m_settings_service);
     APP_ERROR_CHECK(err_code);
 }
 
