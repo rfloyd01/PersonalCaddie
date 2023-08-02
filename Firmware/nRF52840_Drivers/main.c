@@ -85,7 +85,7 @@
 #include "nrf_log_default_backends.h"
 
 #include "lsm9ds1_reg.h"
-#include "our_service.h"
+#include "custom_services.h"
 
 //Bluetooth Parameters
 #define DEVICE_NAME                     "Personal_Caddie"                       /**< Name of device. Will be included in the advertising data. */
@@ -122,14 +122,14 @@ BLE_ADVERTISING_DEF(m_advertising);                                             
 
 static uint16_t m_conn_handle = BLE_CONN_HANDLE_INVALID;                        /**< Handle of the current connection. */
 
-static ble_os_t m_our_service;                                                  /**< Represents handle to custom service. */
+static ble_os_t m_data_service;                                                 /**< Represents handle to custom data service. */
 
-static uint8_t m_data_service_uuid;
-static uint16_t m_data_service_handle;                                          /**<handle for data service. */
-#define DATA_UUID_SERVICE     0x1526 //uuid for data service
-#define DATA_UUID_CHAR        0x1527 //uuid for data characteristic
-#define DATA_SERVICE_UUID_BASE        {0x23, 0xD1, 0xBC, 0xEA, 0x5F, 0x78, 0x23, 0x15, \
-                                       0xDE, 0xEF, 0x12, 0x69, 0x00, 0x00, 0x00, 0x00}
+//static uint8_t m_data_service_uuid;
+//static uint16_t m_data_service_handle;                                          /**<handle for data service. */
+//#define DATA_UUID_SERVICE     0x1526 //uuid for data service
+//#define DATA_UUID_CHAR        0x1527 //uuid for data characteristic
+//#define DATA_SERVICE_UUID_BASE        {0x23, 0xD1, 0xBC, 0xEA, 0x5F, 0x78, 0x23, 0x15, \
+//                                       0xDE, 0xEF, 0x12, 0x69, 0x00, 0x00, 0x00, 0x00}
 
 //TWI Parameters
 #if TWI0_ENABLED
@@ -184,7 +184,7 @@ static ble_uuid_t m_adv_uuids[] =                                               
 
 static ble_uuid_t m_sr_uuids[] =                                               /**< Universally unique service identifiers. */
 {
-    {BLE_UUID_OUR_SERVICE, BLE_UUID_TYPE_VENDOR_BEGIN}
+    {DATA_SERVICE_BLE_UUID, BLE_UUID_TYPE_VENDOR_BEGIN}
 };
 
 
@@ -393,7 +393,7 @@ static void services_init(void)
     APP_ERROR_CHECK(err_code);
 
     // Initialize custom services
-    our_service_init(&m_our_service);
+    data_service_init(&m_data_service);
     APP_ERROR_CHECK(err_code);
 }
 

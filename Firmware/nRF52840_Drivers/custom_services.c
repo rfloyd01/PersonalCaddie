@@ -40,7 +40,7 @@
 
 #include <stdint.h>
 #include <string.h>
-#include "our_service.h"
+#include "custom_services.h"
 #include "ble_srv_common.h"
 #include "app_error.h"
 #include "SEGGER_RTT.h"
@@ -50,23 +50,23 @@
  * @param[in]   p_our_service        Our Service structure.
  *
  */
-void our_service_init(ble_os_t * p_our_service)
+void data_service_init(ble_os_t * p_data_service)
 {
 
     uint32_t err_code;
     ble_uuid_t service_uuid;
-    ble_uuid128_t base_uuid = BLE_UUID_OUR_BASE_UUID;
-    service_uuid.uuid = BLE_UUID_OUR_SERVICE;
+    ble_uuid128_t base_uuid = PERSONAL_CADDIE_BASE_UUID;
+    service_uuid.uuid = DATA_SERVICE_BLE_UUID;
     err_code = sd_ble_uuid_vs_add(&base_uuid, &service_uuid.type);
     APP_ERROR_CHECK(err_code);
 
-    err_code = sd_ble_gatts_service_add(BLE_GATTS_SRVC_TYPE_PRIMARY, &service_uuid, &p_our_service->service_handle);
+    err_code = sd_ble_gatts_service_add(BLE_GATTS_SRVC_TYPE_PRIMARY, &service_uuid, &p_data_service->service_handle);
     APP_ERROR_CHECK(err_code);
 	
     // Print messages to Segger Real Time Terminal
     // UNCOMMENT THE FOUR LINES BELOW AFTER INITIALIZING THE SERVICE OR THE EXAMPLE WILL NOT COMPILE.
-    SEGGER_RTT_WriteString(0, "Executing our_service_init().\n"); // Print message to RTT to the application flow
-    SEGGER_RTT_printf(0, "Service UUID: 0x%#04x\n", service_uuid.uuid); // Print service UUID should match definition BLE_UUID_OUR_SERVICE
+    SEGGER_RTT_WriteString(0, "Executing data_service_init().\n"); // Print message to RTT to the application flow
+    SEGGER_RTT_printf(0, "Service UUID: 0x%#04x\n", service_uuid.uuid); // Print service UUID should match definition DATA_SERVICE_BLE_UUID
     SEGGER_RTT_printf(0, "Service UUID type: 0x%#02x\n", service_uuid.type); // Print UUID type. Should match BLE_UUID_TYPE_VENDOR_BEGIN. Search for BLE_UUID_TYPES in ble_types.h for more info
-    SEGGER_RTT_printf(0, "Service handle: 0x%#04x\n", p_our_service->service_handle); // Print out the service handle. Should match service handle shown in MCP under Attribute values
+    SEGGER_RTT_printf(0, "Service handle: 0x%#04x\n", p_data_service->service_handle); // Print out the service handle. Should match service handle shown in MCP under Attribute values
 }

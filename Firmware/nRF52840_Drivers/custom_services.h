@@ -45,8 +45,9 @@
 #include "ble.h"
 #include "ble_srv_common.h"
 
-#define BLE_UUID_OUR_BASE_UUID              {0x23, 0xD1, 0x13, 0xEF, 0x5F, 0x78, 0x23, 0x15, 0xDE, 0xEF, 0x12, 0x12, 0x00, 0x00, 0x00, 0x00} // 128-bit base UUID
-#define BLE_UUID_OUR_SERVICE                0xABCD // Just a random, but recognizable value
+//#define BLE_UUID_OUR_BASE_UUID              {0x23, 0xD1, 0x13, 0xEF, 0x5F, 0x78, 0x23, 0x15, 0xDE, 0xEF, 0x12, 0x12, 0x00, 0x00, 0x00, 0x00} // 128-bit base UUID generated during a tutorial
+#define PERSONAL_CADDIE_BASE_UUID              {0xF9, 0xF8, 0xA9, 0x3D, 0x6C, 0x8D, 0x4A, 0x4A, 0x84, 0x32, 0x79, 0x26, 0x00, 0x00, 0x30, 0x2B} // 128-bit base UUID for the personal caddie, randomly generated
+#define DATA_SERVICE_BLE_UUID                0xABCD // Just a random, but recognizable value
 
 /**
  * @brief This structure contains various status information for our service. 
@@ -64,6 +65,6 @@ typedef struct
  *
  * @param[in]   p_our_service       Pointer to Our Service structure.
  */
-void our_service_init(ble_os_t * p_our_service);
+void data_service_init(ble_os_t * p_data_service);
 
 #endif  /* _ OUR_SERVICE_H__ */
