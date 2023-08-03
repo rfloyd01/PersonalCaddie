@@ -50,6 +50,12 @@
 #define DATA_SERVICE_BLE_UUID                0xABCD // Just a random, but recognizable value
 #define SETTINGS_SERVICE_BLE_UUID            0xABCE
 #define ACC_DATA_CHARACTERISTIC_UUID         0x0034
+#define GYR_DATA_CHARACTERISTIC_UUID         0x0035
+#define MAG_DATA_CHARACTERISTIC_UUID         0x0036
+
+//Other Definitions
+#define SENSOR_SAMPLES 10                    /**< The number of samples to read into data characteristics */
+#define SAMPLE_SIZE     6                    /**< The size (in bytes) of a full sensor sample reading */
 
 //A struct for holding information about custom made services
 typedef struct

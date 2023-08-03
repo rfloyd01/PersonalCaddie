@@ -106,21 +106,33 @@ uint32_t data_characteristics_init(ble_service_t * p_data_service, ble_gatts_cha
     //ALl three characteristics will have the same parameters so initialize them with the same parameter variable
     uint32_t err_code;
     ble_add_char_params_t characteristic_parameters;
-    uint8_t number_of_samples = 10; //The number of complete sensor readings to put into the characteristic
     uint8_t bytes_per_sample  =  6; //There are 6 bytes for a single sample of X, Y and Z data from each sensor
+
+    //ble_add_char_user_desc_t characteristic_description; //Allows for the addition of a description to the characteristic
+    //uint8_t test_string[] = {'a', 'c', 'c', ' ', 'd', 'a', 't', 'a'};
+    //characteristic_description.p_char_user_desc = test_string;
+    //characteristic_description.max_size = 0x4; //allocate 4-bytes for the description string
 
     // Initialize Accelerometer Characteristic and add it to the data service.
     memset(&characteristic_parameters, 0, sizeof(characteristic_parameters));
     characteristic_parameters.uuid              = ACC_DATA_CHARACTERISTIC_UUID;
     characteristic_parameters.uuid_type         = p_data_service->service_uuid.type;
-    characteristic_parameters.init_len          = bytes_per_sample * number_of_samples * sizeof(uint8_t); //initial length of the characteristic value, want to broadcast all acc values so start with 6 * uint8_t
-    characteristic_parameters.max_len           = bytes_per_sample * number_of_samples * sizeof(uint8_t); //maximum length of the characteristic value, want to broadcast all acc values so start with 6 * uint8_t
+    characteristic_parameters.init_len          = SAMPLE_SIZE * SENSOR_SAMPLES * sizeof(uint8_t); //initial length of the characteristic value, want to broadcast all acc values so start with 6 * uint8_t
+    characteristic_parameters.max_len           = SAMPLE_SIZE * SENSOR_SAMPLES * sizeof(uint8_t); //maximum length of the characteristic value, want to broadcast all acc values so start with 6 * uint8_t
     characteristic_parameters.char_props.read   = 1;
     characteristic_parameters.char_props.notify = 1;
-
     characteristic_parameters.read_access       = SEC_OPEN;
     characteristic_parameters.cccd_write_access = SEC_OPEN;
 
     err_code = characteristic_add(p_data_service->service_handle, &characteristic_parameters, p_data_characteristics[0]);
+
+    // Initialize Gyroscope Characteristic and add it to the data service.
+    characteristic_parameters.uuid               = GYR_DATA_CHARACTERISTIC_UUID;
+    err_code = characteristic_add(p_data_service->service_handle, &characteristic_parameters, p_data_characteristics[1]);
+
+    // Initialize Magnetometer Characteristic and add it to the data service.
+    characteristic_parameters.uuid               = MAG_DATA_CHARACTERISTIC_UUID;
+    err_code = characteristic_add(p_data_service->service_handle, &characteristic_parameters, p_data_characteristics[2]);
+
     return err_code;
 }

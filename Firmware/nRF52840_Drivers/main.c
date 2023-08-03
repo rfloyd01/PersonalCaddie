@@ -96,8 +96,8 @@
 #define APP_BLE_OBSERVER_PRIO           3                                       /**< Application's BLE observer priority. You shouldn't need to modify this value. */
 #define APP_BLE_CONN_CFG_TAG            1                                       /**< A tag identifying the SoftDevice BLE configuration. */
 
-#define MIN_CONN_INTERVAL               MSEC_TO_UNITS(100, UNIT_1_25_MS)        /**< Minimum acceptable connection interval (0.1 seconds). */
-#define MAX_CONN_INTERVAL               MSEC_TO_UNITS(200, UNIT_1_25_MS)        /**< Maximum acceptable connection interval (0.2 second). */
+#define MIN_CONN_INTERVAL               MSEC_TO_UNITS(100, UNIT_1_25_MS)        /**< Minimum acceptable connection interval (0.125 seconds). */
+#define MAX_CONN_INTERVAL               MSEC_TO_UNITS(200, UNIT_1_25_MS)        /**< Maximum acceptable connection interval (0.25 second). */
 #define SLAVE_LATENCY                   0                                       /**< Slave latency. */
 #define CONN_SUP_TIMEOUT                MSEC_TO_UNITS(4000, UNIT_10_MS)         /**< Connection supervisory timeout (4 seconds). */
 
@@ -133,7 +133,7 @@ static ble_gatts_char_handles_t* p_data_characteristics[] =                     
    &m_acc_characteristic, &m_gyr_characteristic, &m_mag_characteristic
 };
 
-//BLE Advertising Date
+//BLE Advertising Data
 static ble_uuid_t m_adv_uuids[] =                                               /**< Universally unique service identifiers. */
 {
     {BLE_UUID_DEVICE_INFORMATION_SERVICE, BLE_UUID_TYPE_BLE}
@@ -157,7 +157,12 @@ static volatile bool m_xfer_done = false; //Indicates if operation on TWI has en
 //IMU Sensor Parameters
 static stmdev_ctx_t lsm9ds1_imu;                                                /**< LSM9DS1 accelerometer/gyroscope instance. */
 static stmdev_ctx_t lsm9ds1_mag;                                                /**< LSM9DS1 magnetometer instance. */
+APP_TIMER_DEF(m_test_timer_id);
+#define NEXT_MEASUREMENT_DELAY          APP_TIMER_TICKS(15)                     /**< Test variable used to record sensor measurements every 15 milliseconds. */
 
+//static const uint16_t data_characteristic_size = ;
+static uint8_t acc_characteristic_data[SENSOR_SAMPLES * SAMPLE_SIZE];
+static uint8_t gyr_characteristic_data[SENSOR_SAMPLES * SAMPLE_SIZE];
 static int16_t data_raw_accelerometer[3];
 static int16_t data_raw_gyroscope[3];
 static int16_t data_raw_magnetometer[3];
@@ -169,14 +174,16 @@ static lsm9ds1_status_t reg;
 static uint8_t rst;
 static uint8_t tx_buffer[1000];
 static bool lsm9ds1_register_auto_increment = true;                            /**register auto increment function for multiple byte reads of LSM9DS1 chip **/
+static int measurements_taken = 0;
+static volatile bool ready_to_measure = true;
 
 static int32_t write_imu(void *handle, uint8_t reg, const uint8_t *bufp, uint16_t len);
 static int32_t read_imu(void *handle, uint8_t reg, uint8_t *bufp, uint16_t len);
 static int32_t write_mag(void *handle, uint8_t reg, const uint8_t *bufp, uint16_t len);
 static int32_t read_mag(void *handle, uint8_t reg, uint8_t *bufp, uint16_t len);
 static void tx_com( uint8_t *tx_buffer, uint16_t len );
-static int32_t get_IMU_data();
-static int32_t get_MAG_data();
+static int32_t get_IMU_data(uint8_t offset);
+static int32_t get_MAG_data(uint8_t offset);
 
 //Pin Setup
 #define SENSOR_POWER_PIN        NRF_GPIO_PIN_MAP(1, 11)                         /**< Pin used to power external sensors (mapped to D2 on BLE 33)*/
@@ -278,6 +285,11 @@ static void lsm9ds1_init(void)
     ret = lsm9ds1_mag_full_scale_set(&lsm9ds1_mag, LSM9DS1_4Ga);    // +/- 4 gauss
 }
 
+static void timer_timeout_handler(void * p_context)
+{
+    if (!ready_to_measure) ready_to_measure = true;
+
+}
 
 /**@brief Function for the Timer initialization.
  *
@@ -289,15 +301,8 @@ static void timers_init(void)
     ret_code_t err_code = app_timer_init();
     APP_ERROR_CHECK(err_code);
 
-    // Create timers.
-
-    /* YOUR_JOB: Create any timers to be used by the application.
-                 Below is an example of how to create a timer.
-                 For every new timer needed, increase the value of the macro APP_TIMER_MAX_TIMERS by
-                 one.
-       ret_code_t err_code;
-       err_code = app_timer_create(&m_app_timer_id, APP_TIMER_MODE_REPEATED, timer_timeout_handler);
-       APP_ERROR_CHECK(err_code); */
+    // Create custom timers.
+    app_timer_create(&m_test_timer_id, APP_TIMER_MODE_REPEATED, timer_timeout_handler);
 }
 
 
@@ -464,10 +469,7 @@ static void conn_params_init(void)
  */
 static void application_timers_start(void)
 {
-    /* YOUR_JOB: Start your timers. below is an example of how to start a timer.
-       ret_code_t err_code;
-       err_code = app_timer_start(m_app_timer_id, TIMER_INTERVAL, NULL);
-       APP_ERROR_CHECK(err_code); */
+    app_timer_start(m_test_timer_id, NEXT_MEASUREMENT_DELAY, NULL);
 
 }
 
@@ -856,6 +858,33 @@ void  twi_init (void)
     nrf_drv_twi_enable(&m_twi);
 }
 
+static void characteristic_update_and_notify()
+{
+    
+    ble_gatts_hvx_params_t acc_notify_params, gyr_notify_params;
+    memset(&acc_notify_params, 0, sizeof(acc_notify_params));
+    memset(&gyr_notify_params, 0, sizeof(gyr_notify_params));
+
+    uint16_t data_characteristic_size = SENSOR_SAMPLES * SAMPLE_SIZE; //not really sure why the size needs to be passed in as a reference
+
+    //Setup accelerometer notification first
+    acc_notify_params.type = BLE_GATT_HVX_NOTIFICATION;
+    acc_notify_params.handle = m_acc_characteristic.value_handle;
+    acc_notify_params.p_data = acc_characteristic_data;
+    acc_notify_params.p_len  = &data_characteristic_size;
+    acc_notify_params.offset = 0;
+
+    //Setup gyroscope notification second
+    gyr_notify_params.type = BLE_GATT_HVX_NOTIFICATION;
+    gyr_notify_params.handle = m_gyr_characteristic.value_handle;
+    gyr_notify_params.p_data = gyr_characteristic_data;
+    gyr_notify_params.p_len  = &data_characteristic_size;
+    gyr_notify_params.offset = 0;
+
+    sd_ble_gatts_hvx(m_conn_handle, &acc_notify_params);
+    sd_ble_gatts_hvx(m_conn_handle, &gyr_notify_params);
+}
+
 /**@brief Function for application main entry.
  */
 int main(void)
@@ -895,8 +924,20 @@ int main(void)
     for (;;)
     {
         idle_state_handle(); //might need to comment this out, I think CPU goes to sleep here and is only woken up from an event trigger
-        get_IMU_data();
-        get_MAG_data();
+        int measurements_taken = 0;
+        while (measurements_taken < SENSOR_SAMPLES)
+        {
+            if (ready_to_measure)
+            {
+                get_IMU_data(SAMPLE_SIZE * measurements_taken);
+                //get_MAG_data(SAMPLE_SIZE * measurements_taken);
+                measurements_taken++;
+                ready_to_measure = false;
+            }
+            
+        }
+
+        characteristic_update_and_notify();
     }
 }
 
@@ -1022,29 +1063,20 @@ static void tx_com( uint8_t *tx_buffer, uint16_t len )
     int x = 5;
 }
 
-static int32_t get_IMU_data()
+static int32_t get_IMU_data(uint8_t offset)
 {
     //Reads the raw accelerometer and magnetometer data and stores it in their respective arrays
     int ret = 0; 
 
     if (lsm9ds1_register_auto_increment)
     {
-        ret = lsm9ds1_angular_rate_raw_get(&lsm9ds1_imu, data_raw_gyroscope);
+        ret = lsm9ds1_read_reg(&lsm9ds1_imu, LSM9DS1_OUT_X_L_G, gyr_characteristic_data + offset, 6);
 
         if (ret == 0)
         {
-            ret = lsm9ds1_acceleration_raw_get(&lsm9ds1_imu, data_raw_accelerometer);
-
-            if (ret == 0)
-            {
-                //this is temporary to make sure things are working as intended, convert the raw data to actual data.
-                //actual raw data conversion will happen on the application side
-                for (int i = 0; i < 3; i++)
-                {
-                    angular_rate_dps[i] = lsm9ds1_from_fs2000dps_to_mdps(data_raw_gyroscope[i]) / 1000.0;
-                    acceleration_g[i]   = lsm9ds1_from_fs4g_to_mg(data_raw_accelerometer[i]) / 1000.0; 
-                }
-            }
+            //SEGGER_RTT_printf(0, "Base Characteristic Address: 0x%#08x\n", acc_characteristic_data);
+            //SEGGER_RTT_printf(0, "Address after offset: 0x%#08x\n", acc_characteristic_data + offset);
+            ret = lsm9ds1_read_reg(&lsm9ds1_imu, LSM9DS1_OUT_X_L_XL, acc_characteristic_data + offset, 6);
         }
     }
     else
@@ -1057,24 +1089,14 @@ static int32_t get_IMU_data()
     return ret;
 }
 
-static int32_t get_MAG_data()
+static int32_t get_MAG_data(uint8_t offset)
 {
     //Reads the raw magnetometer data and stores it in its respective array
     int ret = 0;
     
     if (lsm9ds1_register_auto_increment)
     {
-        ret = lsm9ds1_magnetic_raw_get(&lsm9ds1_mag, data_raw_magnetometer);
-
-        if (ret == 0)
-            {
-                //this is temporary to make sure things are working as intended, convert the raw data to actual data.
-                //after testing, actual raw data conversion will happen on the application side
-                for (int i = 0; i < 3; i++)
-                {
-                    magnetic_field_gauss[i] = 1000 * lsm9ds1_from_fs4gauss_to_mG(data_raw_magnetometer[i]);
-                }
-            }
+        ret = lsm9ds1_magnetic_raw_get(&lsm9ds1_mag, data_raw_magnetometer + offset);
     }
     else
     {
