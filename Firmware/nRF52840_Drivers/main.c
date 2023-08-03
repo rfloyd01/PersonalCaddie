@@ -160,9 +160,9 @@ static stmdev_ctx_t lsm9ds1_mag;                                                
 APP_TIMER_DEF(m_test_timer_id);
 #define NEXT_MEASUREMENT_DELAY          APP_TIMER_TICKS(15)                     /**< Test variable used to record sensor measurements every 15 milliseconds. */
 
-//static const uint16_t data_characteristic_size = ;
 static uint8_t acc_characteristic_data[SENSOR_SAMPLES * SAMPLE_SIZE];
 static uint8_t gyr_characteristic_data[SENSOR_SAMPLES * SAMPLE_SIZE];
+static uint8_t mag_characteristic_data[SENSOR_SAMPLES * SAMPLE_SIZE];
 static int16_t data_raw_accelerometer[3];
 static int16_t data_raw_gyroscope[3];
 static int16_t data_raw_magnetometer[3];
@@ -861,9 +861,10 @@ void  twi_init (void)
 static void characteristic_update_and_notify()
 {
     
-    ble_gatts_hvx_params_t acc_notify_params, gyr_notify_params;
+    ble_gatts_hvx_params_t acc_notify_params, gyr_notify_params, mag_notify_params;
     memset(&acc_notify_params, 0, sizeof(acc_notify_params));
     memset(&gyr_notify_params, 0, sizeof(gyr_notify_params));
+    memset(&mag_notify_params, 0, sizeof(mag_notify_params));
 
     uint16_t data_characteristic_size = SENSOR_SAMPLES * SAMPLE_SIZE; //not really sure why the size needs to be passed in as a reference
 
@@ -881,8 +882,16 @@ static void characteristic_update_and_notify()
     gyr_notify_params.p_len  = &data_characteristic_size;
     gyr_notify_params.offset = 0;
 
+    //Setup magnetometer notification third
+    mag_notify_params.type = BLE_GATT_HVX_NOTIFICATION;
+    mag_notify_params.handle = m_mag_characteristic.value_handle;
+    mag_notify_params.p_data = mag_characteristic_data;
+    mag_notify_params.p_len  = &data_characteristic_size;
+    mag_notify_params.offset = 0;
+
     sd_ble_gatts_hvx(m_conn_handle, &acc_notify_params);
     sd_ble_gatts_hvx(m_conn_handle, &gyr_notify_params);
+    sd_ble_gatts_hvx(m_conn_handle, &mag_notify_params);
 }
 
 /**@brief Function for application main entry.
@@ -930,7 +939,7 @@ int main(void)
             if (ready_to_measure)
             {
                 get_IMU_data(SAMPLE_SIZE * measurements_taken);
-                //get_MAG_data(SAMPLE_SIZE * measurements_taken);
+                get_MAG_data(SAMPLE_SIZE * measurements_taken);
                 measurements_taken++;
                 ready_to_measure = false;
             }
@@ -1096,7 +1105,7 @@ static int32_t get_MAG_data(uint8_t offset)
     
     if (lsm9ds1_register_auto_increment)
     {
-        ret = lsm9ds1_magnetic_raw_get(&lsm9ds1_mag, data_raw_magnetometer + offset);
+        ret = lsm9ds1_read_reg(&lsm9ds1_mag, LSM9DS1_OUT_X_L_M, mag_characteristic_data + offset, 6);
     }
     else
     {
