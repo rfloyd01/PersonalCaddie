@@ -27,8 +27,8 @@ NRF_SDH_BLE_OBSERVER(_name ## _obs,                                             
 #define SENSOR_SERVICE_UUID               0xBF34
 #define SETTINGS_CHARACTERISTIC_UUID      0xBF35
 #define ACC_DATA_CHARACTERISTIC_UUID      0xBF36
-#define GYR_DATA_CHARACTERISTIC_UUID      0xBF36
-#define MAG_DATA_CHARACTERISTIC_UUID      0xBF36
+#define GYR_DATA_CHARACTERISTIC_UUID      0xBF37
+#define MAG_DATA_CHARACTERISTIC_UUID      0xBF38
 
 #define SENSOR_SAMPLES 10                    /**< The number of full sensor samples to read into data characteristics */
 #define SAMPLE_SIZE     6                    /**< The size (in bytes) of a full sensor sample reading (includes x, y and z axes) */

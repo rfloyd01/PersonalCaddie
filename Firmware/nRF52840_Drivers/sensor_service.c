@@ -44,6 +44,7 @@
 #include "ble_srv_common.h"
 #include "app_error.h"
 #include "SEGGER_RTT.h"
+#include "sdk_macros.h"
 
 /**@brief Function for handling the Write event.
  *
@@ -174,15 +175,17 @@ uint32_t ble_sensor_service_settings_char_add(ble_sensor_service_t * p_ss)
     memset(&add_char_params, 0, sizeof(add_char_params));
     add_char_params.uuid              = SETTINGS_CHARACTERISTIC_UUID;
     add_char_params.uuid_type         = p_ss->uuid_type;
-    add_char_params.init_len          = sizeof(uint16_t);
-    add_char_params.max_len           = sizeof(uint16_t);
+    add_char_params.init_len          = 2 * sizeof(uint8_t);
+    add_char_params.max_len           = 2 * sizeof(uint8_t);
     add_char_params.char_props.read   = 1;
-    add_char_params.char_props.notify = 1;
+    add_char_params.char_props.write = 1;
 
     add_char_params.read_access       = SEC_OPEN;
     add_char_params.write_access      = SEC_OPEN;
 
-    return characteristic_add(p_ss->service_handle,
+    uint32_t err_code = characteristic_add(p_ss->service_handle,
                                   &add_char_params,
                                   &p_ss->settings_handles);
+
+    return err_code;
 }

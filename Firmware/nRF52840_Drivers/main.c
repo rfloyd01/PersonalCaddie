@@ -90,7 +90,7 @@
 #include "sensor_service.h"
 
 //Bluetooth Parameters
-#define DEVICE_NAME                     "Personal_Caddie"                       /**< Name of device. Will be included in the advertising data. */
+#define DEVICE_NAME                     "Personal Caddie"                       /**< Name of device. Will be included in the advertising data. */
 #define MANUFACTURER_NAME               "FloydInc."                             /**< Manufacturer. Will be passed to Device Information Service. */
 #define APP_ADV_INTERVAL                2400                                    /**< The advertising interval (in units of 0.625 ms. This value corresponds to 1.5s). */
 
@@ -125,17 +125,6 @@ BLE_SENSOR_SERVICE_DEF(m_ss);                                                   
 
 static uint16_t m_conn_handle = BLE_CONN_HANDLE_INVALID;                        /**< Handle of the current connection. */
 
-//BLE Service and Characteristic handles
-//static ble_custom_service_t m_data_service;                                     /**< Represents handle to custom data service. */
-//static ble_custom_service_t m_settings_service;                                 /**< Represents handle to custom settings service. */
-//static ble_gatts_char_handles_t m_acc_characteristic;                           /**< Represents handle to accelerometer data characteristic. */
-//static ble_gatts_char_handles_t m_gyr_characteristic;                           /**< Represents handle to gyroscope data characteristic. */
-//static ble_gatts_char_handles_t m_mag_characteristic;                           /**< Represents handle to magnetometer data characteristic. */
-//static ble_gatts_char_handles_t* p_data_characteristics[] =                     /**< Group of handles to sensor data characteristic. */
-//{
-//   &m_acc_characteristic, &m_gyr_characteristic, &m_mag_characteristic
-//};
-
 //BLE Advertising Data
 static ble_uuid_t m_adv_uuids[] =                                               /**< Universally unique service identifiers. */
 {
@@ -160,25 +149,15 @@ static volatile bool m_xfer_done = false; //Indicates if operation on TWI has en
 //IMU Sensor Parameters
 static stmdev_ctx_t lsm9ds1_imu;                                                /**< LSM9DS1 accelerometer/gyroscope instance. */
 static stmdev_ctx_t lsm9ds1_mag;                                                /**< LSM9DS1 magnetometer instance. */
-APP_TIMER_DEF(m_test_timer_id);
-#define NEXT_MEASUREMENT_DELAY          APP_TIMER_TICKS(1500)                     /**< Test variable used to record sensor measurements every 1500 milliseconds. */
+APP_TIMER_DEF(m_data_reading_timer);                                            /**< A timer used for collecting data from the LSM9DS1 (interrupts are disabled so a timer is needed). */
+#define NEXT_MEASUREMENT_DELAY          APP_TIMER_TICKS(1500)                   /**< Defines the delay between Sensor Measurments (1500 milliseconds). */
 
 static uint8_t acc_characteristic_data[SENSOR_SAMPLES * SAMPLE_SIZE];
 static uint8_t gyr_characteristic_data[SENSOR_SAMPLES * SAMPLE_SIZE];
 static uint8_t mag_characteristic_data[SENSOR_SAMPLES * SAMPLE_SIZE];
-static int16_t data_raw_accelerometer[3];
-static int16_t data_raw_gyroscope[3];
-static int16_t data_raw_magnetometer[3];
-static float acceleration_g[3];
-static float angular_rate_dps[3];
-static float magnetic_field_gauss[3];
 static lsm9ds1_id_t whoamI;
-static lsm9ds1_status_t reg;
-static uint8_t rst;
-static uint8_t tx_buffer[1000];
 static bool lsm9ds1_register_auto_increment = true;                            /**register auto increment function for multiple byte reads of LSM9DS1 chip **/
 static int measurements_taken = 0;
-//static volatile bool ready_to_measure = true;
 static int current_sensor_mode = 0;
 
 static int32_t write_imu(void *handle, uint8_t reg, const uint8_t *bufp, uint16_t len);
@@ -201,9 +180,6 @@ static int32_t get_MAG_data(uint8_t offset);
 #define BLE_33_RED_LED          NRF_GPIO_PIN_MAP(0, 24)                         /**< Red LED Indicator on BLE 33 sense*/
 #define BLE_33_BLUE_LED         NRF_GPIO_PIN_MAP(0, 6)                          /**< Blue LED Indicator on BLE 33 sense*/
 #define BLE_33_DARK_GREEN_LED   NRF_GPIO_PIN_MAP(0, 16)                         /**< Dark LED Indicator on BLE 33 sense*/
-
-//Timers
-nrf_drv_timer_t my_timer = NRF_DRV_TIMER_INSTANCE(1);
 
 static void advertising_start(bool erase_bonds);
 
@@ -283,36 +259,70 @@ static void lsm9ds1_init(void)
     }
 
     //set the odr
-    //ret = lsm9ds1_imu_data_rate_set(&lsm9ds1_imu, LSM9DS1_IMU_119Hz);
-    //ret = lsm9ds1_mag_data_rate_set(&lsm9ds1_mag, LSM9DS1_MAG_MP_80Hz);
+    ret = lsm9ds1_imu_data_rate_set(&lsm9ds1_imu, LSM9DS1_IMU_119Hz);
+    ret = lsm9ds1_mag_data_rate_set(&lsm9ds1_mag, LSM9DS1_MAG_MP_80Hz);
 
     //set the full scale ranges
-    //ret = lsm9ds1_gy_full_scale_set(&lsm9ds1_imu, LSM9DS1_2000dps); // +/-2000 deg/s
-    //ret = lsm9ds1_xl_full_scale_set(&lsm9ds1_imu, LSM9DS1_4g);      // +/- 4 g
-    //ret = lsm9ds1_mag_full_scale_set(&lsm9ds1_mag, LSM9DS1_4Ga);    // +/- 4 gauss
+    ret = lsm9ds1_gy_full_scale_set(&lsm9ds1_imu, LSM9DS1_2000dps); // +/-2000 deg/s
+    ret = lsm9ds1_xl_full_scale_set(&lsm9ds1_imu, LSM9DS1_4g);      // +/- 4 g
+    ret = lsm9ds1_mag_full_scale_set(&lsm9ds1_mag, LSM9DS1_4Ga);    // +/- 4 gauss
 }
 
-static void timer_timeout_handler(void * p_context)
+static void characteristic_update_and_notify()
 {
-    uint32_t time_stamp = nrf_drv_timer_capture(&my_timer, NRF_TIMER_CC_CHANNEL1);
-    float clock_conversion = 1.0 / 16000000.0;
-    float actual_time = time_stamp * clock_conversion;
-    SEGGER_RTT_printf(0, "TWI initiated at %u ticks of 16MHz.\n", time_stamp);
+    
+    ble_gatts_hvx_params_t acc_notify_params, gyr_notify_params, mag_notify_params;
+    memset(&acc_notify_params, 0, sizeof(acc_notify_params));
+    memset(&gyr_notify_params, 0, sizeof(gyr_notify_params));
+    memset(&mag_notify_params, 0, sizeof(mag_notify_params));
 
-    //if (!ready_to_measure) ready_to_measure = true;
+    uint16_t data_characteristic_size = SENSOR_SAMPLES * SAMPLE_SIZE; //not really sure why the size needs to be passed in as a reference
 
-    //nrf_gpio_pin_toggle(BLE_33_GREEN_LED); //Toggle the green led to show timer on board
+    //Setup accelerometer notification first
+    acc_notify_params.type = BLE_GATT_HVX_NOTIFICATION;
+    acc_notify_params.handle = m_ss.data_handles[0].value_handle;
+    acc_notify_params.p_data = acc_characteristic_data;
+    acc_notify_params.p_len  = &data_characteristic_size;
+    acc_notify_params.offset = 0;
 
-    //just to test CPU power levels do something random here
+    //Setup gyroscope notification second
+    gyr_notify_params.type = BLE_GATT_HVX_NOTIFICATION;
+    gyr_notify_params.handle = m_ss.data_handles[1].value_handle;
+    gyr_notify_params.p_data = gyr_characteristic_data;
+    gyr_notify_params.p_len  = &data_characteristic_size;
+    gyr_notify_params.offset = 0;
+
+    //Setup magnetometer notification third
+    mag_notify_params.type = BLE_GATT_HVX_NOTIFICATION;
+    mag_notify_params.handle = m_ss.data_handles[2].value_handle;
+    mag_notify_params.p_data = mag_characteristic_data;
+    mag_notify_params.p_len  = &data_characteristic_size;
+    mag_notify_params.offset = 0;
+
+    sd_ble_gatts_hvx(m_conn_handle, &acc_notify_params);
+    sd_ble_gatts_hvx(m_conn_handle, &gyr_notify_params);
+    sd_ble_gatts_hvx(m_conn_handle, &mag_notify_params);
+}
+
+static void data_reading_timer_handler(void * p_context)
+{
+    //uint32_t time_stamp = nrf_drv_timer_capture(&my_timer, NRF_TIMER_CC_CHANNEL1);
+    //float clock_conversion = 1.0 / 16000000.0;
+    //float actual_time = time_stamp * clock_conversion;
+    //SEGGER_RTT_printf(0, "TWI initiated at %u ticks of 16MHz.\n", time_stamp);
+
+    //Everytime the data reading timer goes off we take sensor readings and then 
+    //update the appropriate characteristic values.
     int measurements_taken = 0;
     while (measurements_taken < SENSOR_SAMPLES)
     {
         get_IMU_data(SAMPLE_SIZE * measurements_taken);
-        //get_MAG_data(SAMPLE_SIZE * measurements_taken);
+        get_MAG_data(SAMPLE_SIZE * measurements_taken);
         measurements_taken++;
     }
 
-    SEGGER_RTT_printf(0, "TWI reading finished at %u ticks of 16MHz.\n", nrf_drv_timer_capture(&my_timer, NRF_TIMER_CC_CHANNEL1));
+    //after the samples are read, update the characteristics and notify
+    characteristic_update_and_notify();
 }
 
 /**@brief Function for the Timer initialization.
@@ -326,7 +336,7 @@ static void timers_init(void)
     APP_ERROR_CHECK(err_code);
 
     // Create custom timers.
-    app_timer_create(&m_test_timer_id, APP_TIMER_MODE_REPEATED, timer_timeout_handler);
+    app_timer_create(&m_data_reading_timer, APP_TIMER_MODE_REPEATED, data_reading_timer_handler);
 }
 
 
@@ -442,9 +452,6 @@ static void services_init(void)
 
     err_code = ble_sensor_service_init(&m_ss, &init);
     APP_ERROR_CHECK(err_code);
-
-    //settings_service_init(&m_settings_service);
-    //APP_ERROR_CHECK(err_code);
 }
 
 
@@ -508,7 +515,7 @@ static void conn_params_init(void)
 static void application_timers_start(void)
 {
     //a timer that let's us know when to read the next data sample from the Sensor
-    app_timer_start(m_test_timer_id, NEXT_MEASUREMENT_DELAY, NULL);
+    app_timer_start(m_data_reading_timer, NEXT_MEASUREMENT_DELAY, NULL);
 }
 
 
@@ -813,11 +820,8 @@ static void power_management_init(void)
  */
 static void idle_state_handle(void)
 {
-    SEGGER_RTT_printf(0, "Idle state called at %u ticks of 16MHz.\n", nrf_drv_timer_capture(&my_timer, NRF_TIMER_CC_CHANNEL1));
-
     if (NRF_LOG_PROCESS() == false)
     {
-        SEGGER_RTT_WriteString(0, "Idle state initiated.\n");
         nrf_pwr_mgmt_run();
     }
 }
@@ -899,42 +903,6 @@ void  twi_init (void)
     nrf_drv_twi_enable(&m_twi);
 }
 
-static void characteristic_update_and_notify()
-{
-    
-    ble_gatts_hvx_params_t acc_notify_params, gyr_notify_params, mag_notify_params;
-    memset(&acc_notify_params, 0, sizeof(acc_notify_params));
-    memset(&gyr_notify_params, 0, sizeof(gyr_notify_params));
-    memset(&mag_notify_params, 0, sizeof(mag_notify_params));
-
-    uint16_t data_characteristic_size = SENSOR_SAMPLES * SAMPLE_SIZE; //not really sure why the size needs to be passed in as a reference
-
-    //Setup accelerometer notification first
-    acc_notify_params.type = BLE_GATT_HVX_NOTIFICATION;
-    acc_notify_params.handle = m_ss.data_handles[0].value_handle;
-    acc_notify_params.p_data = acc_characteristic_data;
-    acc_notify_params.p_len  = &data_characteristic_size;
-    acc_notify_params.offset = 0;
-
-    //Setup gyroscope notification second
-    gyr_notify_params.type = BLE_GATT_HVX_NOTIFICATION;
-    gyr_notify_params.handle = m_ss.data_handles[1].value_handle;
-    gyr_notify_params.p_data = gyr_characteristic_data;
-    gyr_notify_params.p_len  = &data_characteristic_size;
-    gyr_notify_params.offset = 0;
-
-    //Setup magnetometer notification third
-    mag_notify_params.type = BLE_GATT_HVX_NOTIFICATION;
-    mag_notify_params.handle = m_ss.data_handles[2].value_handle;
-    mag_notify_params.p_data = mag_characteristic_data;
-    mag_notify_params.p_len  = &data_characteristic_size;
-    mag_notify_params.offset = 0;
-
-    sd_ble_gatts_hvx(m_conn_handle, &acc_notify_params);
-    sd_ble_gatts_hvx(m_conn_handle, &gyr_notify_params);
-    sd_ble_gatts_hvx(m_conn_handle, &mag_notify_params);
-}
-
 void non_ble_timer_handler(nrf_timer_event_t event_type, void* p_context)
 {
     int32_t ret = 0;
@@ -994,89 +962,30 @@ int main(void)
 
     // Initialize.
     log_init();
-    //timers_init();
-    //buttons_leds_init(&erase_bonds); //warning, uncommenting this will configure pins on the BLE 33 Sense needed for other activities
-    //power_management_init();
-    //ble_stack_init();
-    //gap_params_init();
-    //gatt_init();
-    //services_init();
-    //advertising_init();
-    //conn_params_init();
-    //peer_manager_init();
+    timers_init();
+    power_management_init();
+    ble_stack_init();
+    gap_params_init();
+    gatt_init();
+    services_init();
+    advertising_init();
+    conn_params_init();
+    peer_manager_init();
     twi_init();
-
-    //Once all nRF and BLE initializations are complete, turn on the on-board LED to show
-    //that the BLE 33 sense is recieving power
-    //nrf_gpio_cfg_output(BLE_33_GREEN_LED);
-    //nrf_gpio_cfg_output(BLE_33_RED_LED);
-    //nrf_gpio_pin_set(BLE_33_RED_LED); //turns OFF the red led (reverse set up to the green led)
-
     lsm9ds1_init();
     NRF_LOG_FLUSH(); //flush out all logs called during initialization
 
     // Start execution.
-    NRF_LOG_INFO("Template example started.");
+    NRF_LOG_INFO("Personal Caddie Initialized");
     NRF_LOG_PROCESS();
-    //application_timers_start();
+    application_timers_start();
 
-    //advertising_start(erase_bonds);
-
-    //TEMP: search for all TWI slaves on the bus
-    //the below pin configurations were taken from the lsm9ds1_init() function, delete from here when done testing
-    //nrf_gpio_cfg_output(BLE_33_PULLUP); //send power to BLE 33 Sense pullup resistors (they aren't connected to VDD)
-    //nrf_gpio_pin_set(BLE_33_PULLUP);    //send power to BLE 33 Sense pullup resistors (they aren't connected to VDD)
-    //nrf_gpio_cfg(BLE_33_SENSOR_POWER_PIN, NRF_GPIO_PIN_DIR_OUTPUT, NRF_GPIO_PIN_INPUT_CONNECT, NRF_GPIO_PIN_NOPULL, NRF_GPIO_PIN_S0H1, NRF_GPIO_PIN_NOSENSE);
-    //nrf_gpio_pin_set(BLE_33_SENSOR_POWER_PIN);
-    //nrf_delay_ms(50); //slight delay so the chip has time to power on
-    //uint8_t sample_data, address = 0x00;
-    //int err_code;
-    //while (address <= 127)
-    //{
-    //    m_xfer_done = false;
-    //    do 
-    //    {
-    //        err_code = nrf_drv_twi_rx(&m_twi, address, &sample_data, sizeof(sample_data));
-    //    } while (err_code == 0x11); //if the nrf is currently busy doing something else this line will wait until its done before executing
-    //    while (m_xfer_done == false); //this line forces the program to wait for the TWI transfer to complete before moving on
-        
-    //    address++;
-    //}
-
-    //Create a timer that works when SoftDevice isn't enabled
-    nrf_drv_timer_config_t timer_cfg = NRF_DRV_TIMER_DEFAULT_CONFIG;
-    timer_cfg.bit_width = NRF_TIMER_BIT_WIDTH_32;
-    uint32_t err_code = nrf_drv_timer_init(&my_timer, &timer_cfg, non_ble_timer_handler);
-    APP_ERROR_CHECK(err_code);
-
-    uint32_t time_ticks = nrf_drv_timer_ms_to_ticks(&my_timer, 1500);
-    nrf_drv_timer_extended_compare(&my_timer, NRF_TIMER_CC_CHANNEL0, time_ticks, NRF_TIMER_SHORT_COMPARE0_CLEAR_MASK, true);
-
-    nrf_drv_timer_enable(&my_timer);
-
-    int i = 0, ret = 0;
-    nrf_gpio_cfg_output(BLE_33_RED_LED);
-    nrf_gpio_cfg_output(BLE_33_BLUE_LED);
-    nrf_gpio_cfg_output(BLE_33_DARK_GREEN_LED);
-    nrf_gpio_pin_toggle(BLE_33_RED_LED);
-    nrf_gpio_pin_toggle(BLE_33_BLUE_LED);
-    nrf_gpio_pin_toggle(BLE_33_DARK_GREEN_LED);
+    advertising_start(erase_bonds);
 
     // Enter main loop.
     for (;;)
     {
-        __WFI(); //puts CPU into sleep and waits for an interrupt signal to wake it up
-        //idle_state_handle(); //puts CPU into sleep and waits for an even signal to wake it up
-
-        //int measurements_taken = 0;
-        //while (measurements_taken < SENSOR_SAMPLES)
-        //{
-        //    get_IMU_data(SAMPLE_SIZE * measurements_taken);
-        //    //get_MAG_data(SAMPLE_SIZE * measurements_taken);
-        //    measurements_taken++;
-        //}
-
-        //SEGGER_RTT_printf(0, "TWI reading finished at %u ticks of 16MHz.\n", nrf_drv_timer_capture(&my_timer, NRF_TIMER_CC_CHANNEL1));
+        idle_state_handle(); //puts CPU into sleep and waits for an even signal to wake it up
     }
 }
 
