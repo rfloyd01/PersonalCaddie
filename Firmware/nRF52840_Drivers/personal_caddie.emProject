@@ -94,6 +94,7 @@
       <file file_name="C:/Users/Bobby/Documents/Coding/BLE/nRFSDK17.0.2/integration/nrfx/legacy/nrf_drv_twi.c" />
       <file file_name="C:/Users/Bobby/Documents/Coding/BLE/nRFSDK17.0.2/modules/nrfx/drivers/src/nrfx_twi.c" />
       <file file_name="C:/Users/Bobby/Documents/Coding/BLE/nRFSDK17.0.2/modules/nrfx/drivers/src/nrfx_twim.c" />
+      <file file_name="C:/Users/Bobby/Documents/Coding/BLE/nRFSDK17.0.2/modules/nrfx/drivers/src/nrfx_timer.c" />
     </folder>
     <folder Name="Board Support">
       <file file_name="$(IncludeDir)/$(SDKVer)/components/libraries/bsp/bsp.c" />
@@ -103,6 +104,7 @@
       <file file_name="main.c" />
       <file file_name="config/sdk_config.h" />
       <file file_name="custom_services.c" />
+      <file file_name="sensor_service.c" />
     </folder>
     <folder Name="nRF_Segger_RTT">
       <file file_name="$(IncludeDir)/$(SDKVer)/external/segger_rtt/SEGGER_RTT.c" />

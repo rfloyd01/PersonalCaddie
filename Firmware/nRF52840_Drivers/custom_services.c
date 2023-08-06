@@ -50,7 +50,7 @@
  * @param[in]   p_our_service        Our Service structure.
  *
  */
-uint32_t data_service_init(ble_service_t * p_data_service, ble_gatts_char_handles_t ** p_data_characteristics)
+uint32_t data_service_init(ble_custom_service_t * p_data_service, ble_gatts_char_handles_t ** p_data_characteristics)
 {
 
     uint32_t err_code;
@@ -77,7 +77,7 @@ uint32_t data_service_init(ble_service_t * p_data_service, ble_gatts_char_handle
     APP_ERROR_CHECK(err_code);
 }
 
-void settings_service_init(ble_service_t * p_settings_service)
+void settings_service_init(ble_custom_service_t * p_settings_service)
 {
     uint32_t err_code;
     ble_uuid128_t base_uuid = PERSONAL_CADDIE_BASE_UUID;
@@ -98,7 +98,7 @@ void settings_service_init(ble_service_t * p_settings_service)
     SEGGER_RTT_printf(0, "Service handle: 0x%#04x\n", p_settings_service->service_handle); // Print out the service handle. Should match service handle shown in MCP under Attribute values
 }
 
-uint32_t data_characteristics_init(ble_service_t * p_data_service, ble_gatts_char_handles_t ** p_data_characteristics)
+uint32_t data_characteristics_init(ble_custom_service_t * p_data_service, ble_gatts_char_handles_t ** p_data_characteristics)
 {
     //p_data_characteristics contains three pointers, one each to the accelerometer, gyroscope and magnetometer
     //characteristic handles. All three characteristics are set up in this method.
@@ -115,10 +115,10 @@ uint32_t data_characteristics_init(ble_service_t * p_data_service, ble_gatts_cha
 
     // Initialize Accelerometer Characteristic and add it to the data service.
     memset(&characteristic_parameters, 0, sizeof(characteristic_parameters));
-    characteristic_parameters.uuid              = ACC_DATA_CHARACTERISTIC_UUID;
+    characteristic_parameters.uuid              = OLD_ACC_DATA_CHARACTERISTIC_UUID;
     characteristic_parameters.uuid_type         = p_data_service->service_uuid.type;
-    characteristic_parameters.init_len          = SAMPLE_SIZE * SENSOR_SAMPLES * sizeof(uint8_t); //initial length of the characteristic value, want to broadcast all acc values so start with 6 * uint8_t
-    characteristic_parameters.max_len           = SAMPLE_SIZE * SENSOR_SAMPLES * sizeof(uint8_t); //maximum length of the characteristic value, want to broadcast all acc values so start with 6 * uint8_t
+    characteristic_parameters.init_len          = OLD_SAMPLE_SIZE * OLD_SENSOR_SAMPLES * sizeof(uint8_t); //initial length of the characteristic value, want to broadcast all acc values so start with 6 * uint8_t
+    characteristic_parameters.max_len           = OLD_SAMPLE_SIZE * OLD_SENSOR_SAMPLES * sizeof(uint8_t); //maximum length of the characteristic value, want to broadcast all acc values so start with 6 * uint8_t
     characteristic_parameters.char_props.read   = 1;
     characteristic_parameters.char_props.notify = 1;
     characteristic_parameters.read_access       = SEC_OPEN;
@@ -127,11 +127,11 @@ uint32_t data_characteristics_init(ble_service_t * p_data_service, ble_gatts_cha
     err_code = characteristic_add(p_data_service->service_handle, &characteristic_parameters, p_data_characteristics[0]);
 
     // Initialize Gyroscope Characteristic and add it to the data service.
-    characteristic_parameters.uuid               = GYR_DATA_CHARACTERISTIC_UUID;
+    characteristic_parameters.uuid               = OLD_GYR_DATA_CHARACTERISTIC_UUID;
     err_code = characteristic_add(p_data_service->service_handle, &characteristic_parameters, p_data_characteristics[1]);
 
     // Initialize Magnetometer Characteristic and add it to the data service.
-    characteristic_parameters.uuid               = MAG_DATA_CHARACTERISTIC_UUID;
+    characteristic_parameters.uuid               = OLD_MAG_DATA_CHARACTERISTIC_UUID;
     err_code = characteristic_add(p_data_service->service_handle, &characteristic_parameters, p_data_characteristics[2]);
 
     return err_code;
