@@ -36,7 +36,7 @@ NRF_SDH_BLE_OBSERVER(_name ## _obs,                                             
 // Forward declaration of the ble_sensor_service_t type.
 typedef struct ble_sensor_service_s ble_sensor_service_t;
 
-typedef void (*ble_sensor_service_setting_write_handler_t) (uint16_t conn_handle, ble_sensor_service_t * p_ss, uint16_t new_state);
+typedef void (*ble_sensor_service_setting_write_handler_t) (uint16_t conn_handle, ble_sensor_service_t * p_ss, const uint8_t* new_state);
 
 /** @brief Sensor Service init structure. This structure contains all options and data needed for
  *        initialization of the service.*/

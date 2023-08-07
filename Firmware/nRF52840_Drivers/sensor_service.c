@@ -56,10 +56,10 @@ static void on_write(ble_sensor_service_t * p_ss, ble_evt_t const * p_ble_evt)
     ble_gatts_evt_write_t const * p_evt_write = &p_ble_evt->evt.gatts_evt.params.write;
 
     if (   (p_evt_write->handle == p_ss->settings_handles.value_handle)
-        && (p_evt_write->len == 1)
+        && (p_evt_write->len == 3 || p_evt_write->len == 20)
         && (p_ss->setting_write_handler != NULL))
     {
-        p_ss->setting_write_handler(p_ble_evt->evt.gap_evt.conn_handle, p_ss, p_evt_write->data[0]);
+        p_ss->setting_write_handler(p_ble_evt->evt.gap_evt.conn_handle, p_ss, p_evt_write->data);
     }
 }
 
@@ -175,10 +175,10 @@ uint32_t ble_sensor_service_settings_char_add(ble_sensor_service_t * p_ss)
     memset(&add_char_params, 0, sizeof(add_char_params));
     add_char_params.uuid              = SETTINGS_CHARACTERISTIC_UUID;
     add_char_params.uuid_type         = p_ss->uuid_type;
-    add_char_params.init_len          = 2 * sizeof(uint8_t);
-    add_char_params.max_len           = 2 * sizeof(uint8_t);
+    add_char_params.init_len          = 20 * sizeof(uint8_t);
+    add_char_params.max_len           = 20 * sizeof(uint8_t);
     add_char_params.char_props.read   = 1;
-    add_char_params.char_props.write = 1;
+    add_char_params.char_props.write  = 1;
 
     add_char_params.read_access       = SEC_OPEN;
     add_char_params.write_access      = SEC_OPEN;
