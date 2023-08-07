@@ -87,7 +87,8 @@
 #include "SEGGER_RTT.h"
 
 #include "lsm9ds1_reg.h"
-#include "sensor_service.h"
+#include "ble_sensor_service.h"
+#include "personal_caddie_operating_modes.h"
 
 //Bluetooth Parameters
 #define DEVICE_NAME                     "Personal Caddie"                       /**< Name of device. Will be included in the advertising data. */
@@ -180,6 +181,8 @@ static void tx_com( uint8_t *tx_buffer, uint16_t len );
 static int32_t get_IMU_data(uint8_t offset);
 static int32_t get_MAG_data(uint8_t offset);
 
+static personal_caddie_operating_mode_t current_operating_mode = ADVERTISING_MODE; /**< The chip starts in advertising mode*/
+
 //Pin Setup
 #define SENSOR_POWER_PIN        NRF_GPIO_PIN_MAP(1, 11)                         /**< Pin used to power external sensors (mapped to D2 on BLE 33)*/
 #define SCL_PIN                 NRF_GPIO_PIN_MAP(1, 14)                         /**< Pin used for external TWI clock (mapped to D6 on BLE 33) */
@@ -247,37 +250,38 @@ static void lsm9ds1_init(void)
     lsm9ds1_mag.read_reg = read_mag;
     lsm9ds1_mag.write_reg = write_mag;
 
-    //before trying to reach the LSM9DS1 via TWI we need to actually power it on.
-    //The BLE33 sense board has multiple sensor tied to the same power pin so high drive 
-    //mode needs to be enabled to ensure enough current gets to the LSM9DS1
-
-    //uncomment to use external sensors
-    //nrf_gpio_cfg_output(SENSOR_POWER_PIN);
-    //nrf_gpio_pin_set(SENSOR_POWER_PIN);
-
+    //configure the power pin and pullup resistor pins for the LSM9DS1
     nrf_gpio_cfg_output(BLE_33_PULLUP); //send power to BLE 33 Sense pullup resistors (they aren't connected to VDD)
-    nrf_gpio_pin_set(BLE_33_PULLUP);    //send power to BLE 33 Sense pullup resistors (they aren't connected to VDD)
     nrf_gpio_cfg(BLE_33_SENSOR_POWER_PIN, NRF_GPIO_PIN_DIR_OUTPUT, NRF_GPIO_PIN_INPUT_CONNECT, NRF_GPIO_PIN_NOPULL, NRF_GPIO_PIN_S0H1, NRF_GPIO_PIN_NOSENSE);
+    
+    //the main initialization is complete, but first attempt to communicate 
+    //with the sensor just to ensure that it's there and working properly.
+    nrf_gpio_pin_set(BLE_33_PULLUP);    //send power to BLE 33 Sense pullup resistors (they aren't connected to VDD)
     nrf_gpio_pin_set(BLE_33_SENSOR_POWER_PIN);
     nrf_delay_ms(50); //slight delay so the chip has time to power on
 
-    //confirm that the sensor is powered on, read the whoami register and then turn
-    //on one of the board leds after a successful read
+    //attempt to read the WHOAMI register
     uint32_t ret = lsm9ds1_dev_id_get(&lsm9ds1_mag, &lsm9ds1_imu, &whoamI);
-    if (whoamI.imu == LSM9DS1_IMU_ID)
-    {
-        //nrf_gpio_cfg_output(BLE_33_RED_LED); //Pin needs to be set low to turn led on
-        //Think about blinking an LED here, instead of just turning one on
-    }
+    if (whoamI.imu == LSM9DS1_IMU_ID) SEGGER_RTT_WriteString(0, "LSM9DS1 discovered.\n");
+    else SEGGER_RTT_WriteString(0, "Error: Couldn't find LSM9DS1.\n");
 
-    //set the odr
-    ret = lsm9ds1_imu_data_rate_set(&lsm9ds1_imu, LSM9DS1_IMU_119Hz);
-    ret = lsm9ds1_mag_data_rate_set(&lsm9ds1_mag, LSM9DS1_MAG_MP_80Hz);
+    //regardless of whether or not the LSM9DS1 is found, disable the power pins and TWI bus
+    nrf_gpio_pin_clear(BLE_33_PULLUP);
+    nrf_gpio_pin_clear(BLE_33_SENSOR_POWER_PIN);
+    nrf_drv_twi_disable(&m_twi);
+}
 
-    //set the full scale ranges
-    ret = lsm9ds1_gy_full_scale_set(&lsm9ds1_imu, LSM9DS1_2000dps); // +/-2000 deg/s
-    ret = lsm9ds1_xl_full_scale_set(&lsm9ds1_imu, LSM9DS1_4g);      // +/- 4 g
-    ret = lsm9ds1_mag_full_scale_set(&lsm9ds1_mag, LSM9DS1_4Ga);    // +/- 4 gauss
+static void lsm9ds1_sleep_mode_enable()
+{
+    //set the power to sleep for both acc/gyr and mag sensors
+    int32_t ret = 0;
+    ret = lsm9ds1_imu_data_rate_set(&lsm9ds1_imu, LSM9DS1_IMU_OFF);
+    ret = lsm9ds1_mag_data_rate_set(&lsm9ds1_mag, LSM9DS1_MAG_POWER_DOWN);
+
+    ////set the full scale ranges
+    //ret = lsm9ds1_gy_full_scale_set(&lsm9ds1_imu, LSM9DS1_2000dps); // +/-2000 deg/s
+    //ret = lsm9ds1_xl_full_scale_set(&lsm9ds1_imu, LSM9DS1_4g);      // +/- 4 g
+    //ret = lsm9ds1_mag_full_scale_set(&lsm9ds1_mag, LSM9DS1_4Ga);    // +/- 4 gauss
 }
 
 static void characteristic_update_and_notify()
@@ -358,7 +362,7 @@ void led_on_timer_handler(nrf_timer_event_t event_type, void* p_context)
     //SEGGER_RTT_WriteString(0, "Timer went off.\n");
     //if (current_sensor_mode % 4 == 0)
     //{
-    //    //magnetometer at low power and 40 Hz
+    //    //magnetometer at low power and 40 Hz b
     //    ret = lsm9ds1_mag_data_rate_set(&lsm9ds1_mag, LSM9DS1_MAG_LP_1000Hz);
 
     //    //blink all 3 leds
@@ -490,71 +494,136 @@ static void nrf_qwr_error_handler(uint32_t nrf_error)
 }
 
 //Functions for updating sensor power modes and settings
-static void sensor_idle_mode_start(const uint8_t* settings_state, uint8_t update_bytes)
+static void sensor_idle_mode_start()
 {
+    
     //In this mode, the TWI bus is active and power is going to the LSM9DS1 but the 
     //sensor is put into sleep mode. A red LED blinking in time with the connection 
     //interval shows when this mode is active.
+    if (current_operating_mode == SENSOR_IDLE_MODE) return; //no need to change anything if already in idle mode
+
+    active_led = BLE_33_RED_LED; //swap to the red LED
     ret_code_t err_code;
 
-    //First, stop the sensor from actively taking measurements. This is done by turning
-    //off the data taking timer.
-    err_code = app_timer_stop(m_data_reading_timer); //Even if the timer isn't actively on it's ok to call this method
-
-    //Next, we need to put the sensors into sleep mode. Before doing so, check to see if the 
-    //TWI bus is turned on.
-    uint32_t enabled = m_twi.u.twim.p_twim->ENABLE;
-    if (enabled == 0) nrf_drv_twi_enable(&m_twi);
-
-    //Make sure that power is going to the sensor and the pullup resistors for TWI communication
-    //ar active
-    nrf_gpio_pin_set(BLE_33_SENSOR_POWER_PIN);
-    nrf_gpio_pin_set(BLE_33_PULLUP);
-
-    //Once we've confirmed that the TWI bus is on and that we have power going to the sensor,
-    //put the sensor into sleep mode
-
-    //Next, set the connection interval to 2 seconds if it isn't already. *(note) only the 
-    //central can actually update the connection interval, we can only request a change
-    //here.
-    if (current_connection_interval < 2000)
+    if (current_operating_mode == SENSOR_ACTIVE_MODE)
     {
-        ret_code_t err_code = BLE_ERROR_INVALID_CONN_HANDLE;
-        ble_gap_conn_params_t new_params;
+        //If we're transitioning from active to idle mode we need to stop the data collection timer
+        //and then put the sensor into sleep mode. Once this is done we change the connection interval 
+        //back to 2 seconds as we won't be communicating with the central as often (for a short while).
+        err_code = app_timer_stop(m_data_reading_timer); //Even if the timer isn't actively on it's ok to call this method
+        lsm9ds1_sleep_mode_enable();
 
-        new_params.min_conn_interval = SENSOR_IDLE_MIN_CONN_INTERVAL;
-        new_params.max_conn_interval = SENSOR_IDLE_MAX_CONN_INTERVAL;
-        new_params.slave_latency = SLAVE_LATENCY;
-        new_params.conn_sup_timeout = SENSOR_IDLE_CONN_SUP_TIMEOUT;
-
-        err_code = ble_conn_params_change_conn_params(m_conn_handle, &new_params);
-
-        if (err_code == NRF_SUCCESS)
+        //the connection interval should be less than 2 seconds, but still check to make sure
+        if (current_connection_interval < 2000)
         {
-            current_connection_interval = 2000;
-            SEGGER_RTT_WriteString(0, "Successfully updated connection interval.\n");
+            ret_code_t err_code = BLE_ERROR_INVALID_CONN_HANDLE;
+            ble_gap_conn_params_t new_params;
+
+            new_params.min_conn_interval = SENSOR_IDLE_MIN_CONN_INTERVAL;
+            new_params.max_conn_interval = SENSOR_IDLE_MAX_CONN_INTERVAL;
+            new_params.slave_latency = SLAVE_LATENCY;
+            new_params.conn_sup_timeout = SENSOR_IDLE_CONN_SUP_TIMEOUT;
+
+            err_code = ble_conn_params_change_conn_params(m_conn_handle, &new_params);
+
+            if (err_code == NRF_SUCCESS)
+            {
+                current_connection_interval = 2000;
+                SEGGER_RTT_WriteString(0, "Successfully updated connection interval.\n");
+            }
+            else
+            {
+                SEGGER_RTT_WriteString(0, "Couldn't update connection interval.\n");
+            }
         }
-        else
-        {
-            SEGGER_RTT_WriteString(0, "Couldn't update connection interval.\n");
-        }
+
+        //the LED is deactivated during data collection so turn the LED back on
+        err_code = app_timer_start(m_led_timer, LED_DELAY, NULL); //Even if the timer is already on it's ok to call this method
+    }
+    else 
+    {
+        //If we aren't in sensor active or idle mode, it means that we arrived here from connection mode.
+        //This means that both the TWI bus and LSM9DS1 need to be turned on. No need to put the LSM9DS1 
+        //into sleep mode as this happens automatically upon power up.
+
+        // Leave the below two lines commented for future reference
+        //uint32_t enabled = m_twi.u.twim.p_twim->ENABLE;
+        //if (enabled == 0) nrf_drv_twi_enable(&m_twi);
+
+        //turn on the TWI bus
+        nrf_drv_twi_enable(&m_twi);
+
+        //Power the sensor and the pullup resistors to the SCL and SDA line
+        nrf_gpio_pin_set(BLE_33_SENSOR_POWER_PIN);
+        nrf_gpio_pin_set(BLE_33_PULLUP);
     }
 
-    //Finally, activate the red LED and make sure that the LED timer is on
-    active_led = BLE_33_RED_LED;
-    err_code = app_timer_start(m_led_timer, LED_DELAY, NULL); //Even if the timer is already on it's ok to call this method
-
-    //Once all of the above settings have been confirmed/set, we can safely update the local 
-    //sensor settings variable with the value(s) written to the characteristic
-    //TODO: Implement this
-
-    //uint32_t timer_val = nrf_drv_timer_capture(&LED_ON_TIMER, NRF_TIMER_CC_CHANNEL1);
-    
+    current_operating_mode = SENSOR_IDLE_MODE; //set the current operating mode to idle
 }
 
 static void sensor_active_mode_start()
 {
-    //TODO: Fill this function out
+    if (current_operating_mode != SENSOR_IDLE_MODE) return; //we can only go to active mode from idle mode
+
+    //All of the settings for the sensor should have been set already, we just need to activate them
+    //and then start the data collection timer. We also disable the LED to save on power
+    app_timer_stop(m_led_timer); //disable the led by turning of it's timer
+
+    //TODO: For now just enable the acc,gyr and mag in normal operating mode to demonstrate mode switching
+    int32_t ret = 0;
+    ret = lsm9ds1_imu_data_rate_set(&lsm9ds1_imu, LSM9DS1_IMU_119Hz);
+    ret = lsm9ds1_mag_data_rate_set(&lsm9ds1_mag, LSM9DS1_MAG_MP_80Hz);
+
+    //Once the settings have been applied, restart the data collection timer
+    app_timer_start(m_data_reading_timer, NEXT_MEASUREMENT_DELAY, NULL);
+
+    current_operating_mode = SENSOR_ACTIVE_MODE; //set the current operating mode to idle
+}
+
+static void connected_mode_start()
+{
+    //We'll other be put into this mode from advertising mode (in which case all we need to do is 
+    //change the color of the blinking LED, or from sensor_idle mode, in which case we need to 
+    //disable the power going to the sensor and the TWI bus.
+    if (current_operating_mode == SENSOR_IDLE_MODE)
+    {
+        //The chip is currently in sensor idle mode so we need to power off the sensor and disable the TWI bus
+        //Disable power to the sensor and the pullup resistors to the SCL and SDA line
+        nrf_gpio_pin_clear(BLE_33_SENSOR_POWER_PIN);
+        nrf_gpio_pin_clear(BLE_33_PULLUP);
+
+        //Turn off the TWI bus
+        nrf_drv_twi_disable(&m_twi);
+    }
+
+    //change the color of the blinking LED
+    active_led = BLE_33_DARK_GREEN_LED; //swap to the red LED
+    current_operating_mode = CONNECTED_MODE; //set the current operating mode to idle
+}
+
+static void advertising_mode_start()
+{
+    //There are two ways to get into advertising mode, either by turning the device on,
+    //or by losing a connection to a central device (whether this is intentional or 
+    //accidental). In the latter case, we need to disable any sensors or peripherals
+    //to save on power.
+
+    switch (current_operating_mode)
+    {
+        case ADVERTISING_MODE:
+            return; //no changes need to be made so leave the method
+        case SENSOR_ACTIVE_MODE:
+            sensor_idle_mode_start();
+            //break statement purposely omitted here
+        case SENSOR_IDLE_MODE:
+            connected_mode_start();
+            //break statement purposely omitted here
+        default:
+            active_led = BLE_33_BLUE_LED;
+            break;
+    }
+
+    current_operating_mode = ADVERTISING_MODE; //set the current operating mode to idle
 }
 
 /**@brief Function for handling write events to the Sensor Settings Characteristic.
@@ -564,14 +633,16 @@ static void sensor_active_mode_start()
  */
 static void LSM9DS1_settings_write_handler(uint16_t conn_handle, ble_sensor_service_t * p_ss, const uint8_t* settings_state)
 {
-    //Different things can happen epending on what gets written to the settings characteristic
+    //Different things can happen depending on what gets written to the settings characteristic
     switch (*settings_state)
     {
         case 3:
-            sensor_idle_mode_start(settings_state, 19);
+            sensor_idle_mode_start();
+            for (int i = 1; i < 20; i++) sensor_settings[i] = *(settings_state + i);
             break;
         case 4:
-            sensor_idle_mode_start(settings_state, 1);
+            sensor_idle_mode_start();
+            sensor_settings[*(settings_state + 1)] = *(settings_state + 2);
             break;
         case 5:
             sensor_active_mode_start();
@@ -664,7 +735,8 @@ static void conn_params_init(void)
 static void application_timers_start(void)
 {
     //a timer that let's us know when to read the next data sample from the Sensor
-    app_timer_start(m_data_reading_timer, NEXT_MEASUREMENT_DELAY, NULL);
+    //app_timer_start(m_data_reading_timer, NEXT_MEASUREMENT_DELAY, NULL);
+    app_timer_start(m_led_timer, LED_DELAY, NULL); //blinks the green led along with the advertising interval
 }
 
 
@@ -730,7 +802,7 @@ static void ble_evt_handler(ble_evt_t const * p_ble_evt, void * p_context)
     {
         case BLE_GAP_EVT_DISCONNECTED:
             NRF_LOG_INFO("Disconnected.");
-            // LED indication will be changed when advertising starts.
+            advertising_mode_start();
             break;
 
         case BLE_GAP_EVT_CONNECTED:
@@ -740,6 +812,7 @@ static void ble_evt_handler(ble_evt_t const * p_ble_evt, void * p_context)
             m_conn_handle = p_ble_evt->evt.gap_evt.conn_handle;
             err_code = nrf_ble_qwr_conn_handle_assign(&m_qwr, m_conn_handle);
             APP_ERROR_CHECK(err_code);
+            connected_mode_start();
             break;
 
         case BLE_GAP_EVT_PHY_UPDATE_REQUEST:
@@ -1040,7 +1113,7 @@ void  twi_init (void)
     err_code = nrf_drv_twi_init(&m_twi, &twi_lsm9ds1_config, twi_handler, NULL);
     APP_ERROR_CHECK(err_code);
 
-    //nrf_drv_twi_enable(&m_twi); //enabling is handled elsewhere
+    nrf_drv_twi_enable(&m_twi); //the bus will be automatically disabled after first communication with sensor
 }
 
 static void leds_init()
@@ -1075,14 +1148,15 @@ int main(void)
     conn_params_init();
     peer_manager_init();
     twi_init();
+    lsm9ds1_init();
     leds_init();
-    //lsm9ds1_init();
+  
     NRF_LOG_FLUSH(); //flush out all logs called during initialization
 
     // Start execution.
     NRF_LOG_INFO("Personal Caddie Initialized");
     NRF_LOG_PROCESS();
-    //application_timers_start();
+    application_timers_start();
 
     advertising_start(erase_bonds);
 
