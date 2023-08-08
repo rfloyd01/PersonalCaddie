@@ -100,18 +100,18 @@
 #define APP_BLE_CONN_CFG_TAG            1                                       /**< A tag identifying the SoftDevice BLE configuration. */
 
 static uint16_t current_connection_interval = 0;                                /**< Keeps track of the connection interval length (in milliseconds) */
-static uint16_t sici = 2000;                                                    /**< The desired connection interval in sensor idle mode (in milliseconds) */
+static uint16_t sici = 1980;                                                    /**< The desired connection interval in sensor idle mode (in milliseconds) */
 static uint16_t saci = 150;                                                     /**< The desired connection interval in sensor active mode (in milliseconds) */
 
-#define SENSOR_IDLE_MIN_CONN_INTERVAL   MSEC_TO_UNITS(sici - 50, UNIT_1_25_MS)  /**< Minimum acceptable connection interval in sensor idle mode (1.95 seconds). */
-#define SENSOR_IDLE_MAX_CONN_INTERVAL   MSEC_TO_UNITS(sici + 50, UNIT_1_25_MS)  /**< Maximum acceptable connection interval in sensor idle mode (2.05 seconds). */
-#define SENSOR_IDLE_CONN_SUP_TIMEOUT    MSEC_TO_UNITS(10000, UNIT_10_MS)        /**< Connection supervisory timeout (4 seconds). */
-#define SENSOR_ACTIVE_MIN_CONN_INTERVAL MSEC_TO_UNITS(saci - 50, UNIT_1_25_MS)  /**< Minimum acceptable connection interval in sensor active mode (0.125 seconds). */
-#define SENSOR_ACTIVE_MAX_CONN_INTERVAL MSEC_TO_UNITS(saci + 50, UNIT_1_25_MS)  /**< Maximum acceptable connection interval in sensor active mode (0.25 second). */
+#define SENSOR_IDLE_MIN_CONN_INTERVAL   MSEC_TO_UNITS(sici - 15, UNIT_1_25_MS)  /**< Minimum acceptable connection interval in sensor idle mode (1.95 seconds). */
+#define SENSOR_IDLE_MAX_CONN_INTERVAL   MSEC_TO_UNITS(sici + 15, UNIT_1_25_MS)  /**< Maximum acceptable connection interval in sensor idle mode (2.05 seconds). */
+#define SENSOR_IDLE_CONN_SUP_TIMEOUT    MSEC_TO_UNITS(6000, UNIT_10_MS)        /**< Connection supervisory timeout (4 seconds). */
+#define SENSOR_ACTIVE_MIN_CONN_INTERVAL MSEC_TO_UNITS(saci - 15, UNIT_1_25_MS)  /**< Minimum acceptable connection interval in sensor active mode (0.125 seconds). */
+#define SENSOR_ACTIVE_MAX_CONN_INTERVAL MSEC_TO_UNITS(saci + 15, UNIT_1_25_MS)  /**< Maximum acceptable connection interval in sensor active mode (0.25 seconds). */
 #define SENSOR_ACTIVE_CONN_SUP_TIMEOUT  MSEC_TO_UNITS(4000, UNIT_10_MS)         /**< Connection supervisory timeout (4 seconds). */
 #define SLAVE_LATENCY                   0                                       /**< Slave latency. */
 
-#define FIRST_CONN_PARAMS_UPDATE_DELAY  APP_TIMER_TICKS(5000)                   /**< Time from initiating event (connect or start of notification) to first time sd_ble_gap_conn_param_update is called (5 seconds). */
+#define FIRST_CONN_PARAMS_UPDATE_DELAY  APP_TIMER_TICKS(1000)                   /**< Time from initiating event (connect or start of notification) to first time sd_ble_gap_conn_param_update is called (5 seconds). */
 #define NEXT_CONN_PARAMS_UPDATE_DELAY   APP_TIMER_TICKS(30000)                  /**< Time between each call to sd_ble_gap_conn_param_update after the first call (30 seconds). */
 #define MAX_CONN_PARAMS_UPDATE_COUNT    3                                       /**< Number of attempts before giving up the connection parameter negotiation. */
 
@@ -269,6 +269,26 @@ static void lsm9ds1_init(void)
     nrf_gpio_pin_clear(BLE_33_PULLUP);
     nrf_gpio_pin_clear(BLE_33_SENSOR_POWER_PIN);
     nrf_drv_twi_disable(&m_twi);
+
+    //after shutting the TWI bus and sensor pins down, we populate the sensor settings array
+    //with default values that we want the sensor to have
+    sensor_settings[1] = LSM9DS1_4g;      //accelerometer full scale range (+/- 4 g)
+    sensor_settings[2] = LSM9DS1_2000dps; //gyroscope full scale range (+/- 2000 degrees/s)
+    sensor_settings[3] = LSM9DS1_4Ga;     //magnetometer full scale range (+/- 4 Gauss)
+
+    sensor_settings[4] = LSM9DS1_IMU_59Hz5; //accelerometer/gyroscope ODR and Power (59.5 Hz, gyroscope in standard power mode)
+    sensor_settings[5] = LSM9DS1_MAG_LP_40Hz; //magnetomer ODR and Power (40 Hz, magnetometer in low power mode)
+
+    sensor_settings[6] = LSM9DS1_LPF1_OUT; //Gyroscope filter selection (low pass filter 1 only)
+    sensor_settings[7] = 0; //gyroscope low pass filter setting (only takes effect when LPF2 is set in gyro filter path)
+    sensor_settings[8] = 0; //gyroscope high pass filter setting (only takes effect when HPF is set in gyro filter path)
+    sensor_settings[9] = LSM9DS1_LP_OUT; //accelerometer filter selection (low pass filter only)
+    sensor_settings[10] = LSM9DS1_LP_DISABLE; //accelerometer low pass filter setting (frequency is automatically tied to ODR)
+    sensor_settings[11] = 0; //accelerometer high pass filter setting (only takes effect when HP_OUT is set for accelerometer)
+    sensor_settings[12] = LSM9DS1_AUTO; //accelerometer anti-aliasing bandwidth (automatically set based on current ODR)
+
+    //The rest of the settings are blank for now
+    for (int i = 13; i , 20; i++) sensor_settings[i] = 0;
 }
 
 static void lsm9ds1_sleep_mode_enable()
@@ -465,10 +485,6 @@ static void gap_params_init(void)
 
     err_code = sd_ble_gap_ppcp_set(&gap_conn_params);
     APP_ERROR_CHECK(err_code);
-
-    //After success, update the local connection interval variable to reflect the connection interval 
-    //for sensor idol mode
-    current_connection_interval = sici;
 }
 
 
@@ -514,7 +530,7 @@ static void sensor_idle_mode_start()
         lsm9ds1_sleep_mode_enable();
 
         //the connection interval should be less than 2 seconds, but still check to make sure
-        if (current_connection_interval < 2000)
+        if (current_connection_interval < SENSOR_IDLE_MIN_CONN_INTERVAL)
         {
             ret_code_t err_code = BLE_ERROR_INVALID_CONN_HANDLE;
             ble_gap_conn_params_t new_params;
@@ -526,12 +542,7 @@ static void sensor_idle_mode_start()
 
             err_code = ble_conn_params_change_conn_params(m_conn_handle, &new_params);
 
-            if (err_code == NRF_SUCCESS)
-            {
-                current_connection_interval = 2000;
-                SEGGER_RTT_WriteString(0, "Successfully updated connection interval.\n");
-            }
-            else
+            if (err_code != NRF_SUCCESS)
             {
                 SEGGER_RTT_WriteString(0, "Couldn't update connection interval.\n");
             }
@@ -574,8 +585,34 @@ static void sensor_active_mode_start()
     ret = lsm9ds1_imu_data_rate_set(&lsm9ds1_imu, LSM9DS1_IMU_119Hz);
     ret = lsm9ds1_mag_data_rate_set(&lsm9ds1_mag, LSM9DS1_MAG_MP_80Hz);
 
+    //After turning on the sensor, request that the connection interval be changed
+    //to match the ODR of the sensor x the number of samples being collected.
+    //TODO: Will need to get the ODR from some variable, not just write it in
+    int minimum_interval_required = 1000.0 / 119.0 * SENSOR_SAMPLES + 1;
+    minimum_interval_required += (15 - minimum_interval_required % 15); //round up to the nearest 15th millisecond
+
+    //Convert from milliseconds to 1.25 millisecond units by dividing by 1.25 (same multiplying by 4/5)
+    minimum_interval_required /= 5;
+    minimum_interval_required *= 4;
+
+    //Now make the connection interval change request
+    ret_code_t err_code = BLE_ERROR_INVALID_CONN_HANDLE;
+    ble_gap_conn_params_t new_params;
+
+    new_params.min_conn_interval = minimum_interval_required;
+    new_params.max_conn_interval = minimum_interval_required + 12; //must be 12 1.25ms units greater at a minimum
+    new_params.slave_latency = SLAVE_LATENCY;
+    new_params.conn_sup_timeout = SENSOR_ACTIVE_CONN_SUP_TIMEOUT;
+
+    err_code = ble_conn_params_change_conn_params(m_conn_handle, &new_params);
+
+    if (err_code != NRF_SUCCESS)
+    {
+        SEGGER_RTT_WriteString(0, "Couldn't update connection interval.\n");
+    }
+
     //Once the settings have been applied, restart the data collection timer
-    app_timer_start(m_data_reading_timer, NEXT_MEASUREMENT_DELAY, NULL);
+    app_timer_start(m_data_reading_timer, NEXT_MEASUREMENT_DELAY, NULL); //TODO: base timeout clicks on the new connection interval
 
     current_operating_mode = SENSOR_ACTIVE_MODE; //set the current operating mode to idle
 }
@@ -624,6 +661,9 @@ static void advertising_mode_start()
     }
 
     current_operating_mode = ADVERTISING_MODE; //set the current operating mode to idle
+    
+    //finally, we need to terminate the existing connection
+    //TODO: Implement this feature
 }
 
 /**@brief Function for handling write events to the Sensor Settings Characteristic.
@@ -636,6 +676,15 @@ static void LSM9DS1_settings_write_handler(uint16_t conn_handle, ble_sensor_serv
     //Different things can happen depending on what gets written to the settings characteristic
     switch (*settings_state)
     {
+        case 0:
+            advertising_mode_start();
+            break;
+        case 1:
+            connected_mode_start();
+            break;
+        case 2:
+            sensor_idle_mode_start();
+            break;
         case 3:
             sensor_idle_mode_start();
             for (int i = 1; i < 20; i++) sensor_settings[i] = *(settings_state + i);
@@ -801,18 +850,19 @@ static void ble_evt_handler(ble_evt_t const * p_ble_evt, void * p_context)
     switch (p_ble_evt->header.evt_id)
     {
         case BLE_GAP_EVT_DISCONNECTED:
-            NRF_LOG_INFO("Disconnected.");
+            //NRF_LOG_INFO("Disconnected.");
+            SEGGER_RTT_WriteString(0, "Disconnected from the Personal Caddie\n");
             advertising_mode_start();
             break;
 
         case BLE_GAP_EVT_CONNECTED:
-            NRF_LOG_INFO("Connected.");
-            //err_code = bsp_indication_set(BSP_INDICATE_CONNECTED); //remove LED indications for now
-            //APP_ERROR_CHECK(err_code);
+            //NRF_LOG_INFO("Connected.");
             m_conn_handle = p_ble_evt->evt.gap_evt.conn_handle;
             err_code = nrf_ble_qwr_conn_handle_assign(&m_qwr, m_conn_handle);
             APP_ERROR_CHECK(err_code);
             connected_mode_start();
+            current_connection_interval = p_ble_evt->evt.gap_evt.params.connected.conn_params.max_conn_interval;
+            SEGGER_RTT_WriteString(0, "Connected to the Personal Caddie.\n");
             break;
 
         case BLE_GAP_EVT_PHY_UPDATE_REQUEST:
@@ -826,6 +876,11 @@ static void ble_evt_handler(ble_evt_t const * p_ble_evt, void * p_context)
             err_code = sd_ble_gap_phy_update(p_ble_evt->evt.gap_evt.conn_handle, &phys);
             APP_ERROR_CHECK(err_code);
         } break;
+
+        case BLE_GAP_EVT_CONN_PARAM_UPDATE:
+            current_connection_interval = p_ble_evt->evt.gap_evt.params.conn_param_update.conn_params.min_conn_interval * 5 / 4;
+            SEGGER_RTT_printf(0, "Connection Interval updated to : %u milliseconds.\n", current_connection_interval);
+            break;
 
         case BLE_GATTC_EVT_TIMEOUT:
             // Disconnect on GATT Client timeout event.
