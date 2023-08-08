@@ -171,7 +171,6 @@ static uint8_t sensor_settings[20];                                            /
 static lsm9ds1_id_t whoamI;
 static bool lsm9ds1_register_auto_increment = true;                            /**register auto increment function for multiple byte reads of LSM9DS1 chip **/
 static int measurements_taken = 0;
-static int current_sensor_mode = 0;
 
 static int32_t write_imu(void *handle, uint8_t reg, const uint8_t *bufp, uint16_t len);
 static int32_t read_imu(void *handle, uint8_t reg, uint8_t *bufp, uint16_t len);
@@ -288,10 +287,10 @@ static void lsm9ds1_init(void)
     sensor_settings[12] = LSM9DS1_AUTO; //accelerometer anti-aliasing bandwidth (automatically set based on current ODR)
 
     //The rest of the settings are blank for now
-    for (int i = 13; i , 20; i++) sensor_settings[i] = 0;
+    for (int i = 13; i < 20; i++) sensor_settings[i] = 0;
 }
 
-static void lsm9ds1_sleep_mode_enable()
+static void lsm9ds1_idle_mode_enable()
 {
     //set the power to sleep for both acc/gyr and mag sensors
     int32_t ret = 0;
@@ -302,6 +301,133 @@ static void lsm9ds1_sleep_mode_enable()
     //ret = lsm9ds1_gy_full_scale_set(&lsm9ds1_imu, LSM9DS1_2000dps); // +/-2000 deg/s
     //ret = lsm9ds1_xl_full_scale_set(&lsm9ds1_imu, LSM9DS1_4g);      // +/- 4 g
     //ret = lsm9ds1_mag_full_scale_set(&lsm9ds1_mag, LSM9DS1_4Ga);    // +/- 4 gauss
+}
+
+static void lsm9ds1_active_mode_enable()
+{
+    //looks at the settings in the sensor_settings array and uses the TWI bus to apply them to the LSM9DS1.
+    //This function will only work if the sensor has been placed in sensor_active mode
+    if (current_operating_mode == SENSOR_ACTIVE_MODE)
+    {
+        int32_t ret = 0;
+
+        //set the full scale ranges
+        ret = lsm9ds1_xl_full_scale_set(&lsm9ds1_imu, sensor_settings[1]);
+        ret = lsm9ds1_gy_full_scale_set(&lsm9ds1_imu, sensor_settings[2]);
+        ret = lsm9ds1_mag_full_scale_set(&lsm9ds1_mag, sensor_settings[3]);
+
+        //set the odr and power modes
+        ret = lsm9ds1_imu_data_rate_set(&lsm9ds1_imu, sensor_settings[4]);
+        ret = lsm9ds1_mag_data_rate_set(&lsm9ds1_mag, sensor_settings[5]);
+
+        //set the filter settings
+        ret = lsm9ds1_gy_filter_out_path_set(&lsm9ds1_imu, sensor_settings[6]);
+        ret = lsm9ds1_gy_filter_lp_bandwidth_set(&lsm9ds1_imu, sensor_settings[7]);
+        ret = lsm9ds1_gy_filter_hp_bandwidth_set(&lsm9ds1_imu, sensor_settings[8]);
+        ret = lsm9ds1_xl_filter_out_path_set(&lsm9ds1_imu, sensor_settings[9]);
+        ret = lsm9ds1_xl_filter_lp_bandwidth_set(&lsm9ds1_imu, sensor_settings[10]);
+        ret = lsm9ds1_xl_filter_hp_bandwidth_set(&lsm9ds1_imu, sensor_settings[11]);
+        ret = lsm9ds1_xl_filter_aalias_bandwidth_set(&lsm9ds1_imu, sensor_settings[12]);
+    }
+}
+
+static float lsm9ds1_odr_calculate()
+{
+    //We need to know the ODR for the LSM9DS1 in order to calculate an optimal connection interval
+    //for transferring data to the central. Normally the ODR is dictated by the gyroscope, however,
+    //when the gyroscope is turned off then it's dictated by the accelerometer. If both the 
+    //accelerometer and gyroscope are off then the ODR will be dictated by the magnetometer.
+
+    float lsm9ds1_odr = 0.0;
+    if (sensor_settings[4] == LSM9DS1_IMU_OFF)
+    {
+        //both the gyroscope and accelerometer are off so the ODR will be determined from the 
+        //magnetometer.
+        if (sensor_settings[5] != LSM9DS1_MAG_POWER_DOWN)
+        {
+            uint8_t mag_odr_setting = (sensor_settings[5] & 0x0F);
+            switch (mag_odr_setting)
+            {
+                case 0x00:
+                    if (sensor_settings[5] != LSM9DS1_MAG_ONE_SHOT) lsm9ds1_odr = 0.625;
+                    break;
+                case 0x01:
+                    lsm9ds1_odr = 1.25;
+                    break;
+                case 0x02:
+                    lsm9ds1_odr = 2.5;
+                    break;
+                case 0x03:
+                    lsm9ds1_odr = 5;
+                    break;
+                case 0x04:
+                    lsm9ds1_odr = 10;
+                    break;
+                case 0x05:
+                    lsm9ds1_odr = 20;
+                    break;
+                case 0x06:
+                    lsm9ds1_odr = 40;
+                    break;
+                case 0x07:
+                    lsm9ds1_odr = 80;
+                    break;
+                case 0x08:
+                    if (sensor_settings[5] == LSM9DS1_MAG_UHP_155Hz) lsm9ds1_odr = 155;
+                    else if (sensor_settings[5] == LSM9DS1_MAG_HP_300Hz) lsm9ds1_odr = 300;
+                    else if (sensor_settings[5] == LSM9DS1_MAG_MP_560Hz) lsm9ds1_odr = 560;
+                    else lsm9ds1_odr = 1000;
+                    break;
+                default:
+                    lsm9ds1_odr = 0;
+                    break;
+            }
+        }
+    }
+    else
+    {
+        //either the gyroscope or accelerometer is on.
+        uint8_t imu_odr_setting = (sensor_settings[4] & 0x0F);
+        bool gyro_on = true;
+
+        if (imu_odr_setting == 0)
+        {
+            //the gyroscope is turned off so the ODR will be based on the accelerometer. This isn't 
+            //a huge deal as the accelerometer has the same ODR settings as the gyro other than the 
+            //lowest two settings
+            imu_odr_setting = ((sensor_settings[4] & 0xF0) >> 4);
+            gyro_on = false;
+        }
+        
+        switch (imu_odr_setting)
+        {
+            case 0x01:
+                if (gyro_on) lsm9ds1_odr = 14.9;
+                else lsm9ds1_odr = 10;
+                break;
+            case 0x02:
+                if (gyro_on) lsm9ds1_odr = 59.5;
+                else lsm9ds1_odr = 50;
+                break;
+            case 0x03:
+                lsm9ds1_odr = 119;
+                break;
+            case 0x04:
+                lsm9ds1_odr = 238;
+                break;
+            case 0x05:
+                lsm9ds1_odr = 476;
+                break;
+            case 0x06:
+                lsm9ds1_odr = 952;
+                break;
+            default:
+                lsm9ds1_odr = 0;
+                break;
+        }
+    }
+
+    return lsm9ds1_odr;
 }
 
 static void characteristic_update_and_notify()
@@ -377,54 +503,6 @@ void led_on_timer_handler(nrf_timer_event_t event_type, void* p_context)
     //LED back off when this handler is called and then turn the LED-on timer off.
     nrf_gpio_pin_set(active_led);
     nrf_drv_timer_disable(&LED_ON_TIMER);
-
-    //int32_t ret = 0;
-    //SEGGER_RTT_WriteString(0, "Timer went off.\n");
-    //if (current_sensor_mode % 4 == 0)
-    //{
-    //    //magnetometer at low power and 40 Hz b
-    //    ret = lsm9ds1_mag_data_rate_set(&lsm9ds1_mag, LSM9DS1_MAG_LP_1000Hz);
-
-    //    //blink all 3 leds
-    //    nrf_gpio_pin_toggle(BLE_33_RED_LED);
-    //    nrf_gpio_pin_toggle(BLE_33_BLUE_LED);
-    //    nrf_gpio_pin_toggle(BLE_33_DARK_GREEN_LED);
-    //    nrf_delay_ms(25);
-    //    nrf_gpio_pin_toggle(BLE_33_RED_LED);
-    //    nrf_gpio_pin_toggle(BLE_33_BLUE_LED);
-    //    nrf_gpio_pin_toggle(BLE_33_DARK_GREEN_LED);
-    //}
-    //else if (current_sensor_mode % 4 == 1)
-    //{
-    //    //magnetometer at medium power and 40 Hz
-    //    ret = lsm9ds1_mag_data_rate_set(&lsm9ds1_mag, LSM9DS1_MAG_MP_560Hz);
-
-    //    //blink the red LED
-    //    nrf_gpio_pin_toggle(BLE_33_RED_LED);
-    //    nrf_delay_ms(25);
-    //    nrf_gpio_pin_toggle(BLE_33_RED_LED);
-    //}
-    //else if (current_sensor_mode % 4 == 2)
-    //{
-    //    //magnetometer at high power and 40 Hz
-    //    ret = lsm9ds1_mag_data_rate_set(&lsm9ds1_mag, LSM9DS1_MAG_HP_300Hz);
-
-    //    //blink the green LED
-    //    nrf_gpio_pin_toggle(BLE_33_DARK_GREEN_LED);
-    //    nrf_delay_ms(25);
-    //    nrf_gpio_pin_toggle(BLE_33_DARK_GREEN_LED);
-    //}
-    //else if (current_sensor_mode % 4 == 3)
-    //{
-    //    //magnetometer at ultra high power and 40 Hz
-    //    ret = lsm9ds1_mag_data_rate_set(&lsm9ds1_mag, LSM9DS1_MAG_UHP_155Hz);
-
-    //    //blink the blue LED
-    //    nrf_gpio_pin_toggle(BLE_33_BLUE_LED);
-    //    nrf_delay_ms(25);
-    //    nrf_gpio_pin_toggle(BLE_33_BLUE_LED);
-    //}
-    //current_sensor_mode++;
 }
 
 /**@brief Function for the Timer initialization.
@@ -445,7 +523,8 @@ static void timers_init(void)
     err_code = nrf_drv_timer_init(&LED_ON_TIMER, &timer_cfg, led_on_timer_handler);
     APP_ERROR_CHECK(err_code);
 
-    uint32_t led_on_time = nrf_drv_timer_ms_to_ticks(&LED_ON_TIMER, 2); //the LEDs will only be on for 2 milliseconds while blinking
+    //TODO: Lower the led on timer when done testing
+    uint32_t led_on_time = nrf_drv_timer_ms_to_ticks(&LED_ON_TIMER, 25); //the LEDs will only be on for 2 milliseconds while blinking
     nrf_drv_timer_extended_compare(&LED_ON_TIMER, NRF_TIMER_CC_CHANNEL0, led_on_time, NRF_TIMER_SHORT_COMPARE0_CLEAR_MASK, true); //calls the led_on_timer_handler
 
     // Create custom timers.
@@ -511,8 +590,7 @@ static void nrf_qwr_error_handler(uint32_t nrf_error)
 
 //Functions for updating sensor power modes and settings
 static void sensor_idle_mode_start()
-{
-    
+{ 
     //In this mode, the TWI bus is active and power is going to the LSM9DS1 but the 
     //sensor is put into sleep mode. A red LED blinking in time with the connection 
     //interval shows when this mode is active.
@@ -527,7 +605,7 @@ static void sensor_idle_mode_start()
         //and then put the sensor into sleep mode. Once this is done we change the connection interval 
         //back to 2 seconds as we won't be communicating with the central as often (for a short while).
         err_code = app_timer_stop(m_data_reading_timer); //Even if the timer isn't actively on it's ok to call this method
-        lsm9ds1_sleep_mode_enable();
+        lsm9ds1_idle_mode_enable();
 
         //the connection interval should be less than 2 seconds, but still check to make sure
         if (current_connection_interval < SENSOR_IDLE_MIN_CONN_INTERVAL)
@@ -580,40 +658,48 @@ static void sensor_active_mode_start()
     //and then start the data collection timer. We also disable the LED to save on power
     app_timer_stop(m_led_timer); //disable the led by turning of it's timer
 
-    //TODO: For now just enable the acc,gyr and mag in normal operating mode to demonstrate mode switching
-    int32_t ret = 0;
-    ret = lsm9ds1_imu_data_rate_set(&lsm9ds1_imu, LSM9DS1_IMU_119Hz);
-    ret = lsm9ds1_mag_data_rate_set(&lsm9ds1_mag, LSM9DS1_MAG_MP_80Hz);
+    //turn on the sensors by applying the current settings in the settings array
+    lsm9ds1_active_mode_enable();
 
     //After turning on the sensor, request that the connection interval be changed
-    //to match the ODR of the sensor x the number of samples being collected.
-    //TODO: Will need to get the ODR from some variable, not just write it in
-    int minimum_interval_required = 1000.0 / 119.0 * SENSOR_SAMPLES + 1;
-    minimum_interval_required += (15 - minimum_interval_required % 15); //round up to the nearest 15th millisecond
+    //to match the ODR of the sensor * the number of samples being collected.
+    float sensor_odr = lsm9ds1_odr_calculate();
 
-    //Convert from milliseconds to 1.25 millisecond units by dividing by 1.25 (same multiplying by 4/5)
-    minimum_interval_required /= 5;
-    minimum_interval_required *= 4;
-
-    //Now make the connection interval change request
-    ret_code_t err_code = BLE_ERROR_INVALID_CONN_HANDLE;
-    ble_gap_conn_params_t new_params;
-
-    new_params.min_conn_interval = minimum_interval_required;
-    new_params.max_conn_interval = minimum_interval_required + 12; //must be 12 1.25ms units greater at a minimum
-    new_params.slave_latency = SLAVE_LATENCY;
-    new_params.conn_sup_timeout = SENSOR_ACTIVE_CONN_SUP_TIMEOUT;
-
-    err_code = ble_conn_params_change_conn_params(m_conn_handle, &new_params);
-
-    if (err_code != NRF_SUCCESS)
+    if (sensor_odr != 0)
     {
-        SEGGER_RTT_WriteString(0, "Couldn't update connection interval.\n");
+        int minimum_interval_required = 1000.0 / sensor_odr * SENSOR_SAMPLES + 1; //this is in milliseconds, hence the 1000
+        minimum_interval_required += (15 - minimum_interval_required % 15); //round up to the nearest 15th millisecond
+
+        //Convert from milliseconds to 1.25 millisecond units by dividing by 1.25 (same multiplying by 4/5)
+        int mir_125 = minimum_interval_required / 5;
+        mir_125 *= 4;
+
+        //Now make the connection interval change request
+        ret_code_t err_code = BLE_ERROR_INVALID_CONN_HANDLE;
+        ble_gap_conn_params_t new_params;
+
+        new_params.min_conn_interval = mir_125;
+        new_params.max_conn_interval = mir_125 + 12; //must be 15 ms (or 12 in 1.25ms units) greater at a minimum
+        new_params.slave_latency = SLAVE_LATENCY;
+        new_params.conn_sup_timeout = SENSOR_ACTIVE_CONN_SUP_TIMEOUT;
+
+        err_code = ble_conn_params_change_conn_params(m_conn_handle, &new_params);
+
+        if (err_code != NRF_SUCCESS)
+        {
+            SEGGER_RTT_WriteString(0, "Couldn't update connection interval.\n");
+        }
+
+        //Once the settings have been applied, restart the data collection timer.
+        //The timer needs to be converted from ms to 'ticks' which match the frequency of 
+        //the app timer. Normally this is done with a Macro but that can't be accessed here 
+        //so the macro code is copied here
+        uint64_t A = minimum_interval_required * (uint64_t)APP_TIMER_CLOCK_FREQ;
+        uint64_t B = 1000 * (APP_TIMER_CONFIG_RTC_FREQUENCY + 1);
+        uint32_t data_timer_delay = (((A) + ((B) / 2)) / (B));
+        app_timer_start(m_data_reading_timer, data_timer_delay, NULL);
     }
-
-    //Once the settings have been applied, restart the data collection timer
-    app_timer_start(m_data_reading_timer, NEXT_MEASUREMENT_DELAY, NULL); //TODO: base timeout clicks on the new connection interval
-
+    
     current_operating_mode = SENSOR_ACTIVE_MODE; //set the current operating mode to idle
 }
 

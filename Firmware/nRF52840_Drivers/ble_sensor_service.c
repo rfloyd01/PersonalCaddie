@@ -56,7 +56,6 @@ static void on_write(ble_sensor_service_t * p_ss, ble_evt_t const * p_ble_evt)
     ble_gatts_evt_write_t const * p_evt_write = &p_ble_evt->evt.gatts_evt.params.write;
 
     if (   (p_evt_write->handle == p_ss->settings_handles.value_handle)
-        && (p_evt_write->len == 3 || p_evt_write->len == 20)
         && (p_ss->setting_write_handler != NULL))
     {
         p_ss->setting_write_handler(p_ble_evt->evt.gap_evt.conn_handle, p_ss, p_evt_write->data);
