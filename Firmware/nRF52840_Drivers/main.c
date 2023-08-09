@@ -79,16 +79,19 @@
 #include "nrf_ble_qwr.h"
 #include "nrf_pwr_mgmt.h"
 #include "nrf_drv_twi.h"
+#include "nrf_drv_timer.h"
 
 #include "nrf_log.h"
 #include "nrf_log_ctrl.h"
 #include "nrf_log_default_backends.h"
+#include "SEGGER_RTT.h"
 
 #include "lsm9ds1_reg.h"
-#include "our_service.h"
+#include "ble_sensor_service.h"
+#include "personal_caddie_operating_modes.h"
 
 //Bluetooth Parameters
-#define DEVICE_NAME                     "Personal_Caddie"                       /**< Name of device. Will be included in the advertising data. */
+#define DEVICE_NAME                     "Personal Caddie"                       /**< Name of device. Will be included in the advertising data. */
 #define MANUFACTURER_NAME               "FloydInc."                             /**< Manufacturer. Will be passed to Device Information Service. */
 #define APP_ADV_INTERVAL                2400                                    /**< The advertising interval (in units of 0.625 ms. This value corresponds to 1.5s). */
 
@@ -96,12 +99,19 @@
 #define APP_BLE_OBSERVER_PRIO           3                                       /**< Application's BLE observer priority. You shouldn't need to modify this value. */
 #define APP_BLE_CONN_CFG_TAG            1                                       /**< A tag identifying the SoftDevice BLE configuration. */
 
-#define MIN_CONN_INTERVAL               MSEC_TO_UNITS(100, UNIT_1_25_MS)        /**< Minimum acceptable connection interval (0.1 seconds). */
-#define MAX_CONN_INTERVAL               MSEC_TO_UNITS(200, UNIT_1_25_MS)        /**< Maximum acceptable connection interval (0.2 second). */
-#define SLAVE_LATENCY                   0                                       /**< Slave latency. */
-#define CONN_SUP_TIMEOUT                MSEC_TO_UNITS(4000, UNIT_10_MS)         /**< Connection supervisory timeout (4 seconds). */
+static uint16_t current_connection_interval = 0;                                /**< Keeps track of the connection interval length (in milliseconds) */
+static uint16_t sici = 1980;                                                    /**< The desired connection interval in sensor idle mode (in milliseconds) */
+static uint16_t saci = 150;                                                     /**< The desired connection interval in sensor active mode (in milliseconds) */
 
-#define FIRST_CONN_PARAMS_UPDATE_DELAY  APP_TIMER_TICKS(5000)                   /**< Time from initiating event (connect or start of notification) to first time sd_ble_gap_conn_param_update is called (5 seconds). */
+#define SENSOR_IDLE_MIN_CONN_INTERVAL   MSEC_TO_UNITS(sici - 15, UNIT_1_25_MS)  /**< Minimum acceptable connection interval in sensor idle mode (1.95 seconds). */
+#define SENSOR_IDLE_MAX_CONN_INTERVAL   MSEC_TO_UNITS(sici + 15, UNIT_1_25_MS)  /**< Maximum acceptable connection interval in sensor idle mode (2.05 seconds). */
+#define SENSOR_IDLE_CONN_SUP_TIMEOUT    MSEC_TO_UNITS(6000, UNIT_10_MS)        /**< Connection supervisory timeout (4 seconds). */
+#define SENSOR_ACTIVE_MIN_CONN_INTERVAL MSEC_TO_UNITS(saci - 15, UNIT_1_25_MS)  /**< Minimum acceptable connection interval in sensor active mode (0.125 seconds). */
+#define SENSOR_ACTIVE_MAX_CONN_INTERVAL MSEC_TO_UNITS(saci + 15, UNIT_1_25_MS)  /**< Maximum acceptable connection interval in sensor active mode (0.25 seconds). */
+#define SENSOR_ACTIVE_CONN_SUP_TIMEOUT  MSEC_TO_UNITS(4000, UNIT_10_MS)         /**< Connection supervisory timeout (4 seconds). */
+#define SLAVE_LATENCY                   0                                       /**< Slave latency. */
+
+#define FIRST_CONN_PARAMS_UPDATE_DELAY  APP_TIMER_TICKS(1000)                   /**< Time from initiating event (connect or start of notification) to first time sd_ble_gap_conn_param_update is called (5 seconds). */
 #define NEXT_CONN_PARAMS_UPDATE_DELAY   APP_TIMER_TICKS(30000)                  /**< Time between each call to sd_ble_gap_conn_param_update after the first call (30 seconds). */
 #define MAX_CONN_PARAMS_UPDATE_COUNT    3                                       /**< Number of attempts before giving up the connection parameter negotiation. */
 
@@ -119,17 +129,20 @@
 NRF_BLE_GATT_DEF(m_gatt);                                                       /**< GATT module instance. */
 NRF_BLE_QWR_DEF(m_qwr);                                                         /**< Context for the Queued Write module.*/
 BLE_ADVERTISING_DEF(m_advertising);                                             /**< Advertising module instance. */
+BLE_SENSOR_SERVICE_DEF(m_ss);                                                   /**< Sensor Service instance. */
 
 static uint16_t m_conn_handle = BLE_CONN_HANDLE_INVALID;                        /**< Handle of the current connection. */
 
-static ble_os_t m_our_service;                                                  /**< Represents handle to custom service. */
+//BLE Advertising Data
+static ble_uuid_t m_adv_uuids[] =                                               /**< Universally unique service identifiers. */
+{
+    {BLE_UUID_DEVICE_INFORMATION_SERVICE, BLE_UUID_TYPE_BLE}
+};
 
-static uint8_t m_data_service_uuid;
-static uint16_t m_data_service_handle;                                          /**<handle for data service. */
-#define DATA_UUID_SERVICE     0x1526 //uuid for data service
-#define DATA_UUID_CHAR        0x1527 //uuid for data characteristic
-#define DATA_SERVICE_UUID_BASE        {0x23, 0xD1, 0xBC, 0xEA, 0x5F, 0x78, 0x23, 0x15, \
-                                       0xDE, 0xEF, 0x12, 0x69, 0x00, 0x00, 0x00, 0x00}
+static ble_uuid_t m_sr_uuids[] =                                               /**< Universally unique service identifiers. */
+{
+    {SENSOR_SERVICE_UUID, BLE_UUID_TYPE_VENDOR_BEGIN}
+};
 
 //TWI Parameters
 #if TWI0_ENABLED
@@ -145,25 +158,29 @@ static volatile bool m_xfer_done = false; //Indicates if operation on TWI has en
 static stmdev_ctx_t lsm9ds1_imu;                                                /**< LSM9DS1 accelerometer/gyroscope instance. */
 static stmdev_ctx_t lsm9ds1_mag;                                                /**< LSM9DS1 magnetometer instance. */
 
-static int16_t data_raw_accelerometer[3];
-static int16_t data_raw_gyroscope[3];
-static int16_t data_raw_magnetometer[3];
-static float acceleration_g[3];
-static float angular_rate_dps[3];
-static float magnetic_field_gauss[3];
+APP_TIMER_DEF(m_data_reading_timer);                                            /**< A timer used for collecting data from the LSM9DS1 (interrupts are disabled so a timer is needed). */
+APP_TIMER_DEF(m_led_timer);                                                     /**< A timer used for LED timing */
+#define NEXT_MEASUREMENT_DELAY          APP_TIMER_TICKS(1500)                   /**< Defines the delay between Sensor Measurments (1500 milliseconds). */
+#define LED_DELAY                       APP_TIMER_TICKS(2000)                   /**< Defines the delay between LED blinks */
+const nrf_drv_timer_t LED_ON_TIMER =    NRF_DRV_TIMER_INSTANCE(1);              /**< Timer to keep track of how long LEDs are turned on during a blink */
+
+static uint8_t acc_characteristic_data[SENSOR_SAMPLES * SAMPLE_SIZE];
+static uint8_t gyr_characteristic_data[SENSOR_SAMPLES * SAMPLE_SIZE];
+static uint8_t mag_characteristic_data[SENSOR_SAMPLES * SAMPLE_SIZE];
+static uint8_t sensor_settings[20];                                            /**< An array represnting the IMU sensor settings */
 static lsm9ds1_id_t whoamI;
-static lsm9ds1_status_t reg;
-static uint8_t rst;
-static uint8_t tx_buffer[1000];
 static bool lsm9ds1_register_auto_increment = true;                            /**register auto increment function for multiple byte reads of LSM9DS1 chip **/
+static int measurements_taken = 0;
 
 static int32_t write_imu(void *handle, uint8_t reg, const uint8_t *bufp, uint16_t len);
 static int32_t read_imu(void *handle, uint8_t reg, uint8_t *bufp, uint16_t len);
 static int32_t write_mag(void *handle, uint8_t reg, const uint8_t *bufp, uint16_t len);
 static int32_t read_mag(void *handle, uint8_t reg, uint8_t *bufp, uint16_t len);
 static void tx_com( uint8_t *tx_buffer, uint16_t len );
-static int32_t get_IMU_data();
-static int32_t get_MAG_data();
+static int32_t get_IMU_data(uint8_t offset);
+static int32_t get_MAG_data(uint8_t offset);
+
+static personal_caddie_operating_mode_t current_operating_mode = ADVERTISING_MODE; /**< The chip starts in advertising mode*/
 
 //Pin Setup
 #define SENSOR_POWER_PIN        NRF_GPIO_PIN_MAP(1, 11)                         /**< Pin used to power external sensors (mapped to D2 on BLE 33)*/
@@ -175,21 +192,11 @@ static int32_t get_MAG_data();
 #define BLE_33_PULLUP           NRF_GPIO_PIN_MAP(1, 0)                          /**< Pullup resistors on BLE 33 sense have separate power source*/
 #define BLE_33_GREEN_LED        NRF_GPIO_PIN_MAP(1, 9)                          /**< Green LED Indicator on BLE 33 sense*/
 #define BLE_33_RED_LED          NRF_GPIO_PIN_MAP(0, 24)                         /**< Red LED Indicator on BLE 33 sense*/
-
-// YOUR_JOB: Use UUIDs for service(s) used in your application.
-static ble_uuid_t m_adv_uuids[] =                                               /**< Universally unique service identifiers. */
-{
-    {BLE_UUID_DEVICE_INFORMATION_SERVICE, BLE_UUID_TYPE_BLE}
-};
-
-static ble_uuid_t m_sr_uuids[] =                                               /**< Universally unique service identifiers. */
-{
-    {BLE_UUID_OUR_SERVICE, BLE_UUID_TYPE_VENDOR_BEGIN}
-};
-
+#define BLE_33_BLUE_LED         NRF_GPIO_PIN_MAP(0, 6)                          /**< Blue LED Indicator on BLE 33 sense*/
+#define BLE_33_DARK_GREEN_LED   NRF_GPIO_PIN_MAP(0, 16)                         /**< Dark LED Indicator on BLE 33 sense*/
+static volatile uint8_t active_led = BLE_33_BLUE_LED;                           /**< Variable used to keep track of which LED to turn on/off*/
 
 static void advertising_start(bool erase_bonds);
-
 
 /**@brief Callback function for asserts in the SoftDevice.
  *
@@ -242,38 +249,261 @@ static void lsm9ds1_init(void)
     lsm9ds1_mag.read_reg = read_mag;
     lsm9ds1_mag.write_reg = write_mag;
 
-    //before trying to reach the LSM9DS1 via TWI we need to actually power it on.
-    //The BLE33 sense board has multiple sensor tied to the same power pin so high drive 
-    //mode needs to be enabled to ensure enough current gets to the LSM9DS1
-
-    //uncomment to use external sensors
-    //nrf_gpio_cfg_output(SENSOR_POWER_PIN);
-    //nrf_gpio_pin_set(SENSOR_POWER_PIN);
-
+    //configure the power pin and pullup resistor pins for the LSM9DS1
     nrf_gpio_cfg_output(BLE_33_PULLUP); //send power to BLE 33 Sense pullup resistors (they aren't connected to VDD)
-    nrf_gpio_pin_set(BLE_33_PULLUP);    //send power to BLE 33 Sense pullup resistors (they aren't connected to VDD)
     nrf_gpio_cfg(BLE_33_SENSOR_POWER_PIN, NRF_GPIO_PIN_DIR_OUTPUT, NRF_GPIO_PIN_INPUT_CONNECT, NRF_GPIO_PIN_NOPULL, NRF_GPIO_PIN_S0H1, NRF_GPIO_PIN_NOSENSE);
+    
+    //the main initialization is complete, but first attempt to communicate 
+    //with the sensor just to ensure that it's there and working properly.
+    nrf_gpio_pin_set(BLE_33_PULLUP);    //send power to BLE 33 Sense pullup resistors (they aren't connected to VDD)
     nrf_gpio_pin_set(BLE_33_SENSOR_POWER_PIN);
     nrf_delay_ms(50); //slight delay so the chip has time to power on
 
-    //confirm that the sensor is powered on, read the whoami register and then turn
-    //on one of the board leds after a successful read
+    //attempt to read the WHOAMI register
     uint32_t ret = lsm9ds1_dev_id_get(&lsm9ds1_mag, &lsm9ds1_imu, &whoamI);
-    if (whoamI.imu == LSM9DS1_IMU_ID)
-    {
-        nrf_gpio_cfg_output(BLE_33_RED_LED); //Pin needs to be set low to turn led on
-    }
+    if (whoamI.imu == LSM9DS1_IMU_ID) SEGGER_RTT_WriteString(0, "LSM9DS1 discovered.\n");
+    else SEGGER_RTT_WriteString(0, "Error: Couldn't find LSM9DS1.\n");
 
-    //set the odr
-    ret = lsm9ds1_imu_data_rate_set(&lsm9ds1_imu, LSM9DS1_IMU_119Hz);
-    ret = lsm9ds1_mag_data_rate_set(&lsm9ds1_mag, LSM9DS1_MAG_MP_80Hz);
+    //regardless of whether or not the LSM9DS1 is found, disable the power pins and TWI bus
+    nrf_gpio_pin_clear(BLE_33_PULLUP);
+    nrf_gpio_pin_clear(BLE_33_SENSOR_POWER_PIN);
+    nrf_drv_twi_disable(&m_twi);
 
-    //set the full scale ranges
-    ret = lsm9ds1_gy_full_scale_set(&lsm9ds1_imu, LSM9DS1_2000dps); // +/-2000 deg/s
-    ret = lsm9ds1_xl_full_scale_set(&lsm9ds1_imu, LSM9DS1_4g);      // +/- 4 g
-    ret = lsm9ds1_mag_full_scale_set(&lsm9ds1_mag, LSM9DS1_4Ga);    // +/- 4 gauss
+    //after shutting the TWI bus and sensor pins down, we populate the sensor settings array
+    //with default values that we want the sensor to have
+    sensor_settings[1] = LSM9DS1_4g;      //accelerometer full scale range (+/- 4 g)
+    sensor_settings[2] = LSM9DS1_2000dps; //gyroscope full scale range (+/- 2000 degrees/s)
+    sensor_settings[3] = LSM9DS1_4Ga;     //magnetometer full scale range (+/- 4 Gauss)
+
+    sensor_settings[4] = LSM9DS1_IMU_59Hz5; //accelerometer/gyroscope ODR and Power (59.5 Hz, gyroscope in standard power mode)
+    sensor_settings[5] = LSM9DS1_MAG_LP_40Hz; //magnetomer ODR and Power (40 Hz, magnetometer in low power mode)
+
+    sensor_settings[6] = LSM9DS1_LPF1_OUT; //Gyroscope filter selection (low pass filter 1 only)
+    sensor_settings[7] = 0; //gyroscope low pass filter setting (only takes effect when LPF2 is set in gyro filter path)
+    sensor_settings[8] = 0; //gyroscope high pass filter setting (only takes effect when HPF is set in gyro filter path)
+    sensor_settings[9] = LSM9DS1_LP_OUT; //accelerometer filter selection (low pass filter only)
+    sensor_settings[10] = LSM9DS1_LP_DISABLE; //accelerometer low pass filter setting (frequency is automatically tied to ODR)
+    sensor_settings[11] = 0; //accelerometer high pass filter setting (only takes effect when HP_OUT is set for accelerometer)
+    sensor_settings[12] = LSM9DS1_AUTO; //accelerometer anti-aliasing bandwidth (automatically set based on current ODR)
+
+    //The rest of the settings are blank for now
+    for (int i = 13; i < 20; i++) sensor_settings[i] = 0;
 }
 
+static void lsm9ds1_idle_mode_enable()
+{
+    //set the power to sleep for both acc/gyr and mag sensors
+    int32_t ret = 0;
+    ret = lsm9ds1_imu_data_rate_set(&lsm9ds1_imu, LSM9DS1_IMU_OFF);
+    ret = lsm9ds1_mag_data_rate_set(&lsm9ds1_mag, LSM9DS1_MAG_POWER_DOWN);
+
+    ////set the full scale ranges
+    //ret = lsm9ds1_gy_full_scale_set(&lsm9ds1_imu, LSM9DS1_2000dps); // +/-2000 deg/s
+    //ret = lsm9ds1_xl_full_scale_set(&lsm9ds1_imu, LSM9DS1_4g);      // +/- 4 g
+    //ret = lsm9ds1_mag_full_scale_set(&lsm9ds1_mag, LSM9DS1_4Ga);    // +/- 4 gauss
+}
+
+static void lsm9ds1_active_mode_enable()
+{
+    //looks at the settings in the sensor_settings array and uses the TWI bus to apply them to the LSM9DS1.
+    //This function will only work if the sensor has been placed in sensor_active mode
+    if (current_operating_mode == SENSOR_ACTIVE_MODE)
+    {
+        int32_t ret = 0;
+
+        //set the full scale ranges
+        ret = lsm9ds1_xl_full_scale_set(&lsm9ds1_imu, sensor_settings[1]);
+        ret = lsm9ds1_gy_full_scale_set(&lsm9ds1_imu, sensor_settings[2]);
+        ret = lsm9ds1_mag_full_scale_set(&lsm9ds1_mag, sensor_settings[3]);
+
+        //set the odr and power modes
+        ret = lsm9ds1_imu_data_rate_set(&lsm9ds1_imu, sensor_settings[4]);
+        ret = lsm9ds1_mag_data_rate_set(&lsm9ds1_mag, sensor_settings[5]);
+
+        //set the filter settings
+        ret = lsm9ds1_gy_filter_out_path_set(&lsm9ds1_imu, sensor_settings[6]);
+        ret = lsm9ds1_gy_filter_lp_bandwidth_set(&lsm9ds1_imu, sensor_settings[7]);
+        ret = lsm9ds1_gy_filter_hp_bandwidth_set(&lsm9ds1_imu, sensor_settings[8]);
+        ret = lsm9ds1_xl_filter_out_path_set(&lsm9ds1_imu, sensor_settings[9]);
+        ret = lsm9ds1_xl_filter_lp_bandwidth_set(&lsm9ds1_imu, sensor_settings[10]);
+        ret = lsm9ds1_xl_filter_hp_bandwidth_set(&lsm9ds1_imu, sensor_settings[11]);
+        ret = lsm9ds1_xl_filter_aalias_bandwidth_set(&lsm9ds1_imu, sensor_settings[12]);
+    }
+}
+
+static float lsm9ds1_odr_calculate()
+{
+    //We need to know the ODR for the LSM9DS1 in order to calculate an optimal connection interval
+    //for transferring data to the central. Normally the ODR is dictated by the gyroscope, however,
+    //when the gyroscope is turned off then it's dictated by the accelerometer. If both the 
+    //accelerometer and gyroscope are off then the ODR will be dictated by the magnetometer.
+
+    float lsm9ds1_odr = 0.0;
+    if (sensor_settings[4] == LSM9DS1_IMU_OFF)
+    {
+        //both the gyroscope and accelerometer are off so the ODR will be determined from the 
+        //magnetometer.
+        if (sensor_settings[5] != LSM9DS1_MAG_POWER_DOWN)
+        {
+            uint8_t mag_odr_setting = (sensor_settings[5] & 0x0F);
+            switch (mag_odr_setting)
+            {
+                case 0x00:
+                    if (sensor_settings[5] != LSM9DS1_MAG_ONE_SHOT) lsm9ds1_odr = 0.625;
+                    break;
+                case 0x01:
+                    lsm9ds1_odr = 1.25;
+                    break;
+                case 0x02:
+                    lsm9ds1_odr = 2.5;
+                    break;
+                case 0x03:
+                    lsm9ds1_odr = 5;
+                    break;
+                case 0x04:
+                    lsm9ds1_odr = 10;
+                    break;
+                case 0x05:
+                    lsm9ds1_odr = 20;
+                    break;
+                case 0x06:
+                    lsm9ds1_odr = 40;
+                    break;
+                case 0x07:
+                    lsm9ds1_odr = 80;
+                    break;
+                case 0x08:
+                    if (sensor_settings[5] == LSM9DS1_MAG_UHP_155Hz) lsm9ds1_odr = 155;
+                    else if (sensor_settings[5] == LSM9DS1_MAG_HP_300Hz) lsm9ds1_odr = 300;
+                    else if (sensor_settings[5] == LSM9DS1_MAG_MP_560Hz) lsm9ds1_odr = 560;
+                    else lsm9ds1_odr = 1000;
+                    break;
+                default:
+                    lsm9ds1_odr = 0;
+                    break;
+            }
+        }
+    }
+    else
+    {
+        //either the gyroscope or accelerometer is on.
+        uint8_t imu_odr_setting = (sensor_settings[4] & 0x0F);
+        bool gyro_on = true;
+
+        if (imu_odr_setting == 0)
+        {
+            //the gyroscope is turned off so the ODR will be based on the accelerometer. This isn't 
+            //a huge deal as the accelerometer has the same ODR settings as the gyro other than the 
+            //lowest two settings
+            imu_odr_setting = ((sensor_settings[4] & 0xF0) >> 4);
+            gyro_on = false;
+        }
+        
+        switch (imu_odr_setting)
+        {
+            case 0x01:
+                if (gyro_on) lsm9ds1_odr = 14.9;
+                else lsm9ds1_odr = 10;
+                break;
+            case 0x02:
+                if (gyro_on) lsm9ds1_odr = 59.5;
+                else lsm9ds1_odr = 50;
+                break;
+            case 0x03:
+                lsm9ds1_odr = 119;
+                break;
+            case 0x04:
+                lsm9ds1_odr = 238;
+                break;
+            case 0x05:
+                lsm9ds1_odr = 476;
+                break;
+            case 0x06:
+                lsm9ds1_odr = 952;
+                break;
+            default:
+                lsm9ds1_odr = 0;
+                break;
+        }
+    }
+
+    return lsm9ds1_odr;
+}
+
+static void characteristic_update_and_notify()
+{
+    
+    ble_gatts_hvx_params_t acc_notify_params, gyr_notify_params, mag_notify_params;
+    memset(&acc_notify_params, 0, sizeof(acc_notify_params));
+    memset(&gyr_notify_params, 0, sizeof(gyr_notify_params));
+    memset(&mag_notify_params, 0, sizeof(mag_notify_params));
+
+    uint16_t data_characteristic_size = SENSOR_SAMPLES * SAMPLE_SIZE; //not really sure why the size needs to be passed in as a reference
+
+    //Setup accelerometer notification first
+    acc_notify_params.type = BLE_GATT_HVX_NOTIFICATION;
+    acc_notify_params.handle = m_ss.data_handles[0].value_handle;
+    acc_notify_params.p_data = acc_characteristic_data;
+    acc_notify_params.p_len  = &data_characteristic_size;
+    acc_notify_params.offset = 0;
+
+    //Setup gyroscope notification second
+    gyr_notify_params.type = BLE_GATT_HVX_NOTIFICATION;
+    gyr_notify_params.handle = m_ss.data_handles[1].value_handle;
+    gyr_notify_params.p_data = gyr_characteristic_data;
+    gyr_notify_params.p_len  = &data_characteristic_size;
+    gyr_notify_params.offset = 0;
+
+    //Setup magnetometer notification third
+    mag_notify_params.type = BLE_GATT_HVX_NOTIFICATION;
+    mag_notify_params.handle = m_ss.data_handles[2].value_handle;
+    mag_notify_params.p_data = mag_characteristic_data;
+    mag_notify_params.p_len  = &data_characteristic_size;
+    mag_notify_params.offset = 0;
+
+    sd_ble_gatts_hvx(m_conn_handle, &acc_notify_params);
+    sd_ble_gatts_hvx(m_conn_handle, &gyr_notify_params);
+    sd_ble_gatts_hvx(m_conn_handle, &mag_notify_params);
+}
+
+static void data_reading_timer_handler(void * p_context)
+{
+    //uint32_t time_stamp = nrf_drv_timer_capture(&my_timer, NRF_TIMER_CC_CHANNEL1);
+    //float clock_conversion = 1.0 / 16000000.0;
+    //float actual_time = time_stamp * clock_conversion;
+    //SEGGER_RTT_printf(0, "TWI initiated at %u ticks of 16MHz.\n", time_stamp);
+
+    //Everytime the data reading timer goes off we take sensor readings and then 
+    //update the appropriate characteristic values.
+    int measurements_taken = 0;
+    while (measurements_taken < SENSOR_SAMPLES)
+    {
+        get_IMU_data(SAMPLE_SIZE * measurements_taken);
+        get_MAG_data(SAMPLE_SIZE * measurements_taken);
+        measurements_taken++;
+    }
+
+    //after the samples are read, update the characteristics and notify
+    characteristic_update_and_notify();
+}
+
+static void led_timer_handler(void * p_context)
+{
+    //This timer causes the currently active LED to light up. A separate timer is used to 
+    //turn the LED back off after a set time period
+    nrf_gpio_pin_clear(active_led);
+    nrf_drv_timer_clear(&LED_ON_TIMER); //reset the LED-on timer
+    nrf_drv_timer_enable(&LED_ON_TIMER); //turn on the LED_on timer, the handler for this timer will turn the LED back off
+    //uint32_t timer_val = nrf_drv_timer_capture(&LED_ON_TIMER, NRF_TIMER_CC_CHANNEL1);
+}
+
+void led_on_timer_handler(nrf_timer_event_t event_type, void* p_context)
+{
+    //This handler gets called when an LED is turned to the active state. Simply turn the 
+    //LED back off when this handler is called and then turn the LED-on timer off.
+    nrf_gpio_pin_set(active_led);
+    nrf_drv_timer_disable(&LED_ON_TIMER);
+}
 
 /**@brief Function for the Timer initialization.
  *
@@ -285,15 +515,21 @@ static void timers_init(void)
     ret_code_t err_code = app_timer_init();
     APP_ERROR_CHECK(err_code);
 
-    // Create timers.
+    // Create a non-ble timer to help keep track of LED on time
+    nrf_drv_timer_config_t timer_cfg = NRF_DRV_TIMER_DEFAULT_CONFIG;
+    timer_cfg.frequency = NRF_TIMER_FREQ_16MHz;
+    timer_cfg.bit_width = NRF_TIMER_BIT_WIDTH_32;
 
-    /* YOUR_JOB: Create any timers to be used by the application.
-                 Below is an example of how to create a timer.
-                 For every new timer needed, increase the value of the macro APP_TIMER_MAX_TIMERS by
-                 one.
-       ret_code_t err_code;
-       err_code = app_timer_create(&m_app_timer_id, APP_TIMER_MODE_REPEATED, timer_timeout_handler);
-       APP_ERROR_CHECK(err_code); */
+    err_code = nrf_drv_timer_init(&LED_ON_TIMER, &timer_cfg, led_on_timer_handler);
+    APP_ERROR_CHECK(err_code);
+
+    //TODO: Lower the led on timer when done testing
+    uint32_t led_on_time = nrf_drv_timer_ms_to_ticks(&LED_ON_TIMER, 25); //the LEDs will only be on for 2 milliseconds while blinking
+    nrf_drv_timer_extended_compare(&LED_ON_TIMER, NRF_TIMER_CC_CHANNEL0, led_on_time, NRF_TIMER_SHORT_COMPARE0_CLEAR_MASK, true); //calls the led_on_timer_handler
+
+    // Create custom timers.
+    app_timer_create(&m_data_reading_timer, APP_TIMER_MODE_REPEATED, data_reading_timer_handler);
+    app_timer_create(&m_led_timer, APP_TIMER_MODE_REPEATED, led_timer_handler);
 }
 
 
@@ -321,10 +557,10 @@ static void gap_params_init(void)
 
     memset(&gap_conn_params, 0, sizeof(gap_conn_params));
 
-    gap_conn_params.min_conn_interval = MIN_CONN_INTERVAL;
-    gap_conn_params.max_conn_interval = MAX_CONN_INTERVAL;
+    gap_conn_params.min_conn_interval = SENSOR_IDLE_MIN_CONN_INTERVAL;
+    gap_conn_params.max_conn_interval = SENSOR_IDLE_MAX_CONN_INTERVAL;
     gap_conn_params.slave_latency     = SLAVE_LATENCY;
-    gap_conn_params.conn_sup_timeout  = CONN_SUP_TIMEOUT;
+    gap_conn_params.conn_sup_timeout  = SENSOR_IDLE_CONN_SUP_TIMEOUT;
 
     err_code = sd_ble_gap_ppcp_set(&gap_conn_params);
     APP_ERROR_CHECK(err_code);
@@ -352,39 +588,213 @@ static void nrf_qwr_error_handler(uint32_t nrf_error)
     APP_ERROR_HANDLER(nrf_error);
 }
 
+//Functions for updating sensor power modes and settings
+static void sensor_idle_mode_start()
+{ 
+    //In this mode, the TWI bus is active and power is going to the LSM9DS1 but the 
+    //sensor is put into sleep mode. A red LED blinking in time with the connection 
+    //interval shows when this mode is active.
+    if (current_operating_mode == SENSOR_IDLE_MODE) return; //no need to change anything if already in idle mode
 
-/**@brief Function for handling the YYY Service events.
- * YOUR_JOB implement a service handler function depending on the event the service you are using can generate
- *
- * @details This function will be called for all YY Service events which are passed to
- *          the application.
- *
- * @param[in]   p_yy_service   YY Service structure.
- * @param[in]   p_evt          Event received from the YY Service.
- *
- *
-static void on_yys_evt(ble_yy_service_t     * p_yy_service,
-                       ble_yy_service_evt_t * p_evt)
-{
-    switch (p_evt->evt_type)
+    active_led = BLE_33_RED_LED; //swap to the red LED
+    ret_code_t err_code;
+
+    if (current_operating_mode == SENSOR_ACTIVE_MODE)
     {
-        case BLE_YY_NAME_EVT_WRITE:
-            APPL_LOG("[APPL]: charact written with value %s. ", p_evt->params.char_xx.value.p_str);
-            break;
+        //If we're transitioning from active to idle mode we need to stop the data collection timer
+        //and then put the sensor into sleep mode. Once this is done we change the connection interval 
+        //back to 2 seconds as we won't be communicating with the central as often (for a short while).
+        err_code = app_timer_stop(m_data_reading_timer); //Even if the timer isn't actively on it's ok to call this method
+        lsm9ds1_idle_mode_enable();
 
+        //the connection interval should be less than 2 seconds, but still check to make sure
+        if (current_connection_interval < SENSOR_IDLE_MIN_CONN_INTERVAL)
+        {
+            ret_code_t err_code = BLE_ERROR_INVALID_CONN_HANDLE;
+            ble_gap_conn_params_t new_params;
+
+            new_params.min_conn_interval = SENSOR_IDLE_MIN_CONN_INTERVAL;
+            new_params.max_conn_interval = SENSOR_IDLE_MAX_CONN_INTERVAL;
+            new_params.slave_latency = SLAVE_LATENCY;
+            new_params.conn_sup_timeout = SENSOR_IDLE_CONN_SUP_TIMEOUT;
+
+            err_code = ble_conn_params_change_conn_params(m_conn_handle, &new_params);
+
+            if (err_code != NRF_SUCCESS)
+            {
+                SEGGER_RTT_WriteString(0, "Couldn't update connection interval.\n");
+            }
+        }
+
+        //the LED is deactivated during data collection so turn the LED back on
+        err_code = app_timer_start(m_led_timer, LED_DELAY, NULL); //Even if the timer is already on it's ok to call this method
+    }
+    else 
+    {
+        //If we aren't in sensor active or idle mode, it means that we arrived here from connection mode.
+        //This means that both the TWI bus and LSM9DS1 need to be turned on. No need to put the LSM9DS1 
+        //into sleep mode as this happens automatically upon power up.
+
+        // Leave the below two lines commented for future reference
+        //uint32_t enabled = m_twi.u.twim.p_twim->ENABLE;
+        //if (enabled == 0) nrf_drv_twi_enable(&m_twi);
+
+        //turn on the TWI bus
+        nrf_drv_twi_enable(&m_twi);
+
+        //Power the sensor and the pullup resistors to the SCL and SDA line
+        nrf_gpio_pin_set(BLE_33_SENSOR_POWER_PIN);
+        nrf_gpio_pin_set(BLE_33_PULLUP);
+    }
+
+    current_operating_mode = SENSOR_IDLE_MODE; //set the current operating mode to idle
+}
+
+static void sensor_active_mode_start()
+{
+    if (current_operating_mode != SENSOR_IDLE_MODE) return; //we can only go to active mode from idle mode
+
+    //All of the settings for the sensor should have been set already, we just need to activate them
+    //and then start the data collection timer. We also disable the LED to save on power
+    app_timer_stop(m_led_timer); //disable the led by turning of it's timer
+
+    //turn on the sensors by applying the current settings in the settings array
+    lsm9ds1_active_mode_enable();
+
+    //After turning on the sensor, request that the connection interval be changed
+    //to match the ODR of the sensor * the number of samples being collected.
+    float sensor_odr = lsm9ds1_odr_calculate();
+
+    if (sensor_odr != 0)
+    {
+        int minimum_interval_required = 1000.0 / sensor_odr * SENSOR_SAMPLES + 1; //this is in milliseconds, hence the 1000
+        minimum_interval_required += (15 - minimum_interval_required % 15); //round up to the nearest 15th millisecond
+
+        //Convert from milliseconds to 1.25 millisecond units by dividing by 1.25 (same multiplying by 4/5)
+        int mir_125 = minimum_interval_required / 5;
+        mir_125 *= 4;
+
+        //Now make the connection interval change request
+        ret_code_t err_code = BLE_ERROR_INVALID_CONN_HANDLE;
+        ble_gap_conn_params_t new_params;
+
+        new_params.min_conn_interval = mir_125;
+        new_params.max_conn_interval = mir_125 + 12; //must be 15 ms (or 12 in 1.25ms units) greater at a minimum
+        new_params.slave_latency = SLAVE_LATENCY;
+        new_params.conn_sup_timeout = SENSOR_ACTIVE_CONN_SUP_TIMEOUT;
+
+        err_code = ble_conn_params_change_conn_params(m_conn_handle, &new_params);
+
+        if (err_code != NRF_SUCCESS)
+        {
+            SEGGER_RTT_WriteString(0, "Couldn't update connection interval.\n");
+        }
+
+        //Once the settings have been applied, restart the data collection timer.
+        //The timer needs to be converted from ms to 'ticks' which match the frequency of 
+        //the app timer. Normally this is done with a Macro but that can't be accessed here 
+        //so the macro code is copied here
+        uint64_t A = minimum_interval_required * (uint64_t)APP_TIMER_CLOCK_FREQ;
+        uint64_t B = 1000 * (APP_TIMER_CONFIG_RTC_FREQUENCY + 1);
+        uint32_t data_timer_delay = (((A) + ((B) / 2)) / (B));
+        app_timer_start(m_data_reading_timer, data_timer_delay, NULL);
+    }
+    
+    current_operating_mode = SENSOR_ACTIVE_MODE; //set the current operating mode to idle
+}
+
+static void connected_mode_start()
+{
+    //We'll other be put into this mode from advertising mode (in which case all we need to do is 
+    //change the color of the blinking LED, or from sensor_idle mode, in which case we need to 
+    //disable the power going to the sensor and the TWI bus.
+    if (current_operating_mode == SENSOR_IDLE_MODE)
+    {
+        //The chip is currently in sensor idle mode so we need to power off the sensor and disable the TWI bus
+        //Disable power to the sensor and the pullup resistors to the SCL and SDA line
+        nrf_gpio_pin_clear(BLE_33_SENSOR_POWER_PIN);
+        nrf_gpio_pin_clear(BLE_33_PULLUP);
+
+        //Turn off the TWI bus
+        nrf_drv_twi_disable(&m_twi);
+    }
+
+    //change the color of the blinking LED
+    active_led = BLE_33_DARK_GREEN_LED; //swap to the red LED
+    current_operating_mode = CONNECTED_MODE; //set the current operating mode to idle
+}
+
+static void advertising_mode_start()
+{
+    //There are two ways to get into advertising mode, either by turning the device on,
+    //or by losing a connection to a central device (whether this is intentional or 
+    //accidental). In the latter case, we need to disable any sensors or peripherals
+    //to save on power.
+
+    switch (current_operating_mode)
+    {
+        case ADVERTISING_MODE:
+            return; //no changes need to be made so leave the method
+        case SENSOR_ACTIVE_MODE:
+            sensor_idle_mode_start();
+            //break statement purposely omitted here
+        case SENSOR_IDLE_MODE:
+            connected_mode_start();
+            //break statement purposely omitted here
         default:
-            // No implementation needed.
+            active_led = BLE_33_BLUE_LED;
             break;
     }
+
+    current_operating_mode = ADVERTISING_MODE; //set the current operating mode to idle
+    
+    //finally, we need to terminate the existing connection
+    //TODO: Implement this feature
 }
-*/
+
+/**@brief Function for handling write events to the Sensor Settings Characteristic.
+ *
+ * @param[in] p_lbs     Instance of Sensor Settings Service to which the write applies.
+ * @param[in] led_state Written/desired state for the sensor settings.
+ */
+static void LSM9DS1_settings_write_handler(uint16_t conn_handle, ble_sensor_service_t * p_ss, const uint8_t* settings_state)
+{
+    //Different things can happen depending on what gets written to the settings characteristic
+    switch (*settings_state)
+    {
+        case 0:
+            advertising_mode_start();
+            break;
+        case 1:
+            connected_mode_start();
+            break;
+        case 2:
+            sensor_idle_mode_start();
+            break;
+        case 3:
+            sensor_idle_mode_start();
+            for (int i = 1; i < 20; i++) sensor_settings[i] = *(settings_state + i);
+            break;
+        case 4:
+            sensor_idle_mode_start();
+            sensor_settings[*(settings_state + 1)] = *(settings_state + 2);
+            break;
+        case 5:
+            sensor_active_mode_start();
+            break;
+    }
+
+    //SEGGER_RTT_printf(0, "Byte %u = 0x%x\n", i, *(settings_state + i));
+    
+}
 
 /**@brief Function for initializing services that will be used by the application.
  */
 static void services_init(void)
 {
-    ret_code_t         err_code;
-    nrf_ble_qwr_init_t qwr_init = {0};
+    ret_code_t                err_code;
+    nrf_ble_qwr_init_t        qwr_init = {0};
+    ble_sensor_service_init_t init  = {0};
 
     // Initialize Queued Write Module.
     qwr_init.error_handler = nrf_qwr_error_handler;
@@ -392,8 +802,10 @@ static void services_init(void)
     err_code = nrf_ble_qwr_init(&m_qwr, &qwr_init);
     APP_ERROR_CHECK(err_code);
 
-    // Initialize custom services
-    our_service_init(&m_our_service);
+    // Initialize sensor service
+    init.setting_write_handler = LSM9DS1_settings_write_handler;
+
+    err_code = ble_sensor_service_init(&m_ss, &init);
     APP_ERROR_CHECK(err_code);
 }
 
@@ -457,11 +869,9 @@ static void conn_params_init(void)
  */
 static void application_timers_start(void)
 {
-    /* YOUR_JOB: Start your timers. below is an example of how to start a timer.
-       ret_code_t err_code;
-       err_code = app_timer_start(m_app_timer_id, TIMER_INTERVAL, NULL);
-       APP_ERROR_CHECK(err_code); */
-
+    //a timer that let's us know when to read the next data sample from the Sensor
+    //app_timer_start(m_data_reading_timer, NEXT_MEASUREMENT_DELAY, NULL);
+    app_timer_start(m_led_timer, LED_DELAY, NULL); //blinks the green led along with the advertising interval
 }
 
 
@@ -500,8 +910,8 @@ static void on_adv_evt(ble_adv_evt_t ble_adv_evt)
     {
         case BLE_ADV_EVT_FAST:
             NRF_LOG_INFO("Fast advertising.");
-            err_code = bsp_indication_set(BSP_INDICATE_ADVERTISING);
-            APP_ERROR_CHECK(err_code);
+            //err_code = bsp_indication_set(BSP_INDICATE_ADVERTISING); //turn off LED indication for now
+            //APP_ERROR_CHECK(err_code);
             break;
 
         case BLE_ADV_EVT_IDLE:
@@ -526,17 +936,19 @@ static void ble_evt_handler(ble_evt_t const * p_ble_evt, void * p_context)
     switch (p_ble_evt->header.evt_id)
     {
         case BLE_GAP_EVT_DISCONNECTED:
-            NRF_LOG_INFO("Disconnected.");
-            // LED indication will be changed when advertising starts.
+            //NRF_LOG_INFO("Disconnected.");
+            SEGGER_RTT_WriteString(0, "Disconnected from the Personal Caddie\n");
+            advertising_mode_start();
             break;
 
         case BLE_GAP_EVT_CONNECTED:
-            NRF_LOG_INFO("Connected.");
-            err_code = bsp_indication_set(BSP_INDICATE_CONNECTED);
-            APP_ERROR_CHECK(err_code);
+            //NRF_LOG_INFO("Connected.");
             m_conn_handle = p_ble_evt->evt.gap_evt.conn_handle;
             err_code = nrf_ble_qwr_conn_handle_assign(&m_qwr, m_conn_handle);
             APP_ERROR_CHECK(err_code);
+            connected_mode_start();
+            current_connection_interval = p_ble_evt->evt.gap_evt.params.connected.conn_params.max_conn_interval;
+            SEGGER_RTT_WriteString(0, "Connected to the Personal Caddie.\n");
             break;
 
         case BLE_GAP_EVT_PHY_UPDATE_REQUEST:
@@ -550,6 +962,11 @@ static void ble_evt_handler(ble_evt_t const * p_ble_evt, void * p_context)
             err_code = sd_ble_gap_phy_update(p_ble_evt->evt.gap_evt.conn_handle, &phys);
             APP_ERROR_CHECK(err_code);
         } break;
+
+        case BLE_GAP_EVT_CONN_PARAM_UPDATE:
+            current_connection_interval = p_ble_evt->evt.gap_evt.params.conn_param_update.conn_params.min_conn_interval * 5 / 4;
+            SEGGER_RTT_printf(0, "Connection Interval updated to : %u milliseconds.\n", current_connection_interval);
+            break;
 
         case BLE_GATTC_EVT_TIMEOUT:
             // Disconnect on GATT Client timeout event.
@@ -697,13 +1114,14 @@ static void advertising_init(void)
     memset(&init, 0, sizeof(init));
 
     init.advdata.name_type               = BLE_ADVDATA_FULL_NAME;
-    //init.advdata.include_appearance      = true;
+    init.advdata.include_appearance      = true;
     init.advdata.flags                   = BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE;
 
-    //original code when there was only one service
+    //Services included in advertising data
     init.advdata.uuids_complete.uuid_cnt = sizeof(m_adv_uuids) / sizeof(m_adv_uuids[0]);
     init.advdata.uuids_complete.p_uuids  = m_adv_uuids;
 
+    //Services included in scan response data
     init.srdata.uuids_complete.uuid_cnt = sizeof(m_sr_uuids) / sizeof(m_sr_uuids[0]);
     init.srdata.uuids_complete.p_uuids = m_sr_uuids;
 
@@ -792,10 +1210,8 @@ static void advertising_start(bool erase_bonds)
 
 void twi_handler(nrf_drv_twi_evt_t const * p_event, void * p_context)
 {
-    //I'm not positive on this yet but it seems like any error codes on TWI line are sent to this handler
-    //when an error occurs somewhere incode, err_code is always coming back as NRF_SUCCESS even though this handler is
-    //receiving an Address NACK. Need a good way to handle these situations
-
+    //A handler that gets called when events happen on the TWI bus. I'm currently not really using this 
+    //method for anything as my sensor reading functions work on a timer. I should keep this function though.
     switch (p_event->type)
     {
         case NRF_DRV_TWI_EVT_DONE:
@@ -807,31 +1223,23 @@ void twi_handler(nrf_drv_twi_evt_t const * p_event, void * p_context)
             }
             break;
         case NRF_DRV_TWI_EVT_ADDRESS_NACK:
-            NRF_LOG_INFO("Address NACK received while trying to reach slave address 0x%x.\n", p_event->xfer_desc.address);
+            //NRF_LOG_INFO("Address NACK received while trying to reach slave address 0x%x.\n", p_event->xfer_desc.address);
             break;
         case NRF_DRV_TWI_EVT_DATA_NACK:
-            NRF_LOG_INFO("Data NACK received while trying to reach slave address 0x%x.\n", p_event->xfer_desc.address);
+            //NRF_LOG_INFO("Data NACK received while trying to reach slave address 0x%x.\n", p_event->xfer_desc.address);
             break;
         default:
-            NRF_LOG_INFO("Something other than Event Done was achieved.");
+            //NRF_LOG_INFO("Something other than Event Done was achieved.");
             break;
     }
-    //NRF_LOG_FLUSH();
+
     NRF_LOG_PROCESS();
-    m_xfer_done = true;
+    m_xfer_done = true; //this must be set to true before another TWI transaction can occur
 }
 
 void  twi_init (void)
 {
     ret_code_t err_code;
-
-    //const nrf_drv_twi_config_t twi_lsm9ds1_config = {
-    //   .scl                = SCL_PIN,
-    //   .sda                = SDA_PIN,
-    //   .frequency          = NRF_DRV_TWI_FREQ_400K,
-    //   .interrupt_priority = APP_IRQ_PRIORITY_HIGH,
-    //   .clear_bus_init     = false
-    //};
 
     const nrf_drv_twi_config_t twi_lsm9ds1_config = {
        .scl                = BLE_33_SCL_PIN,
@@ -846,7 +1254,21 @@ void  twi_init (void)
     err_code = nrf_drv_twi_init(&m_twi, &twi_lsm9ds1_config, twi_handler, NULL);
     APP_ERROR_CHECK(err_code);
 
-    nrf_drv_twi_enable(&m_twi);
+    nrf_drv_twi_enable(&m_twi); //the bus will be automatically disabled after first communication with sensor
+}
+
+static void leds_init()
+{
+    //configure the pins for the BLE 33 Sense on-board red, green and blue tri-colored LED.
+    nrf_gpio_cfg_output(BLE_33_RED_LED);
+    nrf_gpio_cfg_output(BLE_33_BLUE_LED);
+    nrf_gpio_cfg_output(BLE_33_DARK_GREEN_LED);
+
+    //these LEDs are situated backwards from what you would expect so the pin needs to be 
+    //pulled high for the LEDs to turn off
+    nrf_gpio_pin_set(BLE_33_RED_LED);
+    nrf_gpio_pin_set(BLE_33_BLUE_LED);
+    nrf_gpio_pin_set(BLE_33_DARK_GREEN_LED);
 }
 
 /**@brief Function for application main entry.
@@ -858,7 +1280,6 @@ int main(void)
     // Initialize.
     log_init();
     timers_init();
-    buttons_leds_init(&erase_bonds);
     power_management_init();
     ble_stack_init();
     gap_params_init();
@@ -868,17 +1289,13 @@ int main(void)
     conn_params_init();
     peer_manager_init();
     twi_init();
-
-    //Once all nRF and BLE initializations are complete, turn on the on-board LED to show
-    //that the BLE 33 sense is recieving power
-    nrf_gpio_cfg_output(BLE_33_GREEN_LED);
-    nrf_gpio_pin_set(BLE_33_GREEN_LED);
-
     lsm9ds1_init();
+    leds_init();
+  
     NRF_LOG_FLUSH(); //flush out all logs called during initialization
 
     // Start execution.
-    NRF_LOG_INFO("Template example started.");
+    NRF_LOG_INFO("Personal Caddie Initialized");
     NRF_LOG_PROCESS();
     application_timers_start();
 
@@ -887,9 +1304,7 @@ int main(void)
     // Enter main loop.
     for (;;)
     {
-        idle_state_handle(); //might need to comment this out, I think CPU goes to sleep here and is only woken up from an event trigger
-        get_IMU_data();
-        get_MAG_data();
+        idle_state_handle(); //puts CPU into sleep and waits for an even signal to wake it up
     }
 }
 
@@ -1015,29 +1430,20 @@ static void tx_com( uint8_t *tx_buffer, uint16_t len )
     int x = 5;
 }
 
-static int32_t get_IMU_data()
+static int32_t get_IMU_data(uint8_t offset)
 {
     //Reads the raw accelerometer and magnetometer data and stores it in their respective arrays
     int ret = 0; 
 
     if (lsm9ds1_register_auto_increment)
     {
-        ret = lsm9ds1_angular_rate_raw_get(&lsm9ds1_imu, data_raw_gyroscope);
+        ret = lsm9ds1_read_reg(&lsm9ds1_imu, LSM9DS1_OUT_X_L_G, gyr_characteristic_data + offset, 6);
 
         if (ret == 0)
         {
-            ret = lsm9ds1_acceleration_raw_get(&lsm9ds1_imu, data_raw_accelerometer);
-
-            if (ret == 0)
-            {
-                //this is temporary to make sure things are working as intended, convert the raw data to actual data.
-                //actual raw data conversion will happen on the application side
-                for (int i = 0; i < 3; i++)
-                {
-                    angular_rate_dps[i] = lsm9ds1_from_fs2000dps_to_mdps(data_raw_gyroscope[i]) / 1000.0;
-                    acceleration_g[i]   = lsm9ds1_from_fs4g_to_mg(data_raw_accelerometer[i]) / 1000.0; 
-                }
-            }
+            //SEGGER_RTT_printf(0, "Base Characteristic Address: 0x%#08x\n", acc_characteristic_data);
+            //SEGGER_RTT_printf(0, "Address after offset: 0x%#08x\n", acc_characteristic_data + offset);
+            ret = lsm9ds1_read_reg(&lsm9ds1_imu, LSM9DS1_OUT_X_L_XL, acc_characteristic_data + offset, 6);
         }
     }
     else
@@ -1050,24 +1456,14 @@ static int32_t get_IMU_data()
     return ret;
 }
 
-static int32_t get_MAG_data()
+static int32_t get_MAG_data(uint8_t offset)
 {
     //Reads the raw magnetometer data and stores it in its respective array
     int ret = 0;
     
     if (lsm9ds1_register_auto_increment)
     {
-        ret = lsm9ds1_magnetic_raw_get(&lsm9ds1_mag, data_raw_magnetometer);
-
-        if (ret == 0)
-            {
-                //this is temporary to make sure things are working as intended, convert the raw data to actual data.
-                //after testing, actual raw data conversion will happen on the application side
-                for (int i = 0; i < 3; i++)
-                {
-                    magnetic_field_gauss[i] = 1000 * lsm9ds1_from_fs4gauss_to_mG(data_raw_magnetometer[i]);
-                }
-            }
+        ret = lsm9ds1_read_reg(&lsm9ds1_mag, LSM9DS1_OUT_X_L_M, mag_characteristic_data + offset, 6);
     }
     else
     {
