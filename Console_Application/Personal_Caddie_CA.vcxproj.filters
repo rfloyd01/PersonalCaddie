@@ -1,0 +1,179 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="pch.cpp" />
+    <ClCompile Include="print.cpp" />
+    <ClCompile Include="test.cpp" />
+    <ClCompile Include="Graphics\glad.c">
+      <Filter>Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\graphics.cpp">
+      <Filter>Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\mesh.cpp">
+      <Filter>Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\model.cpp">
+      <Filter>Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\stb_image.cpp">
+      <Filter>Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="Modes\calibration.cpp">
+      <Filter>Modes</Filter>
+    </ClCompile>
+    <ClCompile Include="Modes\free_swing.cpp">
+      <Filter>Modes</Filter>
+    </ClCompile>
+    <ClCompile Include="Modes\main_menu.cpp">
+      <Filter>Modes</Filter>
+    </ClCompile>
+    <ClCompile Include="Modes\mode.cpp">
+      <Filter>Modes</Filter>
+    </ClCompile>
+    <ClCompile Include="Modes\training.cpp">
+      <Filter>Modes</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\text.cpp">
+      <Filter>Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="Math\ellipse.cpp">
+      <Filter>Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Math\gnuplot.cpp">
+      <Filter>Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Math\quaternion_functions.cpp">
+      <Filter>Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Math\sensor_fusion.cpp">
+      <Filter>Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Devices\BluetoothLE.cpp">
+      <Filter>Devices</Filter>
+    </ClCompile>
+    <ClCompile Include="Devices\sensor.cpp">
+      <Filter>Devices</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="pch.h" />
+    <ClInclude Include="Graphics\shader.h">
+      <Filter>Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\glm.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\graphics.h">
+      <Filter>Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\mesh.h">
+      <Filter>Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\model.h">
+      <Filter>Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\stb_image.h">
+      <Filter>Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\vertices.h">
+      <Filter>Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Modes\calibration.h">
+      <Filter>Modes</Filter>
+    </ClInclude>
+    <ClInclude Include="Modes\free_swing.h">
+      <Filter>Modes</Filter>
+    </ClInclude>
+    <ClInclude Include="Modes\main_menu.h">
+      <Filter>Modes</Filter>
+    </ClInclude>
+    <ClInclude Include="Modes\mode.h">
+      <Filter>Modes</Filter>
+    </ClInclude>
+    <ClInclude Include="Modes\modes.h">
+      <Filter>Modes</Filter>
+    </ClInclude>
+    <ClInclude Include="Modes\training.h">
+      <Filter>Modes</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\text.h">
+      <Filter>Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\ellipse.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\eigen.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\gnuplot.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\quaternion_functions.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\sensor_fusion.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Devices\BluetoothLE.h">
+      <Filter>Devices</Filter>
+    </ClInclude>
+    <ClInclude Include="Devices\magtest.h">
+      <Filter>Devices</Filter>
+    </ClInclude>
+    <ClInclude Include="Devices\sensor.h">
+      <Filter>Devices</Filter>
+    </ClInclude>
+    <ClInclude Include="print.h" />
+    <ClInclude Include="test.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+    <None Include="PropertySheet.props" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Resources\calibration.txt" />
+    <Text Include="Graphics\Shaders\Fragment.txt">
+      <Filter>Graphics\Shaders</Filter>
+    </Text>
+    <Text Include="Graphics\Shaders\LineFragment.txt">
+      <Filter>Graphics\Shaders</Filter>
+    </Text>
+    <Text Include="Graphics\Shaders\LineVertex.txt">
+      <Filter>Graphics\Shaders</Filter>
+    </Text>
+    <Text Include="Graphics\Shaders\ModelFragment.txt">
+      <Filter>Graphics\Shaders</Filter>
+    </Text>
+    <Text Include="Graphics\Shaders\ModelVertex.txt">
+      <Filter>Graphics\Shaders</Filter>
+    </Text>
+    <Text Include="Graphics\Shaders\TextFragment.txt">
+      <Filter>Graphics\Shaders</Filter>
+    </Text>
+    <Text Include="Graphics\Shaders\TextVertex.txt">
+      <Filter>Graphics\Shaders</Filter>
+    </Text>
+    <Text Include="Graphics\Shaders\Vertex.txt">
+      <Filter>Graphics\Shaders</Filter>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Graphics">
+      <UniqueIdentifier>{433b7e09-b80f-4594-8798-3e25650df49d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Graphics\Shaders">
+      <UniqueIdentifier>{d6ca4ef1-24f5-4975-916f-e152416369f0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Math">
+      <UniqueIdentifier>{c6289c44-f353-4c42-8d23-e819ac195498}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Modes">
+      <UniqueIdentifier>{aa43ff13-9588-437b-819c-62bc23051437}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Devices">
+      <UniqueIdentifier>{1e37b612-8b58-4e5b-b171-ecdbfeaec1dc}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
