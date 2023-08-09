@@ -41,6 +41,12 @@ void MainMenu::processInput()
 		p_graphics->setCurrentMode(ModeType::CALIBRATION);
 		p_graphics->resetKeyTimer();
 	}
+	else if (glfwGetKey(p_graphics->GetWindow(), GLFW_KEY_5) == GLFW_PRESS)
+	{
+		modeEnd(); //end the current mode
+		p_graphics->setCurrentMode(ModeType::SETTINGS);
+		p_graphics->resetKeyTimer();
+	}
 }
 void MainMenu::modeStart()
 {
@@ -52,6 +58,7 @@ void MainMenu::modeStart()
 	addText(MessageType::BODY, { "2. Swing Analysis Mode", 20.0, 335.0, 0.75, glm::vec3(0.58, 0.929, 0.588), p_graphics->getScreenWidth() });
 	addText(MessageType::BODY, { "3. Training Mode", 20.0, 290.0, 0.75, glm::vec3(.71, 0.541, 0.416), p_graphics->getScreenWidth() });
 	addText(MessageType::BODY, { "4. Calibration Mode", 20.0, 245.0, 0.75, glm::vec3(0.5, 0.5, 0.5), p_graphics->getScreenWidth() });
+	addText(MessageType::BODY, { "5. Sensor Settings", 20.0, 200.0, 0.75, glm::vec3(0.75, 0.75, 0.75), p_graphics->getScreenWidth() });
 
 	addText(MessageType::FOOT_NOTE, { "Press Esc. to exit the program", 580.0, 10.0, .33, glm::vec3(1.0, 1.0, 1.0), p_graphics->getScreenWidth() });
 }

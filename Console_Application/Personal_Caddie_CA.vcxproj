@@ -150,6 +150,7 @@
     <ClCompile Include="Modes\free_swing.cpp" />
     <ClCompile Include="Modes\main_menu.cpp" />
     <ClCompile Include="Modes\mode.cpp" />
+    <ClCompile Include="Modes\settings.cpp" />
     <ClCompile Include="Modes\training.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
@@ -196,6 +197,7 @@
     <ClInclude Include="Modes\main_menu.h" />
     <ClInclude Include="Modes\mode.h" />
     <ClInclude Include="Modes\modes.h" />
+    <ClInclude Include="Modes\settings.h" />
     <ClInclude Include="Modes\training.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="print.h" />

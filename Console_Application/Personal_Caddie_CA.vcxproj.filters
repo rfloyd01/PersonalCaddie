@@ -56,6 +56,9 @@
     <ClCompile Include="Devices\sensor.cpp">
       <Filter>Devices</Filter>
     </ClCompile>
+    <ClCompile Include="Modes\settings.cpp">
+      <Filter>Modes</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -127,6 +130,9 @@
     </ClInclude>
     <ClInclude Include="print.h" />
     <ClInclude Include="test.h" />
+    <ClInclude Include="Modes\settings.h">
+      <Filter>Modes</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

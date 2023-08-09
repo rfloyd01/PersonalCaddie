@@ -28,8 +28,8 @@ public:
 
     void SetAddress(const char* vertexPath, const char* fragmentPath)
     {
-        char vert[200] = "Shaders/";
-        char frag[200] = "Shaders/";
+        char vert[200] = "Graphics/Shaders/";
+        char frag[200] = "Graphics/Shaders/";
 
         strcat_s(vert, vertexPath);
         strcat_s(frag, fragmentPath);

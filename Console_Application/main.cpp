@@ -30,9 +30,9 @@ int main()
     //circleTest();
 
     BLE_Nano.connect();
-    while (BLE_Nano.is_connected == false) //wait until chip has connected before moving onto the next step
-    {
-    }
+    //while (BLE_Nano.is_connected == false) //wait until chip has connected before moving onto the next step
+    //{
+    //}
 
     BLE_Nano.setMagField();
     std::cout << "Chip is set up, preparing to open graphics window." << std::endl;
@@ -46,6 +46,7 @@ int main()
     FreeSwing fs(GraphicWindow); GraphicWindow.addMode(&fs);
     Calibration cc(GraphicWindow); GraphicWindow.addMode(&cc);
     Training tt(GraphicWindow); GraphicWindow.addMode(&tt);
+    Settings ss(GraphicWindow); GraphicWindow.addMode(&ss);
 
     GraphicWindow.setCurrentMode(ModeType::MAIN_MENU); //start off with the main menu, ultimately want to move this Mode setup into the graphic intialization
 

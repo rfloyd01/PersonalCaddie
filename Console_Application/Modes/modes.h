@@ -6,3 +6,4 @@
 #include <Modes/free_swing.h>
 #include <Modes/calibration.h>
 #include <Modes/training.h>
+#include <Modes/settings.h>

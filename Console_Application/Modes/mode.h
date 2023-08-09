@@ -24,7 +24,8 @@ enum class ModeType
 	MAIN_MENU = 1,
 	FREE = 2,
 	CALIBRATION = 3,
-	TRAINING = 4
+	TRAINING = 4,
+	SETTINGS = 5
 };
 
 //Class definition
