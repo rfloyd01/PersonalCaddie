@@ -42,6 +42,7 @@ public:
 	//Constructors
 	//BLEDevice(guid ServiceUUID, uint32_t CharacteristicUUID, float freq);
 	BLEDevice(guid ServiceUUID, uint32_t CharacteristicUUID, IMU* sensor);
+	BLEDevice();
 
 	//Connection
 	void connect();

@@ -59,6 +59,12 @@
     <ClCompile Include="Modes\settings.cpp">
       <Filter>Modes</Filter>
     </ClCompile>
+    <ClCompile Include="Devices\PersonalCaddie.cpp">
+      <Filter>Devices</Filter>
+    </ClCompile>
+    <ClCompile Include="Devices\BLE.cpp">
+      <Filter>Devices</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -132,6 +138,12 @@
     <ClInclude Include="test.h" />
     <ClInclude Include="Modes\settings.h">
       <Filter>Modes</Filter>
+    </ClInclude>
+    <ClInclude Include="Devices\PersonalCaddie.h">
+      <Filter>Devices</Filter>
+    </ClInclude>
+    <ClInclude Include="Devices\BLE.h">
+      <Filter>Devices</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

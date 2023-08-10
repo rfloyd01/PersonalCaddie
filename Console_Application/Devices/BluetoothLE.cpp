@@ -43,6 +43,11 @@ BLEDevice::BLEDevice(guid ServiceUUID, uint32_t CharacteristicUUID, IMU* sensor)
     updateCalibrationNumbers(); //set calibration variables with most current data from calibration.txt
 }
 
+BLEDevice::BLEDevice()
+{
+    //just an empty defualt constructor
+}
+
 //Connection
 void BLEDevice::connect()
 {
@@ -253,11 +258,14 @@ void BLEDevice::setUpDeviceWatcher()
         {
             auto serviceUuids = eventArgs.Advertisement().ServiceUuids();
             unsigned int index = -1;
+            auto name = eventArgs.Advertisement().LocalName();
 
             //std::wstring desired_address = L"d1:80:9d:c9:34:e3"; //this is the address of the nRF52840DK chip
             //std::wstring desired_address = L"fe:0c:b9:36:d2:5b"; //this is the address of the original BLE 33 Sense board I had
             std::wstring desired_address = L"f9:8c:6f:ee:2f:16"; //this is the address of the current BLE 33 Sense board I have
             std::wstring found_address = formatBluetoothAddress(eventArgs.BluetoothAddress());
+
+            std::wcout << "Found device has the following name: " << name.c_str() << std::endl;
 
             //if (found_address == desired_address) std::wcout << "Advertisement received from BLE Address: " << desired_address  << std::endl;
             //else std::wcout << "Non-desired address: " << found_address << std::endl;
