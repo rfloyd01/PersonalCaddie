@@ -5,6 +5,7 @@
 #include "winrt/Windows.Devices.Bluetooth.Advertisement.h"
 #include "winrt/Windows.Storage.Streams.h"
 #include "winrt/Windows.Devices.Bluetooth.GenericAttributeProfile.h"
+#include "winrt/Windows.Security.Cryptography.h"
 #include <experimental/resumable>
 #include <stdio.h>
 #include <tchar.h>

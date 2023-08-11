@@ -18,6 +18,15 @@ using namespace Windows::Devices;
 #define GYR_DATA_CHARACTERISTIC_UUID      0xBF37
 #define MAG_DATA_CHARACTERISTIC_UUID      0xBF38
 
+//enums and structs used by the Personal Caddie class
+enum PersonalCaddiePowerMode
+{
+	ADVERTISING_MODE = 0,
+	CONNECTED_MODE = 1,
+	SENSOR_IDLE_MODE = 2,
+	SENSOR_ACTIVE_MODE = 5
+};
+
 /*
 * This class is a representation of the physical Personal Caddie device. The real device is composed of a 
 * BluetoothLE module (specifically the nRF52840) and an IMU (I've worked with a handful of different sensors
@@ -30,9 +39,12 @@ public:
 	//Constructors
 	PersonalCaddie();
 
-	bool BLEDeviceDiscovered();
+	//BLE Related Functions
+	//void turnOnDataNotifications();
+	concurrency::task<void> changePowerMode(PersonalCaddiePowerMode mode);
 
 	volatile bool ble_device_connected;
+
 
 private:
 
@@ -41,9 +53,10 @@ private:
 
 	concurrency::task<void> BLEDeviceConnectedHandler();
 	concurrency::task<void> getDataCharacteristics(Bluetooth::GenericAttributeProfile::GattDeviceService& data_service);
-	//void BLEDeviceConnectedHandler();
+	
+	PersonalCaddiePowerMode current_power_mode;
 
-	//Define references to the important characteristics from m_ble
+	//Characteristics obtained from m_ble
 	Bluetooth::GenericAttributeProfile::GattCharacteristic m_settings_characteristic{ nullptr };
 	Bluetooth::GenericAttributeProfile::GattCharacteristic m_accelerometer_data_characteristic{ nullptr };
 	Bluetooth::GenericAttributeProfile::GattCharacteristic m_gyroscope_data_characteristic{ nullptr };

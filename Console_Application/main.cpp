@@ -22,7 +22,16 @@ int main()
 
     PersonalCaddie m_pc;
 
-    while (true) {}
+    while (true)
+    {
+        if (m_pc.ble_device_connected)
+        {
+            int mode;
+            std::cout << "\nPlease enter a value between 0 and 5 to change the power mode of the Personal Caddie:" << std::endl;
+            std::cin >> mode;
+            m_pc.changePowerMode(static_cast<PersonalCaddiePowerMode>(mode));
+        }
+    }
 
     //was using the below line to test correct sensor axes orientations
     //graphFromFile("C:/Users/Bobby/Documents/Coding/C++/BLE_33/BLE_33/Resources/Data_Sets/MatlabData.txt", 9);
