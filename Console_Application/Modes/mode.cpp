@@ -278,7 +278,6 @@ void Mode::alertUpdate()
 {
 	if (this->alert_active)
 	{
-		std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - this->alert_timer).count() << std::endl;
 		if (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - this->alert_timer).count() >= this->alert_timer_length)
 		{
 			//the alert time duration has elapsed so we remove the alert
