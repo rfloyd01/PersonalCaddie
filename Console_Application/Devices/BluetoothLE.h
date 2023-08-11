@@ -12,7 +12,7 @@ using namespace Windows::Devices;
 using namespace Bluetooth::GenericAttributeProfile;
 
 //Some Enums that make code a little more readable
-enum class DataType
+enum class DataTypee
 {
 	ACCELERATION,
 	ROTATION,
@@ -60,8 +60,8 @@ public:
 	//Data Passing Functions
 	//These functions are for outside classes that need to access private BLEDevice variables
 	//TODO - Is it better to return the physical variables or just a reference to the variables? Figure this out
-	std::vector<float>* getData(DataType dt, Axis a);
-	std::vector<float>* getRawData(DataType dt, Axis a);
+	std::vector<float>* getData(DataTypee dt, Axis a);
+	std::vector<float>* getRawData(DataTypee dt, Axis a);
 	glm::vec3 getLocation();
 	glm::quat getOpenGLQuaternion();
 	int getCurrentSample();

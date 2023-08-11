@@ -6,16 +6,16 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
-#include <Devices/BluetoothLE.h>
-#include <Graphics/model.h>
-#include <Graphics/shader.h>
-#include <Graphics/text.h>
-#include <Math/glm.h>
-#include <Modes/mode.h>
+#include "../Devices/PersonalCaddie.h"
+#include "../Math/glm.h"
+#include "../Modes/mode.h"
+
+#include "model.h"
+#include "shader.h"
+#include "text.h"
 
 //Classes, structs and enums defined in other headers
 class Shader;
-class BLEDevice;
 class Model;
 class Mode;
 
@@ -33,7 +33,7 @@ class GL
 public:
 	//PUBLIC FUNCTIONS
 	//Constructors
-	GL(BLEDevice* sensor);
+	GL(PersonalCaddie* personal_caddie);
 
 	//Setup Functions
 	//void LoadTexture(const char* name);
@@ -69,8 +69,8 @@ public:
 
 	//Sensor Functions
 	//These functions only exist to pass variables directly from Sensor to mode classes
-	std::vector<float>* getData(DataType dt, Axis a);
-	std::vector<float>* getRawData(DataType dt, Axis a);
+	float getDataPoint(DataType dt, Axis a, int sample_number);
+	float getRawDataPoint(DataType dt, Axis a, int sample_number);
 	glm::quat getRotationQuaternion();
 	glm::quat getOpenGLQuaternion();
 	int getCurrentSample();
@@ -79,7 +79,7 @@ public:
 	void updateCalibrationNumbers();
 	void setMagField();
 	void setRotationQuaternion(glm::quat q);
-	BLEDevice* getBLEDevice(); //returns a pointer to the currently paired BLEDevice
+	PersonalCaddie* getPersonalCaddie(); //returns a pointer to the currently paired Personal Caddie device
 
 	//Mode Functions
 	void addMode(Mode* m);
@@ -143,7 +143,7 @@ private:
 
 	//Class pointers
 	Mode* p_current_mode;
-	BLEDevice* p_BLE;
+	PersonalCaddie* p_pc;
 };
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);

@@ -165,18 +165,18 @@ void BLEDevice::setMagField()
 }
 
 //Data Passing Functions
-std::vector<float>* BLEDevice::getData(DataType dt, Axis a)
+std::vector<float>* BLEDevice::getData(DataTypee dt, Axis a)
 {
     std::vector<float>* ans; //define pointer to float vector
 
     //TODO: Consider making this function only take a data type and not a specific axis, that way the function won't have to be called three times to get a single data point
-    if (dt == DataType::ACCELERATION) ans = &accelerometer[a];
-    else if (dt == DataType::ROTATION) ans = &gyroscope[a];
-    else if (dt == DataType::MAGNETIC) ans = &magnetometer[a];
-    else if (dt == DataType::LINEAR_ACCELERATION) ans = &linear_acceleration[a];
-    else if (dt == DataType::VELOCITY) ans = &velocity[a];
-    else if (dt == DataType::LOCATION) ans = &location[a];
-    else if (dt == DataType::EULER_ANGLES) ans = &euler_angles[a];
+    if (dt == DataTypee::ACCELERATION) ans = &accelerometer[a];
+    else if (dt == DataTypee::ROTATION) ans = &gyroscope[a];
+    else if (dt == DataTypee::MAGNETIC) ans = &magnetometer[a];
+    else if (dt == DataTypee::LINEAR_ACCELERATION) ans = &linear_acceleration[a];
+    else if (dt == DataTypee::VELOCITY) ans = &velocity[a];
+    else if (dt == DataTypee::LOCATION) ans = &location[a];
+    else if (dt == DataTypee::EULER_ANGLES) ans = &euler_angles[a];
 
     if (ans == nullptr)
     {
@@ -187,13 +187,13 @@ std::vector<float>* BLEDevice::getData(DataType dt, Axis a)
     }
     else return ans;
 }
-std::vector<float>* BLEDevice::getRawData(DataType dt, Axis a)
+std::vector<float>* BLEDevice::getRawData(DataTypee dt, Axis a)
 {
     std::vector<float>* ans; //define pointer to float vector
 
-    if (dt == DataType::ACCELERATION) ans = &r_accelerometer[a];
-    else if (dt == DataType::ROTATION) ans = &r_gyroscope[a];
-    else if (dt == DataType::MAGNETIC) ans = &r_magnetometer[a];
+    if (dt == DataTypee::ACCELERATION) ans = &r_accelerometer[a];
+    else if (dt == DataTypee::ROTATION) ans = &r_gyroscope[a];
+    else if (dt == DataTypee::MAGNETIC) ans = &r_magnetometer[a];
 
     if (ans == nullptr)
     {

@@ -12,7 +12,7 @@
 
 //PUBLIC FUNCTIONS
 //Constructors
-GL::GL(BLEDevice* sensor)
+GL::GL(PersonalCaddie* personal_caddie)
 {
 	Initialize();
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
@@ -57,8 +57,8 @@ GL::GL(BLEDevice* sensor)
 	can_press_key = true;
 	key_time = .3; //sets the keyboard disable time after hitting one of the keyboard keys
 
-	p_BLE = sensor;
-	data_type = DataType::ACCELERATION; //initialize data_type to ACCELERATION
+	this->p_pc = personal_caddie;
+	this->data_type = DataType::ACCELERATION; //initialize data_type to ACCELERATION
 }
 
 //Setup Functions
@@ -221,13 +221,13 @@ void GL::AddData()
 {
 	if (record_data == 0) return; //only record data if in the proper mode
 
-	int cs = p_BLE->getCurrentSample();
+	int cs = p_pc->getCurrentSample();
 
-	data_set[0].push_back(p_BLE->getData(data_type, X)->at(cs));
-	data_set[1].push_back(p_BLE->getData(data_type, Y)->at(cs));
-	data_set[2].push_back(p_BLE->getData(data_type, Z)->at(cs));
+	data_set[0].push_back(p_pc->getDataPoint(data_type, X, cs));
+	data_set[1].push_back(p_pc->getDataPoint(data_type, Y, cs));
+	data_set[2].push_back(p_pc->getDataPoint(data_type, Z, cs));
 
-	time_set.push_back(p_BLE->getCurrentTime());
+	time_set.push_back(p_pc->getCurrentTime());
 }
 
 //Screen Size Functions
@@ -241,50 +241,50 @@ float GL::getScreenHeight()
 }
 
 //Sensor Functions
-std::vector<float>* GL::getData(DataType dt, Axis a)
+float GL::getDataPoint(DataType dt, Axis a, int sample_number)
 {
-	return p_BLE->getData(dt, a);
+	return p_pc->getDataPoint(dt, a, sample_number);
 }
-std::vector<float>* GL::getRawData(DataType dt, Axis a)
+float GL::getRawDataPoint(DataType dt, Axis a, int sample_number)
 {
-	return p_BLE->getRawData(dt, a);
+	return p_pc->getRawDataPoint(dt, a, sample_number);
 }
 glm::quat GL::getRotationQuaternion()
 {
-	glm::quat q = p_BLE->getOpenGLQuaternion();
+	glm::quat q = p_pc->getOpenGLQuaternion();
 	return { q.w, q.z, q.x, q.y }; //transforms OpenGL quaternion { Quaternion.w, Quaternion.y, Quaternion.z, Quaternion.x } back to normal coordinates;
 }
 glm::quat GL::getOpenGLQuaternion()
 {
-	return p_BLE->getOpenGLQuaternion();
+	return p_pc->getOpenGLQuaternion();
 }
 int GL::getCurrentSample()
 {
-	return p_BLE->getCurrentSample();
+	return p_pc->getCurrentSample();
 }
 float GL::getCurrentTime()
 {
-	return p_BLE->getCurrentTime();
+	return p_pc->getCurrentTime();
 }
 void GL::resetTime()
 {
-	p_BLE->resetTime();
+	p_pc->resetTime();
 }
 void GL::updateCalibrationNumbers()
 {
-	p_BLE->updateCalibrationNumbers();
+	p_pc->updateCalibrationNumbers();
 }
 void GL::setMagField()
 {
-	p_BLE->setMagField();
+	p_pc->setMagField();
 }
 void GL::setRotationQuaternion(glm::quat q)
 {
-	p_BLE->setRotationQuaternion(q);
+	p_pc->setRotationQuaternion(q);
 }
-BLEDevice* GL::getBLEDevice()
+PersonalCaddie* GL::getPersonalCaddie()
 {
-	return p_BLE;
+	return p_pc;
 }
 
 //Mode Functions

@@ -39,6 +39,8 @@ public:
 
 	std::thread background_connect;
 
+	
+
 private:
 	void startDeviceWatcher();
 	std::function<void()> connected_handler; //pointer to a connected event handler in the Personal Caddie class

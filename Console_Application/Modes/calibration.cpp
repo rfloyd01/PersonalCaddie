@@ -215,21 +215,21 @@ void Calibration::addRawData(DataType dt, int current_sample)
 {
 	if (dt == DataType::ACCELERATION)
 	{
-		ax.push_back(p_graphics->getRawData(dt, X)->at(current_sample));
-		ay.push_back(p_graphics->getRawData(dt, Y)->at(current_sample));
-		az.push_back(p_graphics->getRawData(dt, Z)->at(current_sample));
+		ax.push_back(p_graphics->getRawDataPoint(dt, X, current_sample));
+		ay.push_back(p_graphics->getRawDataPoint(dt, Y, current_sample));
+		az.push_back(p_graphics->getRawDataPoint(dt, Z, current_sample));
 	}
 	else if (dt == DataType::ROTATION)
 	{
-		gx.push_back(p_graphics->getRawData(dt, X)->at(current_sample));
-		gy.push_back(p_graphics->getRawData(dt, Y)->at(current_sample));
-		gz.push_back(p_graphics->getRawData(dt, Z)->at(current_sample));
+		gx.push_back(p_graphics->getRawDataPoint(dt, X, current_sample));
+		gy.push_back(p_graphics->getRawDataPoint(dt, Y, current_sample));
+		gz.push_back(p_graphics->getRawDataPoint(dt, Z, current_sample));
 	}
 	else if (dt == DataType::MAGNETIC)
 	{
-		mx.push_back(p_graphics->getRawData(dt, X)->at(current_sample));
-		my.push_back(p_graphics->getRawData(dt, Y)->at(current_sample));
-		mz.push_back(p_graphics->getRawData(dt, Z)->at(current_sample));
+		mx.push_back(p_graphics->getRawDataPoint(dt, X, current_sample));
+		my.push_back(p_graphics->getRawDataPoint(dt, Y, current_sample));
+		mz.push_back(p_graphics->getRawDataPoint(dt, Z, current_sample));
 	}
 }
 
@@ -515,7 +515,7 @@ void Calibration::gyroNextStep()
 			//make sure to apply offset values obtained from first portion of gyroscope calibration
 			//don't use addRawData() function here because it's necessary to subtract new offset values from raw data, which that function doesn't do
 			int cs = p_graphics->getCurrentSample();
-			gx.push_back(p_graphics->getRawData(DataType::ROTATION, X)->at(cs) - gyr_off[0]); gy.push_back(p_graphics->getRawData(DataType::ROTATION, Y)->at(cs) - gyr_off[1]); gz.push_back(p_graphics->getRawData(DataType::ROTATION, Z)->at(cs) - gyr_off[2]); //push_back raw sensor data
+			gx.push_back(p_graphics->getRawDataPoint(DataType::ROTATION, X, cs) - gyr_off[0]); gy.push_back(p_graphics->getRawDataPoint(DataType::ROTATION, Y, cs) - gyr_off[1]); gz.push_back(p_graphics->getRawDataPoint(DataType::ROTATION, Z, cs) - gyr_off[2]); //push_back raw sensor data
 
 			//record time stamps so that data can be integrated
 			time_data.push_back(p_graphics->getCurrentTime());
@@ -539,7 +539,7 @@ void Calibration::magTest()
 		//initialize mag_max and mag_min values to both be equal to the current mag reading
 		//need to do this becuase there's a chance the maximum value should actually be less than 0 (-22 for example), or minimum value could be greater than 0 (+22)
 		int cs = p_graphics->getCurrentSample();
-		mag_max[0] = p_graphics->getRawData(DataType::MAGNETIC, X)->at(cs); mag_max[1] = p_graphics->getRawData(DataType::MAGNETIC, Y)->at(cs); mag_max[2] = p_graphics->getRawData(DataType::MAGNETIC, Z)->at(cs);
+		mag_max[0] = p_graphics->getRawDataPoint(DataType::MAGNETIC, X, cs); mag_max[1] = p_graphics->getRawDataPoint(DataType::MAGNETIC, Y, cs); mag_max[2] = p_graphics->getRawDataPoint(DataType::MAGNETIC, Z, cs);
 		mag_min[0] = mag_max[0]; mag_min[1] = mag_max[1]; mag_min[2] = mag_max[2];
 	}
 	else if (cal_stage == 1)
