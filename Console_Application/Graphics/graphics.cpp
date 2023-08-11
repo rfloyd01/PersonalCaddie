@@ -511,4 +511,13 @@ void GL::handlePersonalCaddieUpdate(int code)
 	//When certain events happen to the Personal Caddie, such as its BLE device getting disconnected, this handler function 
 	//will get called to display an alert on the screen
 	std::cout << "Graphics handler called with status code " << code << std::endl;
+	
+	switch (code)
+	{
+	case 34:
+		this->p_current_mode->createAlert("Personal Caddie connected", 5000.0);
+		break;
+	default:
+		break;
+	}
 }

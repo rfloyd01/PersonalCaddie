@@ -81,7 +81,7 @@ protected:
 
 	//Boolean Variables
 	bool mode_active = 0;
-	bool alert_active = 0;
+	static bool alert_active;
 	//bool separate_rotation_matrix = 0; //sometimes wish to render club in a fixed position rather than according to current sensor reading, this bool allows that
 
 	//Rendering Variables
@@ -92,8 +92,8 @@ protected:
 	std::map<ModelType, std::vector<Model> > model_map; //a map used to store all images to be rendered on screen, a map is used to make it easier to keep track of where models are located
 
 	//Timing Variables
-	std::chrono::steady_clock::time_point alert_timer;
-	double alert_timer_length = 0; //This gets set when an alert text is created
+	static std::chrono::steady_clock::time_point alert_timer;
+	static double alert_timer_length; //This gets set when an alert text is created
 
 	//Class Pointers
 	GL* p_graphics;

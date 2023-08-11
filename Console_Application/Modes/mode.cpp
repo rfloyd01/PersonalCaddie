@@ -12,6 +12,11 @@ Mode::Mode(GL& graphics)
 	clearAllText();
 }
 
+//Initialize Static Variables
+double Mode::alert_timer_length = 0;
+std::chrono::steady_clock::time_point Mode::alert_timer = std::chrono::high_resolution_clock::now();
+bool Mode::alert_active = false;
+
 //Updating and Advancement Functions
 void Mode::update()
 {
@@ -273,6 +278,7 @@ void Mode::alertUpdate()
 {
 	if (this->alert_active)
 	{
+		std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - this->alert_timer).count() << std::endl;
 		if (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - this->alert_timer).count() >= this->alert_timer_length)
 		{
 			//the alert time duration has elapsed so we remove the alert
