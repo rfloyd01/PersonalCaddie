@@ -2,8 +2,8 @@
 
 #include <iostream>
 
-#include <Math/gnuplot.h>
-#include <Modes/free_swing.h>
+#include "../Math/gnuplot.h"
+#include "../Modes/free_swing.h"
 
 //PUBLIC FUNCTIONS
 //Updating and Advancement Functions
@@ -270,14 +270,11 @@ void FreeSwing::liveUpdate()
 		editMessageText(MessageType::SENSOR_INFO, 0, "Current Orientation");
 	}
 
-	p_data_x = p_graphics->getData(current_data_type, X);
-	p_data_y = p_graphics->getData(current_data_type, Y);
-	p_data_z = p_graphics->getData(current_data_type, Z);
 	if (current_data_type == DataType::EULER_ANGLES) //convert from radians to degrees for ease of reading
 	{
-		st1.insert(9, std::to_string(p_data_x->at(cs) * 180.0 / 3.14159));
-		st2.insert(9, std::to_string(p_data_y->at(cs) * 180.0 / 3.14159));
-		st3.insert(8, std::to_string(p_data_z->at(cs) * 180.0 / 3.14159));
+		st1.insert(9, std::to_string(p_graphics->getDataPoint(current_data_type, X, cs) * 180.0 / PI));
+		st2.insert(9, std::to_string(p_graphics->getDataPoint(current_data_type, Y, cs) * 180.0 / PI));
+		st3.insert(8, std::to_string(p_graphics->getDataPoint(current_data_type, Z, cs) * 180.0 / PI));
 	}
 	else
 	{

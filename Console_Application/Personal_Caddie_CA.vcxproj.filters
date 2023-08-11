@@ -50,9 +50,6 @@
     <ClCompile Include="Math\sensor_fusion.cpp">
       <Filter>Math</Filter>
     </ClCompile>
-    <ClCompile Include="Devices\BluetoothLE.cpp">
-      <Filter>Devices</Filter>
-    </ClCompile>
     <ClCompile Include="Devices\sensor.cpp">
       <Filter>Devices</Filter>
     </ClCompile>
@@ -125,9 +122,6 @@
     <ClInclude Include="Math\sensor_fusion.h">
       <Filter>Math</Filter>
     </ClInclude>
-    <ClInclude Include="Devices\BluetoothLE.h">
-      <Filter>Devices</Filter>
-    </ClInclude>
     <ClInclude Include="Devices\magtest.h">
       <Filter>Devices</Filter>
     </ClInclude>
@@ -145,6 +139,7 @@
     <ClInclude Include="Devices\BLE.h">
       <Filter>Devices</Filter>
     </ClInclude>
+    <ClInclude Include="Resources\constants.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

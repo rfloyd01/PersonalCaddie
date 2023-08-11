@@ -129,7 +129,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Devices\BLE.cpp" />
-    <ClCompile Include="Devices\BluetoothLE.cpp" />
     <ClCompile Include="Devices\PersonalCaddie.cpp" />
     <ClCompile Include="Devices\sensor.cpp" />
     <ClCompile Include="Graphics\glad.c">
@@ -179,7 +178,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Devices\BLE.h" />
-    <ClInclude Include="Devices\BluetoothLE.h" />
     <ClInclude Include="Devices\magtest.h" />
     <ClInclude Include="Devices\PersonalCaddie.h" />
     <ClInclude Include="Devices\sensor.h" />
@@ -205,6 +203,7 @@
     <ClInclude Include="Modes\training.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="print.h" />
+    <ClInclude Include="Resources\constants.h" />
     <ClInclude Include="test.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

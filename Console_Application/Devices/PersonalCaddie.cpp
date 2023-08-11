@@ -24,6 +24,21 @@ PersonalCaddie::PersonalCaddie()
 
     //Set the power mode as advertising
     this->current_power_mode = PersonalCaddiePowerMode::ADVERTISING_MODE;
+
+    //Initialize all data vectors with zeros
+    for (int dt = static_cast<int>(DataType::ACCELERATION); dt <= static_cast<int>(DataType::EULER_ANGLES); dt++)
+    {
+        std::vector<std::vector<float> > data_type;
+
+        for (int axis = X; axis <= Z; axis++)
+        {
+            std::vector<float> data_type_axis(this->number_of_samples, 0);
+            data_type.push_back(data_type_axis);
+        }
+
+        this->sensor_data.push_back(data_type);
+    }
+    
 }
 
 concurrency::task<void> PersonalCaddie::BLEDeviceConnectedHandler()
@@ -132,43 +147,25 @@ concurrency::task<void> PersonalCaddie::changePowerMode(PersonalCaddiePowerMode 
 //Methods and fields from original BluetoothLE Class
 float PersonalCaddie::getDataPoint(DataType dt, Axis a, int sample_number)
 {
-    if (accelerometer.size() == 0)
+    if (this->sensor_data[0].size() == 0)
     {
         //was having an issue where a different part of the program was trying to access raw data after vectors were cleared, this is a quick fix for problem
         //TODO: implement a more elegant solution at some point
         return 0;
     }
 
-    float ans; //define pointer to float vector
-
-    //TODO: Consider making this function only take a data type and not a specific axis, that way the function won't have to be called three times to get a single data point
-    if (dt == DataType::ACCELERATION) ans = accelerometer[a][sample_number];
-    else if (dt == DataType::ROTATION) ans = gyroscope[a][sample_number];
-    else if (dt == DataType::MAGNETIC) ans = magnetometer[a][sample_number];
-    else if (dt == DataType::LINEAR_ACCELERATION) ans = linear_acceleration[a][sample_number];
-    else if (dt == DataType::VELOCITY) ans = velocity[a][sample_number];
-    else if (dt == DataType::LOCATION) ans = location[a][sample_number];
-    else if (dt == DataType::EULER_ANGLES) ans = euler_angles[a][sample_number];
-
-    return ans;
+    return this->sensor_data[static_cast<int>(dt)][a][sample_number];
 }
 
-float PersonalCaddie::getRawDataPoint(DataType dt, Axis a, int sample_number)
+void PersonalCaddie::setDataPoint(DataType dt, Axis a, int sample_number, float data)
 {
-    if (accelerometer.size() == 0)
+    if (this->sensor_data[0].size() != 0)
     {
         //was having an issue where a different part of the program was trying to access raw data after vectors were cleared, this is a quick fix for problem
         //TODO: implement a more elegant solution at some point
-        return 0;
+        
+        this->sensor_data[static_cast<int>(dt)][a][sample_number] = data;
     }
-
-    float ans; //define pointer to float vector
-
-    if (dt == DataType::ACCELERATION) ans = r_accelerometer[a][sample_number];
-    else if (dt == DataType::ROTATION) ans = r_gyroscope[a][sample_number];
-    else if (dt == DataType::MAGNETIC) ans = r_magnetometer[a][sample_number];
-
-    return ans;
 }
 
 glm::quat PersonalCaddie::getOpenGLQuaternion()
@@ -202,13 +199,17 @@ void PersonalCaddie::setSampleFrequency(float freq)
 void PersonalCaddie::setMagField()
 {
     //TODO - Need to find a good way to rotate current magnetic reading to desired magnetic reading, this will allow the sensor to start off pointing straight when rendered
-    bx = magnetometer[X].back();
-    by = magnetometer[Y].back();
-    bz = magnetometer[Z].back();
+    bx = getDataPoint(DataType::MAGNETIC, X, this->number_of_samples - 1);
+    bx = getDataPoint(DataType::MAGNETIC, Y, this->number_of_samples - 1);
+    bx = getDataPoint(DataType::MAGNETIC, Z, this->number_of_samples - 1);
+
+    float ax = getDataPoint(DataType::ACCELERATION, X, this->number_of_samples - 1);
+    float ay = getDataPoint(DataType::ACCELERATION, Y, this->number_of_samples - 1);
+    float az = getDataPoint(DataType::ACCELERATION, Z, this->number_of_samples - 1);
 
     float mag = Magnitude({ bx, by, bz });
 
-    m_to_g = GetRotationQuaternion({ bx, by, bz }, { accelerometer[X].back(), accelerometer[Y].back(), accelerometer[Z].back() }); //g_to_m is the quaternion that will move things from the gravity frame to the magnetic frame
+    m_to_g = GetRotationQuaternion({ bx, by, bz }, { ax, ay, az }); //g_to_m is the quaternion that will move things from the gravity frame to the magnetic frame
     g_to_m = Conjugate(m_to_g);
     m_to_mprime = GetRotationQuaternion({ sqrt(bx * bx + by * by), 0, bz }, { bx, by, bz }); //this quaternion will rotate current magnetic reading to desired frame (i.e. +x and -z when pointing sensor at monitor)
 }
@@ -297,17 +298,21 @@ void PersonalCaddie::updateSensorData()
     //The count variable counts which data point should be used as multiple data points are taken from the sensor at a time
     for (int i = 0; i < number_of_samples; i++)
     {
-        accelerometer[X][i] = (acc_gain[0][0] * (r_accelerometer[X][i] - acc_off[0])) + (acc_gain[0][1] * (r_accelerometer[Y][i] - acc_off[1])) + (acc_gain[0][2] * (r_accelerometer[Z][i] - acc_off[2]));
-        accelerometer[Y][i] = (acc_gain[1][0] * (r_accelerometer[X][i] - acc_off[0])) + (acc_gain[1][1] * (r_accelerometer[Y][i] - acc_off[1])) + (acc_gain[1][2] * (r_accelerometer[Z][i] - acc_off[2]));
-        accelerometer[Z][i] = (acc_gain[2][0] * (r_accelerometer[X][i] - acc_off[0])) + (acc_gain[2][1] * (r_accelerometer[Y][i] - acc_off[1])) + (acc_gain[2][2] * (r_accelerometer[Z][i] - acc_off[2]));
+        float r_acc_x = getDataPoint(DataType::RAW_ACCELERATION, X, i), r_acc_y = getDataPoint(DataType::RAW_ACCELERATION, Y, i), r_acc_z = getDataPoint(DataType::RAW_ACCELERATION, Z, i);
+        float r_gyr_x = getDataPoint(DataType::RAW_ROTATION, X, i), r_gyr_y = getDataPoint(DataType::RAW_ROTATION, Y, i), r_gyr_z = getDataPoint(DataType::RAW_ROTATION, Z, i);
+        float r_mag_x = getDataPoint(DataType::RAW_MAGNETIC, X, i), r_mag_y = getDataPoint(DataType::RAW_MAGNETIC, Y, i), r_mag_z = getDataPoint(DataType::RAW_MAGNETIC, Z, i);
 
-        gyroscope[X][i] = (r_gyroscope[X][i] - gyr_off[0]) * gyr_gain[0];
-        gyroscope[Y][i] = (r_gyroscope[Y][i] - gyr_off[1]) * gyr_gain[1];
-        gyroscope[Z][i] = (r_gyroscope[Z][i] - gyr_off[2]) * gyr_gain[2];
+        setDataPoint(DataType::ACCELERATION, X, i, (acc_gain[0][0] * (r_acc_x - acc_off[0])) + (acc_gain[0][1] * (r_acc_y - acc_off[1])) + (acc_gain[0][2] * (r_acc_z - acc_off[2])));
+        setDataPoint(DataType::ACCELERATION, Y, i, (acc_gain[1][0] * (r_acc_x - acc_off[0])) + (acc_gain[1][1] * (r_acc_y - acc_off[1])) + (acc_gain[1][2] * (r_acc_z - acc_off[2])));
+        setDataPoint(DataType::ACCELERATION, Z, i, (acc_gain[2][0] * (r_acc_x - acc_off[0])) + (acc_gain[2][1] * (r_acc_y - acc_off[1])) + (acc_gain[2][2] * (r_acc_z - acc_off[2])));
 
-        magnetometer[X][i] = (mag_gain[0][0] * (r_magnetometer[X][i] - mag_off[0])) + (mag_gain[0][1] * (r_magnetometer[Y][i] - mag_off[1])) + (mag_gain[0][2] * (r_magnetometer[Z][i] - mag_off[2]));
-        magnetometer[Y][i] = (mag_gain[1][0] * (r_magnetometer[X][i] - mag_off[0])) + (mag_gain[1][1] * (r_magnetometer[Y][i] - mag_off[1])) + (mag_gain[1][2] * (r_magnetometer[Z][i] - mag_off[2]));
-        magnetometer[Z][i] = (mag_gain[2][0] * (r_magnetometer[X][i] - mag_off[0])) + (mag_gain[2][1] * (r_magnetometer[Y][i] - mag_off[1])) + (mag_gain[2][2] * (r_magnetometer[Z][i] - mag_off[2]));
+        setDataPoint(DataType::ROTATION, X, i, (r_gyr_x - gyr_off[0]) * gyr_gain[0]);
+        setDataPoint(DataType::ROTATION, Y, i, (r_gyr_y - gyr_off[1]) * gyr_gain[1]);
+        setDataPoint(DataType::ROTATION, Z, i, (r_gyr_z - gyr_off[2]) * gyr_gain[2]);
+
+        setDataPoint(DataType::MAGNETIC, X, i, (mag_gain[0][0] * (r_mag_x - mag_off[0])) + (mag_gain[0][1] * (r_mag_y - mag_off[1])) + (mag_gain[0][2] * (r_mag_z - mag_off[2])));
+        setDataPoint(DataType::MAGNETIC, Y, i, (mag_gain[1][0] * (r_mag_x - mag_off[0])) + (mag_gain[1][1] * (r_mag_y - mag_off[1])) + (mag_gain[1][2] * (r_mag_z - mag_off[2])));
+        setDataPoint(DataType::MAGNETIC, Z, i, (mag_gain[2][0] * (r_mag_x - mag_off[0])) + (mag_gain[2][1] * (r_mag_y - mag_off[1])) + (mag_gain[2][2] * (r_mag_z - mag_off[2])));
 
         masterUpdate(); //update rotation quaternion, lin_acc., velocity and position with every new data point that comes in
 
@@ -328,16 +333,14 @@ void PersonalCaddie::updateMadgwick()
     time_stamp += 1000.0 / sampleFreq;
     float delta_t = (float)((time_stamp - last_time_stamp) / 1000.0);
 
-    //Call Madgwick function here
+    //TODO: Look into just sending references to the data instead of creating copies, not sure if this is really a huge time hit here but it can't hurt
     int cs = current_sample; //this is only here because it became annoying to keep writing out current_sample
-    //Quaternion = Madgwick(Quaternion, gyroscope[X][cs], gyroscope[Y][cs], gyroscope[Z][cs], accelerometer[X][cs], accelerometer[Y][cs], accelerometer[Z][cs], magnetometer[X][cs], magnetometer[Y][cs], magnetometer[Z][cs], delta_t, beta);
-    //Quaternion = MadgwickModified(Quaternion, gyroscope[X][cs], gyroscope[Y][cs], gyroscope[Z][cs], accelerometer[X][cs], accelerometer[Y][cs], accelerometer[Z][cs], magnetometer[X][cs], magnetometer[Y][cs], magnetometer[Z][cs], { 0, bx, by, bz }, delta_t, beta);
+    float acc_x = getDataPoint(DataType::ACCELERATION, X, cs), acc_y = getDataPoint(DataType::ACCELERATION, Y, cs), acc_z = getDataPoint(DataType::ACCELERATION, Z, cs);
+    float gyr_x = getDataPoint(DataType::ROTATION, X, cs), gyr_y = getDataPoint(DataType::ROTATION, Y, cs), gyr_z = getDataPoint(DataType::ROTATION, Z, cs);
+    float mag_x = getDataPoint(DataType::MAGNETIC, X, cs), mag_y = getDataPoint(DataType::MAGNETIC, Y, cs), mag_z = getDataPoint(DataType::MAGNETIC, Z, cs);
 
     //The Madgwick filter expects the z-direction to be up, but OpenGL expects the y-direction to be up. To ensure proper rendering the y and z values are swapped as they're passed to the filter
-    Quaternion = MadgwickVerticalY(Quaternion, gyroscope[X][cs], gyroscope[Y][cs], gyroscope[Z][cs], accelerometer[X][cs], accelerometer[Y][cs], accelerometer[Z][cs], magnetometer[X][cs], magnetometer[Y][cs], magnetometer[Z][cs], delta_t, beta);
-
-    //TODO: Delete below line when done with testing
-    //std::cout << "Madgwick Rotation Quaternion: {" << Quaternion.w << ", " << Quaternion.x << ", " << Quaternion.y << ", " << Quaternion.z << "}" << std::endl;
+    Quaternion = MadgwickVerticalY(Quaternion, gyr_x, gyr_y, gyr_z, acc_x, acc_y, acc_z, mag_x, mag_y, mag_z, delta_t, beta);
 }
 void PersonalCaddie::updateLinearAcceleration()
 {
@@ -353,9 +356,9 @@ void PersonalCaddie::updateLinearAcceleration()
     QuatRotate(Quaternion, z_vector);
 
     int cs = current_sample; //only put this in here because it was tedious to keep writing out current_sample
-    linear_acceleration[X][cs] = accelerometer[X][cs] - x_vector[2];
-    linear_acceleration[Y][cs] = accelerometer[Y][cs] - y_vector[2];
-    linear_acceleration[Z][cs] = accelerometer[Z][cs] - z_vector[2];
+    setDataPoint(DataType::LINEAR_ACCELERATION, X, cs, getDataPoint(DataType::ACCELERATION, X, cs) - x_vector[2]);
+    setDataPoint(DataType::LINEAR_ACCELERATION, Y, cs, getDataPoint(DataType::ACCELERATION, Y, cs) - y_vector[2]);
+    setDataPoint(DataType::LINEAR_ACCELERATION, Z, cs, getDataPoint(DataType::ACCELERATION, Z, cs) - z_vector[2]);
 
     //Set threshold on Linear Acceleration to help with drift
     //if (linear_acceleration[X][current_sample] < lin_acc_threshold && linear_acceleration[X][current_sample] > -lin_acc_threshold) linear_acceleration[X][current_sample] = 0;
@@ -372,15 +375,15 @@ void PersonalCaddie::updatePosition()
         int last_sample = current_sample - 1;
         if (current_sample == 0) last_sample = number_of_samples - 1; //last data point would have been end of current vector
 
-        if (linear_acceleration[X][current_sample] == 0 && (linear_acceleration[Y][current_sample] && linear_acceleration[Z][current_sample] == 0))
+        if (getDataPoint(DataType::LINEAR_ACCELERATION, X, current_sample) == 0 && (getDataPoint(DataType::LINEAR_ACCELERATION, Y, current_sample) == 0 && getDataPoint(DataType::LINEAR_ACCELERATION, Z, current_sample) == 0))
         {
             if (just_stopped)
             {
                 if (time_stamp - end_timer > .01) //if there's been no acceleration for .1 seconds, set velocity to zero to eliminate drift
                 {
-                    velocity[X][current_sample] = 0;
-                    velocity[Y][current_sample] = 0;
-                    velocity[Z][current_sample] = 0;
+                    setDataPoint(DataType::VELOCITY, X, current_sample, 0);
+                    setDataPoint(DataType::VELOCITY, Y, current_sample, 0);
+                    setDataPoint(DataType::VELOCITY, Z, current_sample, 0);
                     acceleration_event = 0;
                     just_stopped = 0;
                 }
@@ -400,21 +403,22 @@ void PersonalCaddie::updatePosition()
         }
 
         //velocity variable builds on itself so need to reference previous value
-        velocity[X][current_sample] = velocity[X][last_sample] + integrate(linear_acceleration[X][last_sample], linear_acceleration[X][current_sample], 1.0 / sampleFreq);
-        velocity[Y][current_sample] = velocity[Y][last_sample] + integrate(linear_acceleration[Y][last_sample], linear_acceleration[Y][current_sample], 1.0 / sampleFreq);
-        velocity[Z][current_sample] = velocity[Z][last_sample] + integrate(linear_acceleration[Z][last_sample], linear_acceleration[Z][current_sample], 1.0 / sampleFreq);
+        setDataPoint(DataType::VELOCITY, X, current_sample, getDataPoint(DataType::VELOCITY, X, last_sample) + integrate(getDataPoint(DataType::LINEAR_ACCELERATION, X, last_sample), getDataPoint(DataType::LINEAR_ACCELERATION, X, current_sample), 1.0 / sampleFreq));
+        setDataPoint(DataType::VELOCITY, Y, current_sample, getDataPoint(DataType::VELOCITY, Y, last_sample) + integrate(getDataPoint(DataType::LINEAR_ACCELERATION, Y, last_sample), getDataPoint(DataType::LINEAR_ACCELERATION, Y, current_sample), 1.0 / sampleFreq));
+        setDataPoint(DataType::VELOCITY, Z, current_sample, getDataPoint(DataType::VELOCITY, Z, last_sample) + integrate(getDataPoint(DataType::LINEAR_ACCELERATION, Z, last_sample), getDataPoint(DataType::LINEAR_ACCELERATION, Z, current_sample), 1.0 / sampleFreq));
 
         //location variables also build on themselves so need to reference previous values
-        //the minus signs are because movement was in opposite direction of what was expected
-        location[X][current_sample] = location[X][last_sample] + movement_scale * integrate(velocity[X][last_sample], velocity[X][current_sample], 1.0 / sampleFreq);
-        location[X][current_sample] = location[Y][last_sample] + movement_scale * integrate(velocity[Y][last_sample], velocity[Y][current_sample], 1.0 / sampleFreq);
-        location[X][current_sample] = location[Z][last_sample] + movement_scale * integrate(velocity[Z][last_sample], velocity[Z][current_sample], 1.0 / sampleFreq);
+        //(to flip direction of movement on screen minus signs can be added)
+        setDataPoint(DataType::LOCATION, X, current_sample, getDataPoint(DataType::LOCATION, X, last_sample) + movement_scale * integrate(getDataPoint(DataType::VELOCITY, X, last_sample), getDataPoint(DataType::VELOCITY, X, current_sample), 1.0 / sampleFreq));
+        setDataPoint(DataType::LOCATION, Y, current_sample, getDataPoint(DataType::LOCATION, Y, last_sample) + movement_scale * integrate(getDataPoint(DataType::VELOCITY, Y, last_sample), getDataPoint(DataType::VELOCITY, Y, current_sample), 1.0 / sampleFreq));
+        setDataPoint(DataType::LOCATION, Z, current_sample, getDataPoint(DataType::LOCATION, Z, last_sample) + movement_scale * integrate(getDataPoint(DataType::VELOCITY, Z, last_sample), getDataPoint(DataType::VELOCITY, Z, current_sample), 1.0 / sampleFreq));
     }
     else
     {
-        if (linear_acceleration[X][current_sample] > lin_acc_threshold || linear_acceleration[X][current_sample] < -lin_acc_threshold) acceleration_event = 1;
-        else if (linear_acceleration[Y][current_sample] > lin_acc_threshold || linear_acceleration[Y][current_sample] < -lin_acc_threshold) acceleration_event = 1;
-        else if (linear_acceleration[Z][current_sample] > lin_acc_threshold || linear_acceleration[Z][current_sample] < -lin_acc_threshold) acceleration_event = 1;
+        float lin_x = getDataPoint(DataType::LINEAR_ACCELERATION, X, current_sample), lin_y = getDataPoint(DataType::LINEAR_ACCELERATION, Y, current_sample), lin_z = getDataPoint(DataType::LINEAR_ACCELERATION, Z, current_sample);
+        if (lin_x > lin_acc_threshold || lin_x < -lin_acc_threshold) acceleration_event = 1;
+        else if (lin_y > lin_acc_threshold || lin_y < -lin_acc_threshold) acceleration_event = 1;
+        else if (lin_z > lin_acc_threshold || lin_z < -lin_acc_threshold) acceleration_event = 1;
 
         if (acceleration_event) position_timer = time_stamp;
     }
@@ -425,13 +429,13 @@ void PersonalCaddie::updateEulerAngles()
 
     //calculate pitch separately to avoid NaN results
     float pitch = 2 * (Quaternion.w * Quaternion.y - Quaternion.x * Quaternion.z);
-    if (pitch > 1) euler_angles[1][current_sample] = 1.570795; //case for +90 degrees
-    else if (pitch < -1) euler_angles[1][current_sample] = -1.570795; //case for -90 degrees
-    else  euler_angles[1][current_sample] = asinf(pitch); //all other cases
+    if (pitch > 1) setDataPoint(DataType::EULER_ANGLES, Y, current_sample, 1.570795); //case for +90 degrees
+    else if (pitch < -1) setDataPoint(DataType::EULER_ANGLES, Y, current_sample, -1.570795); //case for -90 degrees
+    else  setDataPoint(DataType::EULER_ANGLES, Y, current_sample, asinf(pitch)); //all other cases
 
     //no NaN issues for roll and yaw
-    euler_angles[0][current_sample] = atan2f(2 * (Quaternion.w * Quaternion.x + Quaternion.y * Quaternion.z), 1 - 2 * (Quaternion.x * Quaternion.x + Quaternion.y * Quaternion.y));
-    euler_angles[2][current_sample] = atan2f(2 * (Quaternion.w * Quaternion.z + Quaternion.x * Quaternion.y), 1 - 2 * (Quaternion.y * Quaternion.y + Quaternion.z * Quaternion.z));
+    setDataPoint(DataType::EULER_ANGLES, X, current_sample, atan2f(2 * (Quaternion.w * Quaternion.x + Quaternion.y * Quaternion.z), 1 - 2 * (Quaternion.x * Quaternion.x + Quaternion.y * Quaternion.y)));
+    setDataPoint(DataType::EULER_ANGLES, Z, current_sample, atan2f(2 * (Quaternion.w * Quaternion.z + Quaternion.x * Quaternion.y), 1 - 2 * (Quaternion.y * Quaternion.y + Quaternion.z * Quaternion.z)));
 }
 
 float PersonalCaddie::integrate(float one, float two, float dt)

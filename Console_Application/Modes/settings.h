@@ -1,7 +1,7 @@
 #pragma once
 
-#include <Devices/BluetoothLE.h>
-#include <Modes/mode.h>
+#include "../Devices/PersonalCaddie.h"
+#include "../Modes/mode.h"
 
 class Settings : public Mode
 {

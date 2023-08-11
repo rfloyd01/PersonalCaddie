@@ -18,6 +18,7 @@
 class Shader;
 class Model;
 class Mode;
+class PersonalCaddie;
 
 struct Text;
 struct Character;
@@ -70,7 +71,6 @@ public:
 	//Sensor Functions
 	//These functions only exist to pass variables directly from Sensor to mode classes
 	float getDataPoint(DataType dt, Axis a, int sample_number);
-	float getRawDataPoint(DataType dt, Axis a, int sample_number);
 	glm::quat getRotationQuaternion();
 	glm::quat getOpenGLQuaternion();
 	int getCurrentSample();

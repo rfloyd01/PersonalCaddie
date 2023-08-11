@@ -23,7 +23,7 @@ int main()
     PersonalCaddie m_pc;
 
     //Set up OpenGL and Shaders
-    GL GraphicWindow(&BLE_Nano);
+    GL GraphicWindow(&m_pc);
 
     //Add all proper modes to the Graphic Interface
     MainMenu mm(GraphicWindow); GraphicWindow.addMode(&mm);

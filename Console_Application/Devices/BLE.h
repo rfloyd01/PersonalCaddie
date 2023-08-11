@@ -6,6 +6,8 @@
 #include <pplawait.h> //library for using the co_await command
 #include <functional>
 
+#include "../Math/glm.h"
+
 using namespace winrt;
 using namespace Windows::Foundation;
 using namespace Windows::Devices::Bluetooth;

@@ -245,10 +245,6 @@ float GL::getDataPoint(DataType dt, Axis a, int sample_number)
 {
 	return p_pc->getDataPoint(dt, a, sample_number);
 }
-float GL::getRawDataPoint(DataType dt, Axis a, int sample_number)
-{
-	return p_pc->getRawDataPoint(dt, a, sample_number);
-}
 glm::quat GL::getRotationQuaternion()
 {
 	glm::quat q = p_pc->getOpenGLQuaternion();

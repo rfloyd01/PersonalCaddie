@@ -32,6 +32,9 @@ enum class DataType
 	ACCELERATION,
 	ROTATION,
 	MAGNETIC,
+	RAW_ACCELERATION,
+	RAW_ROTATION,
+	RAW_MAGNETIC,
 	LINEAR_ACCELERATION,
 	VELOCITY,
 	LOCATION,
@@ -60,7 +63,6 @@ public:
 	//Methods and fields from original BluetoothLE Class
 	void masterUpdate(); //master update function
 	float getDataPoint(DataType dt, Axis a, int sample_number);
-	float getRawDataPoint(DataType dt, Axis a, int sample_number);
 	int getCurrentSample();
 	float getCurrentTime();
 	glm::quat getOpenGLQuaternion();
@@ -95,6 +97,8 @@ private:
 	void updatePosition();
 	void updateEulerAngles();
 
+	void setDataPoint(DataType dt, Axis a, int sample_number, float data);
+
 	float integrate(float one, float two, float dt);
 
 	const int number_of_samples = 10; //number of sensor samples stored in the BLE characteristic at a given time. Due to the time associated with reading BLE broadcasts, its more efficient to store multiple data points at a single time then try to read each individual point
@@ -102,19 +106,8 @@ private:
 
 	glm::quat Quaternion = { 1, 0, 0, 0 }; //represents the current orientation of the sensor
 
-	//Vectors for storing raw sensor data
-	std::vector<std::vector<float> > r_accelerometer = { {}, {}, {} }; //vectors of size number_of_samples which hold current raw acceleration readings
-	std::vector<std::vector<float> > r_gyroscope = { {}, {}, {} };
-	std::vector<std::vector<float> > r_magnetometer = { {}, {}, {} };
-
-	//Vectors for storing calibrated and calculated data
-	std::vector<std::vector<float> > accelerometer = { {}, {}, {} }; //vectors of size number_of_samples which hold current calibrated acceleration readings
-	std::vector<std::vector<float> > gyroscope = { {}, {}, {} };
-	std::vector<std::vector<float> > magnetometer = { {}, {}, {} };
-	std::vector<std::vector<float> > linear_acceleration = { {}, {}, {} };
-	std::vector<std::vector<float> > velocity = { {}, {}, {} };
-	std::vector<std::vector<float> > location = { {}, {}, {} };
-	std::vector<std::vector<float> > euler_angles = { {}, {}, {} };
+	//Compound vector used for storing data
+	std::vector<std::vector<std::vector<float> > > sensor_data; //vectors of size number_of_samples which hold current raw acceleration readings
 
 	//Movement variables
 	float lin_acc_threshold = 0.025; //linear acceleration will be set to zero unless it exceeds this threshold. This will help with location drift with time. This number was obtained experimentally as most white noise falls within +/- .025 of actual readings
@@ -138,16 +131,6 @@ private:
 	float sampleFreq, beta = 0.1; //beta changes how reliant the Madgwick filter is on acc and mag data, good value is 0.035
 	float bx = -8, by = 40, bz = 15; //consider setting these values to the value of current location by default. Currently set to Conshohocken values
 
-	//calibration numbers
-	//These variables will change when a calibration is carried out and are initialized based on data in calibration.txt in Resources
-	double acc_off[3] = { 0 };
-	double acc_gain[3][3] = { 0 };
-	double gyr_off[3] = { 0 };
-	double gyr_gain[3] = { 0 };
-	double mag_off[3] = { 0 };
-	double mag_gain[3][3] = { 0 };
-
-	//TODO: These need to be moved to the IMU class
 	//calibration numbers
 	//These variables will change when a calibration is carried out and are initialized based on data in calibration.txt in Resources
 	double acc_off[3] = { 0 };
