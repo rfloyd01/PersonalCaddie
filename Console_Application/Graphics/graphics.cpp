@@ -398,10 +398,10 @@ void GL::renderText()
 	//get pointer to model specific text
 	std::map<MessageType, std::vector<std::vector<Text> > >* p_messages = p_current_mode->getRenderText();
 
-	// iterate through all characters
+	//First render standard messages, one character at a time
 	std::string::const_iterator c;
-	int heyhey = number_of_message_types;
-	for (int m = 0; m < heyhey; m++)
+	int heyhey = static_cast<int>(MessageType::FOOT_NOTE);
+	for (int m = 0; m <= heyhey; m++)
 	{
 		for (int i = 0; i < (*p_messages)[mtFromInt(m)].size(); i++)
 		{
@@ -412,38 +412,28 @@ void GL::renderText()
 				float scale = (*p_messages)[mtFromInt(m)][i][j].scale;
 				for (c = (*p_messages)[mtFromInt(m)][i][j].text.begin(); c != (*p_messages)[mtFromInt(m)][i][j].text.end(); c++)
 				{
-					Character ch = Characters[*c];
-
-					float xpos = temp_x + ch.Bearing.x * scale;
-					float ypos = (*p_messages)[mtFromInt(m)][i][j].y - (ch.Size.y - ch.Bearing.y) * scale;
-
-					float w = ch.Size.x * scale;
-					float h = ch.Size.y * scale;
-
-					// update VBO for each character
-					float tvertices[6][4] = {
-						{ xpos,     ypos + h,   0.0f, 0.0f },
-						{ xpos,     ypos,       0.0f, 1.0f },
-						{ xpos + w, ypos,       1.0f, 1.0f },
-
-						{ xpos,     ypos + h,   0.0f, 0.0f },
-						{ xpos + w, ypos,       1.0f, 1.0f },
-						{ xpos + w, ypos + h,   1.0f, 0.0f }
-					};
-					// render glyph texture over quad
-					glBindTexture(GL_TEXTURE_2D, ch.TextureID); //TODO: does this need to be set every iteration of the loop, or only once at the beginning of loop?
-					// update content of VBO memory
-					glBindBuffer(GL_ARRAY_BUFFER, TVBO); //TODO: does this need to be bound every iteration of the loop, or only once at the beginning of loop?
-					glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(tvertices), tvertices);
-					glBindBuffer(GL_ARRAY_BUFFER, 0); //TODO: does this need to be bound every iteration of the loop, or only once at the beginning of loop?
-					// render quad
-					glDrawArrays(GL_TRIANGLES, 0, 6);
-					// now advance cursors for next glyph (note that advance is number of 1/64 pixels)
-					temp_x += (ch.Advance >> 6) * scale; // bitshift by 6 to get value in pixels (2^6 = 64)
+					drawCharacter(*c, temp_x, (*p_messages)[mtFromInt(m)][i][j].y, scale);
 				}
 			}
 		}
 	}
+
+	//Then, render any active alerts
+	if (this->p_current_mode->alertActive())
+	{
+		std::vector<Text>* p_alerts = p_current_mode->getRenderAlerts();
+		for (int i = 0; i < p_alerts->size(); i++)
+		{
+			glUniform3f(glGetUniformLocation(textShader.ID, "textColor"), (*p_alerts)[i].color.x, (*p_alerts)[i].color.y, (*p_alerts)[i].color.z);
+			float temp_x = (*p_alerts)[i].x;
+			float scale = (*p_alerts)[i].scale;
+			for (c = (*p_alerts)[i].text.begin(); c != (*p_alerts)[i].text.end(); c++)
+			{
+				drawCharacter(*c, temp_x, (*p_alerts)[i].y, scale);
+			}
+		}
+	}
+
 	glBindVertexArray(0);
 	glBindTexture(GL_TEXTURE_2D, 0);
 }
@@ -486,6 +476,39 @@ void GL::renderModels()
 			//std::cout << "Model Rotation Quaternion: {" << MQuaternion.w << ", " << MQuaternion.x << ", " << MQuaternion.y << ", " << MQuaternion.z << "}" << std::endl << std::endl;
 		}
 	}
+}
+void GL::drawCharacter(char character, float& x_location, float y_location, float scale)
+{
+	//This method draws an individual character
+	Character ch = Characters[character];
+
+	float xpos = x_location + ch.Bearing.x * scale;
+	float ypos = y_location - (ch.Size.y - ch.Bearing.y) * scale;
+
+	float w = ch.Size.x * scale;
+	float h = ch.Size.y * scale;
+
+	// update VBO for each character
+	float tvertices[6][4] = {
+		{ xpos,     ypos + h,   0.0f, 0.0f },
+		{ xpos,     ypos,       0.0f, 1.0f },
+		{ xpos + w, ypos,       1.0f, 1.0f },
+
+		{ xpos,     ypos + h,   0.0f, 0.0f },
+		{ xpos + w, ypos,       1.0f, 1.0f },
+		{ xpos + w, ypos + h,   1.0f, 0.0f }
+	};
+	// render glyph texture over quad
+	glBindTexture(GL_TEXTURE_2D, ch.TextureID); //TODO: does this need to be set every iteration of the loop, or only once at the beginning of loop?
+	// update content of VBO memory
+	glBindBuffer(GL_ARRAY_BUFFER, TVBO); //TODO: does this need to be bound every iteration of the loop, or only once at the beginning of loop?
+	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(tvertices), tvertices);
+	glBindBuffer(GL_ARRAY_BUFFER, 0); //TODO: does this need to be bound every iteration of the loop, or only once at the beginning of loop?
+	// render quad
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+
+	// Finally, advance the cursor for next glyph (note that advance is number of 1/64 pixels)
+	x_location += (ch.Advance >> 6) * scale; // bitshift by 6 to get value in pixels (2^6 = 64)
 }
 
 //Key Press Functions

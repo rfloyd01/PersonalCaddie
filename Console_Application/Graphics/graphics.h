@@ -108,6 +108,7 @@ private:
 	//Rendering Functions
 	void renderText();
 	void renderModels();
+	void drawCharacter(char character, float& x_location, float y_location, float scale);
 
 	//Key Press Functions
 	void setCanPressKey();

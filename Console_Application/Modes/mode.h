@@ -48,6 +48,7 @@ public:
 	ModeType getModeType();
 	glm::vec3 getCameraLocation();
 	std::map<MessageType, std::vector<std::vector<Text> > >* getRenderText(); //returns a pointer to the message_map with all text to be rendered on screen
+	static std::vector<Text>* getRenderAlerts(); //returns a pointer to the alerts vector
 	std::map<ModelType, std::vector<Model> >* getRenderModels(); //returns a pointer to the model_map with all models to be rendered
 	glm::vec3 getBackgroundColor();
 
@@ -58,6 +59,7 @@ public:
 
 	//Text Based Functions
 	void createAlert(std::string message, double alert_time);
+	static bool alertActive();
 
 protected:
 	//PROTECTED FUNCTIONS
@@ -90,6 +92,7 @@ protected:
 	//glm::quat mode_q = { 1, 0, 0, 0 }; //used when it's necessary to render club or chip in position other than what sensor is currently reading
 	std::map<MessageType, std::vector<std::vector<Text> > > message_map; //a map used to store all words to be rendered on screen, a map is used to make it easier when adding and deleting messages
 	std::map<ModelType, std::vector<Model> > model_map; //a map used to store all images to be rendered on screen, a map is used to make it easier to keep track of where models are located
+	static std::vector<Text> alerts;
 
 	//Timing Variables
 	static std::chrono::steady_clock::time_point alert_timer;

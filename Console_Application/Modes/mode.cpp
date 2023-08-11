@@ -16,6 +16,7 @@ Mode::Mode(GL& graphics)
 double Mode::alert_timer_length = 0;
 std::chrono::steady_clock::time_point Mode::alert_timer = std::chrono::high_resolution_clock::now();
 bool Mode::alert_active = false;
+std::vector<Text> Mode::alerts = {}; //initialize to an empty vector
 
 //Updating and Advancement Functions
 void Mode::update()
@@ -125,11 +126,19 @@ void Mode::setClubScale(glm::vec3 s)
 //Text Based Functions
 void Mode::clearAllText()
 {
-	//clears whatever is currently stored in the messages map and re-creates empty containers for all the message types
+	//clears whatever is currently stored in the messages map and re-creates empty containers for all the message types. Since 
+	//alerts are cleared by their own timer, they don't get deleted here
+	auto alerts = message_map[MessageType::ALERT];
 	message_map.clear();
+	message_map[MessageType::ALERT] = alerts; //undo the clearing of the alerts
+
 	std::vector<std::vector<Text> > blank_text;
 	int heyhey = number_of_message_types;
-	for (int i = 0; i < heyhey; i++) message_map[mtFromInt(i)] = blank_text;
+	for (int i = 0; i < heyhey; i++)
+	{
+		//Don't clear alerts as these get cleared by their own timer
+		if (i != static_cast<int>(MessageType::ALERT)) message_map[mtFromInt(i)] = blank_text;
+	}
 }
 void Mode::clearMessageType(MessageType mt)
 {
@@ -264,11 +273,12 @@ void Mode::createAlert(std::string message, double alert_time)
 	//the Mode class directly. Basically, we create the alert with the given message and set the expiration using
 	//the alert timer
 
-	//All alerts have the same text properties (i.e., color, size, location), only the content of the message is different
-	Text alert_text = { message, 20.0, 10.0, 0.33, glm::vec3(1.0, 0.788, 0.055), p_graphics->getScreenWidth() - (float)10.0 };
+	//All alerts have the same text properties (i.e., color, size, location), only the content of the message is different. If there's 
+	//already an alert present, the new one will be placed on top of it
+	float y_location = 10.0 * (this->alerts.size() + 1);
+	Text alert_text = { message, 20.0, y_location, 0.33, glm::vec3(1.0, 0.788, 0.055), p_graphics->getScreenWidth() - (float)10.0 };
 
-	clearMessageType(MessageType::ALERT); //First clear any existing alerts if they're there
-	addText(MessageType::ALERT, alert_text); //Create the new text
+	this->alerts.push_back(alert_text);
 
 	this->alert_timer = std::chrono::high_resolution_clock::now();; //reset the alert timer if it hasn't been
 	this->alert_timer_length = alert_time;
@@ -281,7 +291,7 @@ void Mode::alertUpdate()
 		if (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - this->alert_timer).count() >= this->alert_timer_length)
 		{
 			//the alert time duration has elapsed so we remove the alert
-			clearMessageType(MessageType::ALERT);
+			this->alerts.clear(); //clear all alerts
 
 			//clear the alert variables
 			alert_active = false;
@@ -298,4 +308,14 @@ void Mode::clearAllImages()
 	std::vector<Model> blank_model;
 	int heyhey = number_of_model_types;
 	for (int i = 0; i < heyhey; i++) model_map[modeltypeFromInt(i)] = blank_model;
+}
+
+bool Mode::alertActive()
+{
+	return Mode::alert_active;
+}
+
+std::vector<Text>* Mode::getRenderAlerts()
+{
+	return &Mode::alerts;
 }
