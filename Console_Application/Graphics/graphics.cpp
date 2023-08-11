@@ -4,6 +4,7 @@
 #include <iostream>
 #include <cstring>
 #include <ft2build.h>
+#include <functional>
 #include FT_FREETYPE_H
 
 #include <Graphics/graphics.h>
@@ -59,42 +60,13 @@ GL::GL(PersonalCaddie* personal_caddie)
 
 	this->p_pc = personal_caddie;
 	this->data_type = DataType::ACCELERATION; //initialize data_type to ACCELERATION
+
+	//After all other initialization is complete, set an event handler for events from 
+	//the Personal Caddie
+	personal_caddie->setGraphicsHandler(std::bind(&GL::handlePersonalCaddieUpdate, this, std::placeholders::_1));
 }
 
 //Setup Functions
-/*
-void GL::LoadTexture(const char* name)
-{
-	unsigned int texture;
-
-	char location[200] = "Resources/";
-	strcat_s(location, name);
-
-	glGenTextures(1, &texture);
-	glBindTexture(GL_TEXTURE_2D, texture);
-	// set the texture wrapping parameters
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	// set texture filtering parameters
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	// load image, create texture and generate mipmaps
-	int width, height, nrChannels;
-	unsigned char* data = stbi_load(location, &width, &height, &nrChannels, 0);
-	if (data)
-	{
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-		glGenerateMipmap(GL_TEXTURE_2D);
-	}
-	else
-	{
-		std::cout << "Failed to load texture" << std::endl;
-	}
-	stbi_image_free(data);
-
-	textures.push_back(texture);
-}
-*/
 GLFWwindow* GL::GetWindow()
 {
 	return window;
@@ -531,4 +503,12 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 	// make sure the viewport matches the new window dimensions; note that width and 
 	// height will be significantly larger than specified on retina displays.
 	glViewport(0, 0, width, height);
+}
+
+//Event Handlers
+void GL::handlePersonalCaddieUpdate(int code)
+{
+	//When certain events happen to the Personal Caddie, such as its BLE device getting disconnected, this handler function 
+	//will get called to display an alert on the screen
+	std::cout << "Graphics handler called with status code " << code << std::endl;
 }

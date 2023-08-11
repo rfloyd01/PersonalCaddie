@@ -1,6 +1,7 @@
 #include "pch.h"
 
 #include <iostream>
+#include <chrono>
 #include <Modes/mode.h>
 
 //PUBLIC FUNCTIONS
@@ -15,6 +16,7 @@ Mode::Mode(GL& graphics)
 void Mode::update()
 {
 	processInput();
+	alertUpdate();
 }
 void Mode::processInput()
 {
@@ -248,6 +250,37 @@ void Mode::createSubMessages(MessageType mt, int index)
 			message_map[mt][index].clear();
 			message_map[mt][index].push_back(original_message);
 			createSubMessages(mt, index); //function recursively calls itself
+		}
+	}
+}
+void Mode::createAlert(std::string message, double alert_time)
+{
+	//Alerts are handled differently than other messages because they're on a time limit so the logic is handled by 
+	//the Mode class directly. Basically, we create the alert with the given message and set the expiration using
+	//the alert timer
+
+	//All alerts have the same text properties (i.e., color, size, location), only the content of the message is different
+	Text alert_text = { message, 20.0, 10.0, 0.33, glm::vec3(1.0, 0.788, 0.055), p_graphics->getScreenWidth() - (float)10.0 };
+
+	clearMessageType(MessageType::ALERT); //First clear any existing alerts if they're there
+	addText(MessageType::ALERT, alert_text); //Create the new text
+
+	this->alert_timer = std::chrono::high_resolution_clock::now();; //reset the alert timer if it hasn't been
+	this->alert_timer_length = alert_time;
+	this->alert_active = true; //set the alert flag to true, letting the main loop know that it should check when to remove the alert
+}
+void Mode::alertUpdate()
+{
+	if (this->alert_active)
+	{
+		if (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - this->alert_timer).count() >= this->alert_timer_length)
+		{
+			//the alert time duration has elapsed so we remove the alert
+			clearMessageType(MessageType::ALERT);
+
+			//clear the alert variables
+			alert_active = false;
+			alert_timer_length = 0;
 		}
 	}
 }

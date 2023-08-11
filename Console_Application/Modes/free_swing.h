@@ -54,7 +54,7 @@ private:
 	DataType current_data_type; //keeps track of which data type to display and record
 
 	//pointers to sensor data
-	std::vector<float>* p_data_x;
+	/*std::vector<float>* p_data_x;
 	std::vector<float>* p_data_y;
-	std::vector<float>* p_data_z;
+	std::vector<float>* p_data_z;*/
 };

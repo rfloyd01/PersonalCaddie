@@ -10,6 +10,7 @@
 //Updating and Advancement Functions
 void Settings::update()
 {
+	alertUpdate();
 	processInput(); //process FreeSwing specific input first
 }
 void Settings::processInput()

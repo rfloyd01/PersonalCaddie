@@ -43,7 +43,7 @@ BLE::BLE(std::function<void()> function)
     std::cout << "Device watcher started" << std::endl;
     this->m_bleAdvertisementsWatcher.Start();
 
-    //TEST: Pass in a function from the Personal Caddie class
+    //Set the onConnected() event handler from the Personal Caddie class
     this->connected_handler = function;
 
 }

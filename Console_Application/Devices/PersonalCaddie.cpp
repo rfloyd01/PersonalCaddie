@@ -80,6 +80,9 @@ concurrency::task<void> PersonalCaddie::BLEDeviceConnectedHandler()
     //like the FXOS and FXAS sensors.
     this->p_imu = new IMU(Accelerometer::BLE_SENSE_33, Gyroscope::BLE_SENSE_33, Magnetometer::BLE_SENSE_33);
     sampleFreq = 59.5; //TODO, need to actually get this from the sensor info characteristic at some point
+
+    //Send an alert to the graphics interface letting it know that the connection has been made
+    this->graphic_update_handler(34);
 }
 
 concurrency::task<void> PersonalCaddie::getDataCharacteristics(Bluetooth::GenericAttributeProfile::GattDeviceService& data_service)
@@ -142,6 +145,14 @@ concurrency::task<void> PersonalCaddie::changePowerMode(PersonalCaddiePowerMode 
         std::cout << "The write operation was successful." << std::endl;
         this->current_power_mode = mode; //update the current power mode
     }
+}
+
+void PersonalCaddie::setGraphicsHandler(std::function<void(int)> function)
+{
+    //The 'function' parameter is a method that's defined in the Graphics interface. We can use this 
+    //function to automatically make graphics updates when certain events happen (such as the BLE device
+    //getting disconnected)
+    this->graphic_update_handler = function;
 }
 
 //Methods and fields from original BluetoothLE Class

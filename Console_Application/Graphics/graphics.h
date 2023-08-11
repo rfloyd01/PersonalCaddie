@@ -86,6 +86,9 @@ public:
 	Mode* getCurrentMode();
 	void setCurrentMode(ModeType m);
 
+	//Event Handlers
+	void handlePersonalCaddieUpdate(int code);
+
 	//PUBLIC VARIABLES
 	bool display_readings = 0, record_data = 0; //these variables keep track of when to show sensor data and record data for creating graphs
 	int current_display = 0; //keeps track of what sensor, if any, to display on screen

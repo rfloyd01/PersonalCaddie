@@ -12,6 +12,7 @@
 //Updating and Advancement Functions
 void Training::update()
 {
+	alertUpdate();
 	processInput(); //process FreeSwing specific input first
 
 	setClubRotation(p_graphics->getOpenGLQuaternion());

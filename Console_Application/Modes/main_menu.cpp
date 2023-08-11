@@ -7,6 +7,7 @@
 //Updating and Advancement Functions
 void MainMenu::update()
 {
+	alertUpdate();
 	processInput();
 }
 void MainMenu::processInput()

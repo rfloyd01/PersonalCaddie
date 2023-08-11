@@ -9,6 +9,7 @@
 //Updating and Advancement Functions
 void FreeSwing::update()
 {
+	alertUpdate();
 	processInput(); //process FreeSwing specific input first
 	Mode::processInput(); //process generic input second
 
@@ -211,12 +212,12 @@ void FreeSwing::displayGraph()
 }
 void FreeSwing::addGraphData()
 {
-	//pointers to sensor data are set in liveUpdate() function
+	//sensor data type is set with a keyboard press
 	//this is ok because graph can only be displayed if sensor data is being displayed
 	int cs = p_graphics->getCurrentSample(); //consider making cs a class variable so it doesn't have to be set in every function that needs it
-	data_set[0].push_back(p_data_x->at(cs));
-	data_set[1].push_back(p_data_y->at(cs));
-	data_set[2].push_back(p_data_z->at(cs));
+	data_set[0].push_back(p_graphics->getDataPoint(current_data_type, X, cs));
+	data_set[1].push_back(p_graphics->getDataPoint(current_data_type, Y, cs));
+	data_set[2].push_back(p_graphics->getDataPoint(current_data_type, Z, cs));
 	time_set.push_back(p_graphics->getCurrentTime());
 
 	//easier to read degrees than radians so if current mode is euler angles, convert to degrees from radians
@@ -278,9 +279,9 @@ void FreeSwing::liveUpdate()
 	}
 	else
 	{
-		st1.insert(5, std::to_string(p_data_x->at(cs)));
-		st2.insert(5, std::to_string(p_data_y->at(cs)));
-		st3.insert(5, std::to_string(p_data_z->at(cs)));
+		st1.insert(5, std::to_string(p_graphics->getDataPoint(current_data_type, X, cs)));
+		st2.insert(5, std::to_string(p_graphics->getDataPoint(current_data_type, Y, cs)));
+		st3.insert(5, std::to_string(p_graphics->getDataPoint(current_data_type, Z, cs)));
 	}
 	editMessageText(MessageType::SENSOR_INFO, 1, st1);
 	editMessageText(MessageType::SENSOR_INFO, 2, st2);

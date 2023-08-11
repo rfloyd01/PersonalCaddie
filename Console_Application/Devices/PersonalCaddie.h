@@ -60,6 +60,8 @@ public:
 	volatile bool ble_device_connected;
 	volatile bool data_available = false;
 
+	void setGraphicsHandler(std::function<void(int)> function);
+
 	//Methods and fields from original BluetoothLE Class
 	void masterUpdate(); //master update function
 	float getDataPoint(DataType dt, Axis a, int sample_number);
@@ -82,6 +84,8 @@ private:
 	concurrency::task<void> getDataCharacteristics(Bluetooth::GenericAttributeProfile::GattDeviceService& data_service);
 	
 	PersonalCaddiePowerMode current_power_mode;
+
+	std::function<void(int)> graphic_update_handler; //pointer to a method in the graphic module
 
 	//Characteristics obtained from m_ble
 	Bluetooth::GenericAttributeProfile::GattCharacteristic m_settings_characteristic{ nullptr };

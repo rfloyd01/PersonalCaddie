@@ -37,6 +37,8 @@ void Calibration::update()
 		checkForNextStep();
 		return; //disable key presses and mouse clicks while actively collecting data
 	}
+
+	alertUpdate();
 	processInput();
 }
 void Calibration::processInput()
