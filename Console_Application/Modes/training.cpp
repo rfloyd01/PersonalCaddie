@@ -93,6 +93,14 @@ void Training::modeStart()
 	//set up other basic veriables specific to each mode type
 	setClubScale({ 1.0, 1.0, 1.0 });
 	setClubLocation({ 0.0, 0.0, 0.0 });
+
+	//Check and make sure that the Personal Caddie is actually connected, if it isn't then send
+	//an alert to the user
+	if (!this->p_graphics->getPersonalCaddie()->ble_device_connected)
+	{
+		createAlert("Go to the Settings menu to scan for nearby devices.", 5000.0);
+		createAlert("No Personal Caddie dedected.", 5000.0);
+	}
 }
 void Training::modeEnd()
 {

@@ -52,9 +52,6 @@ GL::GL(PersonalCaddie* personal_caddie)
 	setTextBuffers();
 	InitializeText();
 
-	//club_translate = { 0.0, 0.0, 0.0 };
-	//club_scale = { 1.0, 1.0, 1.0 };
-
 	record_data = false;
 	can_press_key = true;
 	key_time = .3; //sets the keyboard disable time after hitting one of the keyboard keys
