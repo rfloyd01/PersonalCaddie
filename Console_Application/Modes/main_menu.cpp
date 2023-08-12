@@ -4,6 +4,13 @@
 #include <Modes/main_menu.h>
 
 //PUBLIC FUNCTIONS
+//Constructors
+MainMenu::MainMenu(GL* graphics) : Mode(graphics)
+{
+	mode_name = "Main Menu";
+	mode_type = ModeType::MAIN_MENU;
+}
+
 //Updating and Advancement Functions
 void MainMenu::update()
 {

@@ -98,6 +98,7 @@ private:
 	//Setup Functions
 	void Initialize();
 	void InitializeText();
+	void initializeModes();
 
 	//Buffer and Texture Update Functions
 	void setTextBuffers();

@@ -10,11 +10,7 @@ class MainMenu : public Mode
 public:
 	//PUBLIC FUNCTIONS
 	//Constructors
-	MainMenu(GL& graphics) : Mode(graphics)
-	{
-		mode_name = "Main Menu";
-		mode_type = ModeType::MAIN_MENU;
-	};
+	MainMenu(GL* graphics);
 
 	//Updating and Advancement Functions
 	void update();

@@ -9,7 +9,7 @@
 
 //PUBLIC FUNCTIONS
 //Constructors
-Calibration::Calibration(GL& graphics) : Mode(graphics)
+Calibration::Calibration(GL* graphics) : Mode(graphics)
 {
 	mode_name = "Calibration";
 	mode_type = ModeType::CALIBRATION;

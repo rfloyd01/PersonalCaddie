@@ -62,6 +62,8 @@ public:
 
 	void setGraphicsHandler(std::function<void(int)> function);
 
+	PersonalCaddiePowerMode getCurrentPowerMode();
+
 	//Methods and fields from original BluetoothLE Class
 	void masterUpdate(); //master update function
 	float getDataPoint(DataType dt, Axis a, int sample_number);

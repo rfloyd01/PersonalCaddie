@@ -114,6 +114,11 @@ concurrency::task<void> PersonalCaddie::getDataCharacteristics(Bluetooth::Generi
     }
 }
 
+PersonalCaddiePowerMode PersonalCaddie::getCurrentPowerMode()
+{
+    return this->current_power_mode;
+}
+
 concurrency::task<void> PersonalCaddie::changePowerMode(PersonalCaddiePowerMode mode)
 {
     //This method changes the current operating mode of the Personal Caddie by writing its Settings Characteristic. These modes

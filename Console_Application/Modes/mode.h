@@ -34,7 +34,7 @@ class Mode
 public:
 	//PUBLIC FUNCTIONS
 	//Constructors
-	Mode(GL& graphics);
+	Mode(GL* graphics);
 
 	//Updating and Advancement Functions
 	virtual void update(); //virtual allows a sub-class to overwrite the base class' implementation of the function

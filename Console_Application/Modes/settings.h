@@ -8,7 +8,7 @@ class Settings : public Mode
 public:
 	//PUBLIC FUNCTIONS
 	//Constructors
-	Settings(GL& graphics) : Mode(graphics)
+	Settings(GL* graphics) : Mode(graphics)
 	{
 		mode_name = "Settings";
 		mode_type = ModeType::SETTINGS;

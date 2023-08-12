@@ -6,9 +6,9 @@
 
 //PUBLIC FUNCTIONS
 //Constructors
-Mode::Mode(GL& graphics)
+Mode::Mode(GL* graphics)
 {
-	p_graphics = &graphics;
+	p_graphics = graphics;
 	clearAllText();
 }
 
@@ -275,8 +275,8 @@ void Mode::createAlert(std::string message, double alert_time)
 
 	//All alerts have the same text properties (i.e., color, size, location), only the content of the message is different. If there's 
 	//already an alert present, the new one will be placed on top of it
-	float y_location = 10.0 * (this->alerts.size() + 1);
-	Text alert_text = { message, 20.0, y_location, 0.33, glm::vec3(1.0, 0.788, 0.055), p_graphics->getScreenWidth() - (float)10.0 };
+	float y_offset = 20.0 * (this->alerts.size());
+	Text alert_text = { message, 15.0, 10.0f + y_offset, 0.33, glm::vec3(1.0, 0.788, 0.055), p_graphics->getScreenWidth() - (float)10.0 };
 
 	this->alerts.push_back(alert_text);
 

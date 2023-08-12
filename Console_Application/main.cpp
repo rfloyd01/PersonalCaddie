@@ -1,38 +1,22 @@
 ﻿#include "pch.h"
 
-#include <iostream>
-
-//#include <Devices/BluetoothLE.h>
 #include "Devices/PersonalCaddie.h"
-#include <Graphics/graphics.h>
-#include <Math/ellipse.h>
-#include <Modes/modes.h>
+#include "Graphics/graphics.h"
 
 using namespace winrt;
 using namespace Windows::Foundation;
 using namespace Windows::Devices;
 using namespace Bluetooth::GenericAttributeProfile;
 
-auto serviceUUID = Bluetooth::BluetoothUuidHelper::FromShortId(0x2B30BF34); //This is the Sensor Service of the Personal Caddie
-uint32_t characteristicUUID = 0x2b30bf35; //This is the Sensor Settings characteristic on the Personal Caddie
-
 int main()
 {
     init_apartment();
 
+    //Create an instance of the Personal Caddie class
     PersonalCaddie m_pc;
 
-    //Set up OpenGL and Shaders
+    //Set up OpenGL and Shaders and link it to the Personal Caddie via a pointer
     GL GraphicWindow(&m_pc);
-
-    //Add all proper modes to the Graphic Interface
-    MainMenu mm(GraphicWindow); GraphicWindow.addMode(&mm);
-    FreeSwing fs(GraphicWindow); GraphicWindow.addMode(&fs);
-    Calibration cc(GraphicWindow); GraphicWindow.addMode(&cc);
-    Training tt(GraphicWindow); GraphicWindow.addMode(&tt);
-    Settings ss(GraphicWindow); GraphicWindow.addMode(&ss);
-
-    GraphicWindow.setCurrentMode(ModeType::MAIN_MENU); //start off with the main menu, ultimately want to move this Mode setup into the graphic intialization
 
     //Main rendering loop
     while (!GraphicWindow.ShouldClose())

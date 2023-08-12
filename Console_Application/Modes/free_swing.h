@@ -5,6 +5,7 @@
 
 class GL;
 class Text;
+class Mode;
 
 enum class DataType;
 
@@ -13,17 +14,8 @@ class FreeSwing : public Mode
 public:
 	//PUBLIC FUNCTIONS
 	//Constructors
-	FreeSwing(GL& graphics) : Mode(graphics)
-	{
-		mode_name = "Free Swing";
-		mode_type = ModeType::FREE;
-		background_color = { 0.2f, 0.3f, 0.3f };
+	FreeSwing(GL* graphics);
 
-		clearAllText();
-		clearAllImages();
-
-		current_data_type = DataType::ACCELERATION; //start with acceleration as display variable
-	};
 	//Updating and Advancement Functions
 	void update(); //virtual allows a sub-class to overwrite the base class' implementation of the function
 	void processInput();

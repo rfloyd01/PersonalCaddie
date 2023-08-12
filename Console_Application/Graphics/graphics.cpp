@@ -10,6 +10,7 @@
 #include <Graphics/graphics.h>
 #include <Graphics/stb_image.h>
 #include <Math/gnuplot.h>
+#include "../Modes/modes.h"
 
 //PUBLIC FUNCTIONS
 //Constructors
@@ -61,9 +62,17 @@ GL::GL(PersonalCaddie* personal_caddie)
 	this->p_pc = personal_caddie;
 	this->data_type = DataType::ACCELERATION; //initialize data_type to ACCELERATION
 
+	//Now set up all of the different modes for the application
+	initializeModes();
+
+	//Take a look at the Personal Caddie and see if it's connected to a device yet (this is unlikely but
+	//not impossible). Create an alert based on if it's in advertising or connected mode
+	if (personal_caddie->getCurrentPowerMode() == PersonalCaddiePowerMode::ADVERTISING_MODE) this->p_current_mode->createAlert("Searching for a Personal Caddie...", 15000.0);
+	else this->p_current_mode->createAlert("Personal Caddie connected", 5000.0);
+
 	//After all other initialization is complete, set an event handler for events from 
 	//the Personal Caddie
-	personal_caddie->setGraphicsHandler(std::bind(&GL::handlePersonalCaddieUpdate, this, std::placeholders::_1));
+	personal_caddie->setGraphicsHandler(std::bind(&GL::handlePersonalCaddieUpdate, this, std::placeholders::_1)); 
 }
 
 //Setup Functions
@@ -256,6 +265,17 @@ PersonalCaddie* GL::getPersonalCaddie()
 }
 
 //Mode Functions
+void GL::initializeModes()
+{
+	//Add all proper modes to the Graphic Interface
+	MainMenu* mm = new MainMenu(this); this->addMode(mm);
+	FreeSwing* fs = new FreeSwing(this); this->addMode(fs);
+	Calibration* cc = new Calibration(this); this->addMode(cc);
+	Training* tt = new Training(this); this->addMode(tt);
+	Settings* ss = new Settings(this); this->addMode(ss);
+
+	this->setCurrentMode(ModeType::MAIN_MENU); //start off by loading the main menu
+}
 void GL::addMode(Mode* m)
 {
 	mode_map[m->getModeType()] = m;

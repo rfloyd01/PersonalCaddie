@@ -6,6 +6,19 @@
 #include "../Modes/free_swing.h"
 
 //PUBLIC FUNCTIONS
+//Constructors
+FreeSwing::FreeSwing(GL* graphics) : Mode(graphics)
+{
+	mode_name = "Free Swing";
+	mode_type = ModeType::FREE;
+	background_color = { 0.2f, 0.3f, 0.3f };
+
+	clearAllText();
+	clearAllImages();
+
+	current_data_type = DataType::ACCELERATION; //start with acceleration as display variable
+};
+
 //Updating and Advancement Functions
 void FreeSwing::update()
 {
