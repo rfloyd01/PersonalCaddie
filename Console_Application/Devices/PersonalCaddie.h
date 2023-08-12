@@ -82,10 +82,17 @@ private:
 	BLE* p_ble; //a pointer to a Windows BLE Device
 	IMU* p_imu;
 
+	//BLE Functionality
 	concurrency::task<void> BLEDeviceConnectedHandler();
 	concurrency::task<void> getDataCharacteristics(Bluetooth::GenericAttributeProfile::GattDeviceService& data_service);
+	void dataCharacteristicEventHandler(Bluetooth::GenericAttributeProfile::GattCharacteristic& car, Bluetooth::GenericAttributeProfile::GattValueChangedEventArgs& args);
+	void toggleDataCharacteristicNotifications();
+
+	//Data Gathering/Manipulation
+	void updateRawDataWithCalibrationNumbers(DataType dt);
 	
 	PersonalCaddiePowerMode current_power_mode;
+	bool dataNotificationsOn;
 
 	std::function<void(int)> graphic_update_handler; //pointer to a method in the graphic module
 

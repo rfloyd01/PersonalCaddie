@@ -93,6 +93,7 @@ concurrency::task<void> PersonalCaddie::getDataCharacteristics(Bluetooth::Generi
     for (int i = 0; i < data_characteristics.Size(); i++)
     {
         uint16_t short_uuid = (data_characteristics.GetAt(i).Uuid().Data1 & 0xFFFF);
+        bool setup_notifcations = true;
 
         switch (short_uuid)
         {
@@ -107,11 +108,102 @@ concurrency::task<void> PersonalCaddie::getDataCharacteristics(Bluetooth::Generi
             break;
         case SETTINGS_CHARACTERISTIC_UUID:
             this->m_settings_characteristic = data_characteristics.GetAt(i);
+            setup_notifcations = false; //the settings characteristic doesn't have notification capability
             break;
         default:
             break;
         }
+
+        if (setup_notifcations)
+        {
+            //set the notification event handler for data characteristics (but don't enable notifications yet)
+            data_characteristics.GetAt(i).ValueChanged(Windows::Foundation::TypedEventHandler<GattCharacteristic, GattValueChangedEventArgs>(
+                [this](GattCharacteristic car, GattValueChangedEventArgs args)
+                {
+                    dataCharacteristicEventHandler(car, args); //handler defined elsewhere to prevent three identical code blocks being needed here
+                }));
+        }
     }
+}
+
+void PersonalCaddie::dataCharacteristicEventHandler(Bluetooth::GenericAttributeProfile::GattCharacteristic& car, Bluetooth::GenericAttributeProfile::GattValueChangedEventArgs& args)
+{
+    //this method gets automatically called when one of the data characteristics has its value changed and notifications turned on
+
+    //First we read the data from the characteristic and put it into the appropriate raw data vector
+    auto uuid = (car.Uuid().Data1 & 0xFFFF); //TODO: Can this just be passed in to the lambda function when the ValueChanged() property is set?
+    DataType dt = DataType::EULER_ANGLES; //this is just to initialize the variable, it will get changed to either acc, gyr or mag
+
+    //Get the appropriate data type by looking at the characteristic's UUID so we know which vector to update
+    switch (uuid)
+    {
+    case ACC_DATA_CHARACTERISTIC_UUID:
+        dt = DataType::RAW_ACCELERATION;
+        break;
+    case GYR_DATA_CHARACTERISTIC_UUID:
+        dt = DataType::RAW_ROTATION;
+        break;
+    case MAG_DATA_CHARACTERISTIC_UUID:
+        dt = DataType::RAW_MAGNETIC;
+        break;
+    default:
+        break;
+    }
+
+    //read the physical data
+    auto read_buffer = Windows::Storage::Streams::DataReader::FromBuffer(args.CharacteristicValue());
+    read_buffer.ByteOrder(Windows::Storage::Streams::ByteOrder::LittleEndian); //the nRF52840 uses little endian so we match it here
+
+    //Transfer the data in 16-bit chunks to the appropriate data array. A single reading of the sensor is comprised of 6 bytes, 2 each 
+    //for each axes so the data in the read_buffer looks like so: [XL0, XH0, YL0, YH0, ZL0, ZH0, XL1, XH1, YL1, YH1, ...]. Since the 
+    //data is little endian the least significant byte comes before the most significant.
+    for (int i = 0; i < this->number_of_samples; i++)
+    {
+        for (int axis = X; axis <= Z; axis++)
+        {
+            int16_t axis_reading = read_buffer.ReadInt16();
+            this->sensor_data[static_cast<int>(dt)][axis][i] = axis_reading; //TODO: Need to convert from bytes to float
+        }
+    }
+
+    //once the raw data has been read update it with the appropriate calibration numbers for each sensor
+    updateRawDataWithCalibrationNumbers(dt);
+}
+
+void PersonalCaddie::updateRawDataWithCalibrationNumbers(DataType dt)
+{
+    for (int i = 0; i < number_of_samples; i++)
+    {
+        float r_x = getDataPoint(dt, X, i), r_y = getDataPoint(dt, Y, i), r_z = getDataPoint(dt, Z, i);
+
+        if (dt == DataType::RAW_ACCELERATION)
+        {
+            setDataPoint(DataType::ACCELERATION, X, i, (acc_gain[0][0] * (r_x - acc_off[0])) + (acc_gain[0][1] * (r_y - acc_off[1])) + (acc_gain[0][2] * (r_z - acc_off[2])));
+            setDataPoint(DataType::ACCELERATION, Y, i, (acc_gain[1][0] * (r_x - acc_off[0])) + (acc_gain[1][1] * (r_y - acc_off[1])) + (acc_gain[1][2] * (r_z - acc_off[2])));
+            setDataPoint(DataType::ACCELERATION, Z, i, (acc_gain[2][0] * (r_x - acc_off[0])) + (acc_gain[2][1] * (r_y - acc_off[1])) + (acc_gain[2][2] * (r_z - acc_off[2])));
+        }
+        else if (dt == DataType::RAW_ROTATION)
+        {
+            setDataPoint(DataType::ROTATION, X, i, (r_x - gyr_off[0]) * gyr_gain[0]);
+            setDataPoint(DataType::ROTATION, Y, i, (r_y - gyr_off[1]) * gyr_gain[1]);
+            setDataPoint(DataType::ROTATION, Z, i, (r_z - gyr_off[2]) * gyr_gain[2]);
+        }
+        else if (dt == DataType::RAW_MAGNETIC)
+        {
+            setDataPoint(DataType::MAGNETIC, X, i, (mag_gain[0][0] * (r_x - mag_off[0])) + (mag_gain[0][1] * (r_y - mag_off[1])) + (mag_gain[0][2] * (r_z - mag_off[2])));
+            setDataPoint(DataType::MAGNETIC, Y, i, (mag_gain[1][0] * (r_x - mag_off[0])) + (mag_gain[1][1] * (r_y - mag_off[1])) + (mag_gain[1][2] * (r_z - mag_off[2])));
+            setDataPoint(DataType::MAGNETIC, Z, i, (mag_gain[2][0] * (r_x - mag_off[0])) + (mag_gain[2][1] * (r_y - mag_off[1])) + (mag_gain[2][2] * (r_z - mag_off[2])));
+        }
+    }
+
+    current_sample = 0; //lets the graphic interface know to start rendering from the first new data point
+    data_available = true; //this will let the graphics interface know that new data is ready
+}
+
+void PersonalCaddie::toggleDataCharacteristicNotifications()
+{
+    //If the sensor data characteristics aren't currently notifying, then their CCCD descriptors will be written
+    //so that they are (and vice versa).
 }
 
 PersonalCaddiePowerMode PersonalCaddie::getCurrentPowerMode()
@@ -140,6 +232,8 @@ concurrency::task<void> PersonalCaddie::changePowerMode(PersonalCaddiePowerMode 
     writer.WriteByte(static_cast<uint8_t>(mode));
 
     auto err_code = co_await this->m_settings_characteristic.WriteValueAsync(writer.DetachBuffer());
+
+    //TODO: When going into sensor active mode we need to write the notify flag of the data characteristics to actually get data
 
     if (err_code != Bluetooth::GenericAttributeProfile::GattCommunicationStatus::Success)
     {
@@ -308,38 +402,6 @@ void PersonalCaddie::masterUpdate()
 }
 
 //Internal Updating Functions
-void PersonalCaddie::updateSensorData()
-{
-    //Updates raw data with calibration numbers and fills acceleromter, gyroscope and magnetometer vectors with updated values
-    //The count variable counts which data point should be used as multiple data points are taken from the sensor at a time
-    for (int i = 0; i < number_of_samples; i++)
-    {
-        float r_acc_x = getDataPoint(DataType::RAW_ACCELERATION, X, i), r_acc_y = getDataPoint(DataType::RAW_ACCELERATION, Y, i), r_acc_z = getDataPoint(DataType::RAW_ACCELERATION, Z, i);
-        float r_gyr_x = getDataPoint(DataType::RAW_ROTATION, X, i), r_gyr_y = getDataPoint(DataType::RAW_ROTATION, Y, i), r_gyr_z = getDataPoint(DataType::RAW_ROTATION, Z, i);
-        float r_mag_x = getDataPoint(DataType::RAW_MAGNETIC, X, i), r_mag_y = getDataPoint(DataType::RAW_MAGNETIC, Y, i), r_mag_z = getDataPoint(DataType::RAW_MAGNETIC, Z, i);
-
-        setDataPoint(DataType::ACCELERATION, X, i, (acc_gain[0][0] * (r_acc_x - acc_off[0])) + (acc_gain[0][1] * (r_acc_y - acc_off[1])) + (acc_gain[0][2] * (r_acc_z - acc_off[2])));
-        setDataPoint(DataType::ACCELERATION, Y, i, (acc_gain[1][0] * (r_acc_x - acc_off[0])) + (acc_gain[1][1] * (r_acc_y - acc_off[1])) + (acc_gain[1][2] * (r_acc_z - acc_off[2])));
-        setDataPoint(DataType::ACCELERATION, Z, i, (acc_gain[2][0] * (r_acc_x - acc_off[0])) + (acc_gain[2][1] * (r_acc_y - acc_off[1])) + (acc_gain[2][2] * (r_acc_z - acc_off[2])));
-
-        setDataPoint(DataType::ROTATION, X, i, (r_gyr_x - gyr_off[0]) * gyr_gain[0]);
-        setDataPoint(DataType::ROTATION, Y, i, (r_gyr_y - gyr_off[1]) * gyr_gain[1]);
-        setDataPoint(DataType::ROTATION, Z, i, (r_gyr_z - gyr_off[2]) * gyr_gain[2]);
-
-        setDataPoint(DataType::MAGNETIC, X, i, (mag_gain[0][0] * (r_mag_x - mag_off[0])) + (mag_gain[0][1] * (r_mag_y - mag_off[1])) + (mag_gain[0][2] * (r_mag_z - mag_off[2])));
-        setDataPoint(DataType::MAGNETIC, Y, i, (mag_gain[1][0] * (r_mag_x - mag_off[0])) + (mag_gain[1][1] * (r_mag_y - mag_off[1])) + (mag_gain[1][2] * (r_mag_z - mag_off[2])));
-        setDataPoint(DataType::MAGNETIC, Z, i, (mag_gain[2][0] * (r_mag_x - mag_off[0])) + (mag_gain[2][1] * (r_mag_y - mag_off[1])) + (mag_gain[2][2] * (r_mag_z - mag_off[2])));
-
-        masterUpdate(); //update rotation quaternion, lin_acc., velocity and position with every new data point that comes in
-
-        //Each data point from the sensor is recorded at time intervals of 1/sampleFreq seconds from each other, however, this program can process them quicker than that
-        //Hard code a wait time of 1/sampleFreq seconds to ensure that rendering looks smooth
-        std::chrono::high_resolution_clock::time_point tt = std::chrono::high_resolution_clock::now();
-        while (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - tt).count() <= 1000.0 / sampleFreq) {}
-    }
-    current_sample = 0; //since a new set of data has come in, start from the beginning of it when doing Madgwick filter
-    data_available = true; //do I still need this variable?
-}
 void PersonalCaddie::updateMadgwick()
 {
     //if (!data_available) return; //only do things if there's new data to process
