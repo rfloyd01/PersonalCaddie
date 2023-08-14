@@ -174,8 +174,8 @@ uint32_t ble_sensor_service_settings_char_add(ble_sensor_service_t * p_ss)
     memset(&add_char_params, 0, sizeof(add_char_params));
     add_char_params.uuid              = SETTINGS_CHARACTERISTIC_UUID;
     add_char_params.uuid_type         = p_ss->uuid_type;
-    add_char_params.init_len          = 20 * sizeof(uint8_t);
-    add_char_params.max_len           = 20 * sizeof(uint8_t);
+    add_char_params.init_len          = SENSOR_SETTINGS_LENGTH * sizeof(uint8_t);
+    add_char_params.max_len           = SENSOR_SETTINGS_LENGTH * sizeof(uint8_t);
     add_char_params.char_props.read   = 1;
     add_char_params.char_props.write  = 1;
 

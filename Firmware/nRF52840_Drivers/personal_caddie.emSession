@@ -64,12 +64,14 @@
   <Watches active="0" update="Never"/>
  </Watch4>
  <Files>
-  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="997" useTextEdit="1" openedFrom="" useBinaryEdit="0" left="0" path="main.c" selected="0" top="392" codecName="Default"/>
-  <SessionOpenFile windowGroup="DockEditLeft" x="8" y="240" useTextEdit="1" openedFrom="D:/Coding/PersonalCaddie/Firmware/MEMs_Drivers/lsm9ds1_reg.h" useBinaryEdit="0" left="0" path="../MEMs_Drivers/lsm9ds1_reg.c" selected="1" top="239" codecName="Default"/>
-  <SessionOpenFile windowGroup="DockEditLeft" x="31" y="1021" useTextEdit="1" openedFrom="D:/Coding/PersonalCaddie/Firmware/MEMs_Drivers/lsm9ds1_reg.c" useBinaryEdit="0" left="0" path="../MEMs_Drivers/lsm9ds1_reg.h" selected="0" top="990" codecName="Default"/>
-  <SessionOpenFile windowGroup="DockEditLeft" x="18" y="42" useTextEdit="1" openedFrom="" useBinaryEdit="0" left="0" path="ble_sensor_service.c" selected="0" top="33" codecName="Default"/>
-  <SessionOpenFile windowGroup="DockEditLeft" x="62" y="21" useTextEdit="1" openedFrom="D:/Coding/PersonalCaddie/Firmware/nRF52840_Drivers/ble_sensor_service.c" useBinaryEdit="0" left="0" path="ble_sensor_service.h" selected="0" top="0" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="25" y="79" useTextEdit="1" openedFrom="" useBinaryEdit="0" left="0" path="main.c" selected="1" top="72" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="8" y="722" useTextEdit="1" openedFrom="D:/Coding/PersonalCaddie/Firmware/nRF52840_Drivers/lsm9ds1.c" useBinaryEdit="0" left="0" path="../MEMs_Drivers/lsm9ds1_reg.c" selected="0" top="700" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="1644" useTextEdit="1" openedFrom="D:/Coding/PersonalCaddie/Firmware/MEMs_Drivers/lsm9ds1_reg.c" useBinaryEdit="0" left="0" path="../MEMs_Drivers/lsm9ds1_reg.h" selected="0" top="1613" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="42" useTextEdit="1" openedFrom="" useBinaryEdit="0" left="0" path="ble_sensor_service.c" selected="0" top="33" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="21" useTextEdit="1" openedFrom="D:/Coding/PersonalCaddie/Firmware/nRF52840_Drivers/ble_sensor_service.c" useBinaryEdit="0" left="0" path="ble_sensor_service.h" selected="0" top="0" codecName="Default"/>
   <SessionOpenFile windowGroup="DockEditLeft" x="0" y="135" useTextEdit="1" openedFrom="D:/Coding/PersonalCaddie/Firmware/nRF52840_Drivers/main.c" useBinaryEdit="0" left="0" path="C:/Users/Bobby/Documents/Coding/BLE/nRFSDK17.0.2/components/libraries/timer/app_timer.h" selected="0" top="90" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="49" y="26" useTextEdit="1" openedFrom="" useBinaryEdit="0" left="0" path="lsm9ds1.c" selected="0" top="0" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="12" y="8" useTextEdit="1" openedFrom="D:/Coding/PersonalCaddie/Firmware/nRF52840_Drivers/lsm9ds1.c" useBinaryEdit="0" left="0" path="lsm9ds1.h" selected="0" top="0" codecName="Default"/>
  </Files>
  <ARMCrossStudioWindow activeProject="personal_caddie" fileDialogDefaultFilter="*.c;*.cpp;*.cxx;*.cc;*.h;*.hpp;*.hxx" autoConnectTarget="J-Link" buildConfiguration="Debug" sessionSettings="" debugSearchFileMap="" fileDialogInitialDirectory="D:/Coding/PersonalCaddie/Firmware/nRF52840_Drivers" debugSearchPath="" autoConnectCapabilities="3199"/>
 </session>

@@ -104,6 +104,7 @@
       <file file_name="main.c" />
       <file file_name="config/sdk_config.h" />
       <file file_name="ble_sensor_service.c" />
+      <file file_name="lsm9ds1.c" />
     </folder>
     <folder Name="nRF_Segger_RTT">
       <file file_name="$(IncludeDir)/$(SDKVer)/external/segger_rtt/SEGGER_RTT.c" />
