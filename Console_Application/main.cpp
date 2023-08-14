@@ -1,53 +1,22 @@
 ﻿#include "pch.h"
 
-#include <iostream>
-
-#include <Devices/BluetoothLE.h>
-#include <Graphics/graphics.h>
-#include <Math/ellipse.h>
-#include <Modes/modes.h>
+#include "Devices/PersonalCaddie.h"
+#include "Graphics/graphics.h"
 
 using namespace winrt;
 using namespace Windows::Foundation;
 using namespace Windows::Devices;
 using namespace Bluetooth::GenericAttributeProfile;
 
-auto serviceUUID = Bluetooth::BluetoothUuidHelper::FromShortId(0x2B30BF34); //This is the Sensor Service of the Personal Caddie
-uint32_t characteristicUUID = 0x2b30bf35; //This is the Sensor Settings characteristic on the Personal Caddie
-
 int main()
 {
     init_apartment();
 
-    //was using the below line to test correct sensor axes orientations
-    //graphFromFile("C:/Users/Bobby/Documents/Coding/C++/BLE_33/BLE_33/Resources/Data_Sets/MatlabData.txt", 9);
+    //Create an instance of the Personal Caddie class
+    PersonalCaddie m_pc;
 
-    //Create BLE device and wait for it to connect to actual BLE device
-    //float sensor_refresh_rate = 400; //chip is set to gather all forms of data at 400Hz
-    IMU Arduino_Nano_BLE(Accelerometer::BLE_SENSE_33, Gyroscope::BLE_SENSE_33, Magnetometer::BLE_SENSE_33);
-    BLEDevice BLE_Nano(serviceUUID, characteristicUUID, &Arduino_Nano_BLE);
-
-    //circleTest();
-
-    BLE_Nano.connect();
-    while (BLE_Nano.is_connected == false) //wait until chip has connected before moving onto the next step
-    {
-    }
-
-    BLE_Nano.setMagField();
-    std::cout << "Chip is set up, preparing to open graphics window." << std::endl;
-    
-
-    //Set up OpenGL and Shaders
-    GL GraphicWindow(&BLE_Nano);
-
-    //Add all proper modes to the Graphic Interface
-    MainMenu mm(GraphicWindow); GraphicWindow.addMode(&mm);
-    FreeSwing fs(GraphicWindow); GraphicWindow.addMode(&fs);
-    Calibration cc(GraphicWindow); GraphicWindow.addMode(&cc);
-    Training tt(GraphicWindow); GraphicWindow.addMode(&tt);
-
-    GraphicWindow.setCurrentMode(ModeType::MAIN_MENU); //start off with the main menu, ultimately want to move this Mode setup into the graphic intialization
+    //Set up OpenGL and Shaders and link it to the Personal Caddie via a pointer
+    GL GraphicWindow(&m_pc);
 
     //Main rendering loop
     while (!GraphicWindow.ShouldClose())

@@ -4,14 +4,15 @@
 #include <cmath>
 #include <string>
 
-#include <Math/gnuplot.h>
-#include <Math/quaternion_functions.h> //remove after getting new BLE 33 Sense
-#include <Modes/training.h>
+#include "../Math/gnuplot.h"
+#include "../Math/quaternion_functions.h" //remove after getting new BLE 33 Sense
+#include "../Modes/training.h"
 
 //PUBLIC FUNCTIONS
 //Updating and Advancement Functions
 void Training::update()
 {
+	alertUpdate();
 	processInput(); //process FreeSwing specific input first
 
 	setClubRotation(p_graphics->getOpenGLQuaternion());
@@ -92,6 +93,14 @@ void Training::modeStart()
 	//set up other basic veriables specific to each mode type
 	setClubScale({ 1.0, 1.0, 1.0 });
 	setClubLocation({ 0.0, 0.0, 0.0 });
+
+	//Check and make sure that the Personal Caddie is actually connected, if it isn't then send
+	//an alert to the user
+	if (!this->p_graphics->getPersonalCaddie()->ble_device_connected)
+	{
+		createAlert("Go to the Settings menu to scan for nearby devices.", 5000.0);
+		createAlert("No Personal Caddie dedected.", 5000.0);
+	}
 }
 void Training::modeEnd()
 {
@@ -262,8 +271,8 @@ void Training::tiltTraining()
 		//go back to training_state 2 regardless of whether or not the swing was successful
 
 		//check to see if yaw angle has changed by at least 10 degrees, if so then it means the swing has begun so move to next stage
-		int cs = p_graphics->getBLEDevice()->getCurrentSample();
-		current_angles[2] = p_graphics->getBLEDevice()->getData(DataType::EULER_ANGLES, Z)->at(cs);
+		int cs = p_graphics->getPersonalCaddie()->getCurrentSample();
+		current_angles[2] = p_graphics->getDataPoint(DataType::EULER_ANGLES, Z, cs);
 
 		//make sure that angle data didn't wrap around (i.e. go from +180 to -180) before calculating current angle difference
 		//max reading of the gyroscope is 2000 DPS and refresh rate of the monitor is 60 Hz (.0167 seconds) so the max delta in angle
@@ -282,10 +291,10 @@ void Training::tiltTraining()
 	}
 	else if (training_stage == 5)
 	{
-		int cs = p_graphics->getBLEDevice()->getCurrentSample();
+		int cs = p_graphics->getPersonalCaddie()->getCurrentSample();
 		float last_pitch = current_angles[1], last_yaw = current_angles[2];
-		current_angles[1] = p_graphics->getBLEDevice()->getData(DataType::EULER_ANGLES, Y)->at(cs);
-		current_angles[2] = p_graphics->getBLEDevice()->getData(DataType::EULER_ANGLES, Z)->at(cs);
+		current_angles[1] = p_graphics->getDataPoint(DataType::EULER_ANGLES, Y, cs);
+		current_angles[2] = p_graphics->getDataPoint(DataType::EULER_ANGLES, Z, cs);
 
 		//check to see if current yaw angle is within 1 degree of starting position, if so the swing is complete
 		bool swing_complete = false;

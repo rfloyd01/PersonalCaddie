@@ -4,15 +4,17 @@
 #include <iostream>
 #include <cstring>
 #include <ft2build.h>
+#include <functional>
 #include FT_FREETYPE_H
 
 #include <Graphics/graphics.h>
 #include <Graphics/stb_image.h>
 #include <Math/gnuplot.h>
+#include "../Modes/modes.h"
 
 //PUBLIC FUNCTIONS
 //Constructors
-GL::GL(BLEDevice* sensor)
+GL::GL(PersonalCaddie* personal_caddie)
 {
 	Initialize();
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
@@ -50,51 +52,27 @@ GL::GL(BLEDevice* sensor)
 	setTextBuffers();
 	InitializeText();
 
-	//club_translate = { 0.0, 0.0, 0.0 };
-	//club_scale = { 1.0, 1.0, 1.0 };
-
 	record_data = false;
 	can_press_key = true;
 	key_time = .3; //sets the keyboard disable time after hitting one of the keyboard keys
 
-	p_BLE = sensor;
-	data_type = DataType::ACCELERATION; //initialize data_type to ACCELERATION
+	this->p_pc = personal_caddie;
+	this->data_type = DataType::ACCELERATION; //initialize data_type to ACCELERATION
+
+	//Now set up all of the different modes for the application
+	initializeModes();
+
+	//Take a look at the Personal Caddie and see if it's connected to a device yet (this is unlikely but
+	//not impossible). Create an alert based on if it's in advertising or connected mode
+	if (personal_caddie->getCurrentPowerMode() == PersonalCaddiePowerMode::ADVERTISING_MODE) this->p_current_mode->createAlert("Searching for a Personal Caddie...", 15000.0);
+	else this->p_current_mode->createAlert("Personal Caddie connected", 5000.0);
+
+	//After all other initialization is complete, set an event handler for events from 
+	//the Personal Caddie
+	personal_caddie->setGraphicsHandler(std::bind(&GL::handlePersonalCaddieUpdate, this, std::placeholders::_1)); 
 }
 
 //Setup Functions
-/*
-void GL::LoadTexture(const char* name)
-{
-	unsigned int texture;
-
-	char location[200] = "Resources/";
-	strcat_s(location, name);
-
-	glGenTextures(1, &texture);
-	glBindTexture(GL_TEXTURE_2D, texture);
-	// set the texture wrapping parameters
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	// set texture filtering parameters
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	// load image, create texture and generate mipmaps
-	int width, height, nrChannels;
-	unsigned char* data = stbi_load(location, &width, &height, &nrChannels, 0);
-	if (data)
-	{
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-		glGenerateMipmap(GL_TEXTURE_2D);
-	}
-	else
-	{
-		std::cout << "Failed to load texture" << std::endl;
-	}
-	stbi_image_free(data);
-
-	textures.push_back(texture);
-}
-*/
 GLFWwindow* GL::GetWindow()
 {
 	return window;
@@ -221,13 +199,13 @@ void GL::AddData()
 {
 	if (record_data == 0) return; //only record data if in the proper mode
 
-	int cs = p_BLE->getCurrentSample();
+	int cs = p_pc->getCurrentSample();
 
-	data_set[0].push_back(p_BLE->getData(data_type, X)->at(cs));
-	data_set[1].push_back(p_BLE->getData(data_type, Y)->at(cs));
-	data_set[2].push_back(p_BLE->getData(data_type, Z)->at(cs));
+	data_set[0].push_back(p_pc->getDataPoint(data_type, X, cs));
+	data_set[1].push_back(p_pc->getDataPoint(data_type, Y, cs));
+	data_set[2].push_back(p_pc->getDataPoint(data_type, Z, cs));
 
-	time_set.push_back(p_BLE->getCurrentTime());
+	time_set.push_back(p_pc->getCurrentTime());
 }
 
 //Screen Size Functions
@@ -241,53 +219,60 @@ float GL::getScreenHeight()
 }
 
 //Sensor Functions
-std::vector<float>* GL::getData(DataType dt, Axis a)
+float GL::getDataPoint(DataType dt, Axis a, int sample_number)
 {
-	return p_BLE->getData(dt, a);
-}
-std::vector<float>* GL::getRawData(DataType dt, Axis a)
-{
-	return p_BLE->getRawData(dt, a);
+	return p_pc->getDataPoint(dt, a, sample_number);
 }
 glm::quat GL::getRotationQuaternion()
 {
-	glm::quat q = p_BLE->getOpenGLQuaternion();
+	glm::quat q = p_pc->getOpenGLQuaternion();
 	return { q.w, q.z, q.x, q.y }; //transforms OpenGL quaternion { Quaternion.w, Quaternion.y, Quaternion.z, Quaternion.x } back to normal coordinates;
 }
 glm::quat GL::getOpenGLQuaternion()
 {
-	return p_BLE->getOpenGLQuaternion();
+	return p_pc->getOpenGLQuaternion();
 }
 int GL::getCurrentSample()
 {
-	return p_BLE->getCurrentSample();
+	return p_pc->getCurrentSample();
 }
 float GL::getCurrentTime()
 {
-	return p_BLE->getCurrentTime();
+	return p_pc->getCurrentTime();
 }
 void GL::resetTime()
 {
-	p_BLE->resetTime();
+	p_pc->resetTime();
 }
 void GL::updateCalibrationNumbers()
 {
-	p_BLE->updateCalibrationNumbers();
+	p_pc->updateCalibrationNumbers();
 }
 void GL::setMagField()
 {
-	p_BLE->setMagField();
+	p_pc->setMagField();
 }
 void GL::setRotationQuaternion(glm::quat q)
 {
-	p_BLE->setRotationQuaternion(q);
+	p_pc->setRotationQuaternion(q);
 }
-BLEDevice* GL::getBLEDevice()
+PersonalCaddie* GL::getPersonalCaddie()
 {
-	return p_BLE;
+	return p_pc;
 }
 
 //Mode Functions
+void GL::initializeModes()
+{
+	//Add all proper modes to the Graphic Interface
+	MainMenu* mm = new MainMenu(this); this->addMode(mm);
+	FreeSwing* fs = new FreeSwing(this); this->addMode(fs);
+	Calibration* cc = new Calibration(this); this->addMode(cc);
+	Training* tt = new Training(this); this->addMode(tt);
+	Settings* ss = new Settings(this); this->addMode(ss);
+
+	this->setCurrentMode(ModeType::MAIN_MENU); //start off by loading the main menu
+}
 void GL::addMode(Mode* m)
 {
 	mode_map[m->getModeType()] = m;
@@ -430,10 +415,10 @@ void GL::renderText()
 	//get pointer to model specific text
 	std::map<MessageType, std::vector<std::vector<Text> > >* p_messages = p_current_mode->getRenderText();
 
-	// iterate through all characters
+	//First render standard messages, one character at a time
 	std::string::const_iterator c;
-	int heyhey = number_of_message_types;
-	for (int m = 0; m < heyhey; m++)
+	int heyhey = static_cast<int>(MessageType::FOOT_NOTE);
+	for (int m = 0; m <= heyhey; m++)
 	{
 		for (int i = 0; i < (*p_messages)[mtFromInt(m)].size(); i++)
 		{
@@ -444,38 +429,28 @@ void GL::renderText()
 				float scale = (*p_messages)[mtFromInt(m)][i][j].scale;
 				for (c = (*p_messages)[mtFromInt(m)][i][j].text.begin(); c != (*p_messages)[mtFromInt(m)][i][j].text.end(); c++)
 				{
-					Character ch = Characters[*c];
-
-					float xpos = temp_x + ch.Bearing.x * scale;
-					float ypos = (*p_messages)[mtFromInt(m)][i][j].y - (ch.Size.y - ch.Bearing.y) * scale;
-
-					float w = ch.Size.x * scale;
-					float h = ch.Size.y * scale;
-
-					// update VBO for each character
-					float tvertices[6][4] = {
-						{ xpos,     ypos + h,   0.0f, 0.0f },
-						{ xpos,     ypos,       0.0f, 1.0f },
-						{ xpos + w, ypos,       1.0f, 1.0f },
-
-						{ xpos,     ypos + h,   0.0f, 0.0f },
-						{ xpos + w, ypos,       1.0f, 1.0f },
-						{ xpos + w, ypos + h,   1.0f, 0.0f }
-					};
-					// render glyph texture over quad
-					glBindTexture(GL_TEXTURE_2D, ch.TextureID); //TODO: does this need to be set every iteration of the loop, or only once at the beginning of loop?
-					// update content of VBO memory
-					glBindBuffer(GL_ARRAY_BUFFER, TVBO); //TODO: does this need to be bound every iteration of the loop, or only once at the beginning of loop?
-					glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(tvertices), tvertices);
-					glBindBuffer(GL_ARRAY_BUFFER, 0); //TODO: does this need to be bound every iteration of the loop, or only once at the beginning of loop?
-					// render quad
-					glDrawArrays(GL_TRIANGLES, 0, 6);
-					// now advance cursors for next glyph (note that advance is number of 1/64 pixels)
-					temp_x += (ch.Advance >> 6) * scale; // bitshift by 6 to get value in pixels (2^6 = 64)
+					drawCharacter(*c, temp_x, (*p_messages)[mtFromInt(m)][i][j].y, scale);
 				}
 			}
 		}
 	}
+
+	//Then, render any active alerts
+	if (this->p_current_mode->alertActive())
+	{
+		std::vector<Text>* p_alerts = p_current_mode->getRenderAlerts();
+		for (int i = 0; i < p_alerts->size(); i++)
+		{
+			glUniform3f(glGetUniformLocation(textShader.ID, "textColor"), (*p_alerts)[i].color.x, (*p_alerts)[i].color.y, (*p_alerts)[i].color.z);
+			float temp_x = (*p_alerts)[i].x;
+			float scale = (*p_alerts)[i].scale;
+			for (c = (*p_alerts)[i].text.begin(); c != (*p_alerts)[i].text.end(); c++)
+			{
+				drawCharacter(*c, temp_x, (*p_alerts)[i].y, scale);
+			}
+		}
+	}
+
 	glBindVertexArray(0);
 	glBindTexture(GL_TEXTURE_2D, 0);
 }
@@ -519,6 +494,39 @@ void GL::renderModels()
 		}
 	}
 }
+void GL::drawCharacter(char character, float& x_location, float y_location, float scale)
+{
+	//This method draws an individual character
+	Character ch = Characters[character];
+
+	float xpos = x_location + ch.Bearing.x * scale;
+	float ypos = y_location - (ch.Size.y - ch.Bearing.y) * scale;
+
+	float w = ch.Size.x * scale;
+	float h = ch.Size.y * scale;
+
+	// update VBO for each character
+	float tvertices[6][4] = {
+		{ xpos,     ypos + h,   0.0f, 0.0f },
+		{ xpos,     ypos,       0.0f, 1.0f },
+		{ xpos + w, ypos,       1.0f, 1.0f },
+
+		{ xpos,     ypos + h,   0.0f, 0.0f },
+		{ xpos + w, ypos,       1.0f, 1.0f },
+		{ xpos + w, ypos + h,   1.0f, 0.0f }
+	};
+	// render glyph texture over quad
+	glBindTexture(GL_TEXTURE_2D, ch.TextureID); //TODO: does this need to be set every iteration of the loop, or only once at the beginning of loop?
+	// update content of VBO memory
+	glBindBuffer(GL_ARRAY_BUFFER, TVBO); //TODO: does this need to be bound every iteration of the loop, or only once at the beginning of loop?
+	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(tvertices), tvertices);
+	glBindBuffer(GL_ARRAY_BUFFER, 0); //TODO: does this need to be bound every iteration of the loop, or only once at the beginning of loop?
+	// render quad
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+
+	// Finally, advance the cursor for next glyph (note that advance is number of 1/64 pixels)
+	x_location += (ch.Advance >> 6) * scale; // bitshift by 6 to get value in pixels (2^6 = 64)
+}
 
 //Key Press Functions
 void GL::setCanPressKey()
@@ -535,4 +543,21 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 	// make sure the viewport matches the new window dimensions; note that width and 
 	// height will be significantly larger than specified on retina displays.
 	glViewport(0, 0, width, height);
+}
+
+//Event Handlers
+void GL::handlePersonalCaddieUpdate(int code)
+{
+	//When certain events happen to the Personal Caddie, such as its BLE device getting disconnected, this handler function 
+	//will get called to display an alert on the screen
+	std::cout << "Graphics handler called with status code " << code << std::endl;
+	
+	switch (code)
+	{
+	case 34:
+		this->p_current_mode->createAlert("Personal Caddie connected", 5000.0);
+		break;
+	default:
+		break;
+	}
 }

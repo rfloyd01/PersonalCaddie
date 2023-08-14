@@ -2,13 +2,27 @@
 
 #include <iostream>
 
-#include <Math/gnuplot.h>
-#include <Modes/free_swing.h>
+#include "../Math/gnuplot.h"
+#include "../Modes/free_swing.h"
 
 //PUBLIC FUNCTIONS
+//Constructors
+FreeSwing::FreeSwing(GL* graphics) : Mode(graphics)
+{
+	mode_name = "Free Swing";
+	mode_type = ModeType::FREE;
+	background_color = { 0.2f, 0.3f, 0.3f };
+
+	clearAllText();
+	clearAllImages();
+
+	current_data_type = DataType::ACCELERATION; //start with acceleration as display variable
+};
+
 //Updating and Advancement Functions
 void FreeSwing::update()
 {
+	alertUpdate();
 	processInput(); //process FreeSwing specific input first
 	Mode::processInput(); //process generic input second
 
@@ -134,6 +148,14 @@ void FreeSwing::modeStart()
 	//p_graphics->SetClubMatrices({ 1.0, 1.0, 1.0 }, { 0.0, 0.0, 0.0 });
 	setClubScale({ 1.0, 1.0, 1.0 });
 	setClubLocation({ 0.0, 0.0, 0.0 });
+
+	//Check and make sure that the Personal Caddie is actually connected, if it isn't then send
+	//an alert to the user
+	if (!this->p_graphics->getPersonalCaddie()->ble_device_connected)
+	{
+		createAlert("Go to the Settings menu to scan for nearby devices.", 5000.0);
+		createAlert("No Personal Caddie dedected.", 5000.0);
+	}
 }
 void FreeSwing::modeEnd()
 {
@@ -211,12 +233,12 @@ void FreeSwing::displayGraph()
 }
 void FreeSwing::addGraphData()
 {
-	//pointers to sensor data are set in liveUpdate() function
+	//sensor data type is set with a keyboard press
 	//this is ok because graph can only be displayed if sensor data is being displayed
 	int cs = p_graphics->getCurrentSample(); //consider making cs a class variable so it doesn't have to be set in every function that needs it
-	data_set[0].push_back(p_data_x->at(cs));
-	data_set[1].push_back(p_data_y->at(cs));
-	data_set[2].push_back(p_data_z->at(cs));
+	data_set[0].push_back(p_graphics->getDataPoint(current_data_type, X, cs));
+	data_set[1].push_back(p_graphics->getDataPoint(current_data_type, Y, cs));
+	data_set[2].push_back(p_graphics->getDataPoint(current_data_type, Z, cs));
 	time_set.push_back(p_graphics->getCurrentTime());
 
 	//easier to read degrees than radians so if current mode is euler angles, convert to degrees from radians
@@ -270,20 +292,17 @@ void FreeSwing::liveUpdate()
 		editMessageText(MessageType::SENSOR_INFO, 0, "Current Orientation");
 	}
 
-	p_data_x = p_graphics->getData(current_data_type, X);
-	p_data_y = p_graphics->getData(current_data_type, Y);
-	p_data_z = p_graphics->getData(current_data_type, Z);
 	if (current_data_type == DataType::EULER_ANGLES) //convert from radians to degrees for ease of reading
 	{
-		st1.insert(9, std::to_string(p_data_x->at(cs) * 180.0 / 3.14159));
-		st2.insert(9, std::to_string(p_data_y->at(cs) * 180.0 / 3.14159));
-		st3.insert(8, std::to_string(p_data_z->at(cs) * 180.0 / 3.14159));
+		st1.insert(9, std::to_string(p_graphics->getDataPoint(current_data_type, X, cs) * 180.0 / PI));
+		st2.insert(9, std::to_string(p_graphics->getDataPoint(current_data_type, Y, cs) * 180.0 / PI));
+		st3.insert(8, std::to_string(p_graphics->getDataPoint(current_data_type, Z, cs) * 180.0 / PI));
 	}
 	else
 	{
-		st1.insert(5, std::to_string(p_data_x->at(cs)));
-		st2.insert(5, std::to_string(p_data_y->at(cs)));
-		st3.insert(5, std::to_string(p_data_z->at(cs)));
+		st1.insert(5, std::to_string(p_graphics->getDataPoint(current_data_type, X, cs)));
+		st2.insert(5, std::to_string(p_graphics->getDataPoint(current_data_type, Y, cs)));
+		st3.insert(5, std::to_string(p_graphics->getDataPoint(current_data_type, Z, cs)));
 	}
 	editMessageText(MessageType::SENSOR_INFO, 1, st1);
 	editMessageText(MessageType::SENSOR_INFO, 2, st2);

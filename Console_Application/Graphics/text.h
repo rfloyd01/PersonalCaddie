@@ -5,7 +5,7 @@
 #include <Graphics/graphics.h>
 
 //global definitions
-#define number_of_message_types 5;
+#define number_of_message_types 6;
 
 //structs and functions useful for the rendering of text
 struct Character
@@ -35,7 +35,8 @@ enum class MessageType
 	SUB_TITLE = 1,
 	BODY = 2,
 	SENSOR_INFO = 3,
-	FOOT_NOTE = 4
+	FOOT_NOTE = 4,
+	ALERT = 5
 };
 
 //Text Based Functions

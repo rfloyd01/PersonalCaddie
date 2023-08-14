@@ -1642,10 +1642,13 @@ extern "C" {
 
     int32_t lsm9ds1_mag_self_test_set(stmdev_ctx_t* ctx, uint8_t val);
     int32_t lsm9ds1_mag_self_test_get(stmdev_ctx_t* ctx, uint8_t* val);
+
     /**
       *@}
       *
       */
+
+
 
 #ifdef __cplusplus
 }

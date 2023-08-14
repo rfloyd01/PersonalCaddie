@@ -128,8 +128,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Devices\BluetoothLE.cpp" />
-    <ClCompile Include="Devices\sensor.cpp" />
+    <ClCompile Include="Devices\BLE.cpp" />
+    <ClCompile Include="Devices\IMU.cpp" />
+    <ClCompile Include="Devices\PersonalCaddie.cpp" />
+    <ClCompile Include="Devices\Sensors\Accelerometer.cpp" />
+    <ClCompile Include="Devices\Sensors\Sensor.cpp" />
     <ClCompile Include="Graphics\glad.c">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
@@ -150,6 +153,7 @@
     <ClCompile Include="Modes\free_swing.cpp" />
     <ClCompile Include="Modes\main_menu.cpp" />
     <ClCompile Include="Modes\mode.cpp" />
+    <ClCompile Include="Modes\settings.cpp" />
     <ClCompile Include="Modes\training.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
@@ -175,10 +179,12 @@
     <Text Include="Resources\calibration.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\Firmware\MEMs_Drivers\lsm9ds1_reg.h" />
-    <ClInclude Include="Devices\BluetoothLE.h" />
+    <ClInclude Include="Devices\BLE.h" />
+    <ClInclude Include="Devices\IMU.h" />
     <ClInclude Include="Devices\magtest.h" />
-    <ClInclude Include="Devices\sensor.h" />
+    <ClInclude Include="Devices\PersonalCaddie.h" />
+    <ClInclude Include="Devices\Sensors\Accelerometer.h" />
+    <ClInclude Include="Devices\Sensors\Sensor.h" />
     <ClInclude Include="Graphics\graphics.h" />
     <ClInclude Include="Graphics\mesh.h" />
     <ClInclude Include="Graphics\model.h" />
@@ -197,9 +203,11 @@
     <ClInclude Include="Modes\main_menu.h" />
     <ClInclude Include="Modes\mode.h" />
     <ClInclude Include="Modes\modes.h" />
+    <ClInclude Include="Modes\settings.h" />
     <ClInclude Include="Modes\training.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="print.h" />
+    <ClInclude Include="Resources\constants.h" />
     <ClInclude Include="test.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

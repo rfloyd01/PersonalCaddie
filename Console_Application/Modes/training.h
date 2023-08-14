@@ -1,7 +1,7 @@
 #pragma once
 
-#include <Devices/BluetoothLE.h>
-#include <Modes/mode.h>
+#include "../Devices/PersonalCaddie.h"
+#include "../Modes/mode.h"
 
 #define pi 3.14159
 
@@ -10,7 +10,7 @@ class Training : public Mode
 public:
 	//PUBLIC FUNCTIONS
 	//Constructors
-	Training(GL& graphics) : Mode(graphics)
+	Training(GL* graphics) : Mode(graphics)
 	{
 		mode_name = "Training";
 		mode_type = ModeType::TRAINING;

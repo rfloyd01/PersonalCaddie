@@ -14,7 +14,7 @@ class Calibration : public Mode
 public:
 	//PUBLIC FUNCTIONS
 	//Constructors
-	Calibration(GL& graphics);
+	Calibration(GL* graphics);
 
 	//Updating and Advancement Functions
 	void update(); //virtual allows a sub-class to overwrite the base class' implementation of the function

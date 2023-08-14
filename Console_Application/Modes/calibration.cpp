@@ -9,7 +9,7 @@
 
 //PUBLIC FUNCTIONS
 //Constructors
-Calibration::Calibration(GL& graphics) : Mode(graphics)
+Calibration::Calibration(GL* graphics) : Mode(graphics)
 {
 	mode_name = "Calibration";
 	mode_type = ModeType::CALIBRATION;
@@ -37,6 +37,8 @@ void Calibration::update()
 		checkForNextStep();
 		return; //disable key presses and mouse clicks while actively collecting data
 	}
+
+	alertUpdate();
 	processInput();
 }
 void Calibration::processInput()
@@ -74,6 +76,9 @@ void Calibration::processInput()
 		cal_mode = 1; //set this to 1 which represents accelerometer calibration
 		cal_stage = 0; //reset stage to 0 in case accelerometer isn't first test being performed
 
+		//put the Personal Caddie into Sensor Active mode to actually take readings
+		this->p_graphics->getPersonalCaddie()->changePowerMode(PersonalCaddiePowerMode::SENSOR_ACTIVE_MODE);
+
 		//clear any previous acceleration cal. data
 		ax.clear(); ay.clear(); az.clear();
 		memset(acc_cal, 0, sizeof(acc_cal));
@@ -96,11 +101,16 @@ void Calibration::processInput()
 
 		//disable key presses momentarily
 		p_graphics->resetKeyTimer();
+
+		//TODO: Force a wait here so that the connection interval has time to update
 	}
 	else if (glfwGetKey(p_graphics->GetWindow(), GLFW_KEY_2) == GLFW_PRESS && cal_mode == 0)
 	{
 		cal_mode = 2;
 		cal_stage = 0;
+
+		//put the Personal Caddie into Sensor Active mode to actually take readings
+		this->p_graphics->getPersonalCaddie()->changePowerMode(PersonalCaddiePowerMode::SENSOR_ACTIVE_MODE);
 
 		//clear any previous gyroscope cal. data
 		gx.clear(); gy.clear(); gz.clear();
@@ -124,11 +134,16 @@ void Calibration::processInput()
 
 		//disable key presses momentarily
 		p_graphics->resetKeyTimer();
+
+		//TODO: Force a wait here so that the connection interval has time to update
 	}
 	else if (glfwGetKey(p_graphics->GetWindow(), GLFW_KEY_3) == GLFW_PRESS && cal_mode == 0)
 	{
 		cal_mode = 3;
 		cal_stage = 0;
+
+		//put the Personal Caddie into Sensor Active mode to actually take readings
+		this->p_graphics->getPersonalCaddie()->changePowerMode(PersonalCaddiePowerMode::SENSOR_ACTIVE_MODE);
 
 		//clear any previous magnetometer cal. data
 		mx.clear(); my.clear(); mz.clear();
@@ -153,6 +168,8 @@ void Calibration::processInput()
 
 		//disable key presses momentarily
 		p_graphics->resetKeyTimer();
+
+		//TODO: Force a wait here so that the connection interval has time to update
 	}
 	else if (glfwGetKey(p_graphics->GetWindow(), GLFW_KEY_ENTER) == GLFW_PRESS)
 	{
@@ -175,14 +192,39 @@ void Calibration::modeStart()
 
 	//initialize images to render
 	Model chip;
-	chip.loadModel("C:/Users/Bobby/Documents/Coding/C++/BLE_33/BLE_33/Resources/Models/Chip/chip.obj");
+	chip.loadModel("Resources/Models/Chip/chip.obj");
 	model_map[ModelType::CHIP].push_back(chip);
 
 	//set up other basic veriables specific to each mode type
-	//p_graphics->SetClubMatrices({ 1.0, 1.0, 1.0 }, { 0.0, 0.0, 0.0 });
 	setClubScale({ 1.0, 1.0, 1.0 });
 	setClubLocation({ 0.0, 0.0, 0.0 });
 	getCurrentCalibrationNumbers();
+
+	//Check and make sure that the Personal Caddie is actually connected, if it isn't then send
+	//an alert to the user
+	if (!this->p_graphics->getPersonalCaddie()->ble_device_connected)
+	{
+		//No device is connected so we can't really do anything in this mode, prompt
+		//the user to pair a device by going to the Settings mode.
+		createAlert("Go to the Settings menu to scan for nearby devices.", 5000.0);
+		createAlert("No Personal Caddie dedected.", 5000.0);
+	}
+	else
+	{
+		//A device is connected so put the sensors into idle mode. After this is successful put the 
+		//device into active mode so we can display the sensor moving in the calibration menu
+		createAlert("Activating IMU", 5000.0);
+
+		this->p_graphics->getPersonalCaddie()->changePowerMode(PersonalCaddiePowerMode::SENSOR_IDLE_MODE);
+		while (this->p_graphics->getPersonalCaddie()->getCurrentPowerMode() != PersonalCaddiePowerMode::SENSOR_IDLE_MODE) { } //do nothing here
+		this->p_graphics->getPersonalCaddie()->changePowerMode(PersonalCaddiePowerMode::SENSOR_ACTIVE_MODE);
+		while (this->p_graphics->getPersonalCaddie()->getCurrentPowerMode() != PersonalCaddiePowerMode::SENSOR_ACTIVE_MODE) {} //do nothing here
+
+		createAlert("Activation Complete", 5000.0);
+
+		//Physically turning the sensors on will happen almost instantly, however, we need to wait
+		//for the connection interval to update which takes a bit of time.
+	}
 }
 void Calibration::modeEnd()
 {
@@ -196,6 +238,12 @@ void Calibration::modeEnd()
 	{
 		setCalibrationNumbers(); //only update Calibration.txt if any numbers were actually changed
 		p_graphics->updateCalibrationNumbers(); //have the sensor read the new numbers from Calibration.txt to update its own cal data
+	}
+
+	if (this->p_graphics->getPersonalCaddie()->ble_device_connected)
+	{
+		//Put the device into connected mode before going back to the main menu to save on power.
+		this->p_graphics->getPersonalCaddie()->changePowerMode(PersonalCaddiePowerMode::CONNECTED_MODE);
 	}
 
 	set_render.clear(); //clear out preset render to free up space
@@ -215,21 +263,21 @@ void Calibration::addRawData(DataType dt, int current_sample)
 {
 	if (dt == DataType::ACCELERATION)
 	{
-		ax.push_back(p_graphics->getRawData(dt, X)->at(current_sample));
-		ay.push_back(p_graphics->getRawData(dt, Y)->at(current_sample));
-		az.push_back(p_graphics->getRawData(dt, Z)->at(current_sample));
+		ax.push_back(p_graphics->getDataPoint(DataType::RAW_ACCELERATION, X, current_sample));
+		ay.push_back(p_graphics->getDataPoint(DataType::RAW_ACCELERATION, Y, current_sample));
+		az.push_back(p_graphics->getDataPoint(DataType::RAW_ACCELERATION, Z, current_sample));
 	}
 	else if (dt == DataType::ROTATION)
 	{
-		gx.push_back(p_graphics->getRawData(dt, X)->at(current_sample));
-		gy.push_back(p_graphics->getRawData(dt, Y)->at(current_sample));
-		gz.push_back(p_graphics->getRawData(dt, Z)->at(current_sample));
+		gx.push_back(p_graphics->getDataPoint(DataType::RAW_ROTATION, X, current_sample));
+		gy.push_back(p_graphics->getDataPoint(DataType::RAW_ROTATION, Y, current_sample));
+		gz.push_back(p_graphics->getDataPoint(DataType::RAW_ROTATION, Z, current_sample));
 	}
 	else if (dt == DataType::MAGNETIC)
 	{
-		mx.push_back(p_graphics->getRawData(dt, X)->at(current_sample));
-		my.push_back(p_graphics->getRawData(dt, Y)->at(current_sample));
-		mz.push_back(p_graphics->getRawData(dt, Z)->at(current_sample));
+		mx.push_back(p_graphics->getDataPoint(DataType::RAW_MAGNETIC, X, current_sample));
+		my.push_back(p_graphics->getDataPoint(DataType::RAW_MAGNETIC, Y, current_sample));
+		mz.push_back(p_graphics->getDataPoint(DataType::RAW_MAGNETIC, Z, current_sample));
 	}
 }
 
@@ -280,6 +328,9 @@ void Calibration::accTest()
 		setClubLocation({ 0.0, 0.0, 0.0 });
 
 		cal_mode = 0; //go back to calibration main menu
+
+		//put the sensor back into idle mode
+		this->p_graphics->getPersonalCaddie()->changePowerMode(PersonalCaddiePowerMode::SENSOR_IDLE_MODE);
 	}
 }
 void Calibration::accNextStep()
@@ -419,7 +470,10 @@ void Calibration::gyroTest()
 		setClubScale({ 1.0, 1.0, 1.0 });
 		setClubLocation({ 0.0, 0.0, 0.0 });
 
-		cal_mode = 0;
+		cal_mode = 0; //go back to the calibration menu
+
+		//put the sensor back into idle mode
+		this->p_graphics->getPersonalCaddie()->changePowerMode(PersonalCaddiePowerMode::SENSOR_IDLE_MODE);
 	}
 }
 void Calibration::gyroNextStep()
@@ -515,7 +569,7 @@ void Calibration::gyroNextStep()
 			//make sure to apply offset values obtained from first portion of gyroscope calibration
 			//don't use addRawData() function here because it's necessary to subtract new offset values from raw data, which that function doesn't do
 			int cs = p_graphics->getCurrentSample();
-			gx.push_back(p_graphics->getRawData(DataType::ROTATION, X)->at(cs) - gyr_off[0]); gy.push_back(p_graphics->getRawData(DataType::ROTATION, Y)->at(cs) - gyr_off[1]); gz.push_back(p_graphics->getRawData(DataType::ROTATION, Z)->at(cs) - gyr_off[2]); //push_back raw sensor data
+			gx.push_back(p_graphics->getDataPoint(DataType::RAW_ROTATION, X, cs) - gyr_off[0]); gy.push_back(p_graphics->getDataPoint(DataType::RAW_ROTATION, Y, cs) - gyr_off[1]); gz.push_back(p_graphics->getDataPoint(DataType::RAW_ROTATION, Z, cs) - gyr_off[2]); //push_back raw sensor data
 
 			//record time stamps so that data can be integrated
 			time_data.push_back(p_graphics->getCurrentTime());
@@ -539,7 +593,7 @@ void Calibration::magTest()
 		//initialize mag_max and mag_min values to both be equal to the current mag reading
 		//need to do this becuase there's a chance the maximum value should actually be less than 0 (-22 for example), or minimum value could be greater than 0 (+22)
 		int cs = p_graphics->getCurrentSample();
-		mag_max[0] = p_graphics->getRawData(DataType::MAGNETIC, X)->at(cs); mag_max[1] = p_graphics->getRawData(DataType::MAGNETIC, Y)->at(cs); mag_max[2] = p_graphics->getRawData(DataType::MAGNETIC, Z)->at(cs);
+		mag_max[0] = p_graphics->getDataPoint(DataType::RAW_MAGNETIC, X, cs); mag_max[1] = p_graphics->getDataPoint(DataType::RAW_MAGNETIC, Y, cs); mag_max[2] = p_graphics->getDataPoint(DataType::RAW_MAGNETIC, Z, cs);
 		mag_min[0] = mag_max[0]; mag_min[1] = mag_max[1]; mag_min[2] = mag_max[2];
 	}
 	else if (cal_stage == 1)
@@ -597,7 +651,10 @@ void Calibration::magTest()
 		setClubScale({ 1.0, 1.0, 1.0 });
 		setClubLocation({ 0.0, 0.0, 0.0 });
 
-		cal_mode = 0;
+		cal_mode = 0; //go back to the calibration menu
+
+		//put the sensor back into idle mode
+		this->p_graphics->getPersonalCaddie()->changePowerMode(PersonalCaddiePowerMode::SENSOR_IDLE_MODE);
 	}
 }
 void Calibration::magNextStep()

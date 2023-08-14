@@ -9,3 +9,4 @@
 #include <stdio.h>
 #include <tchar.h>
 #include <Math/eigen.h> //This header needs to be included before "mode.h" in main code, not sure why though
+#include "Resources/constants.h"

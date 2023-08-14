@@ -50,11 +50,23 @@
     <ClCompile Include="Math\sensor_fusion.cpp">
       <Filter>Math</Filter>
     </ClCompile>
-    <ClCompile Include="Devices\BluetoothLE.cpp">
+    <ClCompile Include="Modes\settings.cpp">
+      <Filter>Modes</Filter>
+    </ClCompile>
+    <ClCompile Include="Devices\PersonalCaddie.cpp">
       <Filter>Devices</Filter>
     </ClCompile>
-    <ClCompile Include="Devices\sensor.cpp">
+    <ClCompile Include="Devices\BLE.cpp">
       <Filter>Devices</Filter>
+    </ClCompile>
+    <ClCompile Include="Devices\IMU.cpp">
+      <Filter>Devices</Filter>
+    </ClCompile>
+    <ClCompile Include="Devices\Sensors\Sensor.cpp">
+      <Filter>Devices\Sensors</Filter>
+    </ClCompile>
+    <ClCompile Include="Devices\Sensors\Accelerometer.cpp">
+      <Filter>Devices\Sensors</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -116,19 +128,29 @@
     <ClInclude Include="Math\sensor_fusion.h">
       <Filter>Math</Filter>
     </ClInclude>
-    <ClInclude Include="Devices\BluetoothLE.h">
-      <Filter>Devices</Filter>
-    </ClInclude>
     <ClInclude Include="Devices\magtest.h">
-      <Filter>Devices</Filter>
-    </ClInclude>
-    <ClInclude Include="Devices\sensor.h">
       <Filter>Devices</Filter>
     </ClInclude>
     <ClInclude Include="print.h" />
     <ClInclude Include="test.h" />
-    <ClInclude Include="..\Firmware\MEMs_Drivers\lsm9ds1_reg.h">
-      <Filter>Devices\Drivers</Filter>
+    <ClInclude Include="Modes\settings.h">
+      <Filter>Modes</Filter>
+    </ClInclude>
+    <ClInclude Include="Devices\PersonalCaddie.h">
+      <Filter>Devices</Filter>
+    </ClInclude>
+    <ClInclude Include="Devices\BLE.h">
+      <Filter>Devices</Filter>
+    </ClInclude>
+    <ClInclude Include="Resources\constants.h" />
+    <ClInclude Include="Devices\IMU.h">
+      <Filter>Devices</Filter>
+    </ClInclude>
+    <ClInclude Include="Devices\Sensors\Sensor.h">
+      <Filter>Devices\Sensors</Filter>
+    </ClInclude>
+    <ClInclude Include="Devices\Sensors\Accelerometer.h">
+      <Filter>Devices\Sensors</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -178,8 +200,8 @@
     <Filter Include="Devices">
       <UniqueIdentifier>{1e37b612-8b58-4e5b-b171-ecdbfeaec1dc}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Devices\Drivers">
-      <UniqueIdentifier>{a3f216d2-b3f2-40b4-84b7-a9354dc1c158}</UniqueIdentifier>
+    <Filter Include="Devices\Sensors">
+      <UniqueIdentifier>{56d9459a-b62f-4c1d-bdd6-583854aafc9c}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>
