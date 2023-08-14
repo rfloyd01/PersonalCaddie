@@ -86,7 +86,7 @@
 #include "nrf_log_default_backends.h"
 #include "SEGGER_RTT.h"
 
-#include "lsm9ds1_reg.h"
+#include "lsm9ds1.h"
 #include "ble_sensor_service.h"
 #include "personal_caddie_operating_modes.h"
 
@@ -151,8 +151,8 @@ static ble_uuid_t m_sr_uuids[] =                                               /
 #define TWI_INSTANCE_ID     1
 #endif
 
-static const nrf_drv_twi_t m_twi = NRF_DRV_TWI_INSTANCE(TWI_INSTANCE_ID);
-static volatile bool m_xfer_done = false; //Indicates if operation on TWI has ended.
+const nrf_drv_twi_t m_twi = NRF_DRV_TWI_INSTANCE(TWI_INSTANCE_ID);
+volatile bool m_xfer_done = false; //Indicates if operation on TWI has ended.
 
 //IMU Sensor Parameters
 static stmdev_ctx_t lsm9ds1_imu;                                                /**< LSM9DS1 accelerometer/gyroscope instance. */
@@ -167,9 +167,8 @@ const nrf_drv_timer_t LED_ON_TIMER =    NRF_DRV_TIMER_INSTANCE(1);              
 static uint8_t acc_characteristic_data[SENSOR_SAMPLES * SAMPLE_SIZE];
 static uint8_t gyr_characteristic_data[SENSOR_SAMPLES * SAMPLE_SIZE];
 static uint8_t mag_characteristic_data[SENSOR_SAMPLES * SAMPLE_SIZE];
-static uint8_t sensor_settings[20];                                            /**< An array represnting the IMU sensor settings */
+uint8_t sensor_settings[SENSOR_SETTINGS_LENGTH];                               /**< An array represnting the IMU sensor settings */
 static lsm9ds1_id_t whoamI;
-static bool lsm9ds1_register_auto_increment = true;                            /**register auto increment function for multiple byte reads of LSM9DS1 chip **/
 static int measurements_taken = 0;
 
 static int32_t write_imu(void *handle, uint8_t reg, const uint8_t *bufp, uint16_t len);
@@ -215,8 +214,7 @@ void assert_nrf_callback(uint16_t line_num, const uint8_t * p_file_name)
 }
 
 
-/**@brief Function for handling Peer Manager events.
- *
+/**@brief Function for handling Peer Manager events                   
  * @param[in] p_evt  Peer Manager event.
  */
 static void pm_evt_handler(pm_evt_t const * p_evt)
@@ -239,27 +237,27 @@ static void pm_evt_handler(pm_evt_t const * p_evt)
  *
  * @details Initializes the LSM9DS1 accelerometer, gyroscope and magnetometer
  */
-static void lsm9ds1_init(void)
+static void sensors_init(void)
 {
-    //initialize read/write methods for acc./gyro.
-    lsm9ds1_imu.read_reg = read_imu;
-    lsm9ds1_imu.write_reg = write_imu;
+    //first reset the sensor settings array
+    for (int i = 0; i < SENSOR_SETTINGS_LENGTH; i++) sensor_settings[i] = 0;
 
-    //initialize read/write methods for mag.
-    lsm9ds1_mag.read_reg = read_mag;
-    lsm9ds1_mag.write_reg = write_mag;
-
-    //configure the power pin and pullup resistor pins for the LSM9DS1
+    //configure the power pin and pullup resistor pins for the the sensors
     nrf_gpio_cfg_output(BLE_33_PULLUP); //send power to BLE 33 Sense pullup resistors (they aren't connected to VDD)
     nrf_gpio_cfg(BLE_33_SENSOR_POWER_PIN, NRF_GPIO_PIN_DIR_OUTPUT, NRF_GPIO_PIN_INPUT_CONNECT, NRF_GPIO_PIN_NOPULL, NRF_GPIO_PIN_S0H1, NRF_GPIO_PIN_NOSENSE);
     
-    //the main initialization is complete, but first attempt to communicate 
-    //with the sensor just to ensure that it's there and working properly.
-    nrf_gpio_pin_set(BLE_33_PULLUP);    //send power to BLE 33 Sense pullup resistors (they aren't connected to VDD)
-    nrf_gpio_pin_set(BLE_33_SENSOR_POWER_PIN);
-    nrf_delay_ms(50); //slight delay so the chip has time to power on
+    //Handle the initialization of individual sensors
+    lsm9ds1_init(&lsm9ds1_imu, &lsm9ds1_mag, sensor_settings, SENSOR_SETTINGS_LENGTH, &m_twi, &m_xfer_done);
 
-    //attempt to read the WHOAMI register
+    //after sensor initialization is complete we attempt to communicate 
+    //with each sensor just to ensure that it's there and working properly.
+    //To do so, turn on the TWI bus and turn on the power pin(s) and pullup resistors
+    nrf_drv_twi_enable(&m_twi);
+    nrf_gpio_pin_set(BLE_33_PULLUP);
+    nrf_gpio_pin_set(BLE_33_SENSOR_POWER_PIN);
+    nrf_delay_ms(50); //slight delay so sensors have time to power on
+
+    //attempt to read the WHOAMI register for each sensor
     uint32_t ret = lsm9ds1_dev_id_get(&lsm9ds1_mag, &lsm9ds1_imu, &whoamI);
     if (whoamI.imu == LSM9DS1_IMU_ID) SEGGER_RTT_WriteString(0, "LSM9DS1 discovered.\n");
     else SEGGER_RTT_WriteString(0, "Error: Couldn't find LSM9DS1.\n");
@@ -269,165 +267,13 @@ static void lsm9ds1_init(void)
     nrf_gpio_pin_clear(BLE_33_SENSOR_POWER_PIN);
     nrf_drv_twi_disable(&m_twi);
 
-    //after shutting the TWI bus and sensor pins down, we populate the sensor settings array
-    //with default values that we want the sensor to have
-    sensor_settings[1] = LSM9DS1_4g;      //accelerometer full scale range (+/- 4 g)
-    sensor_settings[2] = LSM9DS1_2000dps; //gyroscope full scale range (+/- 2000 degrees/s)
-    sensor_settings[3] = LSM9DS1_4Ga;     //magnetometer full scale range (+/- 4 Gauss)
-
-    sensor_settings[4] = LSM9DS1_IMU_59Hz5; //accelerometer/gyroscope ODR and Power (59.5 Hz, gyroscope in standard power mode)
-    sensor_settings[5] = LSM9DS1_MAG_LP_40Hz; //magnetomer ODR and Power (40 Hz, magnetometer in low power mode)
-
-    sensor_settings[6] = LSM9DS1_LPF1_OUT; //Gyroscope filter selection (low pass filter 1 only)
-    sensor_settings[7] = 0; //gyroscope low pass filter setting (only takes effect when LPF2 is set in gyro filter path)
-    sensor_settings[8] = 0; //gyroscope high pass filter setting (only takes effect when HPF is set in gyro filter path)
-    sensor_settings[9] = LSM9DS1_LP_OUT; //accelerometer filter selection (low pass filter only)
-    sensor_settings[10] = LSM9DS1_LP_DISABLE; //accelerometer low pass filter setting (frequency is automatically tied to ODR)
-    sensor_settings[11] = 0; //accelerometer high pass filter setting (only takes effect when HP_OUT is set for accelerometer)
-    sensor_settings[12] = LSM9DS1_AUTO; //accelerometer anti-aliasing bandwidth (automatically set based on current ODR)
-
-    //The rest of the settings are blank for now
-    for (int i = 13; i < 20; i++) sensor_settings[i] = 0;
-}
-
-static void lsm9ds1_idle_mode_enable()
-{
-    //set the power to sleep for both acc/gyr and mag sensors
-    int32_t ret = 0;
-    ret = lsm9ds1_imu_data_rate_set(&lsm9ds1_imu, LSM9DS1_IMU_OFF);
-    ret = lsm9ds1_mag_data_rate_set(&lsm9ds1_mag, LSM9DS1_MAG_POWER_DOWN);
-
-    ////set the full scale ranges
-    //ret = lsm9ds1_gy_full_scale_set(&lsm9ds1_imu, LSM9DS1_2000dps); // +/-2000 deg/s
-    //ret = lsm9ds1_xl_full_scale_set(&lsm9ds1_imu, LSM9DS1_4g);      // +/- 4 g
-    //ret = lsm9ds1_mag_full_scale_set(&lsm9ds1_mag, LSM9DS1_4Ga);    // +/- 4 gauss
-}
-
-static void lsm9ds1_active_mode_enable()
-{
-    //looks at the settings in the sensor_settings array and uses the TWI bus to apply them to the LSM9DS1.
-    //This function will only work if the sensor has been placed in sensor_active mode
-    if (current_operating_mode == SENSOR_ACTIVE_MODE)
-    {
-        int32_t ret = 0;
-
-        //set the full scale ranges
-        ret = lsm9ds1_xl_full_scale_set(&lsm9ds1_imu, sensor_settings[1]);
-        ret = lsm9ds1_gy_full_scale_set(&lsm9ds1_imu, sensor_settings[2]);
-        ret = lsm9ds1_mag_full_scale_set(&lsm9ds1_mag, sensor_settings[3]);
-
-        //set the odr and power modes
-        ret = lsm9ds1_imu_data_rate_set(&lsm9ds1_imu, sensor_settings[4]);
-        ret = lsm9ds1_mag_data_rate_set(&lsm9ds1_mag, sensor_settings[5]);
-
-        //set the filter settings
-        ret = lsm9ds1_gy_filter_out_path_set(&lsm9ds1_imu, sensor_settings[6]);
-        ret = lsm9ds1_gy_filter_lp_bandwidth_set(&lsm9ds1_imu, sensor_settings[7]);
-        ret = lsm9ds1_gy_filter_hp_bandwidth_set(&lsm9ds1_imu, sensor_settings[8]);
-        ret = lsm9ds1_xl_filter_out_path_set(&lsm9ds1_imu, sensor_settings[9]);
-        ret = lsm9ds1_xl_filter_lp_bandwidth_set(&lsm9ds1_imu, sensor_settings[10]);
-        ret = lsm9ds1_xl_filter_hp_bandwidth_set(&lsm9ds1_imu, sensor_settings[11]);
-        ret = lsm9ds1_xl_filter_aalias_bandwidth_set(&lsm9ds1_imu, sensor_settings[12]);
-    }
-}
-
-static float lsm9ds1_odr_calculate()
-{
-    //We need to know the ODR for the LSM9DS1 in order to calculate an optimal connection interval
-    //for transferring data to the central. Normally the ODR is dictated by the gyroscope, however,
-    //when the gyroscope is turned off then it's dictated by the accelerometer. If both the 
-    //accelerometer and gyroscope are off then the ODR will be dictated by the magnetometer.
-
-    float lsm9ds1_odr = 0.0;
-    if (sensor_settings[4] == LSM9DS1_IMU_OFF)
-    {
-        //both the gyroscope and accelerometer are off so the ODR will be determined from the 
-        //magnetometer.
-        if (sensor_settings[5] != LSM9DS1_MAG_POWER_DOWN)
-        {
-            uint8_t mag_odr_setting = (sensor_settings[5] & 0x0F);
-            switch (mag_odr_setting)
-            {
-                case 0x00:
-                    if (sensor_settings[5] != LSM9DS1_MAG_ONE_SHOT) lsm9ds1_odr = 0.625;
-                    break;
-                case 0x01:
-                    lsm9ds1_odr = 1.25;
-                    break;
-                case 0x02:
-                    lsm9ds1_odr = 2.5;
-                    break;
-                case 0x03:
-                    lsm9ds1_odr = 5;
-                    break;
-                case 0x04:
-                    lsm9ds1_odr = 10;
-                    break;
-                case 0x05:
-                    lsm9ds1_odr = 20;
-                    break;
-                case 0x06:
-                    lsm9ds1_odr = 40;
-                    break;
-                case 0x07:
-                    lsm9ds1_odr = 80;
-                    break;
-                case 0x08:
-                    if (sensor_settings[5] == LSM9DS1_MAG_UHP_155Hz) lsm9ds1_odr = 155;
-                    else if (sensor_settings[5] == LSM9DS1_MAG_HP_300Hz) lsm9ds1_odr = 300;
-                    else if (sensor_settings[5] == LSM9DS1_MAG_MP_560Hz) lsm9ds1_odr = 560;
-                    else lsm9ds1_odr = 1000;
-                    break;
-                default:
-                    lsm9ds1_odr = 0;
-                    break;
-            }
-        }
-    }
-    else
-    {
-        //either the gyroscope or accelerometer is on.
-        uint8_t imu_odr_setting = (sensor_settings[4] & 0x0F);
-        bool gyro_on = true;
-
-        if (imu_odr_setting == 0)
-        {
-            //the gyroscope is turned off so the ODR will be based on the accelerometer. This isn't 
-            //a huge deal as the accelerometer has the same ODR settings as the gyro other than the 
-            //lowest two settings
-            imu_odr_setting = ((sensor_settings[4] & 0xF0) >> 4);
-            gyro_on = false;
-        }
-        
-        switch (imu_odr_setting)
-        {
-            case 0x01:
-                if (gyro_on) lsm9ds1_odr = 14.9;
-                else lsm9ds1_odr = 10;
-                break;
-            case 0x02:
-                if (gyro_on) lsm9ds1_odr = 59.5;
-                else lsm9ds1_odr = 50;
-                break;
-            case 0x03:
-                lsm9ds1_odr = 119;
-                break;
-            case 0x04:
-                lsm9ds1_odr = 238;
-                break;
-            case 0x05:
-                lsm9ds1_odr = 476;
-                break;
-            case 0x06:
-                lsm9ds1_odr = 952;
-                break;
-            default:
-                lsm9ds1_odr = 0;
-                break;
-        }
-    }
-
-    return lsm9ds1_odr;
+    //After all sensors have been initialized, update the sensor settings characteristic to 
+    //reflect the sensor settings array
+    ble_gatts_value_t settings;\
+    settings.len = SENSOR_SETTINGS_LENGTH;
+    settings.p_value = sensor_settings;
+    uint32_t err_code = sd_ble_gatts_value_set(m_conn_handle, m_ss.settings_handles.value_handle, &settings);
+    APP_ERROR_CHECK(err_code);
 }
 
 static void characteristic_update_and_notify()
@@ -605,7 +451,7 @@ static void sensor_idle_mode_start()
         //and then put the sensor into sleep mode. Once this is done we change the connection interval 
         //back to 2 seconds as we won't be communicating with the central as often (for a short while).
         err_code = app_timer_stop(m_data_reading_timer); //Even if the timer isn't actively on it's ok to call this method
-        lsm9ds1_idle_mode_enable();
+        lsm9ds1_idle_mode_enable(&lsm9ds1_imu, &lsm9ds1_mag);
 
         //the connection interval should be less than 2 seconds, but still check to make sure
         if (current_connection_interval < SENSOR_IDLE_MIN_CONN_INTERVAL)
@@ -659,7 +505,7 @@ static void sensor_active_mode_start()
     app_timer_stop(m_led_timer); //disable the led by turning of it's timer
 
     //turn on the sensors by applying the current settings in the settings array
-    lsm9ds1_active_mode_enable();
+    lsm9ds1_active_mode_enable(&lsm9ds1_imu, &lsm9ds1_mag);
 
     //After turning on the sensor, request that the connection interval be changed
     //to match the ODR of the sensor * the number of samples being collected.
@@ -757,7 +603,7 @@ static void advertising_mode_start()
  * @param[in] p_lbs     Instance of Sensor Settings Service to which the write applies.
  * @param[in] led_state Written/desired state for the sensor settings.
  */
-static void LSM9DS1_settings_write_handler(uint16_t conn_handle, ble_sensor_service_t * p_ss, const uint8_t* settings_state)
+static void sensor_settings_write_handler(uint16_t conn_handle, ble_sensor_service_t * p_ss, const uint8_t* settings_state)
 {
     //Different things can happen depending on what gets written to the settings characteristic
     switch (*settings_state)
@@ -773,7 +619,7 @@ static void LSM9DS1_settings_write_handler(uint16_t conn_handle, ble_sensor_serv
             break;
         case 3:
             sensor_idle_mode_start();
-            for (int i = 1; i < 20; i++) sensor_settings[i] = *(settings_state + i);
+            for (int i = 1; i < SENSOR_SETTINGS_LENGTH; i++) sensor_settings[i] = *(settings_state + i);
             break;
         case 4:
             sensor_idle_mode_start();
@@ -803,7 +649,7 @@ static void services_init(void)
     APP_ERROR_CHECK(err_code);
 
     // Initialize sensor service
-    init.setting_write_handler = LSM9DS1_settings_write_handler;
+    init.setting_write_handler = sensor_settings_write_handler;
 
     err_code = ble_sensor_service_init(&m_ss, &init);
     APP_ERROR_CHECK(err_code);
@@ -1253,8 +1099,6 @@ void  twi_init (void)
     //out when non-blocking mode is enabled so a handler is needed here.
     err_code = nrf_drv_twi_init(&m_twi, &twi_lsm9ds1_config, twi_handler, NULL);
     APP_ERROR_CHECK(err_code);
-
-    nrf_drv_twi_enable(&m_twi); //the bus will be automatically disabled after first communication with sensor
 }
 
 static void leds_init()
@@ -1289,7 +1133,7 @@ int main(void)
     conn_params_init();
     peer_manager_init();
     twi_init();
-    lsm9ds1_init();
+    sensors_init();
     leds_init();
   
     NRF_LOG_FLUSH(); //flush out all logs called during initialization
@@ -1308,123 +1152,6 @@ int main(void)
     }
 }
 
-static int32_t read_imu(void *handle, uint8_t reg, uint8_t *bufp, uint16_t len)
-{
-    //The steps for a single byte read are as follows:
-    //  1. nRF52840 sends start signal by pulling the SDA line low
-    //  2. nRF52840 sends 7-bit slave address followed by a 0 (write) bit
-    //  3. LSM9DS1 responds with an Acknowledge
-    //  4. nRF52840 sends the 8-bit address of the register it wants to read
-    //  5. LSM9DS1 responds with an Acknowledge
-    //  6. nRF52840 sends a repeated start signal
-    //  7. nRG52840 sends 7-bit slave address followed by a 1 (read) bit
-    //  8. LSM9DS1 responds with an Acknowledge
-    //  9. LSM9DS1 sends the requested data
-    // 10. nRF52840 responds with a non-Acknowledge and then sends the stop signal
-    //Since reading the LSM9DS1 requires a repeated start signal the NRF_DRV_TWI_XFER_TXRX transfer type is used
-    ret_code_t err_code = 0;
-
-    //the primary buffer only holds the address of the register we want to read and therefore only has a length of 1 byte
-    //the secondary buffer is where the data will get read into
-    const nrf_drv_twi_xfer_desc_t lsm9ds1_imu_read = {
-        .address = (LSM9DS1_IMU_I2C_ADD_H >> 1),
-        .primary_length = 1,
-        .secondary_length = (uint8_t)len,
-        .p_primary_buf = &reg,
-        .p_secondary_buf = bufp,
-        .type =  NRF_DRV_TWI_XFER_TXRX};
-
-    m_xfer_done = false; //set to false before any read or write operations (this gets set to true in twi_handler when the transfer is complete)
-
-    do
-    {
-        err_code = nrf_drv_twi_xfer(&m_twi, &lsm9ds1_imu_read, 0); //no flags needed here
-    } while (err_code == 0x11); //if the nrf is currently busy doing something else this line will wait until its done before executing
-    while (m_xfer_done == false); //this line forces the program to wait for the TWI transfer to complete before moving on
-
-    APP_ERROR_CHECK(err_code);
-    return (int32_t)err_code;
-}
-static int32_t write_imu(void *handle, uint8_t reg, const uint8_t *bufp, uint16_t len)
-{
-    ret_code_t err_code = 0;
-
-    uint8_t register_and_data[2] = {reg, bufp[0]};
-
-    //the primary buffer will hold the register address, as well as the value to write into it.
-    //for a single write operation, the secondary buffer has no use in a single write command
-    const nrf_drv_twi_xfer_desc_t lsm9ds1_imu_write = {
-        .address = (LSM9DS1_IMU_I2C_ADD_H >> 1),
-        .primary_length = 2,
-        .secondary_length = 0,
-        .p_primary_buf = register_and_data,
-        .p_secondary_buf = NULL,
-        .type =  NRF_DRV_TWI_XFER_TX};
-
-    m_xfer_done = false; //set to false before any read or write operations (this gets set to true in twi_handler when the transfer is complete)
-
-    do
-    {
-        err_code = nrf_drv_twi_xfer(&m_twi, &lsm9ds1_imu_write, 0); //no flags needed here
-    } while (err_code == 0x11); //if the nrf is currently busy doing something else this line will wait until its done before executing
-    while (m_xfer_done == false); //this line forces the program to wait for the TWI transfer to complete before moving on
-
-    APP_ERROR_CHECK(err_code);
-    return (int32_t)err_code;
-}
-static int32_t read_mag(void *handle, uint8_t reg, uint8_t *bufp, uint16_t len)
-{
-    ret_code_t err_code = 0;
-
-    //the logic for handling multiple byte reads must be handled in software for the magnetometer, whereas, the accelerometer
-    //and gyroscope can do it via hardware
-    const nrf_drv_twi_xfer_desc_t lsm9ds1_mag_read = {
-        .address = (((uint8_t)lsm9ds1_register_auto_increment << 7) | (LSM9DS1_MAG_I2C_ADD_H >> 1)),
-        .primary_length = 1,
-        .secondary_length = (uint8_t)len,
-        .p_primary_buf = &reg,
-        .p_secondary_buf = bufp,
-        .type =  NRF_DRV_TWI_XFER_TXRX};
-
-    m_xfer_done = false; //set to false before any read or write operations (this gets set to true in twi_handler when the transfer is complete)
-
-    do
-    {
-        err_code = nrf_drv_twi_xfer(&m_twi, &lsm9ds1_mag_read, 0); //no flags needed here
-    } while (err_code == 0x11); //if the nrf is currently busy doing something else this line will wait until its done before executing
-    while (m_xfer_done == false); //this line forces the program to wait for the TWI transfer to complete before moving on
-
-    APP_ERROR_CHECK(err_code);
-    return (int32_t)err_code;
-}
-static int32_t write_mag(void *handle, uint8_t reg, const uint8_t *bufp, uint16_t len)
-{
-    ret_code_t err_code = 0;
-
-    uint8_t register_and_data[2] = {reg, bufp[0]};
-
-    //the primary buffer will hold the register address, as well as the value to write into it.
-    //for a single write operation, the secondary buffer has no use in a single write command
-    const nrf_drv_twi_xfer_desc_t lsm9ds1_mag_write = {
-        .address = (LSM9DS1_MAG_I2C_ADD_H >> 1),
-        .primary_length = 2,
-        .secondary_length = 0,
-        .p_primary_buf = register_and_data,
-        .p_secondary_buf = NULL,
-        .type =  NRF_DRV_TWI_XFER_TX};
-
-    m_xfer_done = false; //set to false before any read or write operations (this gets set to true in twi_handler when the transfer is complete)
-
-    do
-    {
-        err_code = nrf_drv_twi_xfer(&m_twi, &lsm9ds1_mag_write, 0); //no flags needed here
-    } while (err_code == 0x11); //if the nrf is currently busy doing something else this line will wait until its done before executing
-    while (m_xfer_done == false); //this line forces the program to wait for the TWI transfer to complete before moving on
-
-    APP_ERROR_CHECK(err_code);
-    return (int32_t)err_code;
-}
-
 static void tx_com( uint8_t *tx_buffer, uint16_t len )
 {
     int x = 5;
@@ -1433,25 +1160,14 @@ static void tx_com( uint8_t *tx_buffer, uint16_t len )
 static int32_t get_IMU_data(uint8_t offset)
 {
     //Reads the raw accelerometer and magnetometer data and stores it in their respective arrays
-    int ret = 0; 
+    int ret = lsm9ds1_read_reg(&lsm9ds1_imu, LSM9DS1_OUT_X_L_G, gyr_characteristic_data + offset, 6);
 
-    if (lsm9ds1_register_auto_increment)
+    if (ret == 0)
     {
-        ret = lsm9ds1_read_reg(&lsm9ds1_imu, LSM9DS1_OUT_X_L_G, gyr_characteristic_data + offset, 6);
-
-        if (ret == 0)
-        {
-            //SEGGER_RTT_printf(0, "Base Characteristic Address: 0x%#08x\n", acc_characteristic_data);
-            //SEGGER_RTT_printf(0, "Address after offset: 0x%#08x\n", acc_characteristic_data + offset);
-            ret = lsm9ds1_read_reg(&lsm9ds1_imu, LSM9DS1_OUT_X_L_XL, acc_characteristic_data + offset, 6);
-        }
+        //SEGGER_RTT_printf(0, "Base Characteristic Address: 0x%#08x\n", acc_characteristic_data);
+        //SEGGER_RTT_printf(0, "Address after offset: 0x%#08x\n", acc_characteristic_data + offset);
+        ret = lsm9ds1_read_reg(&lsm9ds1_imu, LSM9DS1_OUT_X_L_XL, acc_characteristic_data + offset, 6);
     }
-    else
-    {
-        //implement this at some point
-    }
-    
-    
 
     return ret;
 }
@@ -1459,16 +1175,7 @@ static int32_t get_IMU_data(uint8_t offset)
 static int32_t get_MAG_data(uint8_t offset)
 {
     //Reads the raw magnetometer data and stores it in its respective array
-    int ret = 0;
-    
-    if (lsm9ds1_register_auto_increment)
-    {
-        ret = lsm9ds1_read_reg(&lsm9ds1_mag, LSM9DS1_OUT_X_L_M, mag_characteristic_data + offset, 6);
-    }
-    else
-    {
-        //implement this at some point
-    }
+    int ret = lsm9ds1_read_reg(&lsm9ds1_mag, LSM9DS1_OUT_X_L_M, mag_characteristic_data + offset, 6);
 
     return ret;
 }
