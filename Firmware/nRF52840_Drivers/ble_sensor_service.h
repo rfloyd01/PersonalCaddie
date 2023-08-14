@@ -30,6 +30,7 @@ NRF_SDH_BLE_OBSERVER(_name ## _obs,                                             
 #define GYR_DATA_CHARACTERISTIC_UUID      0xBF37
 #define MAG_DATA_CHARACTERISTIC_UUID      0xBF38
 
+#define SENSOR_SETTINGS_LENGTH  32           /**< Defines the length of the sensor settings characteristic (in bytes) */
 #define SENSOR_SAMPLES 10                    /**< The number of full sensor samples to read into data characteristics */
 #define SAMPLE_SIZE     6                    /**< The size (in bytes) of a full sensor sample reading (includes x, y and z axes) */
 
@@ -49,7 +50,7 @@ typedef struct
 struct ble_sensor_service_s
 {
     uint16_t                    service_handle;                         /**< Handle of Sensor Service (as provided by the BLE stack). */
-    ble_gatts_char_handles_t    data_handles[3];                           /**< Handles related to the Data Characteristic. */
+    ble_gatts_char_handles_t    data_handles[3];                        /**< Handles related to the Data Characteristic. */
     ble_gatts_char_handles_t    settings_handles;                       /**< Handles related to the Settings Characteristic. */
     uint8_t                     uuid_type;                              /**< UUID type for the Sensor Service. */
     ble_sensor_service_setting_write_handler_t setting_write_handler;   /**< Event handler to be called when the Settings Characteristic is written. */
