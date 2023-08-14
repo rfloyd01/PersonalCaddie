@@ -127,6 +127,9 @@
     </ClInclude>
     <ClInclude Include="print.h" />
     <ClInclude Include="test.h" />
+    <ClInclude Include="..\Firmware\MEMs_Drivers\lsm9ds1_reg.h">
+      <Filter>Devices\Drivers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -174,6 +177,9 @@
     </Filter>
     <Filter Include="Devices">
       <UniqueIdentifier>{1e37b612-8b58-4e5b-b171-ecdbfeaec1dc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Devices\Drivers">
+      <UniqueIdentifier>{a3f216d2-b3f2-40b4-84b7-a9354dc1c158}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>
