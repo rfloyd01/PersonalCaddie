@@ -144,18 +144,6 @@ void lsm9ds1_apply_setting(stmdev_ctx_t* lsm9ds1_imu, stmdev_ctx_t* lsm9ds1_mag,
 
 static int32_t lsm9ds1_read_imu(void *handle, uint8_t reg, uint8_t *bufp, uint16_t len)
 {
-    //The steps for a single byte read are as follows:
-    //  1. nRF52840 sends start signal by pulling the SDA line low
-    //  2. nRF52840 sends 7-bit slave address followed by a 0 (write) bit
-    //  3. LSM9DS1 responds with an Acknowledge
-    //  4. nRF52840 sends the 8-bit address of the register it wants to read
-    //  5. LSM9DS1 responds with an Acknowledge
-    //  6. nRF52840 sends a repeated start signal
-    //  7. nRG52840 sends 7-bit slave address followed by a 1 (read) bit
-    //  8. LSM9DS1 responds with an Acknowledge
-    //  9. LSM9DS1 sends the requested data
-    // 10. nRF52840 responds with a non-Acknowledge and then sends the stop signal
-    //Since reading the LSM9DS1 requires a repeated start signal the NRF_DRV_TWI_XFER_TXRX transfer type is used
     ret_code_t err_code = 0;
 
     //the primary buffer only holds the address of the register we want to read and therefore only has a length of 1 byte
@@ -259,7 +247,7 @@ static int32_t lsm9ds1_write_mag(void *handle, uint8_t reg, const uint8_t *bufp,
     return (int32_t)err_code;
 }
 
-float lsm9ds1_odr_calculate()
+float lsm9ds1_odr_calculate(uint8_t imu_odr_setting, uint8_t mag_odr_setting)
 {
     //Returns the current ODR of the sensor as indicated in the sensor settings array.
     //Normally the ODR is dictated by the gyroscope, however,
@@ -267,17 +255,18 @@ float lsm9ds1_odr_calculate()
     //accelerometer and gyroscope are off then the ODR will be dictated by the magnetometer.
 
     float lsm9ds1_odr = 0.0;
-    if (p_sensor_settings[4] == LSM9DS1_IMU_OFF)
+    uint8_t odr_setting;
+    if (imu_odr_setting == LSM9DS1_IMU_OFF)
     {
         //both the gyroscope and accelerometer are off so the ODR will be determined from the 
         //magnetometer.
-        if (p_sensor_settings[5] != LSM9DS1_MAG_POWER_DOWN)
+        if (mag_odr_setting != LSM9DS1_MAG_POWER_DOWN)
         {
-            uint8_t mag_odr_setting = (p_sensor_settings[5] & 0x0F);
-            switch (mag_odr_setting)
+            odr_setting = (mag_odr_setting & 0x0F);
+            switch (odr_setting)
             {
                 case 0x00:
-                    if (p_sensor_settings[5] != LSM9DS1_MAG_ONE_SHOT) lsm9ds1_odr = 0.625;
+                    if (mag_odr_setting != LSM9DS1_MAG_ONE_SHOT) lsm9ds1_odr = 0.625;
                     break;
                 case 0x01:
                     lsm9ds1_odr = 1.25;
@@ -301,9 +290,9 @@ float lsm9ds1_odr_calculate()
                     lsm9ds1_odr = 80;
                     break;
                 case 0x08:
-                    if (p_sensor_settings[5] == LSM9DS1_MAG_UHP_155Hz) lsm9ds1_odr = 155;
-                    else if (p_sensor_settings[5] == LSM9DS1_MAG_HP_300Hz) lsm9ds1_odr = 300;
-                    else if (p_sensor_settings[5] == LSM9DS1_MAG_MP_560Hz) lsm9ds1_odr = 560;
+                    if (mag_odr_setting == LSM9DS1_MAG_UHP_155Hz) lsm9ds1_odr = 155;
+                    else if (mag_odr_setting == LSM9DS1_MAG_HP_300Hz) lsm9ds1_odr = 300;
+                    else if (mag_odr_setting == LSM9DS1_MAG_MP_560Hz) lsm9ds1_odr = 560;
                     else lsm9ds1_odr = 1000;
                     break;
                 default:
@@ -315,19 +304,19 @@ float lsm9ds1_odr_calculate()
     else
     {
         //either the gyroscope or accelerometer is on.
-        uint8_t imu_odr_setting = (p_sensor_settings[4] & 0x0F);
+        odr_setting = (imu_odr_setting & 0x0F);
         bool gyro_on = true;
 
-        if (imu_odr_setting == 0)
+        if (odr_setting == 0)
         {
             //the gyroscope is turned off so the ODR will be based on the accelerometer. This isn't 
             //a huge deal as the accelerometer has the same ODR settings as the gyro other than the 
             //lowest two settings
-            imu_odr_setting = ((p_sensor_settings[4] & 0xF0) >> 4);
+            odr_setting = ((imu_odr_setting & 0xF0) >> 4);
             gyro_on = false;
         }
         
-        switch (imu_odr_setting)
+        switch (odr_setting)
         {
             case 0x01:
                 if (gyro_on) lsm9ds1_odr = 14.9;

@@ -175,6 +175,7 @@
     <Text Include="Resources\calibration.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\Firmware\MEMs_Drivers\lsm9ds1_reg.h" />
     <ClInclude Include="Devices\BluetoothLE.h" />
     <ClInclude Include="Devices\magtest.h" />
     <ClInclude Include="Devices\sensor.h" />
