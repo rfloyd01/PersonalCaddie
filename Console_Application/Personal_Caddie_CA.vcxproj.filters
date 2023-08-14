@@ -152,6 +152,12 @@
     <ClInclude Include="Devices\Sensors\Accelerometer.h">
       <Filter>Devices\Sensors</Filter>
     </ClInclude>
+    <ClInclude Include="..\Firmware\MEMs_Drivers\lsm9ds1_reg.h">
+      <Filter>Devices\Sensors\Drivers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Firmware\MEMs_Drivers\sensor_settings.h">
+      <Filter>Devices\Sensors\Drivers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -202,6 +208,9 @@
     </Filter>
     <Filter Include="Devices\Sensors">
       <UniqueIdentifier>{56d9459a-b62f-4c1d-bdd6-583854aafc9c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Devices\Sensors\Drivers">
+      <UniqueIdentifier>{6f5b89e6-5f60-4308-adbb-eaa4bf820589}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

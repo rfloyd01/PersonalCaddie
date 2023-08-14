@@ -62,19 +62,19 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>D:\Coding\PersonalCaddie\Console_Application;C:\Users\Bobby\Documents\Coding\include;</IncludePath>
+    <IncludePath>D:\Coding\PersonalCaddie\Firmware\MEMs_Drivers;D:\Coding\PersonalCaddie\Console_Application;C:\Users\Bobby\Documents\Coding\include;</IncludePath>
     <LibraryPath>C:\Users\Bobby\Documents\Coding\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <IncludePath>D:\Coding\PersonalCaddie\Console_Application;C:\Users\Bobby\Documents\Coding\include;C:\Users\Bobby\Documents\Coding\include\GLFW</IncludePath>
+    <IncludePath>D:\Coding\PersonalCaddie\Firmware\MEMs_Drivers;D:\Coding\PersonalCaddie\Console_Application;C:\Users\Bobby\Documents\Coding\include;C:\Users\Bobby\Documents\Coding\include\GLFW</IncludePath>
     <LibraryPath>C:\Users\Bobby\Documents\Coding\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>D:\Coding\PersonalCaddie\Console_Application;C:\Users\Bobby\Documents\Coding\include;</IncludePath>
+    <IncludePath>D:\Coding\PersonalCaddie\Firmware\MEMs_Drivers;D:\Coding\PersonalCaddie\Console_Application;C:\Users\Bobby\Documents\Coding\include;</IncludePath>
     <LibraryPath>C:\Users\Bobby\Documents\Coding\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>D:\Coding\PersonalCaddie\Console_Application;C:\Users\Bobby\Documents\Coding\include;C:\Users\Bobby\Documents\Coding\include\GLFW</IncludePath>
+    <IncludePath>D:\Coding\PersonalCaddie\Firmware\MEMs_Drivers;D:\Coding\PersonalCaddie\Console_Application;C:\Users\Bobby\Documents\Coding\include;C:\Users\Bobby\Documents\Coding\include\GLFW</IncludePath>
     <LibraryPath>C:\Users\Bobby\Documents\Coding\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup>
@@ -179,6 +179,8 @@
     <Text Include="Resources\calibration.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\Firmware\MEMs_Drivers\lsm9ds1_reg.h" />
+    <ClInclude Include="..\Firmware\MEMs_Drivers\sensor_settings.h" />
     <ClInclude Include="Devices\BLE.h" />
     <ClInclude Include="Devices\IMU.h" />
     <ClInclude Include="Devices\magtest.h" />

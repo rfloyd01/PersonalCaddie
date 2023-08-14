@@ -2,7 +2,7 @@
 
 #include "Accelerometer.h"
 
-Accelerometer::Accelerometer(AccelerometerModel acc_model, uint8_t* current_settings)
+Accelerometer::Accelerometer(accelerometer_model_t acc_model, uint8_t* current_settings)
 {
 	//Typically (although they don't have to be) sensors are only created after connecting to a Personal Caddie
 	//and reading the Sensor Information characteristic, which tells us what sensors are on the device as well 
