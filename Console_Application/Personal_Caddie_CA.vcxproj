@@ -129,8 +129,10 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Devices\BLE.cpp" />
+    <ClCompile Include="Devices\IMU.cpp" />
     <ClCompile Include="Devices\PersonalCaddie.cpp" />
-    <ClCompile Include="Devices\sensor.cpp" />
+    <ClCompile Include="Devices\Sensors\Accelerometer.cpp" />
+    <ClCompile Include="Devices\Sensors\Sensor.cpp" />
     <ClCompile Include="Graphics\glad.c">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
@@ -178,9 +180,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Devices\BLE.h" />
+    <ClInclude Include="Devices\IMU.h" />
     <ClInclude Include="Devices\magtest.h" />
     <ClInclude Include="Devices\PersonalCaddie.h" />
-    <ClInclude Include="Devices\sensor.h" />
+    <ClInclude Include="Devices\Sensors\Accelerometer.h" />
+    <ClInclude Include="Devices\Sensors\Sensor.h" />
     <ClInclude Include="Graphics\graphics.h" />
     <ClInclude Include="Graphics\mesh.h" />
     <ClInclude Include="Graphics\model.h" />

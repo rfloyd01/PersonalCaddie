@@ -4,7 +4,7 @@
 #include <vector>
 #include <Graphics/graphics.h>
 
-#include "sensor.h"
+#include "IMU.h"
 #include "BLE.h"
 
 using namespace winrt;

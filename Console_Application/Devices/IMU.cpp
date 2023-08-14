@@ -1,6 +1,6 @@
 #include "pch.h"
 
-#include <Devices/sensor.h>
+#include "IMU.h"
 
 //PUBLIC FUNCTIONS
 //Constructors
