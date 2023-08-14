@@ -5,8 +5,19 @@
 extern "C" {
 #endif
 
+#include <stdint.h>
+#include <stdbool.h>
+
 //This file includes different enums and structs for organizing the settings for various
 //different IMU sensors
+
+//A list of the different sensor types
+typedef enum
+{
+    ACCELEROMETER = 0,
+    GYROSCOPE = 1,
+    MAGNETOMETER = 2,
+} sensor_type_t;
 
 //A list of all the different accelerometers that currently have drivers
 typedef enum
@@ -27,25 +38,60 @@ typedef enum
 } magnetometer_model_t;
 
 //Settings categories for the LSM9DS1
+//typedef enum
+//{
+//    ACC_MODEL = 0x01,
+//    GYR_MODEL = 0x02,
+//    MAG_MODEL = 0x03,
+//    ACC_FS_RANGE = 0x04,
+//    GYR_FS_RANGE = 0x05,
+//    MAG_FS_RANGE = 0x06,
+//    ACC_ODR = 0x07,
+//    GYR_ODR = 0x08,
+//    MAG_ODR = 0x09,
+//    ACC_POWER = 0x0a,
+//    GYR_POWER = 0x0b,
+//    MAG_POWER = 0x0c,
+//    ACC_FILTER_SELECTION = 0x0d,
+//    ACC_LOW_PASS_FILTER = 0x0e,
+//    ACC_HIGH_PASS_FILTER = 0x0f,
+//    ACC_EXTRA_FILTER = 0x10,
+//    GYR_FILTER_SELECTION = 0x11,
+//    GYR_LOW_PASS_FILTER = 0x12,
+//    GYR_HIGH_PASS_FILTER = 0x13,
+//    GYR_EXTRA_FILTER = 0x14,
+//    MAG_FILTER_SELECTION = 0x15,
+//    MAG_LOW_PASS_FILTER = 0x16,
+//    MAG_HIGH_PASS_FILTER = 0x17,
+//    MAG_EXTRA_FILTER = 0x18,
+//    FIFO = 0x19,
+//    ACC_EXTRA_1 = 0x1a,
+//    ACC_EXTRA_2 = 0x1b,
+//    GYR_EXTRA_1 = 0x1c,
+//    GYR_EXTRA_2 = 0x1d,
+//    MAG_EXTRA_1 = 0x1e,
+//    MAG_EXTRA_2 = 0x1f,
+//} sensor_settings_t;
+
 typedef enum
 {
-    LSM9DS1_ACC_MODEL = 0x01,
-    LSM9DS1_GYR_MODEL = 0x02,
-    LSM9DS1_MAG_MODEL = 0x03,
-    LSM9DS1_ACC_FS_RANGE = 0x04,
-    LSM9DS1_GYR_FS_RANGE = 0x05,
-    LSM9DS1_MAG_FS_RANGE = 0x06,
-    LSM9DS1_ACC_GYR_ODR_POWER = 0x07,
-    LSM9DS1_MAG_ODR_POWER = 0x09,
-    LSM9DS1_ACC_FILTER_SELECTION = 0x0d,
-    LSM9DS1_ACC_LOW_PASS_FILTER = 0x0e,
-    LSM9DS1_ACC_HIGH_PASS_FILTER = 0x0f,
-    LSM9DS1_ACC_ANTI_ALIASING_FILTER = 0x10,
-    LSM9DS1_GYR_FILTER_SELECTION = 0x11,
-    LSM9DS1_GYR_LOW_PASS_FILTER = 0x12,
-    LSM9DS1_GYR_HIGH_PASS_FILTER = 0x13,
+    SENSOR_MODEL = 0x00,
+    FS_RANGE = 0x01,
+    ODR = 0x02,
+    POWER = 0x03,
+    FILTER_SELECTION = 0x04,
+    LOW_PASS_FILTER = 0x05,
+    HIGH_PASS_FILTER = 0x06,
+    EXTRA_FILTER = 0x07,
+    EXTRA_1 = 0x08,
+    EXTRA_2 = 0x09,
+} sensor_settings_t;
 
-} lsm9ds1_settings_t;
+void update_sensor_setting(uint8_t* settings_array, sensor_settings_t setting, uint8_t value);
+
+//LSM9DS1 conversions
+float lsm9ds1_odr_calculate(uint8_t imu_odr_setting, uint8_t mag_odr_setting);
+float lsm9ds1_fsr_conversion(sensor_type_t sensor, uint8_t fsr_setting);
 
 #ifdef __cplusplus
 }

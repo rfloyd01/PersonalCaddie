@@ -14,11 +14,8 @@ Accelerometer::Accelerometer(accelerometer_model_t acc_model, uint8_t* current_s
 
 void Accelerometer::populateSensorSettingsArray(uint8_t* current_settings)
 {
-	//depending on the brand of accelerometer we're looking at the settings in the array may be packaged 
-	//differently. For example, the LSM9DS1 accelerometer puts information on the ODR and power mode into 
-	//the same Byte whereas the FXOS sensor separates them. It all depends on the individual drivers for 
-	//the sensors. Because of this, this method extracts the settings we need on a sensor by sensor basis.
-	 
+	//Just copy the relevant info over
+	for (int setting = SENSOR_MODEL; setting <= EXTRA_2; setting++) this->settings[setting] = current_settings[setting];
 }
 
 void Accelerometer::getCalibrationNumbers()
@@ -32,3 +29,25 @@ void Accelerometer::setCalibrationNumbers()
 	Sensor::setCalibrationNumbers(); //handles the opening of the file, reading the data, and closing the file
 	//will set the calibration numbers for the particular sensor
 }
+
+//void Accelerometer::getConversionRate()
+//{
+//	switch (this->settings[0])
+//	{
+//	case LSM9DS1_ACC:
+//		this->conversion_rate = lsm9ds1_fsr_conversion(ACCELEROMETER, this->settings[FS_RANGE]);
+//	default:
+//		this->conversion_rate = 0;
+//	}
+//}
+//
+//void Accelerometer::getCurrentODR()
+//{
+//	switch (this->settings[0])
+//	{
+//	case LSM9DS1_ACC:
+//		this->conversion_rate = lsm9ds1_odr_calculate()
+//	default:
+//		this->conversion_rate = 0;
+//	}
+//}

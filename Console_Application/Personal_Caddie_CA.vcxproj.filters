@@ -68,6 +68,9 @@
     <ClCompile Include="Devices\Sensors\Accelerometer.cpp">
       <Filter>Devices\Sensors</Filter>
     </ClCompile>
+    <ClCompile Include="..\Firmware\MEMs_Drivers\sensor_settings.c">
+      <Filter>Devices\Sensors\Drivers</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />

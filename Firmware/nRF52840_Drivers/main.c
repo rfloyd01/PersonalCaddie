@@ -509,7 +509,7 @@ static void sensor_active_mode_start()
 
     //After turning on the sensor, request that the connection interval be changed
     //to match the ODR of the sensor * the number of samples being collected.
-    float sensor_odr = lsm9ds1_odr_calculate(sensor_settings[LSM9DS1_ACC_GYR_ODR_POWER], sensor_settings[LSM9DS1_MAG_ODR_POWER]);
+    float sensor_odr = lsm9ds1_odr_calculate(sensor_settings[ODR + GYR_START], sensor_settings[ODR + MAG_START]);
 
     if (sensor_odr != 0)
     {
