@@ -8,16 +8,14 @@ volatile bool* p_xfer_done;
 
 //set up settings variables
 static uint8_t* p_sensor_settings;
-static uint8_t sensor_settings_length;
 
 static bool lsm9ds1_register_auto_increment = true;                       /**register auto increment function for multiple byte reads of LSM9DS1 chip **/
 
-void lsm9ds1_init(stmdev_ctx_t* lsm9ds1_imu, stmdev_ctx_t* lsm9ds1_mag, uint8_t* settings, const uint8_t settings_length, 
+void lsm9ds1_init(stmdev_ctx_t* lsm9ds1_imu, stmdev_ctx_t* lsm9ds1_mag, uint8_t* settings, 
                   const nrf_drv_twi_t* twi, volatile bool* xfer_done)
 {
     //create a pointer to an array which holds settings for the sensor
     p_sensor_settings = settings;
-    sensor_settings_length = settings_length;
 
     //set up communication with the chip
     p_xfer_done = xfer_done;
@@ -67,7 +65,7 @@ void lsm9ds1_idle_mode_enable(stmdev_ctx_t* lsm9ds1_imu, stmdev_ctx_t* lsm9ds1_m
 void lsm9ds1_active_mode_enable(stmdev_ctx_t* lsm9ds1_imu, stmdev_ctx_t* lsm9ds1_mag)
 {
     //Applies all of the settings stored in the settings array to the LSM9DS1
-    for (int i = 0; i < sensor_settings_length; i++) lsm9ds1_apply_setting(lsm9ds1_imu, lsm9ds1_mag, i);
+    for (int i = 0; i < SENSOR_SETTINGS_LENGTH; i++) lsm9ds1_apply_setting(lsm9ds1_imu, lsm9ds1_mag, i);
 }
 
 void lsm9ds1_apply_setting(stmdev_ctx_t* lsm9ds1_imu, stmdev_ctx_t* lsm9ds1_mag, sensor_settings_t setting)

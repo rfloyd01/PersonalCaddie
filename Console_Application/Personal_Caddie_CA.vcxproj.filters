@@ -71,6 +71,12 @@
     <ClCompile Include="..\Firmware\MEMs_Drivers\sensor_settings.c">
       <Filter>Devices\Sensors\Drivers</Filter>
     </ClCompile>
+    <ClCompile Include="Devices\Sensors\Gyroscope.cpp">
+      <Filter>Devices\Sensors</Filter>
+    </ClCompile>
+    <ClCompile Include="Devices\Sensors\Magnetometer.cpp">
+      <Filter>Devices\Sensors</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -160,6 +166,12 @@
     </ClInclude>
     <ClInclude Include="..\Firmware\MEMs_Drivers\sensor_settings.h">
       <Filter>Devices\Sensors\Drivers</Filter>
+    </ClInclude>
+    <ClInclude Include="Devices\Sensors\Gyroscope.h">
+      <Filter>Devices\Sensors</Filter>
+    </ClInclude>
+    <ClInclude Include="Devices\Sensors\Magnetometer.h">
+      <Filter>Devices\Sensors</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

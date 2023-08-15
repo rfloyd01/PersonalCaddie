@@ -247,7 +247,7 @@ static void sensors_init(void)
     nrf_gpio_cfg(BLE_33_SENSOR_POWER_PIN, NRF_GPIO_PIN_DIR_OUTPUT, NRF_GPIO_PIN_INPUT_CONNECT, NRF_GPIO_PIN_NOPULL, NRF_GPIO_PIN_S0H1, NRF_GPIO_PIN_NOSENSE);
     
     //Handle the initialization of individual sensors
-    lsm9ds1_init(&lsm9ds1_imu, &lsm9ds1_mag, sensor_settings, SENSOR_SETTINGS_LENGTH, &m_twi, &m_xfer_done);
+    lsm9ds1_init(&lsm9ds1_imu, &lsm9ds1_mag, sensor_settings, &m_twi, &m_xfer_done);
 
     //after sensor initialization is complete we attempt to communicate 
     //with each sensor just to ensure that it's there and working properly.
@@ -651,7 +651,7 @@ static void services_init(void)
     // Initialize sensor service
     init.setting_write_handler = sensor_settings_write_handler;
 
-    err_code = ble_sensor_service_init(&m_ss, &init);
+    err_code = ble_sensor_service_init(&m_ss, &init, SENSOR_SETTINGS_LENGTH);
     APP_ERROR_CHECK(err_code);
 }
 

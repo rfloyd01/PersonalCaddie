@@ -1,5 +1,9 @@
 #pragma once
 
+#include "Sensors/Accelerometer.h"
+#include "Sensors/Gyroscope.h"
+#include "Sensors/Magnetometer.h"
+
 //The IMU class helps ensure a seamless transition if one IMU is swapped out for another, or if different parts of different IMUs are decided
 //to be used. This class keeps track of the orientation of the axes for each sensor that I currently have, as well as the necessary multipliers
 //for each sensor to get the correct reading based on the current settings. I created this class because I currently have three sensors that all
@@ -30,30 +34,30 @@
 //180 and 270 degrees)
 
 //Some Enums that make code a little more readable
-enum class Accelerometer
-{
-	LSM9DS1,
-	FXOS8700,
-	BLE_SENSE_33
-};
-enum class Gyroscope
-{
-	LSM9DS1,
-	FXAS21002,
-	BLE_SENSE_33
-};
-enum class Magnetometer
-{
-	LSM9DS1,
-	FXOS8700,
-	BLE_SENSE_33
-};
-enum class Sensor
-{
-	ACCELEROMETER,
-	GYROSCOPE,
-	MAGNETOMETER
-};
+//enum class Accelerometer
+//{
+//	LSM9DS1,
+//	FXOS8700,
+//	BLE_SENSE_33
+//};
+//enum class Gyroscope
+//{
+//	LSM9DS1,
+//	FXAS21002,
+//	BLE_SENSE_33
+//};
+//enum class Magnetometer
+//{
+//	LSM9DS1,
+//	FXOS8700,
+//	BLE_SENSE_33
+//};
+//enum class Sensor
+//{
+//	ACCELEROMETER,
+//	GYROSCOPE,
+//	MAGNETOMETER
+//};
 enum Axis
 {
 	//x, y, and z correlate to 0, 1 and 2 respectively. It's a little easier to keep track this way then having numbers denote everything
@@ -76,7 +80,8 @@ class IMU
 public:
 	//PUBLIC FUNCTIONS
 	//Constructors
-	IMU(Accelerometer acc, Gyroscope gyr, Magnetometer mag);
+	IMU(accelerometer_model_t acc_model, gyroscope_model_t gyr_model, magnetometer_model_t mag_model, uint8_t* imu_settings);
+	IMU(uint8_t* imu_settings);
 
 	//Setting Altering Functions
 	//TODO: eventually create functions that will allow for the changing of sensor settings over bluetooth and TWI or SPI
@@ -85,20 +90,20 @@ public:
 	//TODO: eventually create functions that will allow for the swapping of axes to acoomodate flipping of sensors on bread board
 
 	//Get Functions
-	Accelerometer getAccelerometerType();
+	/*Accelerometer getAccelerometerType();
 	Gyroscope getGyroscopeType();
 	Magnetometer getMagnetometerType();
 	double getFrequency();
 	double getSensorSensitivity(Sensor s);
 
 	Axis getOpenGLAxis(Sensor sensor_type, int sensor_axis);
-	int getAxisPolarity(Sensor sensor_type, int sensor_axis);
+	int getAxisPolarity(Sensor sensor_type, int sensor_axis);*/
 
 private:
 	//PRIVATE FUNCTIONS
-	void loadSensorInformation(IMU& sensor); //load the data on all current sensors that I own
-	void loadSensorDefaultSettings(IMU& sensor);
-	void loadAxisOrientations(IMU& sensor);
+	//void loadSensorInformation(IMU& sensor); //load the data on all current sensors that I own
+	//void loadSensorDefaultSettings(IMU& sensor);
+	//void loadAxisOrientations(IMU& sensor);
 
 	//PRIVATE VARIABLES
 	//Changeable Sensor Settings
@@ -117,7 +122,7 @@ private:
 	int IMU_gyr_axis_inversion[3];
 	int IMU_mag_axis_inversion[3];
 
-	Accelerometer IMU_acc;
-	Gyroscope IMU_gyr;
-	Magnetometer IMU_mag;
+	Accelerometer* p_acc;;
+	Gyroscope* p_gyr;
+	Magnetometer* p_mag;
 };

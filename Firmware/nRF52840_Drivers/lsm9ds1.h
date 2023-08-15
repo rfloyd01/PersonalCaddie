@@ -6,16 +6,12 @@
 #include "lsm9ds1_reg.h"
 #include "sensor_settings.h"
 
-#define ACC_START 1                                                       /**start of the accelerometer section of the settings array **/
-#define GYR_START 11                                                      /**start of the accelerometer section of the settings array **/
-#define MAG_START 21                                                      /**start of the accelerometer section of the settings array **/
-
 #ifdef __cplusplus
 extern "C" {
 #else
 #include "nrf_drv_twi.h" //don't want to include this on the C++ side
 
-void lsm9ds1_init(stmdev_ctx_t* lsm9ds1_imu, stmdev_ctx_t* lsm9ds1_mag, uint8_t* settings, const uint8_t settings_length,
+void lsm9ds1_init(stmdev_ctx_t* lsm9ds1_imu, stmdev_ctx_t* lsm9ds1_mag, uint8_t* settings,
     const nrf_drv_twi_t* twi, volatile bool* xfer_done);
 #endif
 

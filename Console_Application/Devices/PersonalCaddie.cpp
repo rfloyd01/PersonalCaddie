@@ -76,9 +76,25 @@ concurrency::task<void> PersonalCaddie::BLEDeviceConnectedHandler()
     std::cout << "All characteristics have been found and stored. Now Connected to the Personal Caddie." << std::endl;
     this->ble_device_connected = true;
 
-    //TODO: For now just create the standard BLE 33 Sense IMU. Ultimately want to update this to allow for other chips though,
-    //like the FXOS and FXAS sensors.
-    this->p_imu = new IMU(Accelerometer::BLE_SENSE_33, Gyroscope::BLE_SENSE_33, Magnetometer::BLE_SENSE_33);
+    //Read the sensor settings characteristic to get some basic information about the sensors attached to
+    //the Personal Caddie
+    uint8_t sensor_settings_array[SENSOR_SETTINGS_LENGTH] = { 0 };
+
+    try
+    {
+        auto sensor_settings_buffer = (co_await m_settings_characteristic.ReadValueAsync(Bluetooth::BluetoothCacheMode::Uncached)).Value(); //use unchached to read value from the device
+        auto sensor_settings = Windows::Storage::Streams::DataReader::FromBuffer(sensor_settings_buffer);
+        sensor_settings.ByteOrder(Windows::Storage::Streams::ByteOrder::LittleEndian); //the nRF52840 uses little endian so we match it here
+
+        for (int i = 0; i < SENSOR_SETTINGS_LENGTH; i++) sensor_settings_array[i] = sensor_settings.ReadByte();
+    }
+    catch (...)
+    {
+        std::cout << "something went wrong when reading characteristic" << std::endl;
+    }
+    
+
+    this->p_imu = new IMU(sensor_settings_array);
     sampleFreq = 59.5; //TODO, need to actually get this from the sensor info characteristic at some point
 
     //Send an alert to the graphics interface letting it know that the connection has been made

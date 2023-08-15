@@ -11,6 +11,11 @@ extern "C" {
 //This file includes different enums and structs for organizing the settings for various
 //different IMU sensors
 
+#define SENSOR_SETTINGS_LENGTH  32                                        /**< Defines the length of sensor settings array for a full IMU (in bytes) */
+#define ACC_START 1                                                       /**< start of the accelerometer section of the settings array **/
+#define GYR_START 11                                                      /**< start of the accelerometer section of the settings array **/
+#define MAG_START 21                                                      /**< start of the accelerometer section of the settings array **/
+
 //A list of the different sensor types
 typedef enum
 {

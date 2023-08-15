@@ -78,7 +78,7 @@ void ble_sensor_service_on_ble_evt(ble_evt_t const * p_ble_evt, void * p_context
     }
 }
 
-uint32_t ble_sensor_service_init(ble_sensor_service_t * p_ss, const ble_sensor_service_init_t * p_ss_init)
+uint32_t ble_sensor_service_init(ble_sensor_service_t * p_ss, const ble_sensor_service_init_t * p_ss_init, const uint8_t settings_length)
 {
     uint32_t              err_code;
     ble_uuid_t            ble_uuid;
@@ -102,7 +102,7 @@ uint32_t ble_sensor_service_init(ble_sensor_service_t * p_ss, const ble_sensor_s
     VERIFY_SUCCESS(err_code);
 
     // Add Settings characteristic.
-    return ble_sensor_service_settings_char_add(p_ss);
+    return ble_sensor_service_settings_char_add(p_ss, settings_length);
 }
 
 uint32_t ble_sensor_service_data_char_add(ble_sensor_service_t * p_ss)
@@ -166,7 +166,7 @@ uint32_t ble_sensor_service_data_char_add(ble_sensor_service_t * p_ss)
                                   &p_ss->data_handles[2]);
 }
 
-uint32_t ble_sensor_service_settings_char_add(ble_sensor_service_t * p_ss)
+uint32_t ble_sensor_service_settings_char_add(ble_sensor_service_t * p_ss, const uint8_t settings_length)
 {
     ble_add_char_params_t add_char_params;
 
@@ -174,8 +174,8 @@ uint32_t ble_sensor_service_settings_char_add(ble_sensor_service_t * p_ss)
     memset(&add_char_params, 0, sizeof(add_char_params));
     add_char_params.uuid              = SETTINGS_CHARACTERISTIC_UUID;
     add_char_params.uuid_type         = p_ss->uuid_type;
-    add_char_params.init_len          = SENSOR_SETTINGS_LENGTH * sizeof(uint8_t);
-    add_char_params.max_len           = SENSOR_SETTINGS_LENGTH * sizeof(uint8_t);
+    add_char_params.init_len          = settings_length * sizeof(uint8_t);
+    add_char_params.max_len           = settings_length * sizeof(uint8_t);
     add_char_params.char_props.read   = 1;
     add_char_params.char_props.write  = 1;
 

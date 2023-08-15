@@ -30,7 +30,6 @@ NRF_SDH_BLE_OBSERVER(_name ## _obs,                                             
 #define GYR_DATA_CHARACTERISTIC_UUID      0xBF37
 #define MAG_DATA_CHARACTERISTIC_UUID      0xBF38
 
-#define SENSOR_SETTINGS_LENGTH  32           /**< Defines the length of the sensor settings characteristic (in bytes) */
 #define SENSOR_SAMPLES 10                    /**< The number of full sensor samples to read into data characteristics */
 #define SAMPLE_SIZE     6                    /**< The size (in bytes) of a full sensor sample reading (includes x, y and z axes) */
 
@@ -66,7 +65,7 @@ struct ble_sensor_service_s
  *
  * @retval NRF_SUCCESS If the service was initialized successfully. Otherwise, an error code is returned.
  */
-uint32_t ble_sensor_service_init(ble_sensor_service_t * p_ss, const ble_sensor_service_init_t * p_ss_init);
+uint32_t ble_sensor_service_init(ble_sensor_service_t * p_ss, const ble_sensor_service_init_t * p_ss_init, const uint8_t settings_length);
 
 /**@brief Function for adding the Data Characteristics.
  *
@@ -86,7 +85,7 @@ uint32_t ble_sensor_service_data_char_add(ble_sensor_service_t * p_ss);
  *
  * @retval NRF_SUCCESS If the characteristics were initialized successfully. Otherwise, an error code is returned.
  */
-uint32_t ble_sensor_service_settings_char_add(ble_sensor_service_t * p_ss);
+uint32_t ble_sensor_service_settings_char_add(ble_sensor_service_t * p_ss, const uint8_t settings_length);
 
 
 /**@brief Function for handling the application's BLE stack events.

@@ -5,15 +5,15 @@
 
 
 //Class Definition
-class Accelerometer : public Sensor
+class Gyroscope : public Sensor
 {
 public:
 	//PUBLIC FUNCTIONS
-	Accelerometer(accelerometer_model_t acc_model, uint8_t* current_settings);
-	Accelerometer(uint8_t* current_settings);
+	Gyroscope(gyroscope_model_t gyr_model, uint8_t* current_settings);
+	Gyroscope(uint8_t* current_settings);
 
 private:
-	accelerometer_model_t acc_model;
+	gyroscope_model_t gyr_model;
 
 	//An array that holds the relevant settings for the sensor. The indices of the array hold settings for the following:
 	//0x00 = sensor model

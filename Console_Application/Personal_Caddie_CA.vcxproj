@@ -138,6 +138,8 @@
     <ClCompile Include="Devices\IMU.cpp" />
     <ClCompile Include="Devices\PersonalCaddie.cpp" />
     <ClCompile Include="Devices\Sensors\Accelerometer.cpp" />
+    <ClCompile Include="Devices\Sensors\Gyroscope.cpp" />
+    <ClCompile Include="Devices\Sensors\Magnetometer.cpp" />
     <ClCompile Include="Devices\Sensors\Sensor.cpp" />
     <ClCompile Include="Graphics\glad.c">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
@@ -192,6 +194,8 @@
     <ClInclude Include="Devices\magtest.h" />
     <ClInclude Include="Devices\PersonalCaddie.h" />
     <ClInclude Include="Devices\Sensors\Accelerometer.h" />
+    <ClInclude Include="Devices\Sensors\Gyroscope.h" />
+    <ClInclude Include="Devices\Sensors\Magnetometer.h" />
     <ClInclude Include="Devices\Sensors\Sensor.h" />
     <ClInclude Include="Graphics\graphics.h" />
     <ClInclude Include="Graphics\mesh.h" />
