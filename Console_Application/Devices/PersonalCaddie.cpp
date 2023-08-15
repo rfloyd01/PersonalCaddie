@@ -54,7 +54,7 @@ concurrency::task<void> PersonalCaddie::BLEDeviceConnectedHandler()
     //Get the Gatt Characteristics from the BLE Device. To do this we first need to get a list of all of the services from 
     //the device and then get the characteristics from each
     auto gattServices = (co_await this->p_ble->getBLEDevice()->GetGattServicesAsync()).Services();
-    std::cout << "Services retrieved from the device. Looking at them now...\n" << std::endl;
+    //std::cout << "Services retrieved from the device. Looking at them now...\n" << std::endl;
     for (int i = 0; i < gattServices.Size(); i++)
     {
         auto gattService = gattServices.GetAt(i);
@@ -101,7 +101,7 @@ concurrency::task<void> PersonalCaddie::BLEDeviceConnectedHandler()
 
     //Send an alert to the graphics interface letting it know that the connection has been made
     this->graphic_update_handler(34);
-    std::cout << "Successfulyl connected to the Personal Caddie." << std::endl;
+    std::cout << "Successfully connected to the Personal Caddie." << std::endl;
 }
 
 concurrency::task<void> PersonalCaddie::getDataCharacteristics(Bluetooth::GenericAttributeProfile::GattDeviceService& data_service)

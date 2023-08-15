@@ -30,13 +30,7 @@ Magnetometer::Magnetometer(uint8_t* current_settings)
 void Magnetometer::populateSensorSettingsArray(uint8_t* current_settings)
 {
 	//Just copy the relevant info over
-	std::cout << "Creating a magnetometer with the following settings: ";
-	for (int setting = SENSOR_MODEL; setting <= EXTRA_2; setting++)
-	{
-		this->settings[setting] = current_settings[setting];
-		std::cout << (int)current_settings[setting] << " ";
-	}
-	std::cout << std::endl;
+	for (int setting = SENSOR_MODEL; setting <= EXTRA_2; setting++) this->settings[setting] = current_settings[setting];
 }
 
 void Magnetometer::getCalibrationNumbers()

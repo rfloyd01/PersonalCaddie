@@ -31,13 +31,7 @@ Accelerometer::Accelerometer(uint8_t* current_settings)
 void Accelerometer::populateSensorSettingsArray(uint8_t* current_settings)
 {
 	//Just copy the relevant info over
-	std::cout << "Creating an accelerometer with the following settings: ";
-	for (int setting = SENSOR_MODEL; setting <= EXTRA_2; setting++)
-	{
-		this->settings[setting] = current_settings[setting];
-		std::cout << (int)current_settings[setting] << " ";
-	}
-	std::cout << std::endl;
+	for (int setting = SENSOR_MODEL; setting <= EXTRA_2; setting++) this->settings[setting] = current_settings[setting];
 }
 
 void Accelerometer::getCalibrationNumbers()

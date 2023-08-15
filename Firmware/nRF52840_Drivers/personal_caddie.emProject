@@ -46,7 +46,6 @@
       <file file_name="$(IncludeDir)/$(SDKVer)/components/libraries/log/src/nrf_log_str_formatter.c" />
     </folder>
     <folder Name="nRF_Libraries">
-      <file file_name="$(IncludeDir)/$(SDKVer)/components/libraries/button/app_button.c" />
       <file file_name="$(IncludeDir)/$(SDKVer)/components/libraries/util/app_error.c" />
       <file file_name="$(IncludeDir)/$(SDKVer)/components/libraries/util/app_error_handler_gcc.c" />
       <file file_name="$(IncludeDir)/$(SDKVer)/components/libraries/util/app_error_weak.c" />
@@ -73,6 +72,7 @@
       <file file_name="$(IncludeDir)/$(SDKVer)/components/libraries/sortlist/nrf_sortlist.c" />
       <file file_name="$(IncludeDir)/$(SDKVer)/components/libraries/strerror/nrf_strerror.c" />
       <file file_name="$(IncludeDir)/$(SDKVer)/components/libraries/sensorsim/sensorsim.c" />
+      <file file_name="$(IncludeDir)/$(SDKVer)/components/libraries/button/app_button.c" />
     </folder>
     <folder Name="None">
       <file file_name="$(IncludeDir)/$(SDKVer)/modules/nrfx/mdk/ses_startup_nrf52840.s" />

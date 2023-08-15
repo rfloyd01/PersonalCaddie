@@ -99,16 +99,9 @@
 #define APP_BLE_OBSERVER_PRIO           3                                       /**< Application's BLE observer priority. You shouldn't need to modify this value. */
 #define APP_BLE_CONN_CFG_TAG            1                                       /**< A tag identifying the SoftDevice BLE configuration. */
 
-static uint16_t current_connection_interval = 0;                                /**< Keeps track of the connection interval length (in milliseconds) */
-static uint16_t sici = 1980;                                                    /**< The desired connection interval in sensor idle mode (in milliseconds) */
-static uint16_t saci = 150;                                                     /**< The desired connection interval in sensor active mode (in milliseconds) */
+static uint16_t sensor_connection_interval;                                     /**< Variable that holds the desired connection interval (in milliseconds) */
 
-#define SENSOR_IDLE_MIN_CONN_INTERVAL   MSEC_TO_UNITS(sici - 15, UNIT_1_25_MS)  /**< Minimum acceptable connection interval in sensor idle mode (1.95 seconds). */
-#define SENSOR_IDLE_MAX_CONN_INTERVAL   MSEC_TO_UNITS(sici + 15, UNIT_1_25_MS)  /**< Maximum acceptable connection interval in sensor idle mode (2.05 seconds). */
-#define SENSOR_IDLE_CONN_SUP_TIMEOUT    MSEC_TO_UNITS(6000, UNIT_10_MS)        /**< Connection supervisory timeout (4 seconds). */
-#define SENSOR_ACTIVE_MIN_CONN_INTERVAL MSEC_TO_UNITS(saci - 15, UNIT_1_25_MS)  /**< Minimum acceptable connection interval in sensor active mode (0.125 seconds). */
-#define SENSOR_ACTIVE_MAX_CONN_INTERVAL MSEC_TO_UNITS(saci + 15, UNIT_1_25_MS)  /**< Maximum acceptable connection interval in sensor active mode (0.25 seconds). */
-#define SENSOR_ACTIVE_CONN_SUP_TIMEOUT  MSEC_TO_UNITS(4000, UNIT_10_MS)         /**< Connection supervisory timeout (4 seconds). */
+#define SENSOR_CONN_SUP_TIMEOUT         MSEC_TO_UNITS(4000, UNIT_10_MS)         /**< Connection supervisory timeout (4 seconds). */
 #define SLAVE_LATENCY                   0                                       /**< Slave latency. */
 
 #define FIRST_CONN_PARAMS_UPDATE_DELAY  APP_TIMER_TICKS(1000)                   /**< Time from initiating event (connect or start of notification) to first time sd_ble_gap_conn_param_update is called (5 seconds). */
@@ -262,14 +255,17 @@ static void sensors_init(void)
     if (whoamI.imu == LSM9DS1_IMU_ID) SEGGER_RTT_WriteString(0, "LSM9DS1 discovered.\n");
     else SEGGER_RTT_WriteString(0, "Error: Couldn't find LSM9DS1.\n");
 
-    //regardless of whether or not the LSM9DS1 is found, disable the power pins and TWI bus
+    //In the future, more sensors can be initialized here
+
+    //regardless of whether or not any sensors are found, disable the power pins and TWI bus
     nrf_gpio_pin_clear(BLE_33_PULLUP);
     nrf_gpio_pin_clear(BLE_33_SENSOR_POWER_PIN);
     nrf_drv_twi_disable(&m_twi);
 
     //After all sensors have been initialized, update the sensor settings characteristic to 
-    //reflect the sensor settings array
-    ble_gatts_value_t settings;\
+    //reflect the sensor settings array. Furthermore, we also set the connection interval 
+    //to be equal to the highest sensor ODR (to the nearest 15th millisecond)
+    ble_gatts_value_t settings;
     settings.len = SENSOR_SETTINGS_LENGTH;
     settings.p_value = sensor_settings;
     uint32_t err_code = sd_ble_gatts_value_set(m_conn_handle, m_ss.settings_handles.value_handle, &settings);
@@ -401,12 +397,22 @@ static void gap_params_init(void)
        err_code = sd_ble_gap_appearance_set(BLE_APPEARANCE_);
        APP_ERROR_CHECK(err_code); */
 
-    memset(&gap_conn_params, 0, sizeof(gap_conn_params));
+    //calculate the connection interval based on the ODR of the sensor
+    //TODO: It would be better to move this into the sensor_init() method
+    //      but for some reason I waas getting an error when putting it there.
+    float sensor_odr = lsm9ds1_odr_calculate(sensor_settings[ODR + GYR_START], sensor_settings[ODR + MAG_START]);
 
-    gap_conn_params.min_conn_interval = SENSOR_IDLE_MIN_CONN_INTERVAL;
-    gap_conn_params.max_conn_interval = SENSOR_IDLE_MAX_CONN_INTERVAL;
+    int minimum_interval_required = 1000.0 / sensor_odr * SENSOR_SAMPLES + 1; //this is in milliseconds, hence the 1000
+    minimum_interval_required += (15 - minimum_interval_required % 15); //round up to the nearest 15th millisecond
+
+    //Convert from milliseconds to 1.25 millisecond units by dividing by 1.25 (same multiplying by 4/5)
+    int mir_125 = minimum_interval_required / 5;
+    mir_125 *= 4;
+
+    gap_conn_params.min_conn_interval = mir_125;
+    gap_conn_params.max_conn_interval = mir_125 + 12; //must be 15 ms (or 12 in 1.25ms units) greater at a minimum
     gap_conn_params.slave_latency     = SLAVE_LATENCY;
-    gap_conn_params.conn_sup_timeout  = SENSOR_IDLE_CONN_SUP_TIMEOUT;
+    gap_conn_params.conn_sup_timeout  = SENSOR_CONN_SUP_TIMEOUT;
 
     err_code = sd_ble_gap_ppcp_set(&gap_conn_params);
     APP_ERROR_CHECK(err_code);
@@ -448,31 +454,11 @@ static void sensor_idle_mode_start()
     if (current_operating_mode == SENSOR_ACTIVE_MODE)
     {
         //If we're transitioning from active to idle mode we need to stop the data collection timer
-        //and then put the sensor into sleep mode. Once this is done we change the connection interval 
-        //back to 2 seconds as we won't be communicating with the central as often (for a short while).
+        //and then put the sensor into sleep mode.
         err_code = app_timer_stop(m_data_reading_timer); //Even if the timer isn't actively on it's ok to call this method
         lsm9ds1_idle_mode_enable(&lsm9ds1_imu, &lsm9ds1_mag);
 
-        //the connection interval should be less than 2 seconds, but still check to make sure
-        if (current_connection_interval < SENSOR_IDLE_MIN_CONN_INTERVAL)
-        {
-            ret_code_t err_code = BLE_ERROR_INVALID_CONN_HANDLE;
-            ble_gap_conn_params_t new_params;
-
-            new_params.min_conn_interval = SENSOR_IDLE_MIN_CONN_INTERVAL;
-            new_params.max_conn_interval = SENSOR_IDLE_MAX_CONN_INTERVAL;
-            new_params.slave_latency = SLAVE_LATENCY;
-            new_params.conn_sup_timeout = SENSOR_IDLE_CONN_SUP_TIMEOUT;
-
-            err_code = ble_conn_params_change_conn_params(m_conn_handle, &new_params);
-
-            if (err_code != NRF_SUCCESS)
-            {
-                SEGGER_RTT_WriteString(0, "Couldn't update connection interval.\n");
-            }
-        }
-
-        //the LED is deactivated during data collection so turn the LED back on
+        //the LED is deactivated during data collection so turn it back on
         err_code = app_timer_start(m_led_timer, LED_DELAY, NULL); //Even if the timer is already on it's ok to call this method
     }
     else 
@@ -506,45 +492,6 @@ static void sensor_active_mode_start()
 
     //turn on the sensors by applying the current settings in the settings array
     lsm9ds1_active_mode_enable(&lsm9ds1_imu, &lsm9ds1_mag);
-
-    //After turning on the sensor, request that the connection interval be changed
-    //to match the ODR of the sensor * the number of samples being collected.
-    float sensor_odr = lsm9ds1_odr_calculate(sensor_settings[ODR + GYR_START], sensor_settings[ODR + MAG_START]);
-
-    if (sensor_odr != 0)
-    {
-        int minimum_interval_required = 1000.0 / sensor_odr * SENSOR_SAMPLES + 1; //this is in milliseconds, hence the 1000
-        minimum_interval_required += (15 - minimum_interval_required % 15); //round up to the nearest 15th millisecond
-
-        //Convert from milliseconds to 1.25 millisecond units by dividing by 1.25 (same multiplying by 4/5)
-        int mir_125 = minimum_interval_required / 5;
-        mir_125 *= 4;
-
-        //Now make the connection interval change request
-        ret_code_t err_code = BLE_ERROR_INVALID_CONN_HANDLE;
-        ble_gap_conn_params_t new_params;
-
-        new_params.min_conn_interval = mir_125;
-        new_params.max_conn_interval = mir_125 + 12; //must be 15 ms (or 12 in 1.25ms units) greater at a minimum
-        new_params.slave_latency = SLAVE_LATENCY;
-        new_params.conn_sup_timeout = SENSOR_ACTIVE_CONN_SUP_TIMEOUT;
-
-        err_code = ble_conn_params_change_conn_params(m_conn_handle, &new_params);
-
-        if (err_code != NRF_SUCCESS)
-        {
-            SEGGER_RTT_WriteString(0, "Couldn't update connection interval.\n");
-        }
-
-        //Once the settings have been applied, restart the data collection timer.
-        //The timer needs to be converted from ms to 'ticks' which match the frequency of 
-        //the app timer. Normally this is done with a Macro but that can't be accessed here 
-        //so the macro code is copied here
-        uint64_t A = minimum_interval_required * (uint64_t)APP_TIMER_CLOCK_FREQ;
-        uint64_t B = 1000 * (APP_TIMER_CONFIG_RTC_FREQUENCY + 1);
-        uint32_t data_timer_delay = (((A) + ((B) / 2)) / (B));
-        app_timer_start(m_data_reading_timer, data_timer_delay, NULL);
-    }
     
     current_operating_mode = SENSOR_ACTIVE_MODE; //set the current operating mode to idle
 }
@@ -793,7 +740,6 @@ static void ble_evt_handler(ble_evt_t const * p_ble_evt, void * p_context)
             err_code = nrf_ble_qwr_conn_handle_assign(&m_qwr, m_conn_handle);
             APP_ERROR_CHECK(err_code);
             connected_mode_start();
-            current_connection_interval = p_ble_evt->evt.gap_evt.params.connected.conn_params.max_conn_interval;
             SEGGER_RTT_WriteString(0, "Connected to the Personal Caddie.\n");
             break;
 
@@ -810,8 +756,7 @@ static void ble_evt_handler(ble_evt_t const * p_ble_evt, void * p_context)
         } break;
 
         case BLE_GAP_EVT_CONN_PARAM_UPDATE:
-            current_connection_interval = p_ble_evt->evt.gap_evt.params.conn_param_update.conn_params.min_conn_interval * 5 / 4;
-            SEGGER_RTT_printf(0, "Connection Interval updated to : %u milliseconds.\n", current_connection_interval);
+            SEGGER_RTT_printf(0, "Connection Interval updated to : %u milliseconds.\n", p_ble_evt->evt.gap_evt.params.conn_param_update.conn_params.min_conn_interval * 5 / 4);
             break;
 
         case BLE_GATTC_EVT_TIMEOUT:
@@ -1126,14 +1071,14 @@ int main(void)
     timers_init();
     power_management_init();
     ble_stack_init();
-    gap_params_init();
     gatt_init();
     services_init();
+    twi_init();
+    sensors_init();
+    gap_params_init();
     advertising_init();
     conn_params_init();
     peer_manager_init();
-    twi_init();
-    sensors_init();
     leds_init();
   
     NRF_LOG_FLUSH(); //flush out all logs called during initialization
