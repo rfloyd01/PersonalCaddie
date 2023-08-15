@@ -146,6 +146,7 @@ static ble_uuid_t m_sr_uuids[] =                                               /
 
 const nrf_drv_twi_t m_twi = NRF_DRV_TWI_INSTANCE(TWI_INSTANCE_ID);
 volatile bool m_xfer_done = false; //Indicates if operation on TWI has ended.
+static int measurements_taken = 0;                                              /**< keeps track of how many IMU measurements have taken in the given connection interval. */
 
 //IMU Sensor Parameters
 static stmdev_ctx_t lsm9ds1_imu;                                                /**< LSM9DS1 accelerometer/gyroscope instance. */
@@ -162,7 +163,6 @@ static uint8_t gyr_characteristic_data[SENSOR_SAMPLES * SAMPLE_SIZE];
 static uint8_t mag_characteristic_data[SENSOR_SAMPLES * SAMPLE_SIZE];
 uint8_t sensor_settings[SENSOR_SETTINGS_LENGTH];                               /**< An array represnting the IMU sensor settings */
 static lsm9ds1_id_t whoamI;
-static int measurements_taken = 0;
 
 static int32_t write_imu(void *handle, uint8_t reg, const uint8_t *bufp, uint16_t len);
 static int32_t read_imu(void *handle, uint8_t reg, uint8_t *bufp, uint16_t len);
@@ -316,17 +316,23 @@ static void data_reading_timer_handler(void * p_context)
     //SEGGER_RTT_printf(0, "TWI initiated at %u ticks of 16MHz.\n", time_stamp);
 
     //Everytime the data reading timer goes off we take sensor readings and then 
-    //update the appropriate characteristic values.
-    int measurements_taken = 0;
-    while (measurements_taken < SENSOR_SAMPLES)
-    {
-        get_IMU_data(SAMPLE_SIZE * measurements_taken);
-        get_MAG_data(SAMPLE_SIZE * measurements_taken);
-        measurements_taken++;
-    }
+    //update the appropriate characteristic values. The timer should go off once
+    //every connection interval
+    get_IMU_data(SAMPLE_SIZE * measurements_taken);
+    get_MAG_data(SAMPLE_SIZE * measurements_taken);
+    measurements_taken++;
+
+    //TEST: bytes aren't being updated correctly
+    //SEGGER_RTT_WriteString(0, "Bytes going into gyro characteristic should be:\n");
+    //for (int i = 0; i < SENSOR_SAMPLES * SAMPLE_SIZE; i++) SEGGER_RTT_printf(0, "0x%#01x ", *(gyr_characteristic_data + i));
+    //SEGGER_RTT_WriteString(0, "\n\n");
 
     //after the samples are read, update the characteristics and notify
-    characteristic_update_and_notify();
+    if ( measurements_taken == SENSOR_SAMPLES)
+    {
+        characteristic_update_and_notify();
+        measurements_taken = 0; //reset the data counter
+    }
 }
 
 static void led_timer_handler(void * p_context)
@@ -492,6 +498,17 @@ static void sensor_active_mode_start()
 
     //turn on the sensors by applying the current settings in the settings array
     lsm9ds1_active_mode_enable(&lsm9ds1_imu, &lsm9ds1_mag);
+
+    //start data acquisition by turning on the data timer The timer needs to be converted from ms
+    //to 'ticks' which match the frequency of the app timer. Normally this is done with a Macro but
+    //that can't be accessed here so the macro code is copied here
+    float sensor_odr = lsm9ds1_odr_calculate(sensor_settings[ODR + GYR_START], sensor_settings[ODR + MAG_START]);
+    int reading_timer_milliseconds = 1000.0 / sensor_odr + 1; //this is how often (in milliseconds) we need to take a sensor reading
+
+    uint64_t A = reading_timer_milliseconds * (uint64_t)APP_TIMER_CLOCK_FREQ;
+    uint64_t B = 1000 * (APP_TIMER_CONFIG_RTC_FREQUENCY + 1);
+    uint32_t data_timer_delay = (((A) + ((B) / 2)) / (B));
+    app_timer_start(m_data_reading_timer, data_timer_delay, NULL);
     
     current_operating_mode = SENSOR_ACTIVE_MODE; //set the current operating mode to idle
 }
@@ -756,7 +773,8 @@ static void ble_evt_handler(ble_evt_t const * p_ble_evt, void * p_context)
         } break;
 
         case BLE_GAP_EVT_CONN_PARAM_UPDATE:
-            SEGGER_RTT_printf(0, "Connection Interval updated to : %u milliseconds.\n", p_ble_evt->evt.gap_evt.params.conn_param_update.conn_params.min_conn_interval * 5 / 4);
+            sensor_connection_interval = p_ble_evt->evt.gap_evt.params.conn_param_update.conn_params.min_conn_interval * 5 / 4;
+            SEGGER_RTT_printf(0, "Connection Interval updated to : %u milliseconds.\n", sensor_connection_interval);
             break;
 
         case BLE_GATTC_EVT_TIMEOUT:
@@ -1097,20 +1115,19 @@ int main(void)
     }
 }
 
-static void tx_com( uint8_t *tx_buffer, uint16_t len )
-{
-    int x = 5;
-}
-
 static int32_t get_IMU_data(uint8_t offset)
 {
-    //Reads the raw accelerometer and magnetometer data and stores it in their respective arrays
+    //Reads the raw accelerometer and magnetometer data and stores it in their respective arrays.
+    //First read the gyroscope data
+
+    uint8_t new_data[6];
     int ret = lsm9ds1_read_reg(&lsm9ds1_imu, LSM9DS1_OUT_X_L_G, gyr_characteristic_data + offset, 6);
 
+    //If there aren't any issues then read the accelerometer data
     if (ret == 0)
     {
         //SEGGER_RTT_printf(0, "Base Characteristic Address: 0x%#08x\n", acc_characteristic_data);
-        //SEGGER_RTT_printf(0, "Address after offset: 0x%#08x\n", acc_characteristic_data + offset);
+        //SEGGER_RTT_printf(0, "Writing data to address: 0x%#08x\n", acc_characteristic_data + offset);
         ret = lsm9ds1_read_reg(&lsm9ds1_imu, LSM9DS1_OUT_X_L_XL, acc_characteristic_data + offset, 6);
     }
 
