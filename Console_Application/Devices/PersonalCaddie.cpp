@@ -73,7 +73,6 @@ concurrency::task<void> PersonalCaddie::BLEDeviceConnectedHandler()
         }
     }
 
-    std::cout << "All characteristics have been found and stored. Now Connected to the Personal Caddie." << std::endl;
     this->ble_device_connected = true;
 
     //Read the sensor settings characteristic to get some basic information about the sensors attached to
@@ -92,18 +91,22 @@ concurrency::task<void> PersonalCaddie::BLEDeviceConnectedHandler()
     {
         std::cout << "something went wrong when reading characteristic" << std::endl;
     }
-    
 
+    //Use the data read from the settings characteristic to create a new IMU instance
     this->p_imu = new IMU(sensor_settings_array);
-    sampleFreq = 59.5; //TODO, need to actually get this from the sensor info characteristic at some point
+    auto rates = this->p_imu->getSensorConversionRates();
+    auto odrs = this->p_imu->getSensorODRs();
+
+    sampleFreq = this->p_imu->getMaxODR(); //Set the sample frequency to be equal to the largest of the sensor ODRs
 
     //Send an alert to the graphics interface letting it know that the connection has been made
     this->graphic_update_handler(34);
+    std::cout << "Successfulyl connected to the Personal Caddie." << std::endl;
 }
 
 concurrency::task<void> PersonalCaddie::getDataCharacteristics(Bluetooth::GenericAttributeProfile::GattDeviceService& data_service)
 {
-    std::cout << "Found the Sensor Data service, extracting characteristic information now." << std::endl;
+    //std::cout << "Found the Sensor Data service, extracting characteristic information now." << std::endl;
     auto data_characteristics = (co_await data_service.GetCharacteristicsAsync()).Characteristics();
 
     for (int i = 0; i < data_characteristics.Size(); i++)

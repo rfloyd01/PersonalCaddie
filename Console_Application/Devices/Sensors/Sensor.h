@@ -8,6 +8,9 @@ public:
 	//PUBLIC FUNCTIONS
 	Sensor();
 
+	float getConversionRate();
+	float getCurrentODR();
+
 protected:
 	float conversion_rate;
 	float current_odr;
@@ -16,6 +19,5 @@ protected:
 	void getCalibrationNumbers();
 	void setCalibrationNumbers();
 
-	virtual void getConversionRate();
-	virtual void getCurrentODR();
+	
 };

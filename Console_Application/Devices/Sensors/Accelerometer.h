@@ -34,6 +34,6 @@ private:
 	void getCalibrationNumbers();
 	void setCalibrationNumbers();
 
-	/*void getConversionRate();
-	void getCurrentODR();*/
+	void setConversionRateFromSettings();
+	void setCurrentODRFromSettings();
 };

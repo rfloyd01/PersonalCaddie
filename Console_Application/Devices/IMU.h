@@ -83,6 +83,12 @@ public:
 	IMU(accelerometer_model_t acc_model, gyroscope_model_t gyr_model, magnetometer_model_t mag_model, uint8_t* imu_settings);
 	IMU(uint8_t* imu_settings);
 
+	float* getSensorODRs();
+	float* getSensorConversionRates();
+
+	float getMaxODR();
+	float getConversionRate(sensor_type_t sensor);
+
 	//Setting Altering Functions
 	//TODO: eventually create functions that will allow for the changing of sensor settings over bluetooth and TWI or SPI
 
@@ -104,11 +110,15 @@ private:
 	//void loadSensorInformation(IMU& sensor); //load the data on all current sensors that I own
 	//void loadSensorDefaultSettings(IMU& sensor);
 	//void loadAxisOrientations(IMU& sensor);
+	void getODRFromSensors();
+	void getConversionRateFromSensors();
+
+	float max_odr = 0;
 
 	//PRIVATE VARIABLES
 	//Changeable Sensor Settings
-	double IMU_sample_frequencies[3]; //sample frequencies for each sensor in Hz. Order is accelerometer, gyroscope, magnetometer
-	double IMU_data_sensitivity[3]; //current sensitivity for each sensor. Order is accelerometer, gyroscope, magnetometer
+	float IMU_sample_frequencies[3]; //sample frequencies for each sensor in Hz. Order is accelerometer, gyroscope, magnetometer
+	float IMU_data_sensitivity[3]; //current sensitivity for each sensor. Order is accelerometer, gyroscope, magnetometer
 
 	//Sensor Axis information
 	//The expected axes order is {x, y, z}, some sensors are oriented differently, however. These arrays keep track of swapped axes for each sensor of the IMU

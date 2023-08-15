@@ -110,7 +110,7 @@ float lsm9ds1_odr_calculate(uint8_t imu_odr_setting, uint8_t mag_odr_setting)
 }
 float lsm9ds1_fsr_conversion(sensor_type_t sensor, uint8_t fsr_setting)
 {
-    if (sensor == ACCELEROMETER)
+    if (sensor == ACC_SENSOR)
     {
         switch (fsr_setting)
         {
@@ -126,7 +126,7 @@ float lsm9ds1_fsr_conversion(sensor_type_t sensor, uint8_t fsr_setting)
             return 0; //invalid setting applied
         }
     }
-    else if (sensor == GYROSCOPE)
+    else if (sensor == GYR_SENSOR)
     {
         switch (fsr_setting)
         {
@@ -140,7 +140,7 @@ float lsm9ds1_fsr_conversion(sensor_type_t sensor, uint8_t fsr_setting)
             return 0; //invalid setting applied
         }
     }
-    else if (sensor == MAGNETOMETER)
+    else if (sensor == MAG_SENSOR)
     {
         switch (fsr_setting)
         {

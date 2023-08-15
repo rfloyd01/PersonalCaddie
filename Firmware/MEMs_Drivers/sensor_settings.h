@@ -19,9 +19,9 @@ extern "C" {
 //A list of the different sensor types
 typedef enum
 {
-    ACCELEROMETER = 0,
-    GYROSCOPE = 1,
-    MAGNETOMETER = 2,
+    ACC_SENSOR = 0,
+    GYR_SENSOR = 1,
+    MAG_SENSOR = 2,
 } sensor_type_t;
 
 //A list of all the different accelerometers that currently have drivers

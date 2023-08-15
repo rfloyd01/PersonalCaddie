@@ -11,7 +11,10 @@ IMU::IMU(accelerometer_model_t acc_model, gyroscope_model_t gyr_model, magnetome
     p_gyr = new Gyroscope(gyr_model, imu_settings + GYR_START);
     p_mag = new Magnetometer(mag_model, imu_settings + MAG_START);
 
-    //loadSensorInformation(*this);
+    getODRFromSensors();
+    getConversionRateFromSensors();
+
+    this->max_odr = *std::max_element(IMU_sample_frequencies, IMU_sample_frequencies + MAG_SENSOR);
 }
 
 IMU::IMU(uint8_t* imu_settings)
@@ -22,8 +25,32 @@ IMU::IMU(uint8_t* imu_settings)
     p_gyr = new Gyroscope(imu_settings + GYR_START);
     p_mag = new Magnetometer(imu_settings + MAG_START);
 
-    //loadSensorInformation(*this);
+    getODRFromSensors();
+    getConversionRateFromSensors();
 }
+
+float* IMU::getSensorODRs() { return this->IMU_sample_frequencies; }
+float* IMU::getSensorConversionRates() { return this->IMU_data_sensitivity; }
+
+void IMU::getODRFromSensors()
+{
+    //gets the odr information from each individual sensor and saves it in the IMU_sample_frequencies array
+    this->IMU_sample_frequencies[ACC_SENSOR] = this->p_acc->getCurrentODR();
+    this->IMU_sample_frequencies[GYR_SENSOR] = this->p_gyr->getCurrentODR();
+    this->IMU_sample_frequencies[MAG_SENSOR] = this->p_mag->getCurrentODR();
+}
+
+void IMU::getConversionRateFromSensors()
+{
+    //gets the conversion rate information from each individual sensor and saves it in the IMU_data_sensitivity array
+    this->IMU_data_sensitivity[ACC_SENSOR] = this->p_acc->getConversionRate();
+    this->IMU_data_sensitivity[GYR_SENSOR] = this->p_gyr->getConversionRate();
+    this->IMU_data_sensitivity[MAG_SENSOR] = this->p_mag->getConversionRate();
+}
+
+float IMU::getMaxODR() { return this->max_odr; }
+
+float IMU::getConversionRate(sensor_type_t sensor) { return this->IMU_data_sensitivity[sensor]; }
 
 //Get Functions
 //Accelerometer IMU::getAccelerometerType()

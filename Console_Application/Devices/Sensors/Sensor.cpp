@@ -16,12 +16,5 @@ void Sensor::setCalibrationNumbers()
 	//will set the calibration numbers for the particular sensor
 }
 
-void Sensor::getConversionRate()
-{
-	//do nothing for now
-}
-
-void Sensor::getCurrentODR()
-{
-	//do nothing for now
-}
+float Sensor::getConversionRate() { return this->conversion_rate; }
+float Sensor::getCurrentODR() { return this->current_odr; }

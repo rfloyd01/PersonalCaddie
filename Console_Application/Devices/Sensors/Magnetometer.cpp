@@ -11,6 +11,8 @@ Magnetometer::Magnetometer(magnetometer_model_t mag_model, uint8_t* current_sett
 	this->mag_model = mag_model;
 	
 	populateSensorSettingsArray(current_settings);
+	setConversionRateFromSettings();
+	setCurrentODRFromSettings();
 }
 
 Magnetometer::Magnetometer(uint8_t* current_settings)
@@ -21,6 +23,8 @@ Magnetometer::Magnetometer(uint8_t* current_settings)
 	this->mag_model = static_cast<magnetometer_model_t>(current_settings[SENSOR_MODEL]);
 
 	populateSensorSettingsArray(current_settings);
+	setConversionRateFromSettings();
+	setCurrentODRFromSettings();
 }
 
 void Magnetometer::populateSensorSettingsArray(uint8_t* current_settings)
@@ -47,24 +51,28 @@ void Magnetometer::setCalibrationNumbers()
 	//will set the calibration numbers for the particular sensor
 }
 
-//void Accelerometer::getConversionRate()
-//{
-//	switch (this->settings[0])
-//	{
-//	case LSM9DS1_ACC:
-//		this->conversion_rate = lsm9ds1_fsr_conversion(ACCELEROMETER, this->settings[FS_RANGE]);
-//	default:
-//		this->conversion_rate = 0;
-//	}
-//}
-//
-//void Accelerometer::getCurrentODR()
-//{
-//	switch (this->settings[0])
-//	{
-//	case LSM9DS1_ACC:
-//		this->conversion_rate = lsm9ds1_odr_calculate()
-//	default:
-//		this->conversion_rate = 0;
-//	}
-//}
+void Magnetometer::setConversionRateFromSettings()
+{
+	switch (this->settings[SENSOR_MODEL])
+	{
+	case LSM9DS1_MAG:
+		this->conversion_rate = lsm9ds1_fsr_conversion(MAG_SENSOR, this->settings[FS_RANGE]);
+		break;
+	default:
+		this->conversion_rate = 0;
+		break;
+	}
+}
+
+void Magnetometer::setCurrentODRFromSettings()
+{
+	switch (this->settings[SENSOR_MODEL])
+	{
+	case LSM9DS1_MAG:
+		this->current_odr = lsm9ds1_odr_calculate(0x00, this->settings[ODR]); //the 0x00 represents IMU off mode
+		break;
+	default:
+		this->current_odr = 0;
+		break;
+	}
+}
