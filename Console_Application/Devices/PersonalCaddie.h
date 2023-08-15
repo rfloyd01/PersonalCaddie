@@ -63,6 +63,7 @@ public:
 	void setGraphicsHandler(std::function<void(int)> function);
 
 	PersonalCaddiePowerMode getCurrentPowerMode();
+	concurrency::task<void> toggleDataCollection();
 
 	//Methods and fields from original BluetoothLE Class
 	void masterUpdate(); //master update function
@@ -86,7 +87,6 @@ private:
 	concurrency::task<void> BLEDeviceConnectedHandler();
 	concurrency::task<void> getDataCharacteristics(Bluetooth::GenericAttributeProfile::GattDeviceService& data_service);
 	void dataCharacteristicEventHandler(Bluetooth::GenericAttributeProfile::GattCharacteristic& car, Bluetooth::GenericAttributeProfile::GattValueChangedEventArgs& args);
-	void toggleDataCharacteristicNotifications();
 
 	//Data Gathering/Manipulation
 	void updateRawDataWithCalibrationNumbers(DataType dt);

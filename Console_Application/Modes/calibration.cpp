@@ -224,6 +224,7 @@ void Calibration::modeStart()
 
 		//Physically turning the sensors on will happen almost instantly, however, we need to wait
 		//for the connection interval to update which takes a bit of time.
+		this->p_graphics->getPersonalCaddie()->toggleDataCollection();
 	}
 }
 void Calibration::modeEnd()

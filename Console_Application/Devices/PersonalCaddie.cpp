@@ -152,6 +152,7 @@ void PersonalCaddie::dataCharacteristicEventHandler(Bluetooth::GenericAttributeP
     //First we read the data from the characteristic and put it into the appropriate raw data vector
     auto uuid = (car.Uuid().Data1 & 0xFFFF); //TODO: Can this just be passed in to the lambda function when the ValueChanged() property is set?
     DataType dt = DataType::EULER_ANGLES; //this is just to initialize the variable, it will get changed to either acc, gyr or mag
+    std::cout << "Notification Handler called by characteristic: " << uuid << std::endl;
 
     //Get the appropriate data type by looking at the characteristic's UUID so we know which vector to update
     switch (uuid)
@@ -219,10 +220,62 @@ void PersonalCaddie::updateRawDataWithCalibrationNumbers(DataType dt)
     data_available = true; //this will let the graphics interface know that new data is ready
 }
 
-void PersonalCaddie::toggleDataCharacteristicNotifications()
+concurrency::task<void> PersonalCaddie::toggleDataCollection()
 {
     //If the sensor data characteristics aren't currently notifying, then their CCCD descriptors will be written
     //so that they are (and vice versa).
+    auto cccd_value = (co_await m_accelerometer_data_characteristic.ReadClientCharacteristicConfigurationDescriptorAsync()).ClientCharacteristicConfigurationDescriptor();
+    bool success = true;
+    if (cccd_value  == Bluetooth::GenericAttributeProfile::GattClientCharacteristicConfigurationDescriptorValue::Notify)
+    {
+        //the data characteristics are currently set to notify so turn off notifications
+        auto notifications_off = co_await m_accelerometer_data_characteristic.WriteClientCharacteristicConfigurationDescriptorAsync(GattClientCharacteristicConfigurationDescriptorValue::None);
+        if (notifications_off != GattCommunicationStatus::Success)
+        {
+            std::cout << "something when wrong trying to turn off accelerometer data notifications." << std::endl;
+            success = false;
+        }
+
+        notifications_off = co_await m_gyroscope_data_characteristic.WriteClientCharacteristicConfigurationDescriptorAsync(GattClientCharacteristicConfigurationDescriptorValue::None);
+        if (notifications_off != GattCommunicationStatus::Success)
+        {
+            std::cout << "something when wrong trying to turn off gyroscope data notifications." << std::endl;
+            success = false;
+        }
+
+        notifications_off = co_await m_magnetometer_data_characteristic.WriteClientCharacteristicConfigurationDescriptorAsync(GattClientCharacteristicConfigurationDescriptorValue::None);
+        if (notifications_off != GattCommunicationStatus::Success)
+        {
+            std::cout << "something when wrong trying to turn off magnetometer data notifications." << std::endl;
+            success = false;
+        }
+    }
+    else
+    {
+        //the data characteristics are currently set to notify so turn off notifications
+        auto notifications_on = co_await m_accelerometer_data_characteristic.WriteClientCharacteristicConfigurationDescriptorAsync(GattClientCharacteristicConfigurationDescriptorValue::Notify);
+        if (notifications_on != GattCommunicationStatus::Success)
+        {
+            std::cout << "something when wrong trying to turn off accelerometer data notifications." << std::endl;
+            success = false;
+        }
+
+        notifications_on = co_await m_gyroscope_data_characteristic.WriteClientCharacteristicConfigurationDescriptorAsync(GattClientCharacteristicConfigurationDescriptorValue::Notify);
+        if (notifications_on != GattCommunicationStatus::Success)
+        {
+            std::cout << "something when wrong trying to turn off gyroscope data notifications." << std::endl;
+            success = false;
+        }
+
+        notifications_on = co_await m_magnetometer_data_characteristic.WriteClientCharacteristicConfigurationDescriptorAsync(GattClientCharacteristicConfigurationDescriptorValue::Notify);
+        if (notifications_on != GattCommunicationStatus::Success)
+        {
+            std::cout << "something when wrong trying to turn off magnetometer data notifications." << std::endl;
+            success = false;
+        }
+    }
+
+    if (success) std::cout << "Successfully toggled data characteristic notifications." << std::endl;
 }
 
 PersonalCaddiePowerMode PersonalCaddie::getCurrentPowerMode()
