@@ -184,7 +184,6 @@
     <Text Include="Graphics\Shaders\TextFragment.txt" />
     <Text Include="Graphics\Shaders\TextVertex.txt" />
     <Text Include="Graphics\Shaders\Vertex.txt" />
-    <Text Include="Resources\calibration.txt" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Firmware\MEMs_Drivers\lsm9ds1_reg.h" />

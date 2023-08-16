@@ -9,7 +9,6 @@ class Gyroscope : public Sensor
 {
 public:
 	//PUBLIC FUNCTIONS
-	Gyroscope(gyroscope_model_t gyr_model, uint8_t* current_settings);
 	Gyroscope(uint8_t* current_settings);
 
 private:
@@ -30,9 +29,6 @@ private:
 
 	//PRIVATE FUNCTIONS
 	void populateSensorSettingsArray(uint8_t* current_settings);
-
-	void getCalibrationNumbers();
-	void setCalibrationNumbers();
 
 	void setConversionRateFromSettings();
 	void setCurrentODRFromSettings();

@@ -244,10 +244,10 @@ void GL::resetTime()
 {
 	p_pc->resetTime();
 }
-void GL::updateCalibrationNumbers()
-{
-	p_pc->updateCalibrationNumbers();
-}
+//void GL::updateCalibrationNumbers()
+//{
+//	p_pc->updateCalibrationNumbers();
+//}
 void GL::setMagField()
 {
 	p_pc->setMagField();

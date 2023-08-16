@@ -4,19 +4,6 @@
 
 //PUBLIC FUNCTIONS
 //Constructors
-IMU::IMU(accelerometer_model_t acc_model, gyroscope_model_t gyr_model, magnetometer_model_t mag_model, uint8_t* imu_settings)
-{
-    //Constructor to create acc, gyr and mag sensors directly with desired settings
-    p_acc = new Accelerometer(acc_model, imu_settings + ACC_START);
-    p_gyr = new Gyroscope(gyr_model, imu_settings + GYR_START);
-    p_mag = new Magnetometer(mag_model, imu_settings + MAG_START);
-
-    getODRFromSensors();
-    getConversionRateFromSensors();
-
-    this->max_odr = *std::max_element(IMU_sample_frequencies, IMU_sample_frequencies + MAG_SENSOR);
-}
-
 IMU::IMU(uint8_t* imu_settings)
 {
     //Constructor to create acc, gyr and mag sensors from an array of values obtained from a 
@@ -51,6 +38,14 @@ void IMU::getConversionRateFromSensors()
 float IMU::getMaxODR() { return this->max_odr; }
 
 float IMU::getConversionRate(sensor_type_t sensor) { return this->IMU_data_sensitivity[sensor]; }
+
+std::pair<const float*, const float**> IMU::getAccelerometerCalibrationNumbers() { return this->p_acc->getCalibrationNumbers(); }
+std::pair<const float*, const float**> IMU::getGyroscopeCalibrationNumbers() { return this->p_gyr->getCalibrationNumbers(); }
+std::pair<const float*, const float**> IMU::getMagnetometerCalibrationNumbers() { return this->p_mag->getCalibrationNumbers(); }
+
+void updateAccelerometerCalibrationNumbers(float* offset, float** gain);
+void updateGyroscopeCalibrationNumbers(float* offset, float** gain);
+void updateMagnetometerCalibrationNumbers(float* offset, float** gain);
 
 //Get Functions
 //Accelerometer IMU::getAccelerometerType()

@@ -105,6 +105,9 @@ concurrency::task<void> PersonalCaddie::BLEDeviceConnectedHandler()
 
     sampleFreq = this->p_imu->getMaxODR(); //Set the sample frequency to be equal to the largest of the sensor ODRs
 
+    //update calibration numbers
+
+
     //Send an alert to the graphics interface letting it know that the connection has been made
     this->graphic_update_handler(34);
     std::cout << "Successfully connected to the Personal Caddie." << std::endl;
@@ -157,26 +160,33 @@ void PersonalCaddie::dataCharacteristicEventHandler(Bluetooth::GenericAttributeP
 
     //First we read the data from the characteristic and put it into the appropriate raw data vector
     auto uuid = (car.Uuid().Data1 & 0xFFFF); //TODO: Can this just be passed in to the lambda function when the ValueChanged() property is set?
-    DataType dt = DataType::EULER_ANGLES; //this is just to initialize the variable, it will get changed to either acc, gyr or mag
+    DataType rdt = DataType::EULER_ANGLES, dt = DataType::EULER_ANGLES; //this is just to initialize the variables, they will get changed to either acc, gyr or mag equivalents
     sensor_type_t sensor_type;
+    std::pair<const float*, const float**> calibration_data;
 
     //Get the appropriate data type by looking at the characteristic's UUID so we know which vector to update
     switch (uuid)
     {
     case ACC_DATA_CHARACTERISTIC_UUID:
-        dt = DataType::RAW_ACCELERATION;
+        rdt = DataType::RAW_ACCELERATION;
+        dt = DataType::ACCELERATION;
         sensor_type = ACC_SENSOR;
+        calibration_data = this->p_imu->getAccelerometerCalibrationNumbers();
         break;
     case GYR_DATA_CHARACTERISTIC_UUID:
-        dt = DataType::RAW_ROTATION;
+        rdt = DataType::RAW_ROTATION;
+        dt = DataType::ROTATION;
         sensor_type = GYR_SENSOR;
+        calibration_data = this->p_imu->getGyroscopeCalibrationNumbers();
         break;
     case MAG_DATA_CHARACTERISTIC_UUID:
-        dt = DataType::RAW_MAGNETIC;
+        rdt = DataType::RAW_MAGNETIC;
+        dt = DataType::MAGNETIC;
         sensor_type = MAG_SENSOR;
+        calibration_data = this->p_imu->getMagnetometerCalibrationNumbers();
         break;
     default:
-        break;
+        return; //if something other than a data characteristic calls this handler, return without doing anything
     }
 
     //read the physical data
@@ -191,75 +201,37 @@ void PersonalCaddie::dataCharacteristicEventHandler(Bluetooth::GenericAttributeP
         for (int axis = X; axis <= Z; axis++)
         {
             int16_t axis_reading = read_buffer.ReadInt16();
-            this->sensor_data[static_cast<int>(dt)][axis][i] = axis_reading * this->p_imu->getConversionRate(sensor_type); //Apply appropriate conversion from LSB to the current unit
+            this->sensor_data[static_cast<int>(rdt)][axis][i] = axis_reading * this->p_imu->getConversionRate(sensor_type); //Apply appropriate conversion from LSB to the current unit
         }
     }
 
     //once the raw data has been read update it with the appropriate calibration numbers for each sensor
-    updateRawDataWithCalibrationNumbers(dt, sensor_type);
+    updateRawDataWithCalibrationNumbers(dt, sensor_type, calibration_data.first, calibration_data.second);
 }
 
-void PersonalCaddie::updateRawDataWithCalibrationNumbers(DataType dt, sensor_type_t sensor_type)
+void PersonalCaddie::updateRawDataWithCalibrationNumbers(DataType dt, sensor_type_t sensor_type, const float* offset_cal, const float** gain_cal)
 {
     for (int i = 0; i < number_of_samples; i++)
     {
         float r_x = getDataPoint(dt, X, i), r_y = getDataPoint(dt, Y, i), r_z = getDataPoint(dt, Z, i);
 
-        if (dt == DataType::RAW_ACCELERATION)
-        {
-            setDataPoint(DataType::ACCELERATION, X, i, (acc_gain[0][0] * (r_x - acc_off[0])) + (acc_gain[0][1] * (r_y - acc_off[1])) + (acc_gain[0][2] * (r_z - acc_off[2])));
-            setDataPoint(DataType::ACCELERATION, Y, i, (acc_gain[1][0] * (r_x - acc_off[0])) + (acc_gain[1][1] * (r_y - acc_off[1])) + (acc_gain[1][2] * (r_z - acc_off[2])));
-            setDataPoint(DataType::ACCELERATION, Z, i, (acc_gain[2][0] * (r_x - acc_off[0])) + (acc_gain[2][1] * (r_y - acc_off[1])) + (acc_gain[2][2] * (r_z - acc_off[2])));
-        }
-        else if (dt == DataType::RAW_ROTATION)
-        {
-            setDataPoint(DataType::ROTATION, X, i, (r_x - gyr_off[0]) * gyr_gain[0]);
-            setDataPoint(DataType::ROTATION, Y, i, (r_y - gyr_off[1]) * gyr_gain[1]);
-            setDataPoint(DataType::ROTATION, Z, i, (r_z - gyr_off[2]) * gyr_gain[2]);
-        }
-        else if (dt == DataType::RAW_MAGNETIC)
-        {
-            setDataPoint(DataType::MAGNETIC, X, i, (mag_gain[0][0] * (r_x - mag_off[0])) + (mag_gain[0][1] * (r_y - mag_off[1])) + (mag_gain[0][2] * (r_z - mag_off[2])));
-            setDataPoint(DataType::MAGNETIC, Y, i, (mag_gain[1][0] * (r_x - mag_off[0])) + (mag_gain[1][1] * (r_y - mag_off[1])) + (mag_gain[1][2] * (r_z - mag_off[2])));
-            setDataPoint(DataType::MAGNETIC, Z, i, (mag_gain[2][0] * (r_x - mag_off[0])) + (mag_gain[2][1] * (r_y - mag_off[1])) + (mag_gain[2][2] * (r_z - mag_off[2])));
-        }
+        setDataPoint(dt, X, i, (gain_cal[0][0] * (r_x - offset_cal[0])) + (gain_cal[0][1] * (r_y - offset_cal[1])) + (gain_cal[0][2] * (r_z - offset_cal[2])));
+        setDataPoint(dt, Y, i, (gain_cal[1][0] * (r_x - offset_cal[0])) + (gain_cal[1][1] * (r_y - offset_cal[1])) + (gain_cal[1][2] * (r_z - offset_cal[2])));
+        setDataPoint(dt, Z, i, (gain_cal[2][0] * (r_x - offset_cal[0])) + (gain_cal[2][1] * (r_y - offset_cal[1])) + (gain_cal[2][2] * (r_z - offset_cal[2])));
     }
 
     //since data is read separately we need to set the data updated variable to true for the current sensor
     sensor_data_updated[sensor_type] = true;
 }
 
-concurrency::task<void> PersonalCaddie::toggleDataCollection()
+concurrency::task<void> PersonalCaddie::enableDataNotifications()
 {
     //If the sensor data characteristics aren't currently notifying, then their CCCD descriptors will be written
-    //so that they are (and vice versa).
-    auto cccd_value = (co_await m_accelerometer_data_characteristic.ReadClientCharacteristicConfigurationDescriptorAsync()).ClientCharacteristicConfigurationDescriptor();
+    //so that they are.
     bool success = true;
-    if (cccd_value  == Bluetooth::GenericAttributeProfile::GattClientCharacteristicConfigurationDescriptorValue::Notify)
-    {
-        //the data characteristics are currently set to notify so turn off notifications
-        auto notifications_off = co_await m_accelerometer_data_characteristic.WriteClientCharacteristicConfigurationDescriptorAsync(GattClientCharacteristicConfigurationDescriptorValue::None);
-        if (notifications_off != GattCommunicationStatus::Success)
-        {
-            std::cout << "something when wrong trying to turn off accelerometer data notifications." << std::endl;
-            success = false;
-        }
-
-        notifications_off = co_await m_gyroscope_data_characteristic.WriteClientCharacteristicConfigurationDescriptorAsync(GattClientCharacteristicConfigurationDescriptorValue::None);
-        if (notifications_off != GattCommunicationStatus::Success)
-        {
-            std::cout << "something when wrong trying to turn off gyroscope data notifications." << std::endl;
-            success = false;
-        }
-
-        notifications_off = co_await m_magnetometer_data_characteristic.WriteClientCharacteristicConfigurationDescriptorAsync(GattClientCharacteristicConfigurationDescriptorValue::None);
-        if (notifications_off != GattCommunicationStatus::Success)
-        {
-            std::cout << "something when wrong trying to turn off magnetometer data notifications." << std::endl;
-            success = false;
-        }
-    }
-    else
+    auto cccd_value = (co_await m_accelerometer_data_characteristic.ReadClientCharacteristicConfigurationDescriptorAsync()).ClientCharacteristicConfigurationDescriptor();
+    
+    if (cccd_value != Bluetooth::GenericAttributeProfile::GattClientCharacteristicConfigurationDescriptorValue::Notify)
     {
         //the data characteristics are currently set to notify so turn off notifications
         auto notifications_on = co_await m_accelerometer_data_characteristic.WriteClientCharacteristicConfigurationDescriptorAsync(GattClientCharacteristicConfigurationDescriptorValue::Notify);
@@ -278,6 +250,41 @@ concurrency::task<void> PersonalCaddie::toggleDataCollection()
 
         notifications_on = co_await m_magnetometer_data_characteristic.WriteClientCharacteristicConfigurationDescriptorAsync(GattClientCharacteristicConfigurationDescriptorValue::Notify);
         if (notifications_on != GattCommunicationStatus::Success)
+        {
+            std::cout << "something when wrong trying to turn off magnetometer data notifications." << std::endl;
+            success = false;
+        }
+    }
+
+    if (success) std::cout << "Successfully turned on data characteristic notifications." << std::endl;
+}
+
+concurrency::task<void> PersonalCaddie::disableDataNotifications()
+{
+    //If the sensor data characteristics aren currently notifying, then their CCCD descriptors will be written
+    //so that they aren't notifying any longer
+    bool success = true;
+    auto cccd_value = (co_await m_accelerometer_data_characteristic.ReadClientCharacteristicConfigurationDescriptorAsync()).ClientCharacteristicConfigurationDescriptor();
+    
+    if (cccd_value == Bluetooth::GenericAttributeProfile::GattClientCharacteristicConfigurationDescriptorValue::Notify)
+    {
+        //the data characteristics are currently set to notify so turn off notifications
+        auto notifications_off = co_await m_accelerometer_data_characteristic.WriteClientCharacteristicConfigurationDescriptorAsync(GattClientCharacteristicConfigurationDescriptorValue::None);
+        if (notifications_off != GattCommunicationStatus::Success)
+        {
+            std::cout << "something when wrong trying to turn off accelerometer data notifications." << std::endl;
+            success = false;
+        }
+
+        notifications_off = co_await m_gyroscope_data_characteristic.WriteClientCharacteristicConfigurationDescriptorAsync(GattClientCharacteristicConfigurationDescriptorValue::None);
+        if (notifications_off != GattCommunicationStatus::Success)
+        {
+            std::cout << "something when wrong trying to turn off gyroscope data notifications." << std::endl;
+            success = false;
+        }
+
+        notifications_off = co_await m_magnetometer_data_characteristic.WriteClientCharacteristicConfigurationDescriptorAsync(GattClientCharacteristicConfigurationDescriptorValue::None);
+        if (notifications_off != GattCommunicationStatus::Success)
         {
             std::cout << "something when wrong trying to turn off magnetometer data notifications." << std::endl;
             success = false;
@@ -409,60 +416,60 @@ void PersonalCaddie::resetTime()
     //reset time to be -1000 / the sample frequeny, this way when the first bit of data is processed it will start with a time stamp of 0.00
     time_stamp = -1000.0 / sampleFreq;
 }
-void PersonalCaddie::updateCalibrationNumbers()
-{
-    int line_count = 0;
-    std::fstream inFile;
-    inFile.open("Resources/calibration.txt");
-    char name[256];
-
-    while (!inFile.eof())
-    {
-        inFile.getline(name, 256);
-        ///TODO: this if statement is crappy, code up something better later, 
-        if (line_count == 2)      acc_off[0] = std::stof(name);
-        else if (line_count == 3) acc_off[1] = std::stof(name);
-        else if (line_count == 4) acc_off[2] = std::stof(name);
-
-        else if (line_count == 7) acc_gain[0][0] = std::stof(name);
-        else if (line_count == 8) acc_gain[0][1] = std::stof(name);
-        else if (line_count == 9) acc_gain[0][2] = std::stof(name);
-        else if (line_count == 10) acc_gain[1][0] = std::stof(name);
-        else if (line_count == 11) acc_gain[1][1] = std::stof(name);
-        else if (line_count == 12) acc_gain[1][2] = std::stof(name);
-        else if (line_count == 13) acc_gain[2][0] = std::stof(name);
-        else if (line_count == 14) acc_gain[2][1] = std::stof(name);
-        else if (line_count == 15) acc_gain[2][2] = std::stof(name);
-
-        else if (line_count == 18) gyr_off[0] = std::stof(name);
-        else if (line_count == 19) gyr_off[1] = std::stof(name);
-        else if (line_count == 20) gyr_off[2] = std::stof(name);
-
-        else if (line_count == 23) gyr_gain[0] = std::stof(name);
-        else if (line_count == 24) gyr_gain[1] = std::stof(name);
-        else if (line_count == 25) gyr_gain[2] = std::stof(name);
-
-        else if (line_count == 28) mag_off[0] = std::stof(name);
-        else if (line_count == 29) mag_off[1] = std::stof(name);
-        else if (line_count == 30) mag_off[2] = std::stof(name);
-
-        else if (line_count == 33) mag_gain[0][0] = std::stof(name);
-        else if (line_count == 34) mag_gain[0][1] = std::stof(name);
-        else if (line_count == 35) mag_gain[0][2] = std::stof(name);
-        else if (line_count == 36) mag_gain[1][0] = std::stof(name);
-        else if (line_count == 37) mag_gain[1][1] = std::stof(name);
-        else if (line_count == 38) mag_gain[1][2] = std::stof(name);
-        else if (line_count == 39) mag_gain[2][0] = std::stof(name);
-        else if (line_count == 40) mag_gain[2][1] = std::stof(name);
-        else if (line_count == 41) mag_gain[2][2] = std::stof(name);
-
-        line_count++;
-    }
-
-    if (line_count < 42) std::cout << "Some calibration information wasn't updated." << std::endl;
-
-    inFile.close();
-}
+//void PersonalCaddie::updateCalibrationNumbers()
+//{
+//    int line_count = 0;
+//    std::fstream inFile;
+//    inFile.open("Resources/calibration.txt");
+//    char name[256];
+//
+//    while (!inFile.eof())
+//    {
+//        inFile.getline(name, 256);
+//        ///TODO: this if statement is crappy, code up something better later, 
+//        if (line_count == 2)      acc_off[0] = std::stof(name);
+//        else if (line_count == 3) acc_off[1] = std::stof(name);
+//        else if (line_count == 4) acc_off[2] = std::stof(name);
+//
+//        else if (line_count == 7) acc_gain[0][0] = std::stof(name);
+//        else if (line_count == 8) acc_gain[0][1] = std::stof(name);
+//        else if (line_count == 9) acc_gain[0][2] = std::stof(name);
+//        else if (line_count == 10) acc_gain[1][0] = std::stof(name);
+//        else if (line_count == 11) acc_gain[1][1] = std::stof(name);
+//        else if (line_count == 12) acc_gain[1][2] = std::stof(name);
+//        else if (line_count == 13) acc_gain[2][0] = std::stof(name);
+//        else if (line_count == 14) acc_gain[2][1] = std::stof(name);
+//        else if (line_count == 15) acc_gain[2][2] = std::stof(name);
+//
+//        else if (line_count == 18) gyr_off[0] = std::stof(name);
+//        else if (line_count == 19) gyr_off[1] = std::stof(name);
+//        else if (line_count == 20) gyr_off[2] = std::stof(name);
+//
+//        else if (line_count == 23) gyr_gain[0] = std::stof(name);
+//        else if (line_count == 24) gyr_gain[1] = std::stof(name);
+//        else if (line_count == 25) gyr_gain[2] = std::stof(name);
+//
+//        else if (line_count == 28) mag_off[0] = std::stof(name);
+//        else if (line_count == 29) mag_off[1] = std::stof(name);
+//        else if (line_count == 30) mag_off[2] = std::stof(name);
+//
+//        else if (line_count == 33) mag_gain[0][0] = std::stof(name);
+//        else if (line_count == 34) mag_gain[0][1] = std::stof(name);
+//        else if (line_count == 35) mag_gain[0][2] = std::stof(name);
+//        else if (line_count == 36) mag_gain[1][0] = std::stof(name);
+//        else if (line_count == 37) mag_gain[1][1] = std::stof(name);
+//        else if (line_count == 38) mag_gain[1][2] = std::stof(name);
+//        else if (line_count == 39) mag_gain[2][0] = std::stof(name);
+//        else if (line_count == 40) mag_gain[2][1] = std::stof(name);
+//        else if (line_count == 41) mag_gain[2][2] = std::stof(name);
+//
+//        line_count++;
+//    }
+//
+//    if (line_count < 42) std::cout << "Some calibration information wasn't updated." << std::endl;
+//
+//    inFile.close();
+//}
 void PersonalCaddie::setRotationQuaternion(glm::quat q, int sample)
 {
     orientation_quaternions[sample] = q;

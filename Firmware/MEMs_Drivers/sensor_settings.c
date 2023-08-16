@@ -115,7 +115,7 @@ float lsm9ds1_fsr_conversion(sensor_type_t sensor, uint8_t fsr_setting)
         switch (fsr_setting)
         {
         case LSM9DS1_2g:
-            return 0.061;
+            return 0.061 / 1000.0;
         case LSM9DS1_4g:
             return 0.122;
         case LSM9DS1_8g:

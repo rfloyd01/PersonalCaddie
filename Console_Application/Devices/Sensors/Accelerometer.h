@@ -9,7 +9,6 @@ class Accelerometer : public Sensor
 {
 public:
 	//PUBLIC FUNCTIONS
-	Accelerometer(accelerometer_model_t acc_model, uint8_t* current_settings);
 	Accelerometer(uint8_t* current_settings);
 
 private:
@@ -31,8 +30,7 @@ private:
 	//PRIVATE FUNCTIONS
 	void populateSensorSettingsArray(uint8_t* current_settings);
 
-	void getCalibrationNumbers();
-	void setCalibrationNumbers();
+	//void getCalibrationNumbersFromTextFile();
 
 	void setConversionRateFromSettings();
 	void setCurrentODRFromSettings();

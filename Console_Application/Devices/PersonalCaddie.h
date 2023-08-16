@@ -62,7 +62,9 @@ public:
 	void setGraphicsHandler(std::function<void(int)> function);
 
 	PersonalCaddiePowerMode getCurrentPowerMode();
-	concurrency::task<void> toggleDataCollection();
+
+	concurrency::task<void> enableDataNotifications();
+	concurrency::task<void> disableDataNotifications();
 
 	//Methods and fields from original BluetoothLE Class
 	void dataUpdate(); //master update function
@@ -74,7 +76,7 @@ public:
 	void setMagField();
 	void resetTime();
 	void resetPosition(); //resets sensor lin_acc., vel. and loc. to 0 so that club will be rendered back at center of screen
-	void updateCalibrationNumbers();
+	//void updateCalibrationNumbers();
 	void setRotationQuaternion(glm::quat q, int sample);
 
 private:
@@ -88,7 +90,7 @@ private:
 	void dataCharacteristicEventHandler(Bluetooth::GenericAttributeProfile::GattCharacteristic& car, Bluetooth::GenericAttributeProfile::GattValueChangedEventArgs& args);
 
 	//Data Gathering/Manipulation
-	void updateRawDataWithCalibrationNumbers(DataType dt, sensor_type_t sensor_type);
+	void updateRawDataWithCalibrationNumbers(DataType dt, sensor_type_t sensor_type, const float* offset_cal, const float** gain_cal);
 	
 	PersonalCaddiePowerMode current_power_mode;
 	bool dataNotificationsOn;
@@ -152,11 +154,11 @@ private:
 	float bx = -8, by = 40, bz = 15; //consider setting these values to the value of current location by default. Currently set to Conshohocken values
 
 	//calibration numbers
-	//These variables will change when a calibration is carried out and are initialized based on data in calibration.txt in Resources
-	double acc_off[3] = { 0 };
+	//These variables will change when a calibration is carried out and are initialized based on calibration data obtained from individual sensors
+	/*double acc_off[3] = { 0 };
 	double acc_gain[3][3] = { 0 };
 	double gyr_off[3] = { 0 };
 	double gyr_gain[3] = { 0 };
 	double mag_off[3] = { 0 };
-	double mag_gain[3][3] = { 0 };
+	double mag_gain[3][3] = { 0 };*/
 };

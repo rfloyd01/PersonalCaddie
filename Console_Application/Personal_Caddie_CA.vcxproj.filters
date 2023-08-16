@@ -179,7 +179,6 @@
     <None Include="PropertySheet.props" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="Resources\calibration.txt" />
     <Text Include="Graphics\Shaders\Fragment.txt">
       <Filter>Graphics\Shaders</Filter>
     </Text>

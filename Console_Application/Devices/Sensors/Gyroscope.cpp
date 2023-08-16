@@ -3,18 +3,6 @@
 
 #include "Gyroscope.h"
 
-Gyroscope::Gyroscope(gyroscope_model_t gyr_model, uint8_t* current_settings)
-{
-	//Typically (although they don't have to be) sensors are only created after connecting to a Personal Caddie
-	//and reading the Sensor Information characteristic, which tells us what sensors are on the device as well 
-	//as their current settings (things like ODR, full-scale range, etc.)
-	this->gyr_model = gyr_model;
-	
-	populateSensorSettingsArray(current_settings);
-	setConversionRateFromSettings();
-	setCurrentODRFromSettings();
-}
-
 Gyroscope::Gyroscope(uint8_t* current_settings)
 {
 	//Typically (although they don't have to be) sensors are only created after connecting to a Personal Caddie
@@ -25,24 +13,18 @@ Gyroscope::Gyroscope(uint8_t* current_settings)
 	populateSensorSettingsArray(current_settings);
 	setConversionRateFromSettings();
 	setCurrentODRFromSettings();
+
+	//set up calibration info
+	this->cal_offset_number = 3; //gyroscopes need 3 axis offset values
+	this->cal_gains_number = 9; //gyroscopes need 9 cross-axis gain values
+	this->calibrationFile = "Resources/Calibration_Files/gyroscope_calibration.txt";
+	getCalibrationNumbersFromTextFile();
 }
 
 void Gyroscope::populateSensorSettingsArray(uint8_t* current_settings)
 {
 	//Just copy the relevant info over
 	for (int setting = SENSOR_MODEL; setting <= EXTRA_2; setting++) this->settings[setting] = current_settings[setting];
-}
-
-void Gyroscope::getCalibrationNumbers()
-{
-	Sensor::getCalibrationNumbers(); //handles the opening of the file, reading the data, and closing the file
-
-	//Update calibration numbers obtained from the calibration file here
-}
-void Gyroscope::setCalibrationNumbers()
-{
-	Sensor::setCalibrationNumbers(); //handles the opening of the file, reading the data, and closing the file
-	//will set the calibration numbers for the particular sensor
 }
 
 void Gyroscope::setConversionRateFromSettings()

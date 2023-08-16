@@ -76,7 +76,7 @@ public:
 	int getCurrentSample();
 	float getCurrentTime();
 	void resetTime();
-	void updateCalibrationNumbers();
+	//void updateCalibrationNumbers();
 	void setMagField();
 	void setRotationQuaternion(glm::quat q, int sample);
 	PersonalCaddie* getPersonalCaddie(); //returns a pointer to the currently paired Personal Caddie device

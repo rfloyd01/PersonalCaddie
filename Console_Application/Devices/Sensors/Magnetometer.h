@@ -9,7 +9,6 @@ class Magnetometer : public Sensor
 {
 public:
 	//PUBLIC FUNCTIONS
-	Magnetometer(magnetometer_model_t mag_model, uint8_t* current_settings);
 	Magnetometer(uint8_t* current_settings);
 
 private:
@@ -30,9 +29,6 @@ private:
 
 	//PRIVATE FUNCTIONS
 	void populateSensorSettingsArray(uint8_t* current_settings);
-
-	void getCalibrationNumbers();
-	void setCalibrationNumbers();
 
 	void setConversionRateFromSettings();
 	void setCurrentODRFromSettings();

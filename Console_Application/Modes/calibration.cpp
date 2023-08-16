@@ -24,7 +24,12 @@ Calibration::Calibration(GL* graphics) : Mode(graphics)
 //Updating and Advancement Functions
 void Calibration::update()
 {
-	if (cal_mode == 0) setClubRotation(p_graphics->getOpenGLQuaternion(p_graphics->getPersonalCaddie()->getCurrentSample())); //In calibration select mode, render chip normally
+	if (cal_mode == 0)
+	{
+		auto q = p_graphics->getOpenGLQuaternion(p_graphics->getPersonalCaddie()->getCurrentSample());
+		setClubRotation(q); //In calibration select mode, render chip normally
+		std::cout << "Quaternion at sample " << p_graphics->getPersonalCaddie()->getCurrentSample() << "is: {" << q.w << ", " << q.x << ", " << q.y << ", " << q.z << "}" << std::endl;
+	}
 	if (preset_render) //check to see if a preset render should be displayed
 	{
 		if (render_index >= set_render.size()) render_index = 0; //reset after reaching the end of animation
@@ -224,7 +229,7 @@ void Calibration::modeStart()
 
 		//Physically turning the sensors on will happen almost instantly, however, we need to wait
 		//for the connection interval to update which takes a bit of time.
-		this->p_graphics->getPersonalCaddie()->toggleDataCollection();
+		this->p_graphics->getPersonalCaddie()->enableDataNotifications();
 	}
 }
 void Calibration::modeEnd()
@@ -238,7 +243,7 @@ void Calibration::modeEnd()
 	if (changes_made)
 	{
 		setCalibrationNumbers(); //only update Calibration.txt if any numbers were actually changed
-		p_graphics->updateCalibrationNumbers(); //have the sensor read the new numbers from Calibration.txt to update its own cal data
+		//p_graphics->updateCalibrationNumbers(); //have the sensor read the new numbers from Calibration.txt to update its own cal data
 	}
 
 	if (this->p_graphics->getPersonalCaddie()->ble_device_connected)
@@ -248,6 +253,9 @@ void Calibration::modeEnd()
 	}
 
 	set_render.clear(); //clear out preset render to free up space
+
+	//Turn off data notifications
+	this->p_graphics->getPersonalCaddie()->disableDataNotifications();
 }
 
 //PRIVATE FUNCTIONS

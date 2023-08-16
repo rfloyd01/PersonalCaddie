@@ -4,6 +4,8 @@
 #include "Sensors/Gyroscope.h"
 #include "Sensors/Magnetometer.h"
 
+#include <vector>
+
 //The IMU class helps ensure a seamless transition if one IMU is swapped out for another, or if different parts of different IMUs are decided
 //to be used. This class keeps track of the orientation of the axes for each sensor that I currently have, as well as the necessary multipliers
 //for each sensor to get the correct reading based on the current settings. I created this class because I currently have three sensors that all
@@ -33,31 +35,6 @@
 //their axes orientations and then define IMU's as a combination of chips in different orientations (these orientations would be limited to 0, 90,
 //180 and 270 degrees)
 
-//Some Enums that make code a little more readable
-//enum class Accelerometer
-//{
-//	LSM9DS1,
-//	FXOS8700,
-//	BLE_SENSE_33
-//};
-//enum class Gyroscope
-//{
-//	LSM9DS1,
-//	FXAS21002,
-//	BLE_SENSE_33
-//};
-//enum class Magnetometer
-//{
-//	LSM9DS1,
-//	FXOS8700,
-//	BLE_SENSE_33
-//};
-//enum class Sensor
-//{
-//	ACCELEROMETER,
-//	GYROSCOPE,
-//	MAGNETOMETER
-//};
 enum Axis
 {
 	//x, y, and z correlate to 0, 1 and 2 respectively. It's a little easier to keep track this way then having numbers denote everything
@@ -72,7 +49,7 @@ enum Axis
 static Axis global_positive_axes[3] = { X, Y, Z };
 
 //Class Declaration
-class IMU;
+//class IMU;
 
 //Class Definition
 class IMU
@@ -80,7 +57,6 @@ class IMU
 public:
 	//PUBLIC FUNCTIONS
 	//Constructors
-	IMU(accelerometer_model_t acc_model, gyroscope_model_t gyr_model, magnetometer_model_t mag_model, uint8_t* imu_settings);
 	IMU(uint8_t* imu_settings);
 
 	float* getSensorODRs();
@@ -88,6 +64,14 @@ public:
 
 	float getMaxODR();
 	float getConversionRate(sensor_type_t sensor);
+
+	std::pair<const float*, const float**> getAccelerometerCalibrationNumbers();
+	std::pair<const float*, const float**> getGyroscopeCalibrationNumbers();
+	std::pair<const float*, const float**> getMagnetometerCalibrationNumbers();
+
+	void updateAccelerometerCalibrationNumbers(float* offset, float** gain);
+	void updateGyroscopeCalibrationNumbers(float* offset, float** gain);
+	void updateMagnetometerCalibrationNumbers(float* offset, float** gain);
 
 	//Setting Altering Functions
 	//TODO: eventually create functions that will allow for the changing of sensor settings over bluetooth and TWI or SPI
