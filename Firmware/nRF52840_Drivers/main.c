@@ -175,17 +175,22 @@ static int32_t get_MAG_data(uint8_t offset);
 static personal_caddie_operating_mode_t current_operating_mode = ADVERTISING_MODE; /**< The chip starts in advertising mode*/
 
 //Pin Setup
-#define SENSOR_POWER_PIN        NRF_GPIO_PIN_MAP(1, 11)                         /**< Pin used to power external sensors (mapped to D2 on BLE 33)*/
-#define SCL_PIN                 NRF_GPIO_PIN_MAP(1, 14)                         /**< Pin used for external TWI clock (mapped to D6 on BLE 33) */
-#define SDA_PIN                 NRF_GPIO_PIN_MAP(1, 15)                         /**< Pin used for external TWI data (mapped to D4 on BLE 33) */
-#define BLE_33_SENSOR_POWER_PIN NRF_GPIO_PIN_MAP(0, 22)                         /**< Pin used to power external sensors (mapped to D2 on BLE 33)*/
-#define BLE_33_SCL_PIN          NRF_GPIO_PIN_MAP(0, 15)                         /**< Pin used for internal TWI clock for BLE33*/
-#define BLE_33_SDA_PIN          NRF_GPIO_PIN_MAP(0, 14)                         /**< Pin used for internal TWI data for BLE33*/
-#define BLE_33_PULLUP           NRF_GPIO_PIN_MAP(1, 0)                          /**< Pullup resistors on BLE 33 sense have separate power source*/
-#define BLE_33_GREEN_LED        NRF_GPIO_PIN_MAP(1, 9)                          /**< Green LED Indicator on BLE 33 sense*/
-#define BLE_33_RED_LED          NRF_GPIO_PIN_MAP(0, 24)                         /**< Red LED Indicator on BLE 33 sense*/
-#define BLE_33_BLUE_LED         NRF_GPIO_PIN_MAP(0, 6)                          /**< Blue LED Indicator on BLE 33 sense*/
-#define BLE_33_DARK_GREEN_LED   NRF_GPIO_PIN_MAP(0, 16)                         /**< Dark LED Indicator on BLE 33 sense*/
+#define USE_EXTERNAL_SENSOR       true                                            /**< Let's the BLE33 know tuat external sensors are being used*/
+#define USE_EXTERNAL_LEDS         true                                            /**< Let's the BLE33 know that external LEDs are being used*/
+#define EXTERNAL_SENSOR_POWER_PIN NRF_GPIO_PIN_MAP(1, 11)                         /**< Pin used to power external sensors (mapped to D2 on BLE 33)*/
+#define EXTERNAL_SCL_PIN          NRF_GPIO_PIN_MAP(1, 14)                         /**< Pin used for external TWI clock (mapped to D6 on BLE 33) */
+#define EXTERNAL_SDA_PIN          NRF_GPIO_PIN_MAP(1, 15)                         /**< Pin used for external TWI data (mapped to D4 on BLE 33) */
+#define EXTERNAL_RED_LED          NRF_GPIO_PIN_MAP(1, 15)                         /**< Pin used for powering an external red LED*/
+#define EXTERNAL_BLUE_LED         NRF_GPIO_PIN_MAP(1, 15)                         /**< Pin used for powering an external blue LED*/
+#define EXTERNAL_GREEN_LED        NRF_GPIO_PIN_MAP(1, 15)                         /**< Pin used for powering an external green LED*/
+#define BLE_33_SENSOR_POWER_PIN   NRF_GPIO_PIN_MAP(0, 22)                         /**< Pin used to power BLE33 onboard sensors*/
+#define BLE_33_SCL_PIN            NRF_GPIO_PIN_MAP(0, 15)                         /**< Pin used for internal TWI clock for BLE33*/
+#define BLE_33_SDA_PIN            NRF_GPIO_PIN_MAP(0, 14)                         /**< Pin used for internal TWI data for BLE33*/
+#define BLE_33_PULLUP             NRF_GPIO_PIN_MAP(1, 0)                          /**< Pullup resistors on BLE 33 sense have separate power source*/
+#define BLE_33_BAD_GREEN_LED      NRF_GPIO_PIN_MAP(1, 9)                          /**< low efficiency Green LED Indicator on BLE 33 sense*/
+#define BLE_33_RED_LED            NRF_GPIO_PIN_MAP(0, 24)                         /**< Red LED Indicator on BLE 33 sense*/
+#define BLE_33_BLUE_LED           NRF_GPIO_PIN_MAP(0, 6)                          /**< Blue LED Indicator on BLE 33 sense*/
+#define BLE_33_GREEN_LED          NRF_GPIO_PIN_MAP(0, 16)                         /**< Green LED Indicator on BLE 33 sense*/
 static volatile uint8_t active_led = BLE_33_BLUE_LED;                           /**< Variable used to keep track of which LED to turn on/off*/
 
 static void advertising_start(bool erase_bonds);
@@ -530,7 +535,7 @@ static void connected_mode_start()
     }
 
     //change the color of the blinking LED
-    active_led = BLE_33_DARK_GREEN_LED; //swap to the red LED
+    active_led = BLE_33_GREEN_LED; //swap to the red LED
     current_operating_mode = CONNECTED_MODE; //set the current operating mode to idle
 }
 
@@ -1066,16 +1071,17 @@ void  twi_init (void)
 
 static void leds_init()
 {
+    //TODO: Add code for when an external board is connected
     //configure the pins for the BLE 33 Sense on-board red, green and blue tri-colored LED.
     nrf_gpio_cfg_output(BLE_33_RED_LED);
     nrf_gpio_cfg_output(BLE_33_BLUE_LED);
-    nrf_gpio_cfg_output(BLE_33_DARK_GREEN_LED);
+    nrf_gpio_cfg_output(BLE_33_GREEN_LED);
 
     //these LEDs are situated backwards from what you would expect so the pin needs to be 
     //pulled high for the LEDs to turn off
     nrf_gpio_pin_set(BLE_33_RED_LED);
     nrf_gpio_pin_set(BLE_33_BLUE_LED);
-    nrf_gpio_pin_set(BLE_33_DARK_GREEN_LED);
+    nrf_gpio_pin_set(BLE_33_GREEN_LED);
 }
 
 /**@brief Function for application main entry.
