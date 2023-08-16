@@ -2,8 +2,6 @@
 
 #include <Modes/mode.h>
 
-#define gravity 9.80665
-
 //Classes, structs and enums defined in other header files
 class GL;
 class Text;
@@ -66,7 +64,7 @@ private:
 	float acc_off[3] = { 0 }; //acceleration offset values
 	float acc_gain[3][3] = { 0 }; //acceleration axis and cross axis gain values
 	float gyr_off[3] = { 0 };
-	float gyr_gain[3] = { 0 };
+	float gyr_gain[3][3] = { 0 };
 	float mag_off[3] = { 0 };
 	float mag_gain[3][3] = { 0 };
 

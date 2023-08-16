@@ -556,7 +556,7 @@ void Calibration::gyroNextStep()
 				for (int i = 1; i < gx.size(); i++) gyr_cal[0] += integrateData(gx[i], gx[i - 1], time_data[i] - time_data[i - 1]);
 				updateCalibrationNumbers();
 				addText(MessageType::BODY, { "Data collection is complete. Here are the new gyroscope gain calibration numbers:", 10, 420, 0.5, {1.0, 1.0, 1.0}, p_graphics->getScreenWidth() / (float)2.0 });
-				addText(MessageType::BODY, { "Gyroscope Gain = [" + std::to_string(gyr_gain[0]) + ", " + std::to_string(gyr_gain[1]) + ", " + std::to_string(gyr_gain[2]) + "]", 10, 330, 0.5, {1.0, 1.0, 1.0}, p_graphics->getScreenWidth() });
+				addText(MessageType::BODY, { "Gyroscope Gain = [" + std::to_string(gyr_gain[0][0]) + ", " + std::to_string(gyr_gain[1][1]) + ", " + std::to_string(gyr_gain[2][2]) + "]", 10, 330, 0.5, {1.0, 1.0, 1.0}, p_graphics->getScreenWidth() });
 				addText(MessageType::BODY, { "Press enter to go back to calibration menu.", 10, 270, 0.5, {1.0, 1.0, 1.0}, p_graphics->getScreenWidth() / (float)2.0 });
 				//updateCalibrationNumbers();
 
@@ -747,60 +747,54 @@ void Calibration::MagGraph()
 void Calibration::getCurrentCalibrationNumbers()
 {
 	//this function is necessary so that if only one test is carried out, the variables for the other sensors aren't reset to 0 but back to their current values
-
-	int line_count = 0;
-	std::fstream inFile;
-	inFile.open("Resources/calibration.txt");
-	char name[256];
-
-	///TODO: put in some kind of error here if file wasn't opened properly
-
-	while (!inFile.eof())
+	std::pair<const float*, const float**> sensor_cal_numbers;
+	float* cal_offset, *cal_x_gain, *cal_y_gain, *cal_z_gain;
+	for (int sensor = ACC_SENSOR; sensor <= MAG_SENSOR; sensor++)
 	{
-		inFile.getline(name, 256);
-		///TODO: this if statement is crappy, code up something better later, 
-		if (line_count == 2)      acc_off[0] = std::stof(name);
-		else if (line_count == 3) acc_off[1] = std::stof(name);
-		else if (line_count == 4) acc_off[2] = std::stof(name);
+		sensor_cal_numbers = this->p_graphics->getPersonalCaddie()->getSensorCalibrationNumbers(static_cast<sensor_type_t>(sensor));
+		if (sensor == ACC_SENSOR)
+		{
+			cal_offset = &acc_off[0];
+			cal_x_gain = &acc_gain[0][0];
+			cal_y_gain = &acc_gain[1][0];
+			cal_z_gain = &acc_gain[2][0];
+		}
+		else if (sensor == GYR_SENSOR)
+		{
+			cal_offset = &gyr_off[0];
+			cal_x_gain = &gyr_gain[0][0];
+			cal_y_gain = &gyr_gain[1][0];
+			cal_z_gain = &gyr_gain[2][0];
+		}
+		else if (sensor == MAG_SENSOR)
+		{
+			cal_offset = &mag_off[0];
+			cal_x_gain = &mag_gain[0][0];
+			cal_y_gain = &mag_gain[1][0];
+			cal_z_gain = &mag_gain[2][0];
+		}
 
-		else if (line_count == 7) acc_gain[0][0] = std::stof(name);
-		else if (line_count == 8) acc_gain[0][1] = std::stof(name);
-		else if (line_count == 9) acc_gain[0][2] = std::stof(name);
-		else if (line_count == 10) acc_gain[1][0] = std::stof(name);
-		else if (line_count == 11) acc_gain[1][1] = std::stof(name);
-		else if (line_count == 12) acc_gain[1][2] = std::stof(name);
-		else if (line_count == 13) acc_gain[2][0] = std::stof(name);
-		else if (line_count == 14) acc_gain[2][1] = std::stof(name);
-		else if (line_count == 15) acc_gain[2][2] = std::stof(name);
+		if (sensor_cal_numbers.first != nullptr)
+		{
+			cal_offset[0] = sensor_cal_numbers.first[0];
+			cal_offset[1] = sensor_cal_numbers.first[1];
+			cal_offset[2] = sensor_cal_numbers.first[2];
 
-		else if (line_count == 18) gyr_off[0] = std::stof(name);
-		else if (line_count == 19) gyr_off[1] = std::stof(name);
-		else if (line_count == 20) gyr_off[2] = std::stof(name);
+			cal_x_gain[0] = sensor_cal_numbers.second[0][0];
+			cal_x_gain[1] = sensor_cal_numbers.second[0][1];
+			cal_x_gain[2] = sensor_cal_numbers.second[0][2];
 
-		else if (line_count == 23) gyr_gain[0] = std::stof(name);
-		else if (line_count == 24) gyr_gain[1] = std::stof(name);
-		else if (line_count == 25) gyr_gain[2] = std::stof(name);
+			cal_y_gain[0] = sensor_cal_numbers.second[1][0];
+			cal_y_gain[0] = sensor_cal_numbers.second[1][1];
+			cal_y_gain[0] = sensor_cal_numbers.second[1][2];
 
-		else if (line_count == 28) mag_off[0] = std::stof(name);
-		else if (line_count == 29) mag_off[1] = std::stof(name);
-		else if (line_count == 30) mag_off[2] = std::stof(name);
-
-		else if (line_count == 33) mag_gain[0][0] = std::stof(name);
-		else if (line_count == 34) mag_gain[0][1] = std::stof(name);
-		else if (line_count == 35) mag_gain[0][2] = std::stof(name);
-		else if (line_count == 36) mag_gain[1][0] = std::stof(name);
-		else if (line_count == 37) mag_gain[1][1] = std::stof(name);
-		else if (line_count == 38) mag_gain[1][2] = std::stof(name);
-		else if (line_count == 39) mag_gain[2][0] = std::stof(name);
-		else if (line_count == 40) mag_gain[2][1] = std::stof(name);
-		else if (line_count == 41) mag_gain[2][2] = std::stof(name);
-
-		line_count++;
+			cal_z_gain[0] = sensor_cal_numbers.second[2][0];
+			cal_z_gain[0] = sensor_cal_numbers.second[2][1];
+			cal_z_gain[0] = sensor_cal_numbers.second[2][2];
+		}
+		else std::cout << "Couldn't find current current accelerometer cal data." << std::endl;
 	}
-
-	if (line_count < 42) std::cout << "Some calibration information wasn't updated." << std::endl;
-
-	inFile.close();
+	
 }
 void Calibration::updateCalibrationNumbers()
 {
@@ -814,17 +808,17 @@ void Calibration::updateCalibrationNumbers()
 
 		//Calculate Gain Matrix
 		//(positive_reading - negative_reading) / 2G
-		acc_gain[0][0] = (acc_cal[0][3] - acc_cal[0][1]) / (2 * gravity);
-		acc_gain[1][0] = (acc_cal[1][3] - acc_cal[1][1]) / (2 * gravity);
-		acc_gain[2][0] = (acc_cal[2][3] - acc_cal[2][1]) / (2 * gravity);
+		acc_gain[0][0] = (acc_cal[0][3] - acc_cal[0][1]) / (2 * GRAVITY);
+		acc_gain[1][0] = (acc_cal[1][3] - acc_cal[1][1]) / (2 * GRAVITY);
+		acc_gain[2][0] = (acc_cal[2][3] - acc_cal[2][1]) / (2 * GRAVITY);
 
-		acc_gain[0][1] = (acc_cal[0][0] - acc_cal[0][5]) / (2 * gravity);
-		acc_gain[1][1] = (acc_cal[1][0] - acc_cal[1][5]) / (2 * gravity);
-		acc_gain[2][1] = (acc_cal[2][0] - acc_cal[2][5]) / (2 * gravity);
+		acc_gain[0][1] = (acc_cal[0][0] - acc_cal[0][5]) / (2 * GRAVITY);
+		acc_gain[1][1] = (acc_cal[1][0] - acc_cal[1][5]) / (2 * GRAVITY);
+		acc_gain[2][1] = (acc_cal[2][0] - acc_cal[2][5]) / (2 * GRAVITY);
 
-		acc_gain[0][2] = (acc_cal[0][2] - acc_cal[0][4]) / (2 * gravity);
-		acc_gain[1][2] = (acc_cal[1][2] - acc_cal[1][4]) / (2 * gravity);
-		acc_gain[2][2] = (acc_cal[2][2] - acc_cal[2][4]) / (2 * gravity);
+		acc_gain[0][2] = (acc_cal[0][2] - acc_cal[0][4]) / (2 * GRAVITY);
+		acc_gain[1][2] = (acc_cal[1][2] - acc_cal[1][4]) / (2 * GRAVITY);
+		acc_gain[2][2] = (acc_cal[2][2] - acc_cal[2][4]) / (2 * GRAVITY);
 
 		/*Deprecated block, represents sensor coordinates instead of OpenGL coordinates
 		Order of tumble point text is [+Z, -Y, +X, +Y, -X, -Z]
@@ -851,9 +845,9 @@ void Calibration::updateCalibrationNumbers()
 	}
 	else if (cal_mode == 2)
 	{
-		gyr_gain[0] = 90.0 / gyr_cal[0];
-		gyr_gain[1] = 90.0 / gyr_cal[1];
-		gyr_gain[2] = 90.0 / gyr_cal[2];
+		gyr_gain[0][0] = 90.0 / gyr_cal[0];
+		gyr_gain[1][1] = 90.0 / gyr_cal[1];
+		gyr_gain[2][2] = 90.0 / gyr_cal[2];
 	}
 	else if (cal_mode == 3)
 	{

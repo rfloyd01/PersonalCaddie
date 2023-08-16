@@ -224,6 +224,14 @@ void PersonalCaddie::updateRawDataWithCalibrationNumbers(DataType dt, sensor_typ
     sensor_data_updated[sensor_type] = true;
 }
 
+std::pair<const float*, const float**> PersonalCaddie::getSensorCalibrationNumbers(sensor_type_t sensor)
+{
+    if (sensor == ACC_SENSOR) return this->p_imu->getAccelerometerCalibrationNumbers();
+    else if (sensor == GYR_SENSOR) return this->p_imu->getGyroscopeCalibrationNumbers();
+    else if (sensor == MAG_SENSOR) return this->p_imu->getMagnetometerCalibrationNumbers();
+    else return { nullptr, nullptr };
+}
+
 concurrency::task<void> PersonalCaddie::enableDataNotifications()
 {
     //If the sensor data characteristics aren't currently notifying, then their CCCD descriptors will be written
@@ -416,60 +424,7 @@ void PersonalCaddie::resetTime()
     //reset time to be -1000 / the sample frequeny, this way when the first bit of data is processed it will start with a time stamp of 0.00
     time_stamp = -1000.0 / sampleFreq;
 }
-//void PersonalCaddie::updateCalibrationNumbers()
-//{
-//    int line_count = 0;
-//    std::fstream inFile;
-//    inFile.open("Resources/calibration.txt");
-//    char name[256];
-//
-//    while (!inFile.eof())
-//    {
-//        inFile.getline(name, 256);
-//        ///TODO: this if statement is crappy, code up something better later, 
-//        if (line_count == 2)      acc_off[0] = std::stof(name);
-//        else if (line_count == 3) acc_off[1] = std::stof(name);
-//        else if (line_count == 4) acc_off[2] = std::stof(name);
-//
-//        else if (line_count == 7) acc_gain[0][0] = std::stof(name);
-//        else if (line_count == 8) acc_gain[0][1] = std::stof(name);
-//        else if (line_count == 9) acc_gain[0][2] = std::stof(name);
-//        else if (line_count == 10) acc_gain[1][0] = std::stof(name);
-//        else if (line_count == 11) acc_gain[1][1] = std::stof(name);
-//        else if (line_count == 12) acc_gain[1][2] = std::stof(name);
-//        else if (line_count == 13) acc_gain[2][0] = std::stof(name);
-//        else if (line_count == 14) acc_gain[2][1] = std::stof(name);
-//        else if (line_count == 15) acc_gain[2][2] = std::stof(name);
-//
-//        else if (line_count == 18) gyr_off[0] = std::stof(name);
-//        else if (line_count == 19) gyr_off[1] = std::stof(name);
-//        else if (line_count == 20) gyr_off[2] = std::stof(name);
-//
-//        else if (line_count == 23) gyr_gain[0] = std::stof(name);
-//        else if (line_count == 24) gyr_gain[1] = std::stof(name);
-//        else if (line_count == 25) gyr_gain[2] = std::stof(name);
-//
-//        else if (line_count == 28) mag_off[0] = std::stof(name);
-//        else if (line_count == 29) mag_off[1] = std::stof(name);
-//        else if (line_count == 30) mag_off[2] = std::stof(name);
-//
-//        else if (line_count == 33) mag_gain[0][0] = std::stof(name);
-//        else if (line_count == 34) mag_gain[0][1] = std::stof(name);
-//        else if (line_count == 35) mag_gain[0][2] = std::stof(name);
-//        else if (line_count == 36) mag_gain[1][0] = std::stof(name);
-//        else if (line_count == 37) mag_gain[1][1] = std::stof(name);
-//        else if (line_count == 38) mag_gain[1][2] = std::stof(name);
-//        else if (line_count == 39) mag_gain[2][0] = std::stof(name);
-//        else if (line_count == 40) mag_gain[2][1] = std::stof(name);
-//        else if (line_count == 41) mag_gain[2][2] = std::stof(name);
-//
-//        line_count++;
-//    }
-//
-//    if (line_count < 42) std::cout << "Some calibration information wasn't updated." << std::endl;
-//
-//    inFile.close();
-//}
+
 void PersonalCaddie::setRotationQuaternion(glm::quat q, int sample)
 {
     orientation_quaternions[sample] = q;
@@ -515,9 +470,9 @@ void PersonalCaddie::updateMadgwick()
     //set up current time information
     for (int i = 0; i < number_of_samples; i++)
     {
-        last_time_stamp = time_stamp;
-        time_stamp += 1000.0 / sampleFreq;
-        float delta_t = (float)((time_stamp - last_time_stamp) / 1000.0);
+        //last_time_stamp = time_stamp;
+        //time_stamp += 1000.0 / sampleFreq;
+        float delta_t = 1000.0 / this->p_imu->getMaxODR(); //get the time (in milliseconds) between successive samples
 
         //TODO: Look into just sending references to the data instead of creating copies, not sure if this is really a huge time hit here but it can't hurt
         int cs = current_sample; //this is only here because it became annoying to keep writing out current_sample
@@ -527,8 +482,10 @@ void PersonalCaddie::updateMadgwick()
 
         //the first rotation quaternion of the new data set must build from the last rotation quaternion of the previous set. The rest can build off of
         //earlier samples from the current set
-        if (i == 0) orientation_quaternions[i] = MadgwickVerticalY(orientation_quaternions[number_of_samples - 1], gyr_x, gyr_y, gyr_z, acc_x, acc_y, acc_z, mag_x, mag_y, mag_z, delta_t, beta);
-        else orientation_quaternions[i] = MadgwickVerticalY(orientation_quaternions[i - 1], gyr_x, gyr_y, gyr_z, acc_x, acc_y, acc_z, mag_x, mag_y, mag_z, delta_t, beta);
+        /*if (i == 0) orientation_quaternions[i] = MadgwickVerticalY(orientation_quaternions[number_of_samples - 1], gyr_x, gyr_y, gyr_z, acc_x, acc_y, acc_z, mag_x, mag_y, mag_z, delta_t, beta);
+        else orientation_quaternions[i] = MadgwickVerticalY(orientation_quaternions[i - 1], gyr_x, gyr_y, gyr_z, acc_x, acc_y, acc_z, mag_x, mag_y, mag_z, delta_t, beta);*/
+        if (i == 0) orientation_quaternions[i] = Madgwick(orientation_quaternions[number_of_samples - 1], gyr_x, gyr_y, gyr_z, acc_x, acc_y, acc_z, mag_x, mag_y, mag_z, this->p_imu->getMaxODR(), beta);
+        else orientation_quaternions[i] = Madgwick(orientation_quaternions[i - 1], gyr_x, gyr_y, gyr_z, acc_x, acc_y, acc_z, mag_x, mag_y, mag_z, this->p_imu->getMaxODR(), beta);
     }
 }
 void PersonalCaddie::updateLinearAcceleration()

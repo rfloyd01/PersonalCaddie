@@ -66,6 +66,8 @@ public:
 	concurrency::task<void> enableDataNotifications();
 	concurrency::task<void> disableDataNotifications();
 
+	std::pair<const float*, const float**> getSensorCalibrationNumbers(sensor_type_t sensor);
+
 	//Methods and fields from original BluetoothLE Class
 	void dataUpdate(); //master update function
 	float getDataPoint(DataType dt, Axis a, int sample_number);
@@ -128,7 +130,6 @@ private:
 	//axis of that data type. The innermost vector holds a set number of data points, equal to the number_of_samples field above. To show how this structure 
 	//looks in practice: { { {raw_acc_x_1, raw_acc_x_2, ..., raw_acc_x_numberofsamples}, {raw_acc_y_1 ...}, {raw_acc_z_1 ...} }, { {raw_gyr_x_1...} ....}
 	std::vector<std::vector<std::vector<float> > > sensor_data; 
-
 	std::vector<glm::quat> orientation_quaternions; //this vector holds number_of_samples quaternions, where each quaternion matches the sensor orientation at a point in time
 
 	//Movement variables
@@ -152,13 +153,4 @@ private:
 	//Madgwick items
 	float sampleFreq, beta = 0.1; //beta changes how reliant the Madgwick filter is on acc and mag data, good value is 0.035
 	float bx = -8, by = 40, bz = 15; //consider setting these values to the value of current location by default. Currently set to Conshohocken values
-
-	//calibration numbers
-	//These variables will change when a calibration is carried out and are initialized based on calibration data obtained from individual sensors
-	/*double acc_off[3] = { 0 };
-	double acc_gain[3][3] = { 0 };
-	double gyr_off[3] = { 0 };
-	double gyr_gain[3] = { 0 };
-	double mag_off[3] = { 0 };
-	double mag_gain[3][3] = { 0 };*/
 };

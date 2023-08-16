@@ -25,6 +25,13 @@ void IMU::getODRFromSensors()
     this->IMU_sample_frequencies[ACC_SENSOR] = this->p_acc->getCurrentODR();
     this->IMU_sample_frequencies[GYR_SENSOR] = this->p_gyr->getCurrentODR();
     this->IMU_sample_frequencies[MAG_SENSOR] = this->p_mag->getCurrentODR();
+
+    //after getting all of the individual ODRs from the sensors, set the max ODR variable which is needed for
+    //things like rendering and updating the Madgwick filter. Tried using std::max here but was running into
+    //issues with it so just use this non-elegant approach
+    this->max_odr = this->IMU_sample_frequencies[ACC_SENSOR];
+    if (this->IMU_sample_frequencies[GYR_SENSOR] > this->max_odr) this->max_odr = this->IMU_sample_frequencies[GYR_SENSOR];
+    if (this->IMU_sample_frequencies[MAG_SENSOR] > this->max_odr) this->max_odr = this->IMU_sample_frequencies[MAG_SENSOR];
 }
 
 void IMU::getConversionRateFromSensors()

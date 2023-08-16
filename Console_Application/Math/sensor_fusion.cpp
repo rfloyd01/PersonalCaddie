@@ -317,6 +317,8 @@ glm::quat MadgwickVerticalY(glm::quat q, float gx, float gy, float gz, float ax,
     glm::quat h = QuaternionMultiply(q, QuaternionMultiply({ 0, mx, my, mz }, Conjugate(q)));
     _2bx = 2 * sqrt(h.x * h.x + h.z * h.z);
     _2by = 2 * h.y;
+    _4bx = 2 * _2bx;
+    _4by = 2 * _2by;
 
     float F[6][1];
     //F[0][0] - F[2][0] = f(q, g, a)
