@@ -15,7 +15,7 @@ void Training::update()
 	alertUpdate();
 	processInput(); //process FreeSwing specific input first
 
-	setClubRotation(p_graphics->getOpenGLQuaternion());
+	setClubRotation(p_graphics->getOpenGLQuaternion(p_graphics->getPersonalCaddie()->getCurrentSample()));
 	if (training_state == 1) planeTraining();
 	else if (training_state == 3) tiltTraining();
 }
@@ -344,7 +344,7 @@ void Training::getCurrentClubAngles()
 {
 	//TODO: BLEchip now calculates Euler Angles so shouldn't need any math in this function, cleanup later
 	//This function look at the current rotation quaternion of sensor and gets Euler Angles. Formulas found here: https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
-	glm::quat q = p_graphics->getRotationQuaternion();
+	glm::quat q = p_graphics->getRotationQuaternion(p_graphics->getPersonalCaddie()->getCurrentSample());
 
 	current_angles[0] = atan2f(2 * (q.w * q.x + q.y * q.z), 1 - 2 * (q.x * q.x + q.y * q.y));
 	current_angles[1] = asinf(2 * (q.w * q.y - q.x * q.z));

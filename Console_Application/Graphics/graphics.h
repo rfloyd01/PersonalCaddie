@@ -71,14 +71,14 @@ public:
 	//Sensor Functions
 	//These functions only exist to pass variables directly from Sensor to mode classes
 	float getDataPoint(DataType dt, Axis a, int sample_number);
-	glm::quat getRotationQuaternion();
-	glm::quat getOpenGLQuaternion();
+	glm::quat getRotationQuaternion(int sample);
+	glm::quat getOpenGLQuaternion(int sample);
 	int getCurrentSample();
 	float getCurrentTime();
 	void resetTime();
 	void updateCalibrationNumbers();
 	void setMagField();
-	void setRotationQuaternion(glm::quat q);
+	void setRotationQuaternion(glm::quat q, int sample);
 	PersonalCaddie* getPersonalCaddie(); //returns a pointer to the currently paired Personal Caddie device
 
 	//Mode Functions

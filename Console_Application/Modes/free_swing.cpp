@@ -29,7 +29,7 @@ void FreeSwing::update()
 	if (display_data) liveUpdate(); //displays current sensor data on screen if the 'R' key has been pressed
 	if (record_data) addGraphData();
 
-	setClubRotation(p_graphics->getOpenGLQuaternion());
+	setClubRotation(p_graphics->getOpenGLQuaternion(p_graphics->getPersonalCaddie()->getCurrentSample()));
 }
 void FreeSwing::processInput()
 {

@@ -24,6 +24,7 @@ int main()
         //All updates for sensor data are taking place behing the scenes, values are updated when new data comes in from a concurrent function
         //That's why (for now) the only thing in this loop has to do with the graphic window
 
+        m_pc.dataUpdate(); //Checks for new sensor data. If new data is available, it's read, has calibration numbers applied, is used to calculate device orientation, etc.
         GraphicWindow.masterUpdate();
         GraphicWindow.masterRender();
     }

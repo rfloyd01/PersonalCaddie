@@ -223,14 +223,14 @@ float GL::getDataPoint(DataType dt, Axis a, int sample_number)
 {
 	return p_pc->getDataPoint(dt, a, sample_number);
 }
-glm::quat GL::getRotationQuaternion()
+glm::quat GL::getRotationQuaternion(int sample)
 {
-	glm::quat q = p_pc->getOpenGLQuaternion();
+	glm::quat q = p_pc->getOpenGLQuaternion(sample);
 	return { q.w, q.z, q.x, q.y }; //transforms OpenGL quaternion { Quaternion.w, Quaternion.y, Quaternion.z, Quaternion.x } back to normal coordinates;
 }
-glm::quat GL::getOpenGLQuaternion()
+glm::quat GL::getOpenGLQuaternion(int sample)
 {
-	return p_pc->getOpenGLQuaternion();
+	return p_pc->getOpenGLQuaternion(sample);
 }
 int GL::getCurrentSample()
 {
@@ -252,9 +252,9 @@ void GL::setMagField()
 {
 	p_pc->setMagField();
 }
-void GL::setRotationQuaternion(glm::quat q)
+void GL::setRotationQuaternion(glm::quat q, int sample)
 {
-	p_pc->setRotationQuaternion(q);
+	p_pc->setRotationQuaternion(q, sample);
 }
 PersonalCaddie* GL::getPersonalCaddie()
 {

@@ -58,7 +58,6 @@ public:
 	concurrency::task<void> changePowerMode(PersonalCaddiePowerMode mode);
 
 	volatile bool ble_device_connected;
-	volatile bool data_available = false;
 
 	void setGraphicsHandler(std::function<void(int)> function);
 
@@ -66,17 +65,17 @@ public:
 	concurrency::task<void> toggleDataCollection();
 
 	//Methods and fields from original BluetoothLE Class
-	void masterUpdate(); //master update function
+	void dataUpdate(); //master update function
 	float getDataPoint(DataType dt, Axis a, int sample_number);
 	int getCurrentSample();
 	float getCurrentTime();
-	glm::quat getOpenGLQuaternion();
+	glm::quat getOpenGLQuaternion(int sample);
 	void setSampleFrequency(float freq);
 	void setMagField();
 	void resetTime();
 	void resetPosition(); //resets sensor lin_acc., vel. and loc. to 0 so that club will be rendered back at center of screen
 	void updateCalibrationNumbers();
-	void setRotationQuaternion(glm::quat q);
+	void setRotationQuaternion(glm::quat q, int sample);
 
 private:
 
@@ -89,12 +88,15 @@ private:
 	void dataCharacteristicEventHandler(Bluetooth::GenericAttributeProfile::GattCharacteristic& car, Bluetooth::GenericAttributeProfile::GattValueChangedEventArgs& args);
 
 	//Data Gathering/Manipulation
-	void updateRawDataWithCalibrationNumbers(DataType dt);
+	void updateRawDataWithCalibrationNumbers(DataType dt, sensor_type_t sensor_type);
 	
 	PersonalCaddiePowerMode current_power_mode;
 	bool dataNotificationsOn;
 
 	std::function<void(int)> graphic_update_handler; //pointer to a method in the graphic module
+
+	volatile bool sensor_data_updated[3] = { false, false, false };
+	volatile bool data_available = false;
 
 	//Characteristics obtained from m_ble
 	Bluetooth::GenericAttributeProfile::GattCharacteristic m_settings_characteristic{ nullptr };
@@ -117,10 +119,15 @@ private:
 	const int number_of_samples = 10; //number of sensor samples stored in the BLE characteristic at a given time. Due to the time associated with reading BLE broadcasts, its more efficient to store multiple data points at a single time then try to read each individual point
 	int current_sample = 0; //when updating rotation quaternion with Madgwick filter, need to know which data point is currently being looked at
 
-	glm::quat Quaternion = { 1, 0, 0, 0 }; //represents the current orientation of the sensor
+	//glm::quat Quaternion = { 1, 0, 0, 0 }; //represents the current orientation of the sensor
 
-	//Compound vector used for storing data
-	std::vector<std::vector<std::vector<float> > > sensor_data; //vectors of size number_of_samples which hold current raw acceleration readings
+	//the following compound vector holds raw data from the sensors as well as calculated data such as (calibrated acc, gyr and mag readings, linear acceleration,
+	//velocity, etc.). The outermost vector holds everything, the second vector represents a specific data type and the innermost vector represents a specific
+	//axis of that data type. The innermost vector holds a set number of data points, equal to the number_of_samples field above. To show how this structure 
+	//looks in practice: { { {raw_acc_x_1, raw_acc_x_2, ..., raw_acc_x_numberofsamples}, {raw_acc_y_1 ...}, {raw_acc_z_1 ...} }, { {raw_gyr_x_1...} ....}
+	std::vector<std::vector<std::vector<float> > > sensor_data; 
+
+	std::vector<glm::quat> orientation_quaternions; //this vector holds number_of_samples quaternions, where each quaternion matches the sensor orientation at a point in time
 
 	//Movement variables
 	float lin_acc_threshold = 0.025; //linear acceleration will be set to zero unless it exceeds this threshold. This will help with location drift with time. This number was obtained experimentally as most white noise falls within +/- .025 of actual readings

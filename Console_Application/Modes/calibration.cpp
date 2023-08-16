@@ -24,7 +24,7 @@ Calibration::Calibration(GL* graphics) : Mode(graphics)
 //Updating and Advancement Functions
 void Calibration::update()
 {
-	if (cal_mode == 0) setClubRotation(p_graphics->getOpenGLQuaternion()); //In calibration select mode render chip normally
+	if (cal_mode == 0) setClubRotation(p_graphics->getOpenGLQuaternion(p_graphics->getPersonalCaddie()->getCurrentSample())); //In calibration select mode, render chip normally
 	if (preset_render) //check to see if a preset render should be displayed
 	{
 		if (render_index >= set_render.size()) render_index = 0; //reset after reaching the end of animation

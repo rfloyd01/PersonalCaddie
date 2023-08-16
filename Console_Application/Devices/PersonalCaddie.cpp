@@ -39,6 +39,12 @@ PersonalCaddie::PersonalCaddie()
         this->sensor_data.push_back(data_type);
     }
     
+    //initialize all orientation quaternions to the starting position
+    for (int i = 0; i < number_of_samples; i++)
+    {
+        glm::quat q = { 1, 0, 0, 0 };
+        orientation_quaternions.push_back(q);
+    }
 }
 
 concurrency::task<void> PersonalCaddie::BLEDeviceConnectedHandler()
@@ -152,19 +158,22 @@ void PersonalCaddie::dataCharacteristicEventHandler(Bluetooth::GenericAttributeP
     //First we read the data from the characteristic and put it into the appropriate raw data vector
     auto uuid = (car.Uuid().Data1 & 0xFFFF); //TODO: Can this just be passed in to the lambda function when the ValueChanged() property is set?
     DataType dt = DataType::EULER_ANGLES; //this is just to initialize the variable, it will get changed to either acc, gyr or mag
-    std::cout << "Notification Handler called by characteristic: " << uuid << std::endl;
+    sensor_type_t sensor_type;
 
     //Get the appropriate data type by looking at the characteristic's UUID so we know which vector to update
     switch (uuid)
     {
     case ACC_DATA_CHARACTERISTIC_UUID:
         dt = DataType::RAW_ACCELERATION;
+        sensor_type = ACC_SENSOR;
         break;
     case GYR_DATA_CHARACTERISTIC_UUID:
         dt = DataType::RAW_ROTATION;
+        sensor_type = GYR_SENSOR;
         break;
     case MAG_DATA_CHARACTERISTIC_UUID:
         dt = DataType::RAW_MAGNETIC;
+        sensor_type = MAG_SENSOR;
         break;
     default:
         break;
@@ -182,15 +191,15 @@ void PersonalCaddie::dataCharacteristicEventHandler(Bluetooth::GenericAttributeP
         for (int axis = X; axis <= Z; axis++)
         {
             int16_t axis_reading = read_buffer.ReadInt16();
-            this->sensor_data[static_cast<int>(dt)][axis][i] = axis_reading; //TODO: Need to convert from bytes to float
+            this->sensor_data[static_cast<int>(dt)][axis][i] = axis_reading * this->p_imu->getConversionRate(sensor_type); //Apply appropriate conversion from LSB to the current unit
         }
     }
 
     //once the raw data has been read update it with the appropriate calibration numbers for each sensor
-    updateRawDataWithCalibrationNumbers(dt);
+    updateRawDataWithCalibrationNumbers(dt, sensor_type);
 }
 
-void PersonalCaddie::updateRawDataWithCalibrationNumbers(DataType dt)
+void PersonalCaddie::updateRawDataWithCalibrationNumbers(DataType dt, sensor_type_t sensor_type)
 {
     for (int i = 0; i < number_of_samples; i++)
     {
@@ -216,8 +225,8 @@ void PersonalCaddie::updateRawDataWithCalibrationNumbers(DataType dt)
         }
     }
 
-    current_sample = 0; //lets the graphic interface know to start rendering from the first new data point
-    data_available = true; //this will let the graphics interface know that new data is ready
+    //since data is read separately we need to set the data updated variable to true for the current sensor
+    sensor_data_updated[sensor_type] = true;
 }
 
 concurrency::task<void> PersonalCaddie::toggleDataCollection()
@@ -350,7 +359,7 @@ void PersonalCaddie::setDataPoint(DataType dt, Axis a, int sample_number, float 
     }
 }
 
-glm::quat PersonalCaddie::getOpenGLQuaternion()
+glm::quat PersonalCaddie::getOpenGLQuaternion(int sample)
 {
     //TODO: This function currently works because it's setup for the existing sensor, however, not all sensors have the same axes orientation
     //so swapping to a different sensor would mean that either this function needs to change or something would need to be swapped elsewhere.
@@ -360,7 +369,7 @@ glm::quat PersonalCaddie::getOpenGLQuaternion()
     //The axes of the chip are different than what OpenGL expects so the axes are switched accordingly here
     //+X OpenGL = +Y Sensor, +Y OpenGL = +Z Sensor, +Z OpenGL = +X Sensor
     //return { Quaternion.w, Quaternion.y, Quaternion.z, Quaternion.x };
-    return { Quaternion.w, Quaternion.x, Quaternion.y, Quaternion.z };
+    return { orientation_quaternions[sample].w, orientation_quaternions[sample].x, orientation_quaternions[sample].y, orientation_quaternions[sample].z };
 }
 
 int PersonalCaddie::getCurrentSample()
@@ -454,69 +463,92 @@ void PersonalCaddie::updateCalibrationNumbers()
 
     inFile.close();
 }
-void PersonalCaddie::setRotationQuaternion(glm::quat q)
+void PersonalCaddie::setRotationQuaternion(glm::quat q, int sample)
 {
-    Quaternion = q;
+    orientation_quaternions[sample] = q;
 }
-void PersonalCaddie::masterUpdate()
+void PersonalCaddie::dataUpdate()
 {
     //Master update function, calls for Madgwick filter to be run and then uses that data to call updatePosition() which calculates current lin_acc., vel. and loc.
-    updateMadgwick(); //update orientation quaternion
-    updatePosition(); //use newly calculated orientation to get linear acceleration, and then integrate that to get velocity, and again for position
-    updateEulerAngles(); //use newly calculated orientation quaternion to get Euler Angles of sensor (used in training modes)
-
-    current_sample++; //once all updates have been made go on to the next sample
-    if (current_sample >= number_of_samples)
+    if (sensor_data_updated[ACC_SENSOR] && sensor_data_updated[GYR_SENSOR] && sensor_data_updated[MAG_SENSOR])
     {
-        data_available = false; //there is no more new data to look at, setting this variable to false would prevent Madgwick filter from running
-        current_sample--; //set current sample to last sample while waiting for more data to come in
+        //The most recent data has been read from the BLE device and had calibration data applied to it. We can 
+        //now calculate any interpreted data, such as position quaternion, euler angles, linear acceleration, etc.
+        updateMadgwick(); //update orientation quaternion
+        updatePosition(); //use newly calculated orientation to get linear acceleration, and then integrate that to get velocity, and again for position
+        updateEulerAngles(); //use newly calculated orientation quaternion to get Euler Angles of sensor (used in training modes)
+
+        //set the current sample to 0 so the graphics module starts rendering the new data. It's possible that not 
+        //all data from the last set will actually have been rendered but this is ok since each piece of data is on 
+        //the scale of 10 milliseconds apart (at the most).
+        current_sample = 0;
+
+        //reset the data_updated variables to false. doing this means this method will instead increment the current
+        //sample variable for the graphics module.
+        sensor_data_updated[ACC_SENSOR] = false;
+        sensor_data_updated[GYR_SENSOR] = false;
+        sensor_data_updated[MAG_SENSOR] = false;
+    }
+    else
+    {
+        //no new data is ready so incerement the current_sample variable which let's the graphics module know what data
+        //point should get rendered.
+        current_sample++;
+
+        //in the case that the graphics unit renders samples faster than they can come in, just keep rendering the 
+        //last sample until new data is available. At most this should be a few milliseconds of rendering the same
+        //frame which will mostly be unnoticeable.
+        if (current_sample >= number_of_samples) current_sample--;
     }
 }
 
 //Internal Updating Functions
 void PersonalCaddie::updateMadgwick()
 {
-    //if (!data_available) return; //only do things if there's new data to process
-
     //set up current time information
-    last_time_stamp = time_stamp;
-    time_stamp += 1000.0 / sampleFreq;
-    float delta_t = (float)((time_stamp - last_time_stamp) / 1000.0);
+    for (int i = 0; i < number_of_samples; i++)
+    {
+        last_time_stamp = time_stamp;
+        time_stamp += 1000.0 / sampleFreq;
+        float delta_t = (float)((time_stamp - last_time_stamp) / 1000.0);
 
-    //TODO: Look into just sending references to the data instead of creating copies, not sure if this is really a huge time hit here but it can't hurt
-    int cs = current_sample; //this is only here because it became annoying to keep writing out current_sample
-    float acc_x = getDataPoint(DataType::ACCELERATION, X, cs), acc_y = getDataPoint(DataType::ACCELERATION, Y, cs), acc_z = getDataPoint(DataType::ACCELERATION, Z, cs);
-    float gyr_x = getDataPoint(DataType::ROTATION, X, cs), gyr_y = getDataPoint(DataType::ROTATION, Y, cs), gyr_z = getDataPoint(DataType::ROTATION, Z, cs);
-    float mag_x = getDataPoint(DataType::MAGNETIC, X, cs), mag_y = getDataPoint(DataType::MAGNETIC, Y, cs), mag_z = getDataPoint(DataType::MAGNETIC, Z, cs);
+        //TODO: Look into just sending references to the data instead of creating copies, not sure if this is really a huge time hit here but it can't hurt
+        int cs = current_sample; //this is only here because it became annoying to keep writing out current_sample
+        float acc_x = getDataPoint(DataType::ACCELERATION, X, cs), acc_y = getDataPoint(DataType::ACCELERATION, Y, cs), acc_z = getDataPoint(DataType::ACCELERATION, Z, cs);
+        float gyr_x = getDataPoint(DataType::ROTATION, X, cs), gyr_y = getDataPoint(DataType::ROTATION, Y, cs), gyr_z = getDataPoint(DataType::ROTATION, Z, cs);
+        float mag_x = getDataPoint(DataType::MAGNETIC, X, cs), mag_y = getDataPoint(DataType::MAGNETIC, Y, cs), mag_z = getDataPoint(DataType::MAGNETIC, Z, cs);
 
-    //The Madgwick filter expects the z-direction to be up, but OpenGL expects the y-direction to be up. To ensure proper rendering the y and z values are swapped as they're passed to the filter
-    Quaternion = MadgwickVerticalY(Quaternion, gyr_x, gyr_y, gyr_z, acc_x, acc_y, acc_z, mag_x, mag_y, mag_z, delta_t, beta);
+        //the first rotation quaternion of the new data set must build from the last rotation quaternion of the previous set. The rest can build off of
+        //earlier samples from the current set
+        if (i == 0) orientation_quaternions[i] = MadgwickVerticalY(orientation_quaternions[number_of_samples - 1], gyr_x, gyr_y, gyr_z, acc_x, acc_y, acc_z, mag_x, mag_y, mag_z, delta_t, beta);
+        else orientation_quaternions[i] = MadgwickVerticalY(orientation_quaternions[i - 1], gyr_x, gyr_y, gyr_z, acc_x, acc_y, acc_z, mag_x, mag_y, mag_z, delta_t, beta);
+    }
 }
 void PersonalCaddie::updateLinearAcceleration()
 {
-    //if (!data_available) return;
+    for (int i = 0; i < number_of_samples; i++)
+    {
+        std::vector<float> x_vector = { GRAVITY, 0, 0 };
+        std::vector<float> y_vector = { 0, GRAVITY, 0 };
+        std::vector<float> z_vector = { 0, 0, GRAVITY };
 
-    ///TODO: There's probably a quicker way to get vector than doing three quaternion rotations, update this at some point
-    std::vector<float> x_vector = { GRAVITY, 0, 0 };
-    std::vector<float> y_vector = { 0, GRAVITY, 0 };
-    std::vector<float> z_vector = { 0, 0, GRAVITY };
+        QuatRotate(orientation_quaternions[i], x_vector);
+        QuatRotate(orientation_quaternions[i], y_vector);
+        QuatRotate(orientation_quaternions[i], z_vector);
 
-    QuatRotate(Quaternion, x_vector);
-    QuatRotate(Quaternion, y_vector);
-    QuatRotate(Quaternion, z_vector);
+        setDataPoint(DataType::LINEAR_ACCELERATION, X, i, getDataPoint(DataType::ACCELERATION, X, i) - x_vector[2]);
+        setDataPoint(DataType::LINEAR_ACCELERATION, Y, i, getDataPoint(DataType::ACCELERATION, Y, i) - y_vector[2]);
+        setDataPoint(DataType::LINEAR_ACCELERATION, Z, i, getDataPoint(DataType::ACCELERATION, Z, i) - z_vector[2]);
 
-    int cs = current_sample; //only put this in here because it was tedious to keep writing out current_sample
-    setDataPoint(DataType::LINEAR_ACCELERATION, X, cs, getDataPoint(DataType::ACCELERATION, X, cs) - x_vector[2]);
-    setDataPoint(DataType::LINEAR_ACCELERATION, Y, cs, getDataPoint(DataType::ACCELERATION, Y, cs) - y_vector[2]);
-    setDataPoint(DataType::LINEAR_ACCELERATION, Z, cs, getDataPoint(DataType::ACCELERATION, Z, cs) - z_vector[2]);
-
-    //Set threshold on Linear Acceleration to help with drift
-    //if (linear_acceleration[X][current_sample] < lin_acc_threshold && linear_acceleration[X][current_sample] > -lin_acc_threshold) linear_acceleration[X][current_sample] = 0;
-    //if (linear_acceleration[Y][current_sample] < lin_acc_threshold && linear_acceleration[Y][current_sample] > -lin_acc_threshold) linear_acceleration[Y][current_sample] = 0;
-    //if (linear_acceleration[Z][current_sample] < lin_acc_threshold && linear_acceleration[Z][current_sample] > -lin_acc_threshold) linear_acceleration[Z][current_sample] = 0;
+        //Set threshold on Linear Acceleration to help with drift
+        //if (linear_acceleration[X][current_sample] < lin_acc_threshold && linear_acceleration[X][current_sample] > -lin_acc_threshold) linear_acceleration[X][current_sample] = 0;
+        //if (linear_acceleration[Y][current_sample] < lin_acc_threshold && linear_acceleration[Y][current_sample] > -lin_acc_threshold) linear_acceleration[Y][current_sample] = 0;
+        //if (linear_acceleration[Z][current_sample] < lin_acc_threshold && linear_acceleration[Z][current_sample] > -lin_acc_threshold) linear_acceleration[Z][current_sample] = 0;
+    }
 }
 void PersonalCaddie::updatePosition()
 {
+    //TODO: this method needs to be updated so that all number_of_samples velocity and position get updated at the same time and not just one at a time
     updateLinearAcceleration();
     if (acceleration_event)
     {
@@ -577,15 +609,18 @@ void PersonalCaddie::updateEulerAngles()
 {
     //TODO: currently calculating these angles every loop which really shouldn't be necessary, look into creating a bool variable that lets BLEDevice know if it should calculate angles
 
-    //calculate pitch separately to avoid NaN results
-    float pitch = 2 * (Quaternion.w * Quaternion.y - Quaternion.x * Quaternion.z);
-    if (pitch > 1) setDataPoint(DataType::EULER_ANGLES, Y, current_sample, 1.570795); //case for +90 degrees
-    else if (pitch < -1) setDataPoint(DataType::EULER_ANGLES, Y, current_sample, -1.570795); //case for -90 degrees
-    else  setDataPoint(DataType::EULER_ANGLES, Y, current_sample, asinf(pitch)); //all other cases
+    for (int i = 0; i < number_of_samples; i++)
+    {
+        //calculate pitch separately to avoid NaN results
+        float pitch = 2 * (orientation_quaternions[i].w * orientation_quaternions[i].y - orientation_quaternions[i].x * orientation_quaternions[i].z);
+        if (pitch > 1) setDataPoint(DataType::EULER_ANGLES, Y, i, 1.570795); //case for +90 degrees
+        else if (pitch < -1) setDataPoint(DataType::EULER_ANGLES, Y, i, -1.570795); //case for -90 degrees
+        else  setDataPoint(DataType::EULER_ANGLES, Y, i, asinf(pitch)); //all other cases
 
-    //no NaN issues for roll and yaw
-    setDataPoint(DataType::EULER_ANGLES, X, current_sample, atan2f(2 * (Quaternion.w * Quaternion.x + Quaternion.y * Quaternion.z), 1 - 2 * (Quaternion.x * Quaternion.x + Quaternion.y * Quaternion.y)));
-    setDataPoint(DataType::EULER_ANGLES, Z, current_sample, atan2f(2 * (Quaternion.w * Quaternion.z + Quaternion.x * Quaternion.y), 1 - 2 * (Quaternion.y * Quaternion.y + Quaternion.z * Quaternion.z)));
+        //no NaN issues for roll and yaw
+        setDataPoint(DataType::EULER_ANGLES, X, i, atan2f(2 * (orientation_quaternions[i].w * orientation_quaternions[i].x + orientation_quaternions[i].y * orientation_quaternions[i].z), 1 - 2 * (orientation_quaternions[i].x * orientation_quaternions[i].x + orientation_quaternions[i].y * orientation_quaternions[i].y)));
+        setDataPoint(DataType::EULER_ANGLES, Z, i, atan2f(2 * (orientation_quaternions[i].w * orientation_quaternions[i].z + orientation_quaternions[i].x * orientation_quaternions[i].y), 1 - 2 * (orientation_quaternions[i].y * orientation_quaternions[i].y + orientation_quaternions[i].z * orientation_quaternions[i].z)));
+    }
 }
 
 float PersonalCaddie::integrate(float one, float two, float dt)

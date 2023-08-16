@@ -37,7 +37,7 @@ void Mode::processInput()
 	else if (glfwGetKey(p_graphics->GetWindow(), GLFW_KEY_ENTER) == GLFW_PRESS)
 	{
 		//pressing Enter will return the club or chip to the center of the screen if currently being rendered, useful for when image starts to drift over time
-		p_graphics->setRotationQuaternion({ 1, 0, 0, 0 });
+		p_graphics->setRotationQuaternion({ 1, 0, 0, 0 }, p_graphics->getPersonalCaddie()->getCurrentSample()); //TODO: might need to change all quaternions to 1,0,0,0 here
 		p_graphics->setMagField(); //resets the magnetic field of the sensor
 		p_graphics->getCurrentMode()->setClubLocation({ 0.0, 0.0, 0.0 }); //moves club back to center while maintaining current scale
 		p_graphics->resetKeyTimer();
