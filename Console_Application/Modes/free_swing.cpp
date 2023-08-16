@@ -153,8 +153,27 @@ void FreeSwing::modeStart()
 	//an alert to the user
 	if (!this->p_graphics->getPersonalCaddie()->ble_device_connected)
 	{
+		//No device is connected so we can't really do anything in this mode, prompt
+		//the user to pair a device by going to the Settings mode.
 		createAlert("Go to the Settings menu to scan for nearby devices.", 5000.0);
 		createAlert("No Personal Caddie dedected.", 5000.0);
+	}
+	else
+	{
+		//A device is connected so put the sensors into idle mode. After this is successful put the 
+		//device into active mode so we can display the sensor moving in the calibration menu
+		createAlert("Activating IMU", 5000.0);
+
+		this->p_graphics->getPersonalCaddie()->changePowerMode(PersonalCaddiePowerMode::SENSOR_IDLE_MODE);
+		while (this->p_graphics->getPersonalCaddie()->getCurrentPowerMode() != PersonalCaddiePowerMode::SENSOR_IDLE_MODE) {} //do nothing here
+		this->p_graphics->getPersonalCaddie()->changePowerMode(PersonalCaddiePowerMode::SENSOR_ACTIVE_MODE);
+		while (this->p_graphics->getPersonalCaddie()->getCurrentPowerMode() != PersonalCaddiePowerMode::SENSOR_ACTIVE_MODE) {} //do nothing here
+
+		createAlert("Activation Complete", 5000.0);
+
+		//Physically turning the sensors on will happen almost instantly, however, we need to wait
+		//for the connection interval to update which takes a bit of time.
+		this->p_graphics->getPersonalCaddie()->enableDataNotifications();
 	}
 }
 void FreeSwing::modeEnd()
@@ -168,6 +187,15 @@ void FreeSwing::modeEnd()
 	//Reset all Bool variables to false
 	display_data = 0;
 	record_data = 0;
+
+	if (this->p_graphics->getPersonalCaddie()->ble_device_connected)
+	{
+		//Turn off data notifications
+		this->p_graphics->getPersonalCaddie()->disableDataNotifications();
+
+		//Put the device into connected mode before going back to the main menu to save on power.
+		this->p_graphics->getPersonalCaddie()->changePowerMode(PersonalCaddiePowerMode::CONNECTED_MODE);
+	}
 }
 
 //PRIVATE FUNCTIONS

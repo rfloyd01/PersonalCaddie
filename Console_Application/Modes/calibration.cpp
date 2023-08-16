@@ -248,14 +248,14 @@ void Calibration::modeEnd()
 
 	if (this->p_graphics->getPersonalCaddie()->ble_device_connected)
 	{
+		//Turn off data notifications
+		this->p_graphics->getPersonalCaddie()->disableDataNotifications();
+
 		//Put the device into connected mode before going back to the main menu to save on power.
 		this->p_graphics->getPersonalCaddie()->changePowerMode(PersonalCaddiePowerMode::CONNECTED_MODE);
 	}
 
 	set_render.clear(); //clear out preset render to free up space
-
-	//Turn off data notifications
-	this->p_graphics->getPersonalCaddie()->disableDataNotifications();
 }
 
 //PRIVATE FUNCTIONS
@@ -819,26 +819,6 @@ void Calibration::updateCalibrationNumbers()
 		acc_gain[0][2] = (acc_cal[0][2] - acc_cal[0][4]) / (2 * GRAVITY);
 		acc_gain[1][2] = (acc_cal[1][2] - acc_cal[1][4]) / (2 * GRAVITY);
 		acc_gain[2][2] = (acc_cal[2][2] - acc_cal[2][4]) / (2 * GRAVITY);
-
-		/*Deprecated block, represents sensor coordinates instead of OpenGL coordinates
-		Order of tumble point text is [+Z, -Y, +X, +Y, -X, -Z]
-
-		acc_off[0] = (acc_cal[0][2] + acc_cal[0][4]) / 2.0;
-		acc_off[1] = (acc_cal[1][1] + acc_cal[1][3]) / 2.0;
-		acc_off[2] = (acc_cal[2][0] + acc_cal[2][5]) / 2.0;
-
-		acc_gain[0][0] = (acc_cal[0][2] - acc_cal[0][4]) / (2 * gravity);
-		acc_gain[1][0] = (acc_cal[1][2] - acc_cal[1][4]) / (2 * gravity);
-		acc_gain[2][0] = (acc_cal[2][2] - acc_cal[2][4]) / (2 * gravity);
-
-		acc_gain[0][1] = (acc_cal[0][3] - acc_cal[0][1]) / (2 * gravity);
-		acc_gain[1][1] = (acc_cal[1][3] - acc_cal[1][1]) / (2 * gravity);
-		acc_gain[2][1] = (acc_cal[2][3] - acc_cal[2][1]) / (2 * gravity);
-
-		acc_gain[0][2] = (acc_cal[0][0] - acc_cal[0][5]) / (2 * gravity);
-		acc_gain[1][2] = (acc_cal[1][0] - acc_cal[1][5]) / (2 * gravity);
-		acc_gain[2][2] = (acc_cal[2][0] - acc_cal[2][5]) / (2 * gravity);
-		*/
 
 		//Convert Gain Matrix to it's own inverse
 		invertAccMatrix();

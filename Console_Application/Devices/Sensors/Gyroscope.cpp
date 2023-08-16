@@ -32,7 +32,7 @@ void Gyroscope::setConversionRateFromSettings()
 	switch (this->settings[SENSOR_MODEL])
 	{
 	case LSM9DS1_GYR:
-		this->conversion_rate = lsm9ds1_fsr_conversion(GYR_SENSOR, this->settings[FS_RANGE]);
+		this->conversion_rate = lsm9ds1_fsr_conversion(GYR_SENSOR, this->settings[FS_RANGE]) / 1000.0; //convert from mdps to dps
 		break;
 	default:
 		this->conversion_rate = 0;

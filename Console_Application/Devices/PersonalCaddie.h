@@ -92,7 +92,7 @@ private:
 	void dataCharacteristicEventHandler(Bluetooth::GenericAttributeProfile::GattCharacteristic& car, Bluetooth::GenericAttributeProfile::GattValueChangedEventArgs& args);
 
 	//Data Gathering/Manipulation
-	void updateRawDataWithCalibrationNumbers(DataType dt, sensor_type_t sensor_type, const float* offset_cal, const float** gain_cal);
+	void updateRawDataWithCalibrationNumbers(DataType rdt, DataType dt, sensor_type_t sensor_type, const float* offset_cal, const float** gain_cal);
 	
 	PersonalCaddiePowerMode current_power_mode;
 	bool dataNotificationsOn;

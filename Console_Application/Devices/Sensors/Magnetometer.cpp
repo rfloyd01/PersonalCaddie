@@ -32,7 +32,7 @@ void Magnetometer::setConversionRateFromSettings()
 	switch (this->settings[SENSOR_MODEL])
 	{
 	case LSM9DS1_MAG:
-		this->conversion_rate = lsm9ds1_fsr_conversion(MAG_SENSOR, this->settings[FS_RANGE]);
+		this->conversion_rate = lsm9ds1_fsr_conversion(MAG_SENSOR, this->settings[FS_RANGE]) / 10; //convert from mgauss to uTesla
 		break;
 	default:
 		this->conversion_rate = 0;

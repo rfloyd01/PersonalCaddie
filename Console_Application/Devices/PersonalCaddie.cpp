@@ -196,6 +196,12 @@ void PersonalCaddie::dataCharacteristicEventHandler(Bluetooth::GenericAttributeP
     //Transfer the data in 16-bit chunks to the appropriate data array. A single reading of the sensor is comprised of 6 bytes, 2 each 
     //for each axes so the data in the read_buffer looks like so: [XL0, XH0, YL0, YH0, ZL0, ZH0, XL1, XH1, YL1, YH1, ...]. Since the 
     //data is little endian the least significant byte comes before the most significant.
+
+    if (rdt == DataType::RAW_ROTATION)
+    {
+        std::cout << "yeee" << std::endl;
+    }
+
     for (int i = 0; i < this->number_of_samples; i++)
     {
         for (int axis = X; axis <= Z; axis++)
@@ -206,14 +212,14 @@ void PersonalCaddie::dataCharacteristicEventHandler(Bluetooth::GenericAttributeP
     }
 
     //once the raw data has been read update it with the appropriate calibration numbers for each sensor
-    updateRawDataWithCalibrationNumbers(dt, sensor_type, calibration_data.first, calibration_data.second);
+    updateRawDataWithCalibrationNumbers(rdt, dt, sensor_type, calibration_data.first, calibration_data.second);
 }
 
-void PersonalCaddie::updateRawDataWithCalibrationNumbers(DataType dt, sensor_type_t sensor_type, const float* offset_cal, const float** gain_cal)
+void PersonalCaddie::updateRawDataWithCalibrationNumbers(DataType rdt, DataType dt, sensor_type_t sensor_type, const float* offset_cal, const float** gain_cal)
 {
     for (int i = 0; i < number_of_samples; i++)
     {
-        float r_x = getDataPoint(dt, X, i), r_y = getDataPoint(dt, Y, i), r_z = getDataPoint(dt, Z, i);
+        float r_x = getDataPoint(rdt, X, i), r_y = getDataPoint(rdt, Y, i), r_z = getDataPoint(rdt, Z, i);
 
         setDataPoint(dt, X, i, (gain_cal[0][0] * (r_x - offset_cal[0])) + (gain_cal[0][1] * (r_y - offset_cal[1])) + (gain_cal[0][2] * (r_z - offset_cal[2])));
         setDataPoint(dt, Y, i, (gain_cal[1][0] * (r_x - offset_cal[0])) + (gain_cal[1][1] * (r_y - offset_cal[1])) + (gain_cal[1][2] * (r_z - offset_cal[2])));
@@ -482,10 +488,13 @@ void PersonalCaddie::updateMadgwick()
 
         //the first rotation quaternion of the new data set must build from the last rotation quaternion of the previous set. The rest can build off of
         //earlier samples from the current set
-        /*if (i == 0) orientation_quaternions[i] = MadgwickVerticalY(orientation_quaternions[number_of_samples - 1], gyr_x, gyr_y, gyr_z, acc_x, acc_y, acc_z, mag_x, mag_y, mag_z, delta_t, beta);
-        else orientation_quaternions[i] = MadgwickVerticalY(orientation_quaternions[i - 1], gyr_x, gyr_y, gyr_z, acc_x, acc_y, acc_z, mag_x, mag_y, mag_z, delta_t, beta);*/
         if (i == 0) orientation_quaternions[i] = Madgwick(orientation_quaternions[number_of_samples - 1], gyr_x, gyr_y, gyr_z, acc_x, acc_y, acc_z, mag_x, mag_y, mag_z, this->p_imu->getMaxODR(), beta);
         else orientation_quaternions[i] = Madgwick(orientation_quaternions[i - 1], gyr_x, gyr_y, gyr_z, acc_x, acc_y, acc_z, mag_x, mag_y, mag_z, this->p_imu->getMaxODR(), beta);
+
+        if (isinf(orientation_quaternions[i].w))
+        {
+            std::cout << "something went wrong" << std::endl;
+        }
     }
 }
 void PersonalCaddie::updateLinearAcceleration()
