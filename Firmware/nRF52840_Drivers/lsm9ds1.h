@@ -12,7 +12,7 @@ extern "C" {
 #include "nrf_drv_twi.h" //don't want to include this on the C++ side
 
 void lsm9ds1_init(stmdev_ctx_t* lsm9ds1_imu, stmdev_ctx_t* lsm9ds1_mag, uint8_t* settings,
-    const nrf_drv_twi_t* twi, volatile bool* xfer_done);
+    const nrf_drv_twi_t* twi, volatile bool* xfer_done, bool external_board);
 #endif
 
 void lsm9ds1_idle_mode_enable(stmdev_ctx_t* lsm9ds1_imu, stmdev_ctx_t* lsm9ds1_mag);

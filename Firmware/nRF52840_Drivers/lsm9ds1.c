@@ -8,11 +8,13 @@ volatile bool* p_xfer_done;
 
 //set up settings variables
 static uint8_t* p_sensor_settings;
+static uint8_t IMU_Address;
+static uint8_t MAG_Address;
 
 static bool lsm9ds1_register_auto_increment = true;                       /**register auto increment function for multiple byte reads of LSM9DS1 chip **/
 
 void lsm9ds1_init(stmdev_ctx_t* lsm9ds1_imu, stmdev_ctx_t* lsm9ds1_mag, uint8_t* settings, 
-                  const nrf_drv_twi_t* twi, volatile bool* xfer_done)
+                  const nrf_drv_twi_t* twi, volatile bool* xfer_done, bool external_board)
 {
     //create a pointer to an array which holds settings for the sensor
     p_sensor_settings = settings;
@@ -20,6 +22,10 @@ void lsm9ds1_init(stmdev_ctx_t* lsm9ds1_imu, stmdev_ctx_t* lsm9ds1_mag, uint8_t*
     //set up communication with the chip
     p_xfer_done = xfer_done;
     p_twi = twi;
+
+    //Set the slave addresses for the IMU and Mag (on both the BLE 33 and the Adafruit board it's the high address)
+    IMU_Address = LSM9DS1_IMU_I2C_ADD_H;
+    MAG_Address = LSM9DS1_MAG_I2C_ADD_H;
 
     //initialize read/write methods for acc./gyro.
     lsm9ds1_imu->read_reg = lsm9ds1_read_imu;
@@ -129,7 +135,7 @@ static int32_t lsm9ds1_read_imu(void *handle, uint8_t reg, uint8_t *bufp, uint16
     //the primary buffer only holds the address of the register we want to read and therefore only has a length of 1 byte
     //the secondary buffer is where the data will get read into
     const nrf_drv_twi_xfer_desc_t lsm9ds1_imu_read = {
-        .address = (LSM9DS1_IMU_I2C_ADD_H >> 1),
+        .address = (IMU_Address >> 1),
         .primary_length = 1,
         .secondary_length = (uint8_t)len,
         .p_primary_buf = &reg,
@@ -156,7 +162,7 @@ static int32_t lsm9ds1_write_imu(void *handle, uint8_t reg, const uint8_t *bufp,
     //the primary buffer will hold the register address, as well as the value to write into it.
     //for a single write operation, the secondary buffer has no use in a single write command
     const nrf_drv_twi_xfer_desc_t lsm9ds1_imu_write = {
-        .address = (LSM9DS1_IMU_I2C_ADD_H >> 1),
+        .address = (IMU_Address >> 1),
         .primary_length = 2,
         .secondary_length = 0,
         .p_primary_buf = register_and_data,
@@ -181,7 +187,7 @@ static int32_t lsm9ds1_read_mag(void *handle, uint8_t reg, uint8_t *bufp, uint16
     //the logic for handling multiple byte reads must be handled in software for the magnetometer, whereas, the accelerometer
     //and gyroscope can do it via hardware
     const nrf_drv_twi_xfer_desc_t lsm9ds1_mag_read = {
-        .address = (((uint8_t)lsm9ds1_register_auto_increment << 7) | (LSM9DS1_MAG_I2C_ADD_H >> 1)),
+        .address = (((uint8_t)lsm9ds1_register_auto_increment << 7) | (MAG_Address >> 1)),
         .primary_length = 1,
         .secondary_length = (uint8_t)len,
         .p_primary_buf = &reg,
@@ -208,7 +214,7 @@ static int32_t lsm9ds1_write_mag(void *handle, uint8_t reg, const uint8_t *bufp,
     //the primary buffer will hold the register address, as well as the value to write into it.
     //for a single write operation, the secondary buffer has no use in a single write command
     const nrf_drv_twi_xfer_desc_t lsm9ds1_mag_write = {
-        .address = (LSM9DS1_MAG_I2C_ADD_H >> 1),
+        .address = (MAG_Address >> 1),
         .primary_length = 2,
         .secondary_length = 0,
         .p_primary_buf = register_and_data,

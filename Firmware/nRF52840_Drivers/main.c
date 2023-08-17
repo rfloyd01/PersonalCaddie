@@ -175,14 +175,16 @@ static int32_t get_MAG_data(uint8_t offset);
 static personal_caddie_operating_mode_t current_operating_mode = ADVERTISING_MODE; /**< The chip starts in advertising mode*/
 
 //Pin Setup
-#define USE_EXTERNAL_SENSOR       true                                            /**< Let's the BLE33 know tuat external sensors are being used*/
+#define USE_EXTERNAL_SENSORS      true                                            /**< Let's the BLE33 know tuat external sensors are being used*/
 #define USE_EXTERNAL_LEDS         true                                            /**< Let's the BLE33 know that external LEDs are being used*/
-#define EXTERNAL_SENSOR_POWER_PIN NRF_GPIO_PIN_MAP(1, 11)                         /**< Pin used to power external sensors (mapped to D2 on BLE 33)*/
-#define EXTERNAL_SCL_PIN          NRF_GPIO_PIN_MAP(1, 14)                         /**< Pin used for external TWI clock (mapped to D6 on BLE 33) */
-#define EXTERNAL_SDA_PIN          NRF_GPIO_PIN_MAP(1, 15)                         /**< Pin used for external TWI data (mapped to D4 on BLE 33) */
-#define EXTERNAL_RED_LED          NRF_GPIO_PIN_MAP(1, 15)                         /**< Pin used for powering an external red LED*/
-#define EXTERNAL_BLUE_LED         NRF_GPIO_PIN_MAP(1, 15)                         /**< Pin used for powering an external blue LED*/
-#define EXTERNAL_GREEN_LED        NRF_GPIO_PIN_MAP(1, 15)                         /**< Pin used for powering an external green LED*/
+#define EXTERNAL_SENSOR_POWER_PIN NRF_GPIO_PIN_MAP(1, 10)                         /**< Pin used to power external sensors (mapped to D9 on BLE 33)*/
+//#define EXTERNAL_SCL_PIN          NRF_GPIO_PIN_MAP(0, 21)                         /**< Pin used for external TWI clock (mapped to D8 on BLE 33) */
+//#define EXTERNAL_SDA_PIN          NRF_GPIO_PIN_MAP(0, 23)                          /**< Pin used for external TWI data (mapped to D10 on BLE 33) */
+#define EXTERNAL_SCL_PIN          NRF_GPIO_PIN_MAP(0, 26)                         /**< Pin used for external TWI clock (mapped to D8 on BLE 33) */
+#define EXTERNAL_SDA_PIN          NRF_GPIO_PIN_MAP(0, 27)                          /**< Pin used for external TWI data (mapped to D10 on BLE 33) */
+#define EXTERNAL_RED_LED          NRF_GPIO_PIN_MAP(1, 15)                         /**< Pin used for powering an external red LED (mapped to D4 on BLE 33)*/
+#define EXTERNAL_BLUE_LED         NRF_GPIO_PIN_MAP(1, 13)                         /**< Pin used for powering an external blue LED (mapped to D5 on BLE 33)*/
+#define EXTERNAL_GREEN_LED        NRF_GPIO_PIN_MAP(1, 14)                         /**< Pin used for powering an external green LED (mapped to D6 on BLE 33)*/
 #define BLE_33_SENSOR_POWER_PIN   NRF_GPIO_PIN_MAP(0, 22)                         /**< Pin used to power BLE33 onboard sensors*/
 #define BLE_33_SCL_PIN            NRF_GPIO_PIN_MAP(0, 15)                         /**< Pin used for internal TWI clock for BLE33*/
 #define BLE_33_SDA_PIN            NRF_GPIO_PIN_MAP(0, 14)                         /**< Pin used for internal TWI data for BLE33*/
@@ -191,7 +193,7 @@ static personal_caddie_operating_mode_t current_operating_mode = ADVERTISING_MOD
 #define BLE_33_RED_LED            NRF_GPIO_PIN_MAP(0, 24)                         /**< Red LED Indicator on BLE 33 sense*/
 #define BLE_33_BLUE_LED           NRF_GPIO_PIN_MAP(0, 6)                          /**< Blue LED Indicator on BLE 33 sense*/
 #define BLE_33_GREEN_LED          NRF_GPIO_PIN_MAP(0, 16)                         /**< Green LED Indicator on BLE 33 sense*/
-static volatile uint8_t active_led = BLE_33_BLUE_LED;                           /**< Variable used to keep track of which LED to turn on/off*/
+static volatile uint8_t active_led = USE_EXTERNAL_LEDS ? EXTERNAL_BLUE_LED : BLE_33_BLUE_LED;                             /**< Variable used to keep track of which LED to turn on/off*/
 
 static void advertising_start(bool erase_bonds);
 
@@ -240,20 +242,44 @@ static void sensors_init(void)
     //first reset the sensor settings array
     for (int i = 0; i < SENSOR_SETTINGS_LENGTH; i++) sensor_settings[i] = 0;
 
-    //configure the power pin and pullup resistor pins for the the sensors
-    nrf_gpio_cfg_output(BLE_33_PULLUP); //send power to BLE 33 Sense pullup resistors (they aren't connected to VDD)
-    nrf_gpio_cfg(BLE_33_SENSOR_POWER_PIN, NRF_GPIO_PIN_DIR_OUTPUT, NRF_GPIO_PIN_INPUT_CONNECT, NRF_GPIO_PIN_NOPULL, NRF_GPIO_PIN_S0H1, NRF_GPIO_PIN_NOSENSE);
-    
     //Handle the initialization of individual sensors
-    lsm9ds1_init(&lsm9ds1_imu, &lsm9ds1_mag, sensor_settings, &m_twi, &m_xfer_done);
+    lsm9ds1_init(&lsm9ds1_imu, &lsm9ds1_mag, sensor_settings, &m_twi, &m_xfer_done, USE_EXTERNAL_SENSORS);
 
     //after sensor initialization is complete we attempt to communicate 
     //with each sensor just to ensure that it's there and working properly.
-    //To do so, turn on the TWI bus and turn on the power pin(s) and pullup resistors
+    //To do so, turn on the TWI bus and configure/turn on any power pin(s) and/or pullup resistors
     nrf_drv_twi_enable(&m_twi);
-    nrf_gpio_pin_set(BLE_33_PULLUP);
-    nrf_gpio_pin_set(BLE_33_SENSOR_POWER_PIN);
-    nrf_delay_ms(50); //slight delay so sensors have time to power on
+
+    //configure the power pin and pullup resistor pins for the the sensors
+    if (USE_EXTERNAL_SENSORS)
+    {
+        nrf_gpio_cfg(EXTERNAL_SENSOR_POWER_PIN, NRF_GPIO_PIN_DIR_OUTPUT, NRF_GPIO_PIN_INPUT_CONNECT, NRF_GPIO_PIN_NOPULL, NRF_GPIO_PIN_S0H1, NRF_GPIO_PIN_NOSENSE);
+
+        nrf_gpio_pin_set(EXTERNAL_SENSOR_POWER_PIN);
+        nrf_delay_ms(50); //slight delay so sensors have time to power on
+    }
+    else
+    {
+        nrf_gpio_cfg_output(BLE_33_PULLUP); //send power to BLE 33 Sense pullup resistors (they aren't connected to VDD)
+        nrf_gpio_cfg(BLE_33_SENSOR_POWER_PIN, NRF_GPIO_PIN_DIR_OUTPUT, NRF_GPIO_PIN_INPUT_CONNECT, NRF_GPIO_PIN_NOPULL, NRF_GPIO_PIN_S0H1, NRF_GPIO_PIN_NOSENSE);
+
+        nrf_gpio_pin_set(BLE_33_PULLUP);
+        nrf_gpio_pin_set(BLE_33_SENSOR_POWER_PIN);
+        nrf_delay_ms(50); //slight delay so sensors have time to power on
+    }
+
+    //uint8_t sample_data;
+    //for (uint8_t add = 0; add <= 127; add++)
+    //{
+    //    ret_code_t err_code;
+    //    m_xfer_done = false;
+    //    do
+    //    {
+    //        err_code = nrf_drv_twi_rx(&m_twi, add, &sample_data, sizeof(sample_data));
+    //    } while (err_code == 0x11); //if the nrf is currently busy doing something else this line will wait until its done before executing
+    //    //while (m_xfer_done == false); //this line forces the program to wait for the TWI transfer to complete before moving on
+    //    nrf_delay_ms(50); //slight delay so sensors have time to power on
+    //}
 
     //attempt to read the WHOAMI register for each sensor
     uint32_t ret = lsm9ds1_dev_id_get(&lsm9ds1_mag, &lsm9ds1_imu, &whoamI);
@@ -263,8 +289,16 @@ static void sensors_init(void)
     //In the future, more sensors can be initialized here
 
     //regardless of whether or not any sensors are found, disable the power pins and TWI bus
-    nrf_gpio_pin_clear(BLE_33_PULLUP);
-    nrf_gpio_pin_clear(BLE_33_SENSOR_POWER_PIN);
+    if (USE_EXTERNAL_SENSORS)
+    {
+        nrf_gpio_pin_clear(EXTERNAL_SENSOR_POWER_PIN);
+    }
+    else
+    {
+        nrf_gpio_pin_clear(BLE_33_PULLUP);
+        nrf_gpio_pin_clear(BLE_33_SENSOR_POWER_PIN);
+    }
+    
     nrf_drv_twi_disable(&m_twi);
 
     //After all sensors have been initialized, update the sensor settings characteristic to 
@@ -335,6 +369,17 @@ static void data_reading_timer_handler(void * p_context)
     //after the samples are read, update the characteristics and notify
     if ( measurements_taken == SENSOR_SAMPLES)
     {
+        //SEGGER_RTT_WriteString(0, "Sending the following bytes to Acc characteristic:\n");
+        //for (int i = 0; i < SENSOR_SAMPLES; i++)
+        //{
+        //    for (int j = 0; j < SAMPLE_SIZE; j++)
+        //    {
+        //        SEGGER_RTT_printf(0, "0x%#01x ", *(acc_characteristic_data + i * SENSOR_SAMPLES + j));
+        //    }
+        //    SEGGER_RTT_WriteString(0, "\n");
+        //}
+        //SEGGER_RTT_WriteString(0, "\n");
+
         characteristic_update_and_notify();
         measurements_taken = 0; //reset the data counter
     }
@@ -344,7 +389,9 @@ static void led_timer_handler(void * p_context)
 {
     //This timer causes the currently active LED to light up. A separate timer is used to 
     //turn the LED back off after a set time period
-    nrf_gpio_pin_clear(active_led);
+    if (USE_EXTERNAL_LEDS) nrf_gpio_pin_set(active_led);
+    else nrf_gpio_pin_clear(active_led);
+
     nrf_drv_timer_clear(&LED_ON_TIMER); //reset the LED-on timer
     nrf_drv_timer_enable(&LED_ON_TIMER); //turn on the LED_on timer, the handler for this timer will turn the LED back off
     //uint32_t timer_val = nrf_drv_timer_capture(&LED_ON_TIMER, NRF_TIMER_CC_CHANNEL1);
@@ -354,7 +401,8 @@ void led_on_timer_handler(nrf_timer_event_t event_type, void* p_context)
 {
     //This handler gets called when an LED is turned to the active state. Simply turn the 
     //LED back off when this handler is called and then turn the LED-on timer off.
-    nrf_gpio_pin_set(active_led);
+    if (USE_EXTERNAL_LEDS) nrf_gpio_pin_clear(active_led);
+    else nrf_gpio_pin_set(active_led);
     nrf_drv_timer_disable(&LED_ON_TIMER);
 }
 
@@ -459,7 +507,9 @@ static void sensor_idle_mode_start()
     //interval shows when this mode is active.
     if (current_operating_mode == SENSOR_IDLE_MODE) return; //no need to change anything if already in idle mode
 
-    active_led = BLE_33_RED_LED; //swap to the red LED
+    //swap to the red LED
+    if (USE_EXTERNAL_LEDS) active_led = EXTERNAL_RED_LED;
+    else active_led = BLE_33_RED_LED;
     ret_code_t err_code;
 
     if (current_operating_mode == SENSOR_ACTIVE_MODE)
@@ -486,8 +536,16 @@ static void sensor_idle_mode_start()
         nrf_drv_twi_enable(&m_twi);
 
         //Power the sensor and the pullup resistors to the SCL and SDA line
-        nrf_gpio_pin_set(BLE_33_SENSOR_POWER_PIN);
-        nrf_gpio_pin_set(BLE_33_PULLUP);
+        if (USE_EXTERNAL_SENSORS)
+        {
+            nrf_gpio_pin_set(EXTERNAL_SENSOR_POWER_PIN);
+        }
+        else
+        {
+            nrf_gpio_pin_set(BLE_33_SENSOR_POWER_PIN);
+            nrf_gpio_pin_set(BLE_33_PULLUP);
+        }
+        
     }
 
     current_operating_mode = SENSOR_IDLE_MODE; //set the current operating mode to idle
@@ -527,15 +585,24 @@ static void connected_mode_start()
     {
         //The chip is currently in sensor idle mode so we need to power off the sensor and disable the TWI bus
         //Disable power to the sensor and the pullup resistors to the SCL and SDA line
-        nrf_gpio_pin_clear(BLE_33_SENSOR_POWER_PIN);
-        nrf_gpio_pin_clear(BLE_33_PULLUP);
+        //Power the sensor and the pullup resistors to the SCL and SDA line
+        if (USE_EXTERNAL_SENSORS)
+        {
+            nrf_gpio_pin_clear(EXTERNAL_SENSOR_POWER_PIN);
+        }
+        else
+        {
+            nrf_gpio_pin_clear(BLE_33_SENSOR_POWER_PIN);
+            nrf_gpio_pin_clear(BLE_33_PULLUP);
+        }
 
         //Turn off the TWI bus
         nrf_drv_twi_disable(&m_twi);
     }
 
-    //change the color of the blinking LED
-    active_led = BLE_33_GREEN_LED; //swap to the red LED
+    //change the color of the blinking LED to green
+    if (USE_EXTERNAL_LEDS) active_led = EXTERNAL_GREEN_LED;
+    else active_led = BLE_33_GREEN_LED;
     current_operating_mode = CONNECTED_MODE; //set the current operating mode to idle
 }
 
@@ -557,7 +624,8 @@ static void advertising_mode_start()
             connected_mode_start();
             //break statement purposely omitted here
         default:
-            active_led = BLE_33_BLUE_LED;
+            if (USE_EXTERNAL_LEDS) active_led = EXTERNAL_BLUE_LED;
+            else active_led = BLE_33_BLUE_LED;
             break;
     }
 
@@ -1029,21 +1097,27 @@ void twi_handler(nrf_drv_twi_evt_t const * p_event, void * p_context)
     switch (p_event->type)
     {
         case NRF_DRV_TWI_EVT_DONE:
-            //NRF_LOG_INFO("Successfully reached slave address 0x%x.\n", p_event->xfer_desc.address);
-            if (p_event->xfer_desc.type == NRF_DRV_TWI_XFER_TXRX | p_event->xfer_desc.type == NRF_DRV_TWI_XFER_RX)
-            {
-                //uncomment below line after the data_handler function has been written
-                //data_handler(m_data);
-            }
+            //SEGGER_RTT_printf(0, "Successfully reached slave address 0x%x.\n", p_event->xfer_desc.address);
+            //if (p_event->xfer_desc.type == NRF_DRV_TWI_XFER_TXRX | p_event->xfer_desc.type == NRF_DRV_TWI_XFER_RX)
+            //{
+            //    //uncomment below line after the data_handler function has been written
+            //    //data_handler(m_data);
+            //}
             break;
         case NRF_DRV_TWI_EVT_ADDRESS_NACK:
-            //NRF_LOG_INFO("Address NACK received while trying to reach slave address 0x%x.\n", p_event->xfer_desc.address);
+            SEGGER_RTT_printf(0, "Address NACK received while trying to reach slave address 0x%x.\n", p_event->xfer_desc.address);
             break;
         case NRF_DRV_TWI_EVT_DATA_NACK:
-            //NRF_LOG_INFO("Data NACK received while trying to reach slave address 0x%x.\n", p_event->xfer_desc.address);
+            SEGGER_RTT_printf(0, "Data NACK received while trying to reach slave address 0x%x.\n", p_event->xfer_desc.address);
+            break;
+        case NRFX_TWI_EVT_OVERRUN:
+            //SEGGER_RTT_printf(0, "Overrun event while trying to reach slave address 0x%x.\n", p_event->xfer_desc.address);
+            break;
+        case NRFX_TWI_EVT_BUS_ERROR:
+            //SEGGER_RTT_printf(0, "Bus Error received while trying to reach slave address 0x%x.\n", p_event->xfer_desc.address);
             break;
         default:
-            //NRF_LOG_INFO("Something other than Event Done was achieved.");
+            //SEGGER_RTT_WriteString(0, "Something other than Event Done was achieved.\n");
             break;
     }
 
@@ -1055,33 +1129,61 @@ void  twi_init (void)
 {
     ret_code_t err_code;
 
-    const nrf_drv_twi_config_t twi_lsm9ds1_config = {
+    if (USE_EXTERNAL_SENSORS)
+    {
+        const nrf_drv_twi_config_t twi_lsm9ds1_config = {
+       .scl                = EXTERNAL_SCL_PIN,
+       .sda                = EXTERNAL_SDA_PIN,
+       .frequency          = NRF_DRV_TWI_FREQ_400K,
+       .interrupt_priority = APP_IRQ_PRIORITY_HIGH,
+       .clear_bus_init     = false
+        };
+
+        //A handler method is necessary to enable non-blocking mode. TXRX operations can only be carried 
+        //out when non-blocking mode is enabled so a handler is needed here.
+        err_code = nrf_drv_twi_init(&m_twi, &twi_lsm9ds1_config, twi_handler, NULL);
+        APP_ERROR_CHECK(err_code);
+    }
+    else
+    {
+        const nrf_drv_twi_config_t twi_lsm9ds1_config = {
        .scl                = BLE_33_SCL_PIN,
        .sda                = BLE_33_SDA_PIN,
        .frequency          = NRF_DRV_TWI_FREQ_400K,
        .interrupt_priority = APP_IRQ_PRIORITY_HIGH,
        .clear_bus_init     = false
-    };
+        };
 
-    //A handler method is necessary to enable non-blocking mode. TXRX operations can only be carried 
-    //out when non-blocking mode is enabled so a handler is needed here.
-    err_code = nrf_drv_twi_init(&m_twi, &twi_lsm9ds1_config, twi_handler, NULL);
-    APP_ERROR_CHECK(err_code);
+        //A handler method is necessary to enable non-blocking mode. TXRX operations can only be carried 
+        //out when non-blocking mode is enabled so a handler is needed here.
+        err_code = nrf_drv_twi_init(&m_twi, &twi_lsm9ds1_config, twi_handler, NULL);
+        APP_ERROR_CHECK(err_code);
+    }
 }
 
 static void leds_init()
 {
-    //TODO: Add code for when an external board is connected
     //configure the pins for the BLE 33 Sense on-board red, green and blue tri-colored LED.
-    nrf_gpio_cfg_output(BLE_33_RED_LED);
-    nrf_gpio_cfg_output(BLE_33_BLUE_LED);
-    nrf_gpio_cfg_output(BLE_33_GREEN_LED);
 
-    //these LEDs are situated backwards from what you would expect so the pin needs to be 
-    //pulled high for the LEDs to turn off
-    nrf_gpio_pin_set(BLE_33_RED_LED);
-    nrf_gpio_pin_set(BLE_33_BLUE_LED);
-    nrf_gpio_pin_set(BLE_33_GREEN_LED);
+    if (USE_EXTERNAL_LEDS)
+    {
+        nrf_gpio_cfg_output(EXTERNAL_RED_LED);
+        nrf_gpio_cfg_output(EXTERNAL_BLUE_LED);
+        nrf_gpio_cfg_output(EXTERNAL_GREEN_LED);
+    }
+    else
+    {
+        nrf_gpio_cfg_output(BLE_33_RED_LED);
+        nrf_gpio_cfg_output(BLE_33_BLUE_LED);
+        nrf_gpio_cfg_output(BLE_33_GREEN_LED);
+
+        //these LEDs are situated backwards from what you would expect so the pin needs to be 
+        //pulled high for the LEDs to turn off
+        nrf_gpio_pin_set(BLE_33_RED_LED);
+        nrf_gpio_pin_set(BLE_33_BLUE_LED);
+        nrf_gpio_pin_set(BLE_33_GREEN_LED);
+    }
+    
 }
 
 /**@brief Function for application main entry.

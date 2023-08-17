@@ -122,6 +122,7 @@ concurrency::task<void> PersonalCaddie::getDataCharacteristics(Bluetooth::Generi
     {
         uint16_t short_uuid = (data_characteristics.GetAt(i).Uuid().Data1 & 0xFFFF);
         bool setup_notifcations = true;
+        std::cout << "Found characteristic: " << short_uuid << std::endl;
 
         switch (short_uuid)
         {
@@ -196,11 +197,6 @@ void PersonalCaddie::dataCharacteristicEventHandler(Bluetooth::GenericAttributeP
     //Transfer the data in 16-bit chunks to the appropriate data array. A single reading of the sensor is comprised of 6 bytes, 2 each 
     //for each axes so the data in the read_buffer looks like so: [XL0, XH0, YL0, YH0, ZL0, ZH0, XL1, XH1, YL1, YH1, ...]. Since the 
     //data is little endian the least significant byte comes before the most significant.
-
-    if (rdt == DataType::RAW_ROTATION)
-    {
-        std::cout << "yeee" << std::endl;
-    }
 
     for (int i = 0; i < this->number_of_samples; i++)
     {
