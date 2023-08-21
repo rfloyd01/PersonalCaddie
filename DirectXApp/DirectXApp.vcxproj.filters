@@ -7,6 +7,12 @@
       <Filter>Graphics\Utilities</Filter>
     </ClCompile>
     <ClCompile Include="Main.cpp" />
+    <ClCompile Include="Graphics\Rendering\MasterRenderer.cpp">
+      <Filter>Graphics\Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\Rendering\TextOverlay.cpp">
+      <Filter>Graphics\Rendering</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -23,6 +29,7 @@
     <ClInclude Include="Graphics\Utilities\GraphicsHelpers.h">
       <Filter>Graphics\Utilities</Filter>
     </ClInclude>
+    <ClInclude Include="UIConstants.h" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="Assets\Wide310x150Logo.scale-200.png">

@@ -32,5 +32,8 @@ private:
     bool                                                m_visible;
 
     std::shared_ptr<DX::DeviceResources>                m_deviceResources;
+
+    std::shared_ptr<MasterRenderer>                     m_renderer;
+
     uint32_t                                            m_loadingCount;
 };

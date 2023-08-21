@@ -1,15 +1,20 @@
 #include "pch.h"
 #include "Main.h"
 
+#include <iostream>
 
 using namespace DirectX;
 using namespace winrt::Windows::UI::Core;
 
 Main::Main(std::shared_ptr<DX::DeviceResources> const& deviceResources) :
+    m_deviceResources(deviceResources),
     m_windowClosed(false),
-    m_deviceResources(deviceResources)
+    m_haveFocus(false),
+    m_visible(true)
 {
     m_deviceResources->RegisterDeviceNotify(this);
+
+    m_renderer = std::make_shared<MasterRenderer>(m_deviceResources);
 }
 
 Main::~Main()
@@ -23,9 +28,12 @@ void Main::Run()
     //TODO: Update as the app gets more complex
     while (!m_windowClosed)
     {
+        //OutputDebugString(L"Test debug string");
         if (m_visible)
         {
             CoreWindow::GetForCurrentThread().Dispatcher().ProcessEvents(CoreProcessEventsOption::ProcessAllIfPresent);
+            m_renderer->Render();
+            m_deviceResources->Present();
         }
         else
         {
