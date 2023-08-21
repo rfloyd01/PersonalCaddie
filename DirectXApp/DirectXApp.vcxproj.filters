@@ -3,9 +3,25 @@
   <ItemGroup>
     <ClCompile Include="App.cpp" />
     <ClCompile Include="pch.cpp" />
+    <ClCompile Include="Graphics\Utilities\DeviceResources.cpp">
+      <Filter>Graphics\Utilities</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
+    <ClInclude Include="Main.h" />
+    <ClInclude Include="Graphics\Utilities\DeviceResources.h">
+      <Filter>Graphics\Utilities</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Rendering\MasterRenderer.h">
+      <Filter>Graphics\Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Rendering\TextOverlay.h">
+      <Filter>Graphics\Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Utilities\GraphicsHelpers.h">
+      <Filter>Graphics\Utilities</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Assets\Wide310x150Logo.scale-200.png">
@@ -36,6 +52,15 @@
   <ItemGroup>
     <Filter Include="Assets">
       <UniqueIdentifier>{db9086fe-bacc-4437-8272-1aa6642082db}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Graphics">
+      <UniqueIdentifier>{87e2f606-b1e2-4a3b-b9c4-366b1dec4620}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Graphics\Utilities">
+      <UniqueIdentifier>{895cd07c-ce7b-4751-880b-f844a3879e76}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Graphics\Rendering">
+      <UniqueIdentifier>{e2fa7056-f716-4728-916e-593a10dd4232}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

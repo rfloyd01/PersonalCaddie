@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "Main.h"
 
 using namespace winrt;
 
@@ -70,7 +71,8 @@ struct App : implements<App, IFrameworkViewSource, IFrameworkView>
     }
 
 private:
-    /*std::shared_ptr<DX::*/
+    std::shared_ptr<DX::DeviceResources> m_deviceResources;
+    winrt::com_ptr<Main> m_main;
 };
 
 int __stdcall wWinMain(HINSTANCE, HINSTANCE, PWSTR, int)
