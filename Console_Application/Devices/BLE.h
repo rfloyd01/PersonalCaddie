@@ -39,9 +39,10 @@ public:
 
 	BluetoothLEDevice* getBLEDevice() { return &(this->m_bleDevice); }
 
-	std::thread background_connect;
+	//std::thread background_connect;
 
-	
+	//create asynchronus task to try and connect to a previously paired personal caddie
+	IAsyncAction testConnect();
 
 private:
 	void startDeviceWatcher();
@@ -57,6 +58,8 @@ private:
 	GenericAttributeProfile::GattSession m_gattSession{ nullptr }; //a pointer to a Gatt Session with a BLE Device
 	Advertisement::BluetoothLEAdvertisementWatcher m_bleAdvertisementsWatcher;
 	std::set<DeviceInfoDisplay> m_scannedDevices; //a set for storing devices found by the device watcher
+
+	
 };
 
 struct DeviceInfoDisplay

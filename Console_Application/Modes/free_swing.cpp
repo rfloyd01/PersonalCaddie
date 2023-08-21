@@ -72,6 +72,7 @@ void FreeSwing::processInput()
 			if (!record_data)
 			{
 				record_data = 1;
+				this->record_timer = 0;
 
 				//clear out any previously recorded data
 				data_set.clear(); time_set.clear();
@@ -263,18 +264,34 @@ void FreeSwing::addGraphData()
 {
 	//sensor data type is set with a keyboard press
 	//this is ok because graph can only be displayed if sensor data is being displayed
-	int cs = p_graphics->getCurrentSample(); //consider making cs a class variable so it doesn't have to be set in every function that needs it
-	data_set[0].push_back(p_graphics->getDataPoint(current_data_type, X, cs));
-	data_set[1].push_back(p_graphics->getDataPoint(current_data_type, Y, cs));
-	data_set[2].push_back(p_graphics->getDataPoint(current_data_type, Z, cs));
-	time_set.push_back(p_graphics->getCurrentTime());
+	int cs = p_graphics->getCurrentSample(); //see what sample the graphics unit is currently looking at
 
-	//easier to read degrees than radians so if current mode is euler angles, convert to degrees from radians
-	if (current_data_type == DataType::EULER_ANGLES)
+	//Increment the data recording timer by the appropriate amount. If the current sample is one greater than the previous sample
+	//we simply increment the timer by the Personal Caddie sensor ODR. If the sample isn't one greater though (either
+	//we didn't finish a data set or no new data is ready) then the timer will need to increment by some multiple of the
+	//ODR (or not increment)
+	int difference = cs - this->last_sample;
+	if (difference == 0) return; //we aren't on a new sample yet so don't add any data to the graph
+	else
 	{
-		data_set[0][data_set[0].size() - 1] *= (180.0 / 3.14159);
-		data_set[1][data_set[0].size() - 1] *= (180.0 / 3.14159);
-		data_set[2][data_set[0].size() - 1] *= (180.0 / 3.14159);
+		//we're on a new data point, check to see if it's the next chronological data point, or if the data updated before
+		//we could record it all (in which cause we need to skip ahead a few samples.
+		
+		if (difference < 0) difference += p_graphics->getPersonalCaddie()->getNumberOfSamples();
+		this->record_timer += ((float)difference / p_graphics->getPersonalCaddie()->getMaxODR());
+
+		data_set[0].push_back(p_graphics->getDataPoint(current_data_type, X, cs));
+		data_set[1].push_back(p_graphics->getDataPoint(current_data_type, Y, cs));
+		data_set[2].push_back(p_graphics->getDataPoint(current_data_type, Z, cs));
+		time_set.push_back(this->record_timer);
+
+		//easier to read degrees than radians so if current mode is euler angles, convert to degrees from radians
+		if (current_data_type == DataType::EULER_ANGLES)
+		{
+			data_set[0].back() *= (180.0 / 3.14159);
+			data_set[1].back() *= (180.0 / 3.14159);
+			data_set[2].back() *= (180.0 / 3.14159);
+		}
 	}
 }
 

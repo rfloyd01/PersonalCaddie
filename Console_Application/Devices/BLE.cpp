@@ -59,6 +59,7 @@ void BLE::startDeviceWatcher()
 concurrency::task<void> BLE::connect(uint64_t ble_address)
 {
     std::cout << "Found a Personal Caddie, attempting to connect." << std::endl;
+    
     //First create a winrt::BluetoothLEDevice for the BLE class
     this->m_bleDevice = co_await Bluetooth::BluetoothLEDevice::FromBluetoothAddressAsync(ble_address);
 
@@ -105,4 +106,11 @@ bool BLE::bleDeviceInitialized()
 {
     //this method checks to see if m_bleDevice has been changed from a NULL value
     return (m_bleDevice.as<winrt::Windows::Foundation::IUnknown>() != nullptr);
+}
+
+IAsyncAction BLE::testConnect()
+{
+    std::cout << "This is an Asynchronus action baby." << std::endl;
+    uint64_t personal_caddie_address = 230350333228259;
+    this->m_bleDevice = co_await Bluetooth::BluetoothLEDevice::FromBluetoothAddressAsync(personal_caddie_address);
 }

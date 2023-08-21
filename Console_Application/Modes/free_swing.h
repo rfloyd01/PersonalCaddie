@@ -37,10 +37,12 @@ private:
 	//PRIVATE VARIABLES
 	//Bool Variables
 	bool record_data = 0, display_data = 0; //keeps track of when to show live data on screen and when to record values to graph
+	float record_timer = 0; //shows the time stamp of the current piece of data
 
 	//Graph Variables
 	std::vector<std::vector<float> > data_set; //records data to graph, graph y azis
 	std::vector<float> time_set; //records time to graph, graph x axis
+	int last_sample = -1; //the index of the last data sample read from the Personal Caddie
 
 	//Data Variables
 	DataType current_data_type; //keeps track of which data type to display and record
