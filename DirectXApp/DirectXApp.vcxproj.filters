@@ -6,6 +6,7 @@
     <ClCompile Include="Graphics\Utilities\DeviceResources.cpp">
       <Filter>Graphics\Utilities</Filter>
     </ClCompile>
+    <ClCompile Include="Main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />

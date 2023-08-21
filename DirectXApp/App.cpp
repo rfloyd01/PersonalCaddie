@@ -25,12 +25,23 @@ struct App : implements<App, IFrameworkViewSource, IFrameworkView>
         //resources here because we have access to the display adapter device.
 
         applicationView.Activated({ this, &App::OnActivated });
+
+        CoreApplication::Suspending({ this, &App::OnSuspending });
+        CoreApplication::Resuming({ this, &App::OnResuming });
+
+        // At this point we have access to the device. 
+        // We can create the device-dependent resources.
+        m_deviceResources = std::make_shared<DX::DeviceResources>();
     }
 
     void Load(hstring const&)
     {
         //This is the third method to get called (right after SetWindow). This is a good place to load
-        //resources specific to the application. 
+        //resources specific to the application.
+        if (!m_main)
+        {
+            m_main = winrt::make_self<Main>(m_deviceResources);
+        }
     }
 
     void Uninitialize()
@@ -44,11 +55,7 @@ struct App : implements<App, IFrameworkViewSource, IFrameworkView>
         //Once all setup has been complete, the App::Run method is the last thing to be automatically envoked
         //(that is until we quit or suspent the app). This is the place to start the main application loop
         //where things like rendering and logic take place.
-        CoreWindow window = CoreWindow::GetForCurrentThread();
-        window.Activate();
-
-        CoreDispatcher dispatcher = window.Dispatcher();
-        dispatcher.ProcessEvents(CoreProcessEventsOption::ProcessUntilQuit);
+        m_main->Run();
     }
 
     void SetWindow(CoreWindow const & window)
@@ -56,6 +63,25 @@ struct App : implements<App, IFrameworkViewSource, IFrameworkView>
         //This gets called after the Initialize method and a CoreWindow object that represents the main window 
         //gets passed to this method. This is where we subscribe to window related events and can also configure some 
         //window and display behaviours. For example, we can construct a mouse pointer.
+        window.PointerCursor(CoreCursor(CoreCursorType::Arrow, 0));
+
+        PointerVisualizationSettings visualizationSettings{ PointerVisualizationSettings::GetForCurrentView() };
+        visualizationSettings.IsContactFeedbackEnabled(false);
+        visualizationSettings.IsBarrelButtonFeedbackEnabled(false);
+
+        m_deviceResources->SetWindow(window);
+
+        //Register Window Event Handlers
+        window.Activated({ this, &App::OnWindowActivationChanged });
+        window.SizeChanged({ this, &App::OnWindowSizeChanged });
+        window.Closed({ this, &App::OnWindowClosed });
+        window.VisibilityChanged({ this, &App::OnVisibilityChanged });
+
+        DisplayInformation currentDisplayInformation{ DisplayInformation::GetForCurrentView() };
+        currentDisplayInformation.DpiChanged({ this, &App::OnDpiChanged });
+        currentDisplayInformation.OrientationChanged({ this, &App::OnOrientationChanged });
+
+        DisplayInformation::DisplayContentsInvalidated({ this, &App::OnDisplayContentsInvalidated });
     }
 
     //Event Handlers
@@ -66,8 +92,73 @@ struct App : implements<App, IFrameworkViewSource, IFrameworkView>
         //then this is when it gets called. The only thing we do here is activate the main core window. This can also be 
         //done in the App::SetWindow method but since there are other resources we want to load it's deferred to this method.
         
-        //CoreWindow window = CoreWindow::GetForCurrentThread();
-        //window.Activate();
+        CoreWindow window = CoreWindow::GetForCurrentThread();
+        window.Activate();
+    }
+
+    winrt::fire_and_forget OnSuspending(IInspectable const& /* sender */, SuspendingEventArgs const& args)
+    {
+        auto lifetime = get_strong();
+
+        // Save app state asynchronously after requesting a deferral. Holding a deferral
+        // indicates that the application is busy performing suspending operations. Be
+        // aware that a deferral may not be held indefinitely. After about five seconds,
+        // the app will be forced to exit.
+        SuspendingDeferral deferral = args.SuspendingOperation().GetDeferral();
+
+        co_await winrt::resume_background();
+
+        m_deviceResources->Trim();
+
+        m_main->Suspend();
+
+        deferral.Complete();
+    }
+
+    void OnResuming(IInspectable const& /* sender */, IInspectable const& /* args */)
+    {
+        // Restore any data or state that was unloaded on suspend. By default, data
+        // and state are persisted when resuming from suspend. Note that this event
+        // does not occur if the app was previously terminated.
+        m_main->Resume();
+    }
+
+    void OnVisibilityChanged(CoreWindow const& /* sender */, VisibilityChangedEventArgs const& args)
+    {
+        m_main->Visibility(args.Visible());
+    }
+
+    void App::OnWindowActivationChanged(CoreWindow const& /* sender */, WindowActivatedEventArgs const& args)
+    {
+        m_main->WindowActivationChanged(args.WindowActivationState());
+    }
+
+    void OnWindowSizeChanged(CoreWindow const& /* window */, WindowSizeChangedEventArgs const& args)
+    {
+        m_deviceResources->SetLogicalSize(args.Size());
+        m_main->CreateWindowSizeDependentResources();
+    }
+
+    void OnWindowClosed(CoreWindow const& /* sender */, CoreWindowEventArgs const& /* args */)
+    {
+        m_main->Close();
+    }
+
+    void OnDpiChanged(DisplayInformation const& sender, IInspectable const& /* args */)
+    {
+        m_deviceResources->SetDpi(sender.LogicalDpi());
+        m_main->CreateWindowSizeDependentResources();
+    }
+
+    void OnOrientationChanged(DisplayInformation const& sender, IInspectable const& /* args */)
+    {
+        m_deviceResources->SetCurrentOrientation(sender.CurrentOrientation());
+        m_main->CreateWindowSizeDependentResources();
+    }
+
+    void OnDisplayContentsInvalidated(DisplayInformation const& /* sender */, IInspectable const& /* args */)
+    {
+        m_deviceResources->ValidateDevice();
     }
 
 private:
