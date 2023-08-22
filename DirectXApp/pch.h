@@ -26,3 +26,5 @@
 #include <mfreadwrite.h>
 
 #include <iterator>
+
+#include "constants.h"

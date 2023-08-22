@@ -79,28 +79,28 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
-    <IncludePath>C:\Users\Bobby\Documents\Coding\include;$(IncludePath)</IncludePath>
+    <IncludePath>C:\Users\Bobby\Documents\Coding\include;D:\Coding\PersonalCaddie\Firmware\MEMs_Drivers;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
-    <IncludePath>C:\Users\Bobby\Documents\Coding\include;$(IncludePath)</IncludePath>
+    <IncludePath>C:\Users\Bobby\Documents\Coding\include;D:\Coding\PersonalCaddie\Firmware\MEMs_Drivers;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
-    <IncludePath>C:\Users\Bobby\Documents\Coding\include;$(IncludePath)</IncludePath>
+    <IncludePath>C:\Users\Bobby\Documents\Coding\include;D:\Coding\PersonalCaddie\Firmware\MEMs_Drivers;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
-    <IncludePath>C:\Users\Bobby\Documents\Coding\include;$(IncludePath)</IncludePath>
+    <IncludePath>C:\Users\Bobby\Documents\Coding\include;D:\Coding\PersonalCaddie\Firmware\MEMs_Drivers;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>C:\Users\Bobby\Documents\Coding\include;$(IncludePath)</IncludePath>
+    <IncludePath>C:\Users\Bobby\Documents\Coding\include;D:\Coding\PersonalCaddie\Firmware\MEMs_Drivers;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <IncludePath>C:\Users\Bobby\Documents\Coding\include;$(IncludePath)</IncludePath>
+    <IncludePath>C:\Users\Bobby\Documents\Coding\include;D:\Coding\PersonalCaddie\Firmware\MEMs_Drivers;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>C:\Users\Bobby\Documents\Coding\include;$(IncludePath)</IncludePath>
+    <IncludePath>C:\Users\Bobby\Documents\Coding\include;D:\Coding\PersonalCaddie\Firmware\MEMs_Drivers;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>C:\Users\Bobby\Documents\Coding\include;$(IncludePath)</IncludePath>
+    <IncludePath>C:\Users\Bobby\Documents\Coding\include;D:\Coding\PersonalCaddie\Firmware\MEMs_Drivers;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
@@ -130,13 +130,24 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\Firmware\MEMs_Drivers\lsm9ds1_reg.h" />
+    <ClInclude Include="..\Firmware\MEMs_Drivers\sensor_settings.h" />
+    <ClInclude Include="constants.h" />
     <ClInclude Include="Devices\BLE.h" />
+    <ClInclude Include="Devices\IMU.h" />
+    <ClInclude Include="Devices\PersonalCaddie.h" />
+    <ClInclude Include="Devices\Sensors\Accelerometer.h" />
+    <ClInclude Include="Devices\Sensors\Gyroscope.h" />
+    <ClInclude Include="Devices\Sensors\Magnetometer.h" />
+    <ClInclude Include="Devices\Sensors\Sensor.h" />
     <ClInclude Include="Graphics\Rendering\MasterRenderer.h" />
     <ClInclude Include="Graphics\Rendering\TextOverlay.h" />
     <ClInclude Include="Graphics\Utilities\DeviceResources.h" />
     <ClInclude Include="Graphics\Utilities\GraphicsHelpers.h" />
     <ClInclude Include="Main.h" />
     <ClInclude Include="Math\glm.h" />
+    <ClInclude Include="Math\quaternion_functions.h" />
+    <ClInclude Include="Math\sensor_fusion.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="UIConstants.h" />
   </ItemGroup>
@@ -155,12 +166,30 @@
     <Image Include="Assets\Wide310x150Logo.scale-200.png" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\Firmware\MEMs_Drivers\sensor_settings.c">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="App.cpp" />
     <ClCompile Include="Devices\BLE.cpp" />
+    <ClCompile Include="Devices\IMU.cpp" />
+    <ClCompile Include="Devices\PersonalCaddie.cpp" />
+    <ClCompile Include="Devices\Sensors\Accelerometer.cpp" />
+    <ClCompile Include="Devices\Sensors\Gyroscope.cpp" />
+    <ClCompile Include="Devices\Sensors\Magnetometer.cpp" />
+    <ClCompile Include="Devices\Sensors\Sensor.cpp" />
     <ClCompile Include="Graphics\Rendering\MasterRenderer.cpp" />
     <ClCompile Include="Graphics\Rendering\TextOverlay.cpp" />
     <ClCompile Include="Graphics\Utilities\DeviceResources.cpp" />
     <ClCompile Include="Main.cpp" />
+    <ClCompile Include="Math\quaternion_functions.cpp" />
+    <ClCompile Include="Math\sensor_fusion.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
