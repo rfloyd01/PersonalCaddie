@@ -78,6 +78,30 @@
     <Import Project="PropertySheet.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
+    <IncludePath>C:\Users\Bobby\Documents\Coding\include;$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
+    <IncludePath>C:\Users\Bobby\Documents\Coding\include;$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
+    <IncludePath>C:\Users\Bobby\Documents\Coding\include;$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
+    <IncludePath>C:\Users\Bobby\Documents\Coding\include;$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <IncludePath>C:\Users\Bobby\Documents\Coding\include;$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <IncludePath>C:\Users\Bobby\Documents\Coding\include;$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <IncludePath>C:\Users\Bobby\Documents\Coding\include;$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <IncludePath>C:\Users\Bobby\Documents\Coding\include;$(IncludePath)</IncludePath>
+  </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
       <PrecompiledHeader>Use</PrecompiledHeader>
@@ -106,11 +130,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Devices\BLE.h" />
     <ClInclude Include="Graphics\Rendering\MasterRenderer.h" />
     <ClInclude Include="Graphics\Rendering\TextOverlay.h" />
     <ClInclude Include="Graphics\Utilities\DeviceResources.h" />
     <ClInclude Include="Graphics\Utilities\GraphicsHelpers.h" />
     <ClInclude Include="Main.h" />
+    <ClInclude Include="Math\glm.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="UIConstants.h" />
   </ItemGroup>
@@ -130,6 +156,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="App.cpp" />
+    <ClCompile Include="Devices\BLE.cpp" />
     <ClCompile Include="Graphics\Rendering\MasterRenderer.cpp" />
     <ClCompile Include="Graphics\Rendering\TextOverlay.cpp" />
     <ClCompile Include="Graphics\Utilities\DeviceResources.cpp" />

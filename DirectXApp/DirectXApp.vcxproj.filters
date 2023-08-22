@@ -13,6 +13,9 @@
     <ClCompile Include="Graphics\Rendering\TextOverlay.cpp">
       <Filter>Graphics\Rendering</Filter>
     </ClCompile>
+    <ClCompile Include="Devices\BLE.cpp">
+      <Filter>Devices</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -30,6 +33,12 @@
       <Filter>Graphics\Utilities</Filter>
     </ClInclude>
     <ClInclude Include="UIConstants.h" />
+    <ClInclude Include="Devices\BLE.h">
+      <Filter>Devices</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\glm.h">
+      <Filter>Math</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Assets\Wide310x150Logo.scale-200.png">
@@ -69,6 +78,18 @@
     </Filter>
     <Filter Include="Graphics\Rendering">
       <UniqueIdentifier>{e2fa7056-f716-4728-916e-593a10dd4232}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Devices">
+      <UniqueIdentifier>{c420e319-56cd-4f48-9037-3b61b5dcce04}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Devices\Sensors">
+      <UniqueIdentifier>{37ca64a9-0cd3-4795-ba30-3ec27367abf5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Math">
+      <UniqueIdentifier>{b052e968-397e-4437-af82-ae858929bcc2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Modes">
+      <UniqueIdentifier>{72241536-c20c-4f18-83b9-6c0d6b133fb9}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
