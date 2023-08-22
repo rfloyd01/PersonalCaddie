@@ -8,9 +8,9 @@ IMU::IMU(uint8_t* imu_settings)
 {
     //Constructor to create acc, gyr and mag sensors from an array of values obtained from a 
     //BLE characteristic
-    p_acc = new Accelerometer(imu_settings + ACC_START);
-    p_gyr = new Gyroscope(imu_settings + GYR_START);
-    p_mag = new Magnetometer(imu_settings + MAG_START);
+    p_acc = std::make_unique<Accelerometer>(imu_settings + ACC_START);
+    p_gyr = std::make_unique<Gyroscope>(imu_settings + GYR_START);
+    p_mag = std::make_unique<Magnetometer>(imu_settings + MAG_START);
 
     getODRFromSensors();
     getConversionRateFromSensors();

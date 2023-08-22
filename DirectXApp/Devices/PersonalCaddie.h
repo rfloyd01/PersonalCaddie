@@ -67,7 +67,6 @@ public:
 
 	std::pair<const float*, const float**> getSensorCalibrationNumbers(sensor_type_t sensor);
 
-	BLE* getBLEDevice() { return this->p_ble; }
 	int getNumberOfSamples() { return this->number_of_samples; }
 	float getMaxODR() { return this->p_imu->getMaxODR(); } //TODO: Should put a nullptr check here
 
@@ -86,8 +85,8 @@ public:
 
 private:
 
-	BLE* p_ble; //a pointer to a Windows BLE Device
-	IMU* p_imu;
+	std::unique_ptr<BLE> p_ble;
+	std::unique_ptr<IMU> p_imu;
 
 	//BLE Functionality
 	void BLEDeviceConnectedHandler();

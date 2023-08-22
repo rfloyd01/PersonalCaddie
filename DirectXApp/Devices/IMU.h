@@ -116,7 +116,7 @@ private:
 	int IMU_gyr_axis_inversion[3];
 	int IMU_mag_axis_inversion[3];
 
-	Accelerometer* p_acc;;
-	Gyroscope* p_gyr;
-	Magnetometer* p_mag;
+	std::unique_ptr<Accelerometer> p_acc;
+	std::unique_ptr<Gyroscope> p_gyr;
+	std::unique_ptr<Magnetometer> p_mag;
 };

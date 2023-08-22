@@ -16,7 +16,7 @@ using namespace Bluetooth::GenericAttributeProfile;
 PersonalCaddie::PersonalCaddie()
 {
     this->ble_device_connected = false;
-    this->p_ble = new BLE(std::bind(&PersonalCaddie::BLEDeviceConnectedHandler, this));
+    this->p_ble = std::make_unique<BLE>(std::bind(&PersonalCaddie::BLEDeviceConnectedHandler, this));
 
     //Set the IMU and characteristic pointers to null, we need to connect to a physical 
     //device before these can be populated
@@ -99,7 +99,7 @@ void PersonalCaddie::BLEDeviceConnectedHandler()
     }
 
     //Use the data read from the settings characteristic to create a new IMU instance
-    this->p_imu = new IMU(sensor_settings_array);
+    this->p_imu = std::make_unique<IMU>(sensor_settings_array);
     auto rates = this->p_imu->getSensorConversionRates();
     auto odrs = this->p_imu->getSensorODRs();
 
