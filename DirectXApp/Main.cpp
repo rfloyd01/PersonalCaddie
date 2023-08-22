@@ -25,10 +25,15 @@ Main::~Main()
 
 void Main::Run()
 {
-    //TODO: Update as the app gets more complex
+    //First create a Personal Caddie instance
+    m_personalCaddie = std::make_shared<PersonalCaddie>();
+
+    //Test: Try to find the already paired device
+    
+
     while (!m_windowClosed)
     {
-        //OutputDebugString(L"Test debug string");
+        //TODO: Update as the app gets more complex
         if (m_visible)
         {
             CoreWindow::GetForCurrentThread().Dispatcher().ProcessEvents(CoreProcessEventsOption::ProcessAllIfPresent);
@@ -39,6 +44,7 @@ void Main::Run()
         {
             CoreWindow::GetForCurrentThread().Dispatcher().ProcessEvents(CoreProcessEventsOption::ProcessOneAndAllPending);
         }
+
     }
 }
 

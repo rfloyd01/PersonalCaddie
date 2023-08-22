@@ -40,7 +40,7 @@ public:
 	//std::thread background_connect;
 
 	//create asynchronus task to try and connect to a previously paired personal caddie
-	void testConnect();
+	IAsyncOperation<BluetoothLEDevice> testConnect();
 
 private:
 	void startDeviceWatcher();

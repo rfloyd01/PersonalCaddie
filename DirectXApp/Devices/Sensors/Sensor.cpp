@@ -33,8 +33,9 @@ void Sensor::getCalibrationNumbersFromTextFile()
 	try
 	{
 		int line_count = 0;
-		std::fstream inFile;
+		std::ifstream inFile;
 		inFile.open(this->calibrationFile);
+		if (!inFile.good()) throw 34; //just throw a random number if the file doesn't exist
 		char cal_value[256];
 
 		//the offset values come first in the calibration file
@@ -59,7 +60,7 @@ void Sensor::getCalibrationNumbersFromTextFile()
 
 		if (offsets.size() < this->cal_offset_number || gains.size() < this->cal_gains_number)
 		{
-			std::cout << "Some calibration information wasn't updated, using default accelerometer calibration values." << std::endl;
+			std::cout << "Some calibration information wasn't updated, using default sensor calibration values." << std::endl;
 			offsets = std::vector<float>(this->cal_offset_number, 0);
 			gains = std::vector<float>(this->cal_gains_number, 0);
 			for (int i = 0; i < this->cal_gains_number; i += (this->cal_gains_number / 3)) gains[i] = 1; //gains are 1 between the same axis
@@ -69,7 +70,7 @@ void Sensor::getCalibrationNumbersFromTextFile()
 	}
 	catch (...)
 	{
-		std::cout << "Couldn't find the calibration file, using default accelerometer calibration values." << std::endl;
+		OutputDebugString(L"Couldn't find the calibration file, using default sensor calibration values.\n");
 		offsets = std::vector<float>(this->cal_offset_number, 0);
 		gains = std::vector<float>(this->cal_gains_number, 0);
 		for (int i = 0; i < this->cal_gains_number; i += (this->cal_gains_number / 3)) gains[i] = 1; //gains are 1 between the same axis

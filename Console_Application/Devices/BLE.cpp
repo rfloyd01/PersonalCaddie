@@ -61,6 +61,7 @@ concurrency::task<void> BLE::connect(uint64_t ble_address)
     std::cout << "Found a Personal Caddie, attempting to connect." << std::endl;
     
     //First create a winrt::BluetoothLEDevice for the BLE class
+    auto yo = Bluetooth::BluetoothLEDevice::FromBluetoothAddressAsync(ble_address);
     this->m_bleDevice = co_await Bluetooth::BluetoothLEDevice::FromBluetoothAddressAsync(ble_address);
 
     //Next, create a Gatt Session with the device

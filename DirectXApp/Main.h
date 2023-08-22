@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Graphics/Rendering/MasterRenderer.h"
+#include "Devices/PersonalCaddie.h"
 
 class Main : public winrt::implements<Main, winrt::Windows::Foundation::IInspectable>, DX::IDeviceNotify
 {
@@ -34,6 +35,7 @@ private:
     std::shared_ptr<DX::DeviceResources>                m_deviceResources;
 
     std::shared_ptr<MasterRenderer>                     m_renderer;
+    std::shared_ptr<PersonalCaddie>                     m_personalCaddie;
 
     uint32_t                                            m_loadingCount;
 };

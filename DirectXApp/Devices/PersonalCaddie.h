@@ -70,6 +70,8 @@ public:
 	int getNumberOfSamples() { return this->number_of_samples; }
 	float getMaxODR() { return this->p_imu->getMaxODR(); } //TODO: Should put a nullptr check here
 
+	IAsyncOperation<BluetoothLEDevice> connectToExistingDevice();
+
 	//Methods and fields from original BluetoothLE Class
 	void dataUpdate(); //master update function
 	float getDataPoint(DataType dt, Axis a, int sample_number);

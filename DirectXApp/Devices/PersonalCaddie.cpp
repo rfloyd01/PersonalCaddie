@@ -18,6 +18,9 @@ PersonalCaddie::PersonalCaddie()
     this->ble_device_connected = false;
     this->p_ble = std::make_unique<BLE>(std::bind(&PersonalCaddie::BLEDeviceConnectedHandler, this));
 
+    //TEST
+    p_ble->testConnect();
+
     //Set the IMU and characteristic pointers to null, we need to connect to a physical 
     //device before these can be populated
     this->p_imu = nullptr;
@@ -58,9 +61,11 @@ void PersonalCaddie::BLEDeviceConnectedHandler()
     //IMU class.
 
     //Get the Gatt Characteristics from the BLE Device. To do this we first need to get a list of all of the services from 
-    //the device and then get the characteristics from each
-    auto gattServices = this->p_ble->getBLEDevice()->GetGattServicesAsync().get().Services();
-    //std::cout << "Services retrieved from the device. Looking at them now...\n" << std::endl;
+    //the device and then get the characteristics from each. Use the BluetoothCacheMode::Uncached flag so that we get the 
+    //services from the physical device and not from what's saved in the PC's cache memory. This ensures that we are physically 
+    //connecting to a device.
+    auto gattServices = this->p_ble->getBLEDevice()->GetGattServicesAsync(BluetoothCacheMode::Uncached).get().Services();
+
     for (int i = 0; i < gattServices.Size(); i++)
     {
         auto gattService = gattServices.GetAt(i);
@@ -109,7 +114,7 @@ void PersonalCaddie::BLEDeviceConnectedHandler()
 
 
     //Send an alert to the graphics interface letting it know that the connection has been made
-    this->graphic_update_handler(34);
+    //this->graphic_update_handler(34);
     OutputDebugString(L"Successfully connected to the Personal Caddie.\n");
 }
 
@@ -602,4 +607,9 @@ float PersonalCaddie::integrate(float one, float two, float dt)
 {
     //Returns the area under the curve of two adjacent points on a graph
     return ((one + two) / 2) * dt;
+}
+
+IAsyncOperation<BluetoothLEDevice> PersonalCaddie::connectToExistingDevice()
+{
+    return p_ble->testConnect();
 }

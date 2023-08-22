@@ -1,6 +1,5 @@
 #include "pch.h"
 
-#include <iostream>
 #include <iomanip>
 #include <sstream>
 
@@ -33,6 +32,12 @@ BLE::BLE(std::function<void()> function)
 
             this->addScannedDevice(foundDevice); //add the device to the scanned device set for potential later use
 
+            /*wchar_t buffer[250];
+            swprintf(buffer, 250, L"Found device with address: %llu\n", foundDevice.device_address.first);
+
+            OutputDebugString(buffer);*/
+
+
             //After adding the device, check and see if it's a Personal Caddie and then attempt to connect to it
             if (foundDevice.device_name == winrt::to_hstring("Personal Caddie"))
             {
@@ -41,8 +46,11 @@ BLE::BLE(std::function<void()> function)
         })
     );
 
-    std::cout << "Device watcher started" << std::endl;
-    this->m_bleAdvertisementsWatcher.Start();
+    auto min_time = (double)m_bleAdvertisementsWatcher.MinSamplingInterval().count() / std::chrono::system_clock::period::den;
+    auto max_time = (double)m_bleAdvertisementsWatcher.MaxSamplingInterval().count() / std::chrono::system_clock::period::den;
+
+    //OutputDebugString(L"Device watcher started\n");
+    //this->m_bleAdvertisementsWatcher.Start();
 
     //Set the onConnected() event handler from the Personal Caddie class
     this->connected_handler = function;
@@ -64,10 +72,10 @@ winrt::Windows::Foundation::IAsyncAction yeet()
 
 void BLE::connect(uint64_t ble_address)
 {
-    std::cout << "Found a Personal Caddie, attempting to connect." << std::endl;
+    OutputDebugString(L"Found a Personal Caddie, attempting to connect.");
     
     //First create a winrt::BluetoothLEDevice for the BLE class
-    this->m_bleDevice = Bluetooth::BluetoothLEDevice::FromBluetoothAddressAsync(ble_address).get(); //get will block the calling thread (similar to co_await)
+    //this->m_bleDevice = Bluetooth::BluetoothLEDevice::FromBluetoothAddressAsync(ble_address).get(); //get will block the calling thread (similar to co_await)
 
     //Next, create a Gatt Session with the device
     this->m_gattSession = Bluetooth::GenericAttributeProfile::GattSession::FromDeviceIdAsync(m_bleDevice.BluetoothDeviceId()).get();
@@ -114,9 +122,25 @@ bool BLE::bleDeviceInitialized()
     return (m_bleDevice.as<winrt::Windows::Foundation::IUnknown>() != nullptr);
 }
 
-void BLE::testConnect()
+IAsyncOperation<BluetoothLEDevice> BLE::testConnect()
 {
-    std::cout << "This is an Asynchronus action baby." << std::endl;
-    uint64_t personal_caddie_address = 230350333228259;
-    this->m_bleDevice = Bluetooth::BluetoothLEDevice::FromBluetoothAddressAsync(personal_caddie_address).get();
+    //This method attempts to connect to the most recently paired Personal Caddie device
+    OutputDebugString(L"This is an Asynchronus action baby.");
+    uint64_t personal_caddie_address = 230350333228259; //TODO: This should be saved in an external file
+    //uint64_t personal_caddie_address = 12345;
+
+    IAsyncOperation<BluetoothLEDevice> FindBLEAsync = Bluetooth::BluetoothLEDevice::FromBluetoothAddressAsync(personal_caddie_address);
+
+    FindBLEAsync.Completed([this, personal_caddie_address](
+        IAsyncOperation<BluetoothLEDevice> const& sender,
+        AsyncStatus const asyncStatus)
+        {
+            m_bleDevice = sender.get(); //nothing gets blocked as the async operation is complete
+
+            //check to see if the device was actually found
+            if (m_bleDevice.as<winrt::Windows::Foundation::IUnknown>() == NULL) OutputDebugString(L"Couldn't find the Personal Caddie");
+            else connect(personal_caddie_address);
+        });
+
+    return FindBLEAsync;
 }
