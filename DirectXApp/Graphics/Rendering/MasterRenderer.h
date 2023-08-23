@@ -38,6 +38,8 @@ class MasterRenderer : public std::enable_shared_from_this<MasterRenderer>
 public:
 	MasterRenderer(std::shared_ptr<DX::DeviceResources> const& deviceResources);
 
+    void CreateModeResources(_In_ std::shared_ptr<ModeScreen> mode);
+
     void CreateDeviceDependentResources();
     void CreateWindowSizeDependentResources();
     void ReleaseDeviceDependentResources();
@@ -51,7 +53,7 @@ private:
     bool                                        m_gameResourcesLoaded;
     bool                                        m_levelResourcesLoaded;
     TextOverlay                                 m_textOverlay;
-    //std::shared_ptr<Simple3DGame>               m_game;
+    std::shared_ptr<ModeScreen>                 m_mode;
     D2D_RECT_F                                  m_gameInfoOverlayRect;
     D2D_SIZE_F                                  m_gameInfoOverlaySize;
 

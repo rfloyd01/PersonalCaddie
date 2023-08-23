@@ -26,6 +26,13 @@ namespace UIConstants
     static const float HudTitleBodyPointSize = 20.0f;
     static const float HudLicensePointSize = 14.0f;
 
+    static const float TitleTextPointSize    = 36.0f;
+    static const float SubTitleTextPointSize = 24.0f;
+    static const float BodyTextPointSize = 20.0f;
+    static const float SensorInfoTextPointSize = 36.0f;
+    static const float FootNoteTextPointSize = 36.0f;
+    static const float AlertTextPointSize = 36.0f;
+
     static const float TouchRectangleSize = 125.0f;
     static const float MinPlayableWidth = 320.0f;
 };

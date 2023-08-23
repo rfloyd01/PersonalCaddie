@@ -61,6 +61,14 @@ void MasterRenderer::CreateWindowSizeDependentResources()
     //}
 }
 
+void MasterRenderer::CreateModeResources(_In_ std::shared_ptr<ModeScreen> mode)
+{
+    //In the original DirectX example this is an asynchronus function that loads certain resources for 
+    //the game. For now just make this a normal function, but if loading starts taking awhile then
+    //make this asynchronus
+    m_mode = mode;
+}
+
 void MasterRenderer::ReleaseDeviceDependentResources()
 {
     // On device lost all the device resources are invalid.
@@ -168,7 +176,7 @@ void MasterRenderer::Render()
     // To handle the swapchain being pre-rotated, set the D2D transformation to include it.
     d2dContext->SetTransform(m_deviceResources->GetOrientationTransform2D());
 
-    m_textOverlay.Render();
+    m_textOverlay.Render(m_mode);
 
     //if (m_game != nullptr && m_gameResourcesLoaded)
     //{

@@ -17,7 +17,7 @@ public:
     void CreateDeviceDependentResources();
     void CreateWindowSizeDependentResources();
     void ReleaseDeviceDependentResources();
-    void Render();
+    void Render(_In_ std::shared_ptr<ModeScreen> const& mode);
 
 private:
     // Cached pointer to device resources.
@@ -33,6 +33,10 @@ private:
     winrt::com_ptr<IDWriteTextLayout>    m_titleHeaderLayout;
     winrt::com_ptr<IDWriteTextLayout>    m_titleBodyLayout;
 
+    winrt::com_ptr<IDWriteTextLayout>    m_testTextLayout;
+
+
+
     bool                                 m_showTitle;
     winrt::hstring                       m_titleHeader;
     winrt::hstring                       m_titleBody;
@@ -40,4 +44,14 @@ private:
     float                                m_titleBodyVerticalOffset;
     D2D1_SIZE_F                          m_logoSize;
     D2D1_SIZE_F                          m_maxTitleSize;
+
+    //My variables start
+    winrt::com_ptr<IDWriteTextFormat>    m_TitleFormat;
+    winrt::com_ptr<IDWriteTextFormat>    m_SubTitleFormat;
+    winrt::com_ptr<IDWriteTextFormat>    m_BodyFormat;
+    winrt::com_ptr<IDWriteTextFormat>    m_SensorInfoFormat;
+    winrt::com_ptr<IDWriteTextFormat>    m_FootNoteFormat;
+    winrt::com_ptr<IDWriteTextFormat>    m_AlertFormat;
+
+    std::vector<winrt::com_ptr<IDWriteTextFormat> >    m_Formats;
 };

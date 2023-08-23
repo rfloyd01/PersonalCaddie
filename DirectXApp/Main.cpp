@@ -17,6 +17,8 @@ Main::Main(std::shared_ptr<DX::DeviceResources> const& deviceResources) :
     m_renderer = std::make_shared<MasterRenderer>(m_deviceResources);
     m_modeScreen = std::make_shared<ModeScreen>();
     m_inputProcessor = std::make_shared<InputProcessor>(CoreWindow::GetForCurrentThread());
+
+    m_renderer->CreateModeResources(m_modeScreen);
 }
 
 Main::~Main()
@@ -29,6 +31,9 @@ void Main::Run()
 {
     //First create a Personal Caddie instance
     m_personalCaddie = std::make_shared<PersonalCaddie>();
+
+    //Then load up the main menu
+    m_modeScreen->Initialize(m_inputProcessor, m_renderer);
 
     while (!m_windowClosed)
     {

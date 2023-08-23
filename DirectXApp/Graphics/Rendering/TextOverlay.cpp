@@ -77,6 +77,103 @@ TextOverlay::TextOverlay(
     winrt::check_hresult(m_textFormatTitleHeader->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_NEAR));
     winrt::check_hresult(m_textFormatTitleBody->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING));
     winrt::check_hresult(m_textFormatTitleBody->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_NEAR));
+
+    //My Variables start
+    winrt::check_hresult(
+        dwriteFactory->CreateTextFormat(
+            L"Segoe UI",
+            nullptr,
+            DWRITE_FONT_WEIGHT_LIGHT,
+            DWRITE_FONT_STYLE_NORMAL,
+            DWRITE_FONT_STRETCH_NORMAL,
+            UIConstants::TitleTextPointSize,
+            L"en-us",
+            m_TitleFormat.put()
+        )
+    );
+    winrt::check_hresult(
+        dwriteFactory->CreateTextFormat(
+            L"Segoe UI",
+            nullptr,
+            DWRITE_FONT_WEIGHT_LIGHT,
+            DWRITE_FONT_STYLE_NORMAL,
+            DWRITE_FONT_STRETCH_NORMAL,
+            UIConstants::SubTitleTextPointSize,
+            L"en-us",
+            m_SubTitleFormat.put()
+        )
+    );
+    winrt::check_hresult(
+        dwriteFactory->CreateTextFormat(
+            L"Segoe UI",
+            nullptr,
+            DWRITE_FONT_WEIGHT_LIGHT,
+            DWRITE_FONT_STYLE_NORMAL,
+            DWRITE_FONT_STRETCH_NORMAL,
+            UIConstants::BodyTextPointSize,
+            L"en-us",
+            m_BodyFormat.put()
+        )
+    );
+    winrt::check_hresult(
+        dwriteFactory->CreateTextFormat(
+            L"Segoe UI",
+            nullptr,
+            DWRITE_FONT_WEIGHT_LIGHT,
+            DWRITE_FONT_STYLE_NORMAL,
+            DWRITE_FONT_STRETCH_NORMAL,
+            UIConstants::SensorInfoTextPointSize,
+            L"en-us",
+            m_SensorInfoFormat.put()
+        )
+    );
+    winrt::check_hresult(
+        dwriteFactory->CreateTextFormat(
+            L"Segoe UI",
+            nullptr,
+            DWRITE_FONT_WEIGHT_LIGHT,
+            DWRITE_FONT_STYLE_NORMAL,
+            DWRITE_FONT_STRETCH_NORMAL,
+            UIConstants::FootNoteTextPointSize,
+            L"en-us",
+            m_FootNoteFormat.put()
+        )
+    );
+    winrt::check_hresult(
+        dwriteFactory->CreateTextFormat(
+            L"Segoe UI",
+            nullptr,
+            DWRITE_FONT_WEIGHT_LIGHT,
+            DWRITE_FONT_STYLE_NORMAL,
+            DWRITE_FONT_STRETCH_NORMAL,
+            UIConstants::AlertTextPointSize,
+            L"en-us",
+            m_AlertFormat.put()
+        )
+    );
+
+    winrt::check_hresult(m_TitleFormat->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING));
+    winrt::check_hresult(m_TitleFormat->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_NEAR));
+    winrt::check_hresult(m_SubTitleFormat->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING));
+    winrt::check_hresult(m_SubTitleFormat->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_NEAR));
+    winrt::check_hresult(m_BodyFormat->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING));
+    winrt::check_hresult(m_BodyFormat->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_NEAR));
+    winrt::check_hresult(m_SensorInfoFormat->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING));
+    winrt::check_hresult(m_SensorInfoFormat->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_NEAR));
+    winrt::check_hresult(m_FootNoteFormat->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING));
+    winrt::check_hresult(m_FootNoteFormat->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_NEAR));
+    winrt::check_hresult(m_AlertFormat->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING));
+    winrt::check_hresult(m_AlertFormat->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_NEAR));
+
+    //After creating the text formats, store them in a vector for easier access
+    //by calling their assigned text types
+    for (int i = 0; i < static_cast<int>(TextType::END); i++) m_Formats.push_back(nullptr);
+    m_Formats[static_cast<int>(TextType::TITLE)] = m_TitleFormat;
+    m_Formats[static_cast<int>(TextType::SUB_TITLE)] = m_SubTitleFormat;
+    m_Formats[static_cast<int>(TextType::BODY)] = m_BodyFormat;
+    m_Formats[static_cast<int>(TextType::SENSOR_INFO)] = m_SensorInfoFormat;
+    m_Formats[static_cast<int>(TextType::FOOT_NOTE)] = m_FootNoteFormat;
+    m_Formats[static_cast<int>(TextType::ALERT)] = m_AlertFormat;
 }
 
 void TextOverlay::CreateDeviceDependentResources()
@@ -141,12 +238,12 @@ void TextOverlay::CreateDeviceDependentResources()
 
     m_logoSize = m_logoBitmap->GetSize();
 
-    winrt::check_hresult(
+    /*winrt::check_hresult(
         d2dContext->CreateSolidColorBrush(
             D2D1::ColorF(D2D1::ColorF::White),
             m_textBrush.put()
         )
-    );
+    );*/
 }
 
 void TextOverlay::CreateWindowSizeDependentResources()
@@ -206,12 +303,41 @@ void TextOverlay::CreateWindowSizeDependentResources()
     }
 }
 
-void TextOverlay::Render()
+void TextOverlay::Render(_In_ std::shared_ptr<ModeScreen> const& mode)
 {
     auto d2dContext = m_deviceResources->GetD2DDeviceContext();
     auto windowBounds = m_deviceResources->GetLogicalSize();
 
-    if (m_showTitle)
+    auto dwriteFactory = m_deviceResources->GetDWriteFactory();
+
+    auto renderTextMap = mode->getRenderText();
+
+    for (auto it = renderTextMap->begin(); it != renderTextMap->end(); it++)
+    {
+        for (int i = 0; i < it->second.size(); i++)
+        {
+            Text* rt = &it->second[i];
+
+            //First create a new textBrush with the appropriate color
+            winrt::check_hresult(
+                d2dContext->CreateSolidColorBrush(
+                    D2D1::ColorF(rt->color.r, rt->color.g, rt->color.b, rt->color.a),
+                    m_textBrush.put()
+                )
+            );
+
+            //Then draw the text
+            d2dContext->DrawText(
+                rt->message,
+                rt->getMessageLength(),
+                m_Formats[static_cast<int>(it->first)].get(),
+                D2D1::RectF(rt->x, rt->y, 500, 500),
+                m_textBrush.get()
+            );
+        }
+    }
+
+    /*if (m_showTitle)
     {
         d2dContext->DrawBitmap(
             m_logoBitmap.get(),
@@ -223,7 +349,7 @@ void TextOverlay::Render()
             )
         );
         d2dContext->DrawTextLayout(
-            Point2F(m_logoSize.width + 2.0f * UIConstants::Margin, UIConstants::Margin),
+            Point2F(UIConstants::Margin, UIConstants::Margin),
             m_titleHeaderLayout.get(),
             m_textBrush.get()
         );
@@ -232,7 +358,12 @@ void TextOverlay::Render()
             m_titleBodyLayout.get(),
             m_textBrush.get()
         );
-    }
+        d2dContext->DrawTextLayout(
+            Point2F(UIConstants::Margin, m_titleBodyVerticalOffset + 500.0),
+            m_testTextLayout.get(),
+            m_textBrush.get()
+        );
+    }*/
 
     //if (game != nullptr)
     //{

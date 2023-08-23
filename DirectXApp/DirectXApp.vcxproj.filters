@@ -49,6 +49,12 @@
     <ClCompile Include="Input\InputProcessor.cpp">
       <Filter>Input</Filter>
     </ClCompile>
+    <ClCompile Include="Modes\Mode.cpp">
+      <Filter>Modes</Filter>
+    </ClCompile>
+    <ClCompile Include="Modes\MainMenuMode.cpp">
+      <Filter>Modes</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -108,6 +114,15 @@
     </ClInclude>
     <ClInclude Include="Input\InputProcessor.h">
       <Filter>Input</Filter>
+    </ClInclude>
+    <ClInclude Include="Modes\Mode.h">
+      <Filter>Modes</Filter>
+    </ClInclude>
+    <ClInclude Include="Modes\MainMenuMode.h">
+      <Filter>Modes</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Utilities\Text.h">
+      <Filter>Graphics\Utilities</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

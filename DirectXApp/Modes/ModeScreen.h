@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Input/InputProcessor.h"
+#include "Mode.h"
 
 /*
 * The ModeScreen represents the main visual context of the application. The app has a number of
@@ -42,7 +43,13 @@ public:
 		_In_ std::shared_ptr<MasterRenderer> const& renderer
 	);
 
+	std::shared_ptr<std::map<TextType, std::vector<Text> > > getRenderText();
+
 private:
-	std::shared_ptr<InputProcessor>   m_inputProcessor;
-	std::shared_ptr<MasterRenderer>   m_renderer;
+	std::shared_ptr<InputProcessor>     m_inputProcessor;
+	std::shared_ptr<MasterRenderer>     m_renderer;
+
+	//Modes
+	std::vector<std::shared_ptr<Mode> > m_modes;
+	ModeType                            m_currentMode;
 };
