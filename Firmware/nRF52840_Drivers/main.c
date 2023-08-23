@@ -175,8 +175,8 @@ static int32_t get_MAG_data(uint8_t offset);
 static personal_caddie_operating_mode_t current_operating_mode = ADVERTISING_MODE; /**< The chip starts in advertising mode*/
 
 //Pin Setup
-#define USE_EXTERNAL_SENSORS      true                                            /**< Let's the BLE33 know tuat external sensors are being used*/
-#define USE_EXTERNAL_LEDS         true                                            /**< Let's the BLE33 know that external LEDs are being used*/
+#define USE_EXTERNAL_SENSORS      false                                            /**< Let's the BLE33 know tuat external sensors are being used*/
+#define USE_EXTERNAL_LEDS         false                                            /**< Let's the BLE33 know that external LEDs are being used*/
 #define EXTERNAL_SENSOR_POWER_PIN NRF_GPIO_PIN_MAP(1, 10)                         /**< Pin used to power external sensors (mapped to D9 on BLE 33)*/
 //#define EXTERNAL_SCL_PIN          NRF_GPIO_PIN_MAP(0, 21)                         /**< Pin used for external TWI clock (mapped to D8 on BLE 33) */
 //#define EXTERNAL_SDA_PIN          NRF_GPIO_PIN_MAP(0, 23)                          /**< Pin used for external TWI data (mapped to D10 on BLE 33) */
@@ -307,6 +307,7 @@ static void sensors_init(void)
     ble_gatts_value_t settings;
     settings.len = SENSOR_SETTINGS_LENGTH;
     settings.p_value = sensor_settings;
+    settings.offset = 0;
     uint32_t err_code = sd_ble_gatts_value_set(m_conn_handle, m_ss.settings_handles.value_handle, &settings);
     APP_ERROR_CHECK(err_code);
 }

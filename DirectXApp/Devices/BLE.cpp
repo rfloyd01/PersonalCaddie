@@ -32,29 +32,39 @@ BLE::BLE(std::function<void()> function)
 
             this->addScannedDevice(foundDevice); //add the device to the scanned device set for potential later use
 
-            /*wchar_t buffer[250];
-            swprintf(buffer, 250, L"Found device with address: %llu\n", foundDevice.device_address.first);
-
-            OutputDebugString(buffer);*/
-
-
             //After adding the device, check and see if it's a Personal Caddie and then attempt to connect to it
             if (foundDevice.device_name == winrt::to_hstring("Personal Caddie"))
             {
-                this->connect(foundDevice.device_address.first);
+                //TODO: Shouldn't automatically connect from here
+                this->m_bleDevice = Bluetooth::BluetoothLEDevice::FromBluetoothAddressAsync(foundDevice.device_address.first).get(); //get will block the calling thread (similar to co_await)
+                this->connect();
             }
         })
     );
 
-    auto min_time = (double)m_bleAdvertisementsWatcher.MinSamplingInterval().count() / std::chrono::system_clock::period::den;
-    auto max_time = (double)m_bleAdvertisementsWatcher.MaxSamplingInterval().count() / std::chrono::system_clock::period::den;
-
-    //OutputDebugString(L"Device watcher started\n");
-    //this->m_bleAdvertisementsWatcher.Start();
-
     //Set the onConnected() event handler from the Personal Caddie class
     this->connected_handler = function;
 
+}
+
+IAsyncOperation<BluetoothLEDevice> BLE::connectToExistingDevice()
+{
+    //This method attempts to connect to the most recently paired Personal Caddie device. If no device exists, or this method
+    //is unsuccessful then the device watcher will be called
+
+    uint64_t personal_caddie_address = 274381568618262;  //TODO: This should be saved in an external file
+    //uint64_t personal_caddie_address = 230350333228259; //This is the address for the nRF DK onboard chip
+    IAsyncOperation<BluetoothLEDevice> FindBLEAsync = Bluetooth::BluetoothLEDevice::FromBluetoothAddressAsync(personal_caddie_address);
+
+    //create a handler that will get called when the BLEDevice is created
+    FindBLEAsync.Completed([this, personal_caddie_address](
+        IAsyncOperation<BluetoothLEDevice> const& sender,
+        AsyncStatus const asyncStatus)
+        {
+            deviceFoundHandler(sender, asyncStatus);
+        });
+
+    return FindBLEAsync;
 }
 
 void BLE::startDeviceWatcher()
@@ -62,6 +72,7 @@ void BLE::startDeviceWatcher()
     //When manually starting the device watcher we don't attempt to automatically connect to devices like we do
     //in the constructor for this class. We just scan for devices and add them to the m_scannedDevices set as a 
     //different function handles picking which one to connect to.
+    OutputDebugString(L"Device watcher started\n");
     this->m_bleAdvertisementsWatcher.Start();
 }
 
@@ -70,19 +81,19 @@ winrt::Windows::Foundation::IAsyncAction yeet()
     co_await winrt::resume_after(winrt::Windows::Foundation::TimeSpan::min());
 }
 
-void BLE::connect(uint64_t ble_address)
+void BLE::connect()
 {
-    OutputDebugString(L"Found a Personal Caddie, attempting to connect.");
+    OutputDebugString(L"Found a Personal Caddie, attempting to connect.\n");
     
     //First create a winrt::BluetoothLEDevice for the BLE class
     //this->m_bleDevice = Bluetooth::BluetoothLEDevice::FromBluetoothAddressAsync(ble_address).get(); //get will block the calling thread (similar to co_await)
 
     //Next, create a Gatt Session with the device
-    this->m_gattSession = Bluetooth::GenericAttributeProfile::GattSession::FromDeviceIdAsync(m_bleDevice.BluetoothDeviceId()).get();
+    //this->m_gattSession = Bluetooth::GenericAttributeProfile::GattSession::FromDeviceIdAsync(m_bleDevice.BluetoothDeviceId()).get();
 
     //Once the session is established, initiate a connection and turn off the device watcher
-    this->m_gattSession.MaintainConnection(true);
-    this->m_bleAdvertisementsWatcher.Stop();
+    /*this->m_gattSession.MaintainConnection(true);
+    this->m_bleAdvertisementsWatcher.Stop();*/
 
     //Envoke the connected event function passed in from the Personal Caddie class
     this->connected_handler();
@@ -122,25 +133,20 @@ bool BLE::bleDeviceInitialized()
     return (m_bleDevice.as<winrt::Windows::Foundation::IUnknown>() != nullptr);
 }
 
-IAsyncOperation<BluetoothLEDevice> BLE::testConnect()
+void BLE::deviceFoundHandler(IAsyncOperation<BluetoothLEDevice> const& sender, AsyncStatus const asyncStatus)
 {
-    //This method attempts to connect to the most recently paired Personal Caddie device
-    OutputDebugString(L"This is an Asynchronus action baby.");
-    uint64_t personal_caddie_address = 230350333228259; //TODO: This should be saved in an external file
-    //uint64_t personal_caddie_address = 12345;
+    //This device gets called when we've successfully created a Windows::Bluetooth::BluetoothLEDevice
+    m_bleDevice = sender.get(); //nothing gets blocked as the async operation is complete
 
-    IAsyncOperation<BluetoothLEDevice> FindBLEAsync = Bluetooth::BluetoothLEDevice::FromBluetoothAddressAsync(personal_caddie_address);
-
-    FindBLEAsync.Completed([this, personal_caddie_address](
-        IAsyncOperation<BluetoothLEDevice> const& sender,
-        AsyncStatus const asyncStatus)
-        {
-            m_bleDevice = sender.get(); //nothing gets blocked as the async operation is complete
-
-            //check to see if the device was actually found
-            if (m_bleDevice.as<winrt::Windows::Foundation::IUnknown>() == NULL) OutputDebugString(L"Couldn't find the Personal Caddie");
-            else connect(personal_caddie_address);
-        });
-
-    return FindBLEAsync;
+    //check to see if the device was actually found
+    if (m_bleDevice.as<winrt::Windows::Foundation::IUnknown>() == NULL)
+    {
+        OutputDebugString(L"Couldn't find existing Personal Caddie, scanning for new devices now.");
+        startDeviceWatcher();
+    }
+    else
+    {
+        OutputDebugString(L"Found a Personal Caddie, attempting to connect.\n");
+        this->connected_handler();
+    }
 }

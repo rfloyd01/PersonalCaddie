@@ -27,24 +27,23 @@ public:
 
 	//Device Connection and Discovery Methods
 	//void startBLEScan();
+	IAsyncOperation<BluetoothLEDevice> connectToExistingDevice();
 	
 	void addScannedDevice(DeviceInfoDisplay device);
 
 	bool isConnected();
 	bool bleDeviceInitialized();
-	void connect(uint64_t ble_address);
+	void connect();
 	volatile bool ble_device_created = false;
 
 	BluetoothLEDevice* getBLEDevice() { return &(this->m_bleDevice); }
 
-	//std::thread background_connect;
-
-	//create asynchronus task to try and connect to a previously paired personal caddie
-	IAsyncOperation<BluetoothLEDevice> testConnect();
-
 private:
 	void startDeviceWatcher();
+
+	//Handler Methods
 	std::function<void()> connected_handler; //pointer to a connected event handler in the Personal Caddie class
+	void deviceFoundHandler(IAsyncOperation<BluetoothLEDevice> const& sender, AsyncStatus const asyncStatus);
 	
 	std::wstring formatBluetoothAddress(unsigned long long BluetoothAddress);
 

@@ -28,9 +28,6 @@ void Main::Run()
     //First create a Personal Caddie instance
     m_personalCaddie = std::make_shared<PersonalCaddie>();
 
-    //Test: Try to find the already paired device
-    
-
     while (!m_windowClosed)
     {
         //TODO: Update as the app gets more complex

@@ -18,8 +18,9 @@ PersonalCaddie::PersonalCaddie()
     this->ble_device_connected = false;
     this->p_ble = std::make_unique<BLE>(std::bind(&PersonalCaddie::BLEDeviceConnectedHandler, this));
 
-    //TEST
-    p_ble->testConnect();
+    //After creating the BLE device, attempt to connect to the most recently paire
+    //device
+    p_ble->connectToExistingDevice();
 
     //Set the IMU and characteristic pointers to null, we need to connect to a physical 
     //device before these can be populated
@@ -607,9 +608,4 @@ float PersonalCaddie::integrate(float one, float two, float dt)
 {
     //Returns the area under the curve of two adjacent points on a graph
     return ((one + two) / 2) * dt;
-}
-
-IAsyncOperation<BluetoothLEDevice> PersonalCaddie::connectToExistingDevice()
-{
-    return p_ble->testConnect();
 }
