@@ -43,6 +43,12 @@
     <ClCompile Include="Math\sensor_fusion.cpp">
       <Filter>Math</Filter>
     </ClCompile>
+    <ClCompile Include="Modes\ModeScreen.cpp">
+      <Filter>Modes</Filter>
+    </ClCompile>
+    <ClCompile Include="Input\InputProcessor.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -96,6 +102,12 @@
     </ClInclude>
     <ClInclude Include="Math\sensor_fusion.h">
       <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Modes\ModeScreen.h">
+      <Filter>Modes</Filter>
+    </ClInclude>
+    <ClInclude Include="Input\InputProcessor.h">
+      <Filter>Input</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -151,6 +163,9 @@
     </Filter>
     <Filter Include="Devices\Sensors\Drivers">
       <UniqueIdentifier>{206e0cc3-0aa8-426a-abc6-b6ef4f81a9f5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Input">
+      <UniqueIdentifier>{20521567-d6b5-488b-bb17-eeb9c843e712}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

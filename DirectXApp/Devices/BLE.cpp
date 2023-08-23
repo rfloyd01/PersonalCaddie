@@ -147,6 +147,7 @@ void BLE::deviceFoundHandler(IAsyncOperation<BluetoothLEDevice> const& sender, A
     else
     {
         OutputDebugString(L"Found a Personal Caddie, attempting to connect.\n");
-        this->connected_handler();
+        //TODO: Uncomment this when done with inputprocessor class
+        //this->connected_handler();
     }
 }

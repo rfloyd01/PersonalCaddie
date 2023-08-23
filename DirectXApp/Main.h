@@ -34,7 +34,9 @@ private:
 
     std::shared_ptr<DX::DeviceResources>                m_deviceResources;
 
+    std::shared_ptr<InputProcessor>                     m_inputProcessor;
     std::shared_ptr<MasterRenderer>                     m_renderer;
+    std::shared_ptr<ModeScreen>                         m_modeScreen;
     std::shared_ptr<PersonalCaddie>                     m_personalCaddie;
 
     uint32_t                                            m_loadingCount;

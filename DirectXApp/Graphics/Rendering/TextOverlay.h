@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Graphics/Utilities/DeviceResources.h"
+#include "Modes/ModeScreen.h"
 
 class TextOverlay
 {
