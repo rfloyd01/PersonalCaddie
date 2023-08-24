@@ -59,4 +59,6 @@ private:
     std::vector<std::pair<float, float>>               m_startLocations;
     std::vector<uint32_t>                              m_textLengths;
     std::vector<float>                                 m_fontSizeRatios;
+    std::vector<std::pair<float, float>>               m_renderRectangleDimensions;
+    //std::vector<std::pair<TextColor, std>>
 };

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 enum class TextType
 {
 	//this enum class is used to group different messages displayed on screen
@@ -21,29 +23,33 @@ struct TextColor
 };
 
 //This struct holds information about text to be rendered on the screen
-struct Text
+//struct Text
+//{
+//	Text(std::wstring message, const TextColor& color) :
+//		message(message),
+//		color(color)
+//	{
+//
+//	}
+//
+//	/*int getMessageLength()
+//	{
+//		int length = 0;
+//		auto it = message;
+//
+//		while (*it++ != L'\0') length++;
+//
+//		return length;
+//	}*/
+//
+//	std::wstring message;
+//	TextColor color;
+//};
+
+struct TextTypeColorSplit
 {
-	Text(wchar_t const* message, float x, float y, const TextColor& color) :
-		message(message),
-		x(x),
-		y(y),
-		color(color)
-	{
-
-	}
-
-	int getMessageLength()
-	{
-		int length = 0;
-		auto it = message;
-
-		while (*it++ != L'\0') length++;
-
-		return length;
-	}
-
-	wchar_t const* message;
-	float x;
-	float y;
-	TextColor color;
+	//this struct is used to apply different colors to a single
+	//block of text.
+	std::vector<TextColor> colors;
+	std::vector<int> locations; //holds the index of all characters where the color switches
 };

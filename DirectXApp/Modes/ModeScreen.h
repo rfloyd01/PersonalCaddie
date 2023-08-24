@@ -43,7 +43,7 @@ public:
 		_In_ std::shared_ptr<MasterRenderer> const& renderer
 	);
 
-	std::shared_ptr<std::map<TextType, Text> > getRenderText();
+	std::shared_ptr<std::map<TextType, std::wstring> > getRenderText();
 
 private:
 	std::shared_ptr<InputProcessor>     m_inputProcessor;

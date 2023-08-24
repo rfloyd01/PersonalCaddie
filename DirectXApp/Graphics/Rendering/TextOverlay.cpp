@@ -26,27 +26,35 @@ TextOverlay::TextOverlay(
         m_textFormats.push_back(nullptr);
         m_textLayouts.push_back(nullptr);
 
+        //save values from UIConstants page into vectors to make it easier to use
+        //for loops to modify TextFormats and TextLayouts in the future
         TextType tt = static_cast<TextType>(i);
         switch (tt)
         {
         case TextType::TITLE:
             m_fontSizeRatios.push_back(UIConstants::TitleTextPointSize);
+            m_renderRectangleDimensions.push_back({UIConstants::TitleRectangleWidth, UIConstants::TitleRectangleHeight});
             break;
         case TextType::SUB_TITLE:
             m_fontSizeRatios.push_back(UIConstants::SubTitleTextPointSize);
+            m_renderRectangleDimensions.push_back({ UIConstants::SubTitleRectangleWidth, UIConstants::SubTitleRectangleHeight });
             break;
         case TextType::SENSOR_INFO:
             m_fontSizeRatios.push_back(UIConstants::SensorInfoTextPointSize);
+            m_renderRectangleDimensions.push_back({ UIConstants::SensorInfoRectangleWidth, UIConstants::SensorInfoRectangleHeight });
             break;
         case TextType::FOOT_NOTE:
             m_fontSizeRatios.push_back(UIConstants::FootNoteTextPointSize);
+            m_renderRectangleDimensions.push_back({ UIConstants::FootNoteRectangleWidth, UIConstants::FootNoteRectangleHeight });
             break;
         case TextType::ALERT:
             m_fontSizeRatios.push_back(UIConstants::AlertTextPointSize);
+            m_renderRectangleDimensions.push_back({ UIConstants::AlertRectangleWidth, UIConstants::AlertRectangleHeight });
             break;
         case TextType::BODY:
         default:
             m_fontSizeRatios.push_back(UIConstants::BodyTextPointSize);
+            m_renderRectangleDimensions.push_back({ UIConstants::BodyRectangleWidth, UIConstants::BodyRectangleHeight });
             break;
         }
 
@@ -190,7 +198,8 @@ void TextOverlay::CreateWindowSizeDependentResources()
     //the sizes of the rendering rectangle fo each TextLayout as well as the 
     //start location for where each TextLayout should be rendered
 
-    //First update the rendering start locations
+    //First update the rendering start locations. These locations are dependent on each other
+    //so they're all written out manually instead of attempting to use a for loop
     m_startLocations[static_cast<int>(TextType::TITLE)].first = UIConstants::WidthMargin * windowBounds.Width;
     m_startLocations[static_cast<int>(TextType::TITLE)].second = UIConstants::HeightMargin * windowBounds.Height;
 
@@ -209,32 +218,13 @@ void TextOverlay::CreateWindowSizeDependentResources()
     m_startLocations[static_cast<int>(TextType::FOOT_NOTE)].first = m_startLocations[static_cast<int>(TextType::ALERT)].first + windowBounds.Width * (UIConstants::WidthMargin + UIConstants::AlertRectangleWidth);
     m_startLocations[static_cast<int>(TextType::FOOT_NOTE)].second = m_startLocations[static_cast<int>(TextType::ALERT)].second;
 
-    //Alter the font sizes to fit the current window, font's are only based on window height for now
-    m_textLayouts[static_cast<int>(TextType::TITLE)]->SetFontSize(UIConstants::TitleTextPointSize * windowBounds.Height, {0, m_textLengths[static_cast<int>(TextType::TITLE)]});
-    m_textLayouts[static_cast<int>(TextType::SUB_TITLE)]->SetFontSize(UIConstants::SubTitleTextPointSize * windowBounds.Height, { 0, m_textLengths[static_cast<int>(TextType::SUB_TITLE)] });
-    m_textLayouts[static_cast<int>(TextType::BODY)]->SetFontSize(UIConstants::BodyTextPointSize * windowBounds.Height, { 0, m_textLengths[static_cast<int>(TextType::BODY)] });
-    m_textLayouts[static_cast<int>(TextType::SENSOR_INFO)]->SetFontSize(UIConstants::SensorInfoTextPointSize * windowBounds.Height, { 0, m_textLengths[static_cast<int>(TextType::SENSOR_INFO)] });
-    m_textLayouts[static_cast<int>(TextType::FOOT_NOTE)]->SetFontSize(UIConstants::FootNoteTextPointSize * windowBounds.Height, { 0, m_textLengths[static_cast<int>(TextType::FOOT_NOTE)] });
-    m_textLayouts[static_cast<int>(TextType::ALERT)]->SetFontSize(UIConstants::AlertTextPointSize * windowBounds.Height, { 0, m_textLengths[static_cast<int>(TextType::ALERT)] });
-
-    //Alter the rendring rectangles for each text type
-    m_textLayouts[static_cast<int>(TextType::TITLE)]->SetMaxWidth(UIConstants::TitleRectangleWidth * windowBounds.Width);
-    m_textLayouts[static_cast<int>(TextType::TITLE)]->SetMaxHeight(UIConstants::TitleRectangleHeight * windowBounds.Height);
-
-    m_textLayouts[static_cast<int>(TextType::SUB_TITLE)]->SetMaxWidth(UIConstants::SubTitleRectangleWidth * windowBounds.Width);
-    m_textLayouts[static_cast<int>(TextType::SUB_TITLE)]->SetMaxHeight(UIConstants::SubTitleRectangleHeight * windowBounds.Height);
-
-    m_textLayouts[static_cast<int>(TextType::BODY)]->SetMaxWidth(UIConstants::BodyRectangleWidth * windowBounds.Width);
-    m_textLayouts[static_cast<int>(TextType::BODY)]->SetMaxHeight(UIConstants::BodyRectangleHeight * windowBounds.Height);
-
-    m_textLayouts[static_cast<int>(TextType::SENSOR_INFO)]->SetMaxWidth(UIConstants::SensorInfoRectangleWidth * windowBounds.Width);
-    m_textLayouts[static_cast<int>(TextType::SENSOR_INFO)]->SetMaxHeight(UIConstants::SensorInfoRectangleHeight * windowBounds.Height);
-
-    m_textLayouts[static_cast<int>(TextType::FOOT_NOTE)]->SetMaxWidth(UIConstants::FootNoteRectangleWidth * windowBounds.Width);
-    m_textLayouts[static_cast<int>(TextType::FOOT_NOTE)]->SetMaxHeight(UIConstants::FootNoteRectangleHeight * windowBounds.Height);
-
-    m_textLayouts[static_cast<int>(TextType::ALERT)]->SetMaxWidth(UIConstants::AlertRectangleWidth * windowBounds.Width);
-    m_textLayouts[static_cast<int>(TextType::ALERT)]->SetMaxHeight(UIConstants::AlertRectangleHeight * windowBounds.Height);
+    //Alter the font sizes and rendering rectangle sizes to fit the current windows (font's are only based on window height for now)
+    for (int i = 0; i < static_cast<int>(TextType::END); i++)
+    {
+        m_textLayouts[i]->SetMaxWidth(m_renderRectangleDimensions[i].first * windowBounds.Width);
+        m_textLayouts[i]->SetMaxHeight(m_renderRectangleDimensions[i].second * windowBounds.Height);
+        UpdateTextTypeFontSize(static_cast<TextType>(i));
+    }
 }
 
 void TextOverlay::UpdateTextTypeMessage(TextType tt, std::wstring const& new_message)
@@ -305,24 +295,6 @@ void TextOverlay::Render(_In_ std::shared_ptr<ModeScreen> const& mode)
             m_textBrush.get()
         );
     }
-
-    //auto dwriteFactory = m_deviceResources->GetDWriteFactory();
-    //m_testTextLayout = nullptr;
-    //winrt::check_hresult(dwriteFactory->CreateTextLayout(
-    //    L"Test Text",
-    //    10,
-    //    m_textFormats[0].get(),
-    //    100.0,
-    //    100.0,
-    //    m_testTextLayout.put()
-    //));
-
-    //d2dContext->DrawTextLayout(
-    //    //Point2F(m_startLocations[i].first, m_startLocations[i].second),
-    //    Point2F(0, 0),
-    //    m_testTextLayout.get(),
-    //    m_textBrush.get()
-    //);
 }
 
 void TextOverlay::ReleaseDeviceDependentResources()

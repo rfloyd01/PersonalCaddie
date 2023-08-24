@@ -72,7 +72,7 @@ void MasterRenderer::CreateModeResources(_In_ std::shared_ptr<ModeScreen> mode)
     //When loading a new mode we need to pass in all the text in the textMap
     for (auto it = renderTextMap->begin(); it != renderTextMap->end(); it++)
     {
-        SetRenderText(it->first, it->second.message);
+        SetRenderText(it->first, it->second);
     }
 }
 

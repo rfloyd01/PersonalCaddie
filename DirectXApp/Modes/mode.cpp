@@ -3,15 +3,27 @@
 
 void Mode::initializeModeText()
 {
-	m_modeText = std::make_shared<std::map<TextType, Text>>();
+	m_modeText = std::make_shared<std::map<TextType, std::wstring>>();
+	m_modeTextColors = std::make_shared<std::map<TextType, TextTypeColorSplit>>();
 
 	//Initialize the text map to have an empty vector for each category
-	for (int i = 0; i < static_cast<int>(TextType::END); i++) m_modeText->insert({ static_cast<TextType>(i), {L"", 0, 0, {0, 0, 0, 0} } });
+	for (int i = 0; i < static_cast<int>(TextType::END); i++)
+	{
+		m_modeText->insert({ static_cast<TextType>(i), L""}); //text is null initialized with no color
+		m_modeTextColors->insert({ static_cast<TextType>(i), { {}, {} } }); //color split starts out empty
+	}
 }
 
 void Mode::clearModeText()
 {
-	//clears all Text from the vectors of the mode's text map (with the exception of alert texts as these
+	//clears all Text and colors from the mode's text maps (with the exception of alert texts as these
 	//get displayed even when travelling between different modes).
-	for (auto it = m_modeText->begin(); it != m_modeText->end(); it++) it->second = { L"", 0, 0, {0, 0, 0, 0} };
+	for (int i = 0; i < static_cast<int>(TextType::END); i++)
+	{
+		TextType tt = static_cast<TextType>(i);
+		if (tt == TextType::ALERT) continue;
+
+		m_modeText->at(tt) = L"";
+		m_modeTextColors->at(tt) = { {}, {} };
+	}
 }
