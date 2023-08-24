@@ -11,5 +11,7 @@ public:
 	virtual void Initialize() override;
 
 	//Updating and Advancement Functions
+private:
+	void initializeMainMenuModeText();
 
 };

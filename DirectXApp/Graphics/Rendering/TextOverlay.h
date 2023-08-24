@@ -3,6 +3,8 @@
 #include "Graphics/Utilities/DeviceResources.h"
 #include "Modes/ModeScreen.h"
 
+#include <string>
+
 class TextOverlay
 {
 public:
@@ -15,8 +17,11 @@ public:
 	void operator=(TextOverlay const&) = delete;
 
     void CreateDeviceDependentResources();
-    void CreateWindowSizeDependentResources();
+    void CreateWindowSizeDependentResources(_In_ std::shared_ptr<ModeScreen> const& mode);
     void ReleaseDeviceDependentResources();
+
+    void UpdateTextTypeMessage(TextType tt, std::wstring const& new_message);
+
     void Render(_In_ std::shared_ptr<ModeScreen> const& mode);
 
 private:
@@ -34,6 +39,7 @@ private:
     winrt::com_ptr<IDWriteTextLayout>    m_titleBodyLayout;
 
     winrt::com_ptr<IDWriteTextLayout>    m_testTextLayout;
+    winrt::com_ptr<IDWriteTextFormat>    m_testTextFormat;
 
 
 
@@ -46,12 +52,8 @@ private:
     D2D1_SIZE_F                          m_maxTitleSize;
 
     //My variables start
-    winrt::com_ptr<IDWriteTextFormat>    m_TitleFormat;
-    winrt::com_ptr<IDWriteTextFormat>    m_SubTitleFormat;
-    winrt::com_ptr<IDWriteTextFormat>    m_BodyFormat;
-    winrt::com_ptr<IDWriteTextFormat>    m_SensorInfoFormat;
-    winrt::com_ptr<IDWriteTextFormat>    m_FootNoteFormat;
-    winrt::com_ptr<IDWriteTextFormat>    m_AlertFormat;
-
-    std::vector<winrt::com_ptr<IDWriteTextFormat> >    m_Formats;
+    std::vector<winrt::com_ptr<IDWriteTextFormat> >    m_textFormats;
+    std::vector<winrt::com_ptr<IDWriteTextLayout> >    m_textLayouts;
+    std::vector<std::pair<float, float>>               m_startLocations;
+    std::vector<uint32_t>                                   m_textLengths;
 };

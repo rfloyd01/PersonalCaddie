@@ -54,7 +54,7 @@ void Main::Run()
 
 void Main::CreateWindowSizeDependentResources()
 {
-    //TODO: Update this as the app gets more complicated
+    m_renderer->CreateWindowSizeDependentResources();
 }
 
 void Main::WindowActivationChanged(CoreWindowActivationState activationState)

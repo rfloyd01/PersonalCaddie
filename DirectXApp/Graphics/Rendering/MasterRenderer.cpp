@@ -25,7 +25,7 @@ void MasterRenderer::CreateDeviceDependentResources()
 
 void MasterRenderer::CreateWindowSizeDependentResources()
 {
-    m_textOverlay.CreateWindowSizeDependentResources();
+    m_textOverlay.CreateWindowSizeDependentResources(m_mode);
 
     auto d3dContext = m_deviceResources->GetD3DDeviceContext();
     auto renderTargetSize = m_deviceResources->GetRenderTargetSize();

@@ -26,13 +26,30 @@ namespace UIConstants
     static const float HudTitleBodyPointSize = 20.0f;
     static const float HudLicensePointSize = 14.0f;
 
-    static const float TitleTextPointSize    = 36.0f;
-    static const float SubTitleTextPointSize = 24.0f;
-    static const float BodyTextPointSize = 20.0f;
-    static const float SensorInfoTextPointSize = 36.0f;
-    static const float FootNoteTextPointSize = 36.0f;
-    static const float AlertTextPointSize = 36.0f;
-
     static const float TouchRectangleSize = 125.0f;
     static const float MinPlayableWidth = 320.0f;
+
+    //The below values are expressed as a percentage of the full width or height
+    //of the app window
+    static const float TitleTextPointSize = 0.10f;
+    static const float SubTitleTextPointSize = 0.067f;
+    static const float BodyTextPointSize = 0.055f;
+    static const float SensorInfoTextPointSize = 0.05f;
+    static const float FootNoteTextPointSize = 0.033f;
+    static const float AlertTextPointSize = 0.033f;
+    
+    static const float WidthMargin = 0.03f;
+    static const float HeightMargin = 0.03f;
+    static const float TitleRectangleWidth = 1.0 - 2 * WidthMargin;
+    static const float TitleRectangleHeight = 0.25f - HeightMargin;
+    static const float SubTitleRectangleWidth = 1.0 - 2 * WidthMargin;
+    static const float SubTitleRectangleHeight = 0.35f - (0.25 + HeightMargin);
+    static const float BodyRectangleWidth = 1.0 - 2 * WidthMargin;
+    static const float BodyRectangleHeight = 0.75 - (0.35 + HeightMargin);
+    static const float SensorInfoRectangleWidth = (1.0f - 4.0 * WidthMargin) / 3.0;
+    static const float SensorInfoRectangleHeight = 0.97 - (0.75 + HeightMargin);
+    static const float AlertRectangleWidth = (1.0f - 4.0 * WidthMargin) / 3.0;
+    static const float AlertInfoRectangleHeight = 0.97 - (0.75 + HeightMargin);
+    static const float FootNoteRectangleWidth = (1.0f - 4.0 * WidthMargin) / 3.0;
+    static const float FootNoteRectangleHeight = 0.97 - (0.75 + HeightMargin);
 };
