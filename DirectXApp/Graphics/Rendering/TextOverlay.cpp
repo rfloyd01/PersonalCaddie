@@ -5,14 +5,8 @@
 using namespace D2D1;
 using namespace winrt::Windows::ApplicationModel;
 
-TextOverlay::TextOverlay(
-	_In_ std::shared_ptr<DX::DeviceResources> const& deviceResources,
-	_In_ winrt::hstring const& titleHeader,
-	_In_ winrt::hstring const& titleBody
-    ) :
-	m_deviceResources(deviceResources),
-	m_titleHeader(titleHeader),
-	m_titleBody(titleBody)
+TextOverlay::TextOverlay(_In_ std::shared_ptr<DX::DeviceResources> const& deviceResources) :
+	m_deviceResources(deviceResources)
 {
     m_showTitle = true;
     m_titleBodyVerticalOffset = UIConstants::Margin;
@@ -81,6 +75,10 @@ TextOverlay::TextOverlay(
 
         m_textLengths.push_back(0);
         m_startLocations.push_back({ 0, 0 });
+
+        //We also need to create a vector to hold text brushes for each TextType
+        std::vector<winrt::com_ptr<ID2D1SolidColorBrush> > textTypeBrushes;
+        m_textColorBrushes.push_back(textTypeBrushes);
     }
 }
 
@@ -224,6 +222,43 @@ void TextOverlay::CreateWindowSizeDependentResources()
         m_textLayouts[i]->SetMaxWidth(m_renderRectangleDimensions[i].first * windowBounds.Width);
         m_textLayouts[i]->SetMaxHeight(m_renderRectangleDimensions[i].second * windowBounds.Height);
         UpdateTextTypeFontSize(static_cast<TextType>(i));
+    }
+}
+
+void TextOverlay::CreateTextBrushes(_In_ std::shared_ptr<ModeScreen> const& mode)
+{
+    //When a new mode has been created we need to create brushes to color any and all
+    //text on the screen.
+    auto textColors = mode->getRenderTextColors();
+    auto d2dContext = m_deviceResources->GetD2DDeviceContext();
+
+    //iterate over all different text types
+    for (int i = 0; i < static_cast<int>(TextType::END); i++)
+    {
+        TextType tt = static_cast<TextType>(i);
+        if (textColors->at(tt).colors.size() == 0) continue; //if there's no text of this type then skip it
+
+        unsigned int current_location = 0;
+
+        for (int j = 0; j < textColors->at(tt).colors.size(); j++)
+        {
+            TextColor c = textColors->at(tt).colors[j];
+            m_textColorBrushes[i].push_back(nullptr);
+            winrt::check_hresult(
+                d2dContext->CreateSolidColorBrush(
+                    D2D1::ColorF(c.r, c.g, c.b, c.a),
+                    m_textColorBrushes[i].back().put()
+                )
+            );
+
+            //After creating a new brush, apply it to the appropriate characters of the text. The locations vector
+            //of the TextTypeColorSplit struct will always have a length that's 1 greater than the colors vector,
+            //so accessing elements with j+1 is safe.
+            m_textLayouts[i]->SetDrawingEffect(m_textColorBrushes[i].back().get(), { current_location,
+                textColors->at(tt).locations[j + 1] });
+
+            current_location += textColors->at(tt).locations[j + 1];
+        }
     }
 }
 

@@ -8,15 +8,12 @@
 class TextOverlay
 {
 public:
-	TextOverlay(
-		_In_ std::shared_ptr<DX::DeviceResources> const& deviceResources,
-		_In_ winrt::hstring const& titleHeader,
-		_In_ winrt::hstring const& titleBody
-	);
+	TextOverlay(_In_ std::shared_ptr<DX::DeviceResources> const& deviceResources);
 	TextOverlay(TextOverlay const&) = delete;
 	void operator=(TextOverlay const&) = delete;
 
     void CreateDeviceDependentResources();
+    void CreateTextBrushes(_In_ std::shared_ptr<ModeScreen> const& mode);
     void CreateWindowSizeDependentResources();
     void ReleaseDeviceDependentResources();
 
@@ -54,11 +51,12 @@ private:
     D2D1_SIZE_F                          m_maxTitleSize;
 
     //My variables start
-    std::vector<winrt::com_ptr<IDWriteTextFormat> >    m_textFormats;
-    std::vector<winrt::com_ptr<IDWriteTextLayout> >    m_textLayouts;
-    std::vector<std::pair<float, float>>               m_startLocations;
-    std::vector<uint32_t>                              m_textLengths;
-    std::vector<float>                                 m_fontSizeRatios;
-    std::vector<std::pair<float, float>>               m_renderRectangleDimensions;
+    std::vector<winrt::com_ptr<IDWriteTextFormat> >                  m_textFormats;
+    std::vector<winrt::com_ptr<IDWriteTextLayout> >                  m_textLayouts;
+    std::vector<std::vector<winrt::com_ptr<ID2D1SolidColorBrush> > > m_textColorBrushes;
+    std::vector<std::pair<float, float>>                             m_startLocations;
+    std::vector<uint32_t>                                            m_textLengths;
+    std::vector<float>                                               m_fontSizeRatios;
+    std::vector<std::pair<float, float>>                             m_renderRectangleDimensions;
     //std::vector<std::pair<TextColor, std>>
 };

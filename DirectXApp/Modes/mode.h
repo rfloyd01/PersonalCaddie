@@ -24,6 +24,7 @@ public:
 	virtual void Initialize() = 0;
 
 	std::shared_ptr<std::map<TextType, std::wstring> > getModeText() { return m_modeText; }
+	std::shared_ptr<std::map<TextType, TextTypeColorSplit> > getModeTextColors() { return m_modeTextColors; }
 
 protected:
 	//PROTECTED FUNCTIONS

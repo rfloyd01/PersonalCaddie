@@ -44,6 +44,7 @@ public:
 	);
 
 	std::shared_ptr<std::map<TextType, std::wstring> > getRenderText();
+	std::shared_ptr<std::map<TextType, TextTypeColorSplit> > getRenderTextColors();
 
 private:
 	std::shared_ptr<InputProcessor>     m_inputProcessor;

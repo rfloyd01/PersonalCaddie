@@ -51,5 +51,5 @@ struct TextTypeColorSplit
 	//this struct is used to apply different colors to a single
 	//block of text.
 	std::vector<TextColor> colors;
-	std::vector<int> locations; //holds the index of all characters where the color switches
+	std::vector<uint32_t> locations; //holds the index of all characters where the color switches
 };

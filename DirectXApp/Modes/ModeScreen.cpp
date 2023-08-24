@@ -27,3 +27,9 @@ std::shared_ptr<std::map<TextType, std::wstring> > ModeScreen::getRenderText()
 	//returns a reference to any text that needs to be rendered on screen
 	return m_modes[static_cast<int>(m_currentMode)]->getModeText();
 }
+
+std::shared_ptr<std::map<TextType, TextTypeColorSplit> > ModeScreen::getRenderTextColors()
+{
+	//returns a reference to any text colors that need to be rendered on screen
+	return m_modes[static_cast<int>(m_currentMode)]->getModeTextColors();
+}

@@ -10,7 +10,7 @@ MasterRenderer::MasterRenderer(std::shared_ptr<DX::DeviceResources> const& devic
     m_initialized(false),
     m_gameResourcesLoaded(false),
     m_levelResourcesLoaded(false),
-    m_textOverlay(deviceResources, L"Windows platform samples", L"DirectX first-person game sample")
+    m_textOverlay(deviceResources)
 {
     CreateDeviceDependentResources();
     CreateWindowSizeDependentResources();
@@ -74,6 +74,9 @@ void MasterRenderer::CreateModeResources(_In_ std::shared_ptr<ModeScreen> mode)
     {
         SetRenderText(it->first, it->second);
     }
+
+    //We also need to create color brushes for all of this text
+    m_textOverlay.CreateTextBrushes(mode);
 }
 
 void MasterRenderer::SetRenderText(TextType tt, std::wstring const& new_message)
