@@ -31,3 +31,8 @@ void Mode::clearModeText()
 		m_modeTextColors->at(tt) = { {}, {0} };
 	}
 }
+
+const float* Mode::getBackgroundColor()
+{
+	return m_backgroundColor;
+}

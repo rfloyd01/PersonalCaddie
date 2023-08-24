@@ -105,10 +105,10 @@ void MasterRenderer::Render()
     d3dContext->ClearDepthStencilView(m_deviceResources->GetDepthStencilView(), D3D11_CLEAR_DEPTH, 1.0f, 0);
     d2dContext->SetTarget(m_deviceResources->GetD2DTargetBitmap());
 
-    const float clearColor[4] = { 0.204f, 0.4f, 0.373f, 1.0f };
+    //const float clearColor[4] = { 0.204f, 0.4f, 0.373f, 1.0f };
 
     // Doing the Mono or Left Eye View.
-    d3dContext->ClearRenderTargetView(m_deviceResources->GetBackBufferRenderTargetView(), clearColor);
+    d3dContext->ClearRenderTargetView(m_deviceResources->GetBackBufferRenderTargetView(), m_mode->getBackgroundColor());
 
     //TODO: Uncomment the below block when ready to start working on 3d visuals
 

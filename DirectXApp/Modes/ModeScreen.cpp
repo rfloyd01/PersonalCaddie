@@ -33,3 +33,9 @@ std::shared_ptr<std::map<TextType, TextTypeColorSplit> > ModeScreen::getRenderTe
 	//returns a reference to any text colors that need to be rendered on screen
 	return m_modes[static_cast<int>(m_currentMode)]->getModeTextColors();
 }
+
+const float* ModeScreen::getBackgroundColor()
+{
+	//returns the background color of the current mode
+	return m_modes[static_cast<int>(m_currentMode)]->getBackgroundColor();
+}

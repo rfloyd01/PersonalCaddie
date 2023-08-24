@@ -88,8 +88,7 @@ void TextOverlay::SetTextRegionAlignments(TextType tt)
     switch (tt)
     {
     case TextType::TITLE:
-    case TextType::SUB_TITLE:
-        //Title and sub-title text starts in the center of the render box
+        //Title text starts in the center of the render box
         winrt::check_hresult(m_textFormats[i]->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_CENTER));
         winrt::check_hresult(m_textFormats[i]->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_CENTER));
         break;
@@ -98,8 +97,9 @@ void TextOverlay::SetTextRegionAlignments(TextType tt)
         winrt::check_hresult(m_textFormats[i]->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING));
         winrt::check_hresult(m_textFormats[i]->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_FAR));
         break;
+    case TextType::SUB_TITLE:
     case TextType::ALERT:
-        //Alert text starts at the top center of the render box
+        //Subtitle and Alert text starts at the top center of the render box
         winrt::check_hresult(m_textFormats[i]->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_CENTER));
         winrt::check_hresult(m_textFormats[i]->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_NEAR));
         break;

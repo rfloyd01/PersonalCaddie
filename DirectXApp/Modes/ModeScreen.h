@@ -43,6 +43,8 @@ public:
 		_In_ std::shared_ptr<MasterRenderer> const& renderer
 	);
 
+	const float* getBackgroundColor();
+
 	std::shared_ptr<std::map<TextType, std::wstring> > getRenderText();
 	std::shared_ptr<std::map<TextType, TextTypeColorSplit> > getRenderTextColors();
 

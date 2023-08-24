@@ -23,6 +23,8 @@ public:
 	//PUBLIC FUNCTIONS
 	virtual void Initialize() = 0;
 
+	const float* getBackgroundColor();
+
 	std::shared_ptr<std::map<TextType, std::wstring> > getModeText() { return m_modeText; }
 	std::shared_ptr<std::map<TextType, TextTypeColorSplit> > getModeTextColors() { return m_modeTextColors; }
 
@@ -30,6 +32,8 @@ protected:
 	//PROTECTED FUNCTIONS
 	void initializeModeText();
 	void clearModeText();
+
+	float m_backgroundColor[4]; //represents the background color when this mode is being rendered
 
 	//a map used to store all words to be rendered on screen and their colors,
 	//a map is used to make it easier when adding and deleting messages

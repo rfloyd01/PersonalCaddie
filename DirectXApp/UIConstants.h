@@ -35,17 +35,17 @@ namespace UIConstants
     static const float SubTitleTextPointSize = 0.033f;
     static const float BodyTextPointSize = 0.055f;
     static const float SensorInfoTextPointSize = 0.05f;
-    static const float FootNoteTextPointSize = 0.033f;
+    static const float FootNoteTextPointSize = 0.025f;
     static const float AlertTextPointSize = 0.033f;
     
-    static const float WidthMargin = 0.03f;
-    static const float HeightMargin = 0.03f;
+    static const float WidthMargin = 0.02f;
+    static const float HeightMargin = 0.02f;
     static const float TitleRectangleWidth = 1.0 - 2 * WidthMargin;
-    static const float TitleRectangleHeight = 0.25f - HeightMargin;
+    static const float TitleRectangleHeight = 0.15f - HeightMargin;
     static const float SubTitleRectangleWidth = 1.0 - 2 * WidthMargin;
-    static const float SubTitleRectangleHeight = 0.35f - (0.25 + HeightMargin);
+    static const float SubTitleRectangleHeight = 0.30f - TitleRectangleHeight - 2 * HeightMargin;
     static const float BodyRectangleWidth = 1.0 - 2 * WidthMargin;
-    static const float BodyRectangleHeight = 0.75 - (0.35 + HeightMargin);
+    static const float BodyRectangleHeight = 0.80 - (0.35 + HeightMargin);
     static const float SensorInfoRectangleWidth = (1.0f - 4.0 * WidthMargin) / 3.0;
     static const float SensorInfoRectangleHeight = 0.97 - (0.75 + HeightMargin);
     static const float AlertRectangleWidth = (1.0f - 4.0 * WidthMargin) / 3.0;

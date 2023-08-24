@@ -3,7 +3,11 @@
 
 MainMenuMode::MainMenuMode()
 {
-	//leave blank for now
+	//set the background color for the mode
+	m_backgroundColor[0] = 0.0;
+	m_backgroundColor[1] = 0.0;
+	m_backgroundColor[2] = 0.0;
+	m_backgroundColor[3] = 1.0;
 }
 
 void MainMenuMode::Initialize()
@@ -16,11 +20,6 @@ void MainMenuMode::Initialize()
 
 void MainMenuMode::initializeMainMenuModeText()
 {
-	//For now just load up all text to be rendered
-	
-	
-	m_modeText->at(TextType::FOOT_NOTE) = L"Press Esc. to exit the program.";
-
 	//Title information
 	std::wstring titleText = L"Personal Caddie v1.0";
 	m_modeText->at(TextType::TITLE) = titleText;
@@ -51,4 +50,10 @@ void MainMenuMode::initializeMainMenuModeText()
 	m_modeTextColors->at(TextType::BODY).locations.push_back(bodyText3.size());
 	m_modeTextColors->at(TextType::BODY).locations.push_back(bodyText4.size());
 	m_modeTextColors->at(TextType::BODY).locations.push_back(bodyText5.size());
+
+	//Footnote information
+	std::wstring footnoteText = L"Press Esc. to exit the program.";
+	m_modeText->at(TextType::FOOT_NOTE) = footnoteText;
+	m_modeTextColors->at(TextType::FOOT_NOTE).colors.push_back({ 1, 1, 1, 1 });
+	m_modeTextColors->at(TextType::FOOT_NOTE).locations.push_back(footnoteText.size());
 }
