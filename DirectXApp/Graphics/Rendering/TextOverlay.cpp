@@ -20,176 +20,171 @@ TextOverlay::TextOverlay(
 
     auto dwriteFactory = m_deviceResources->GetDWriteFactory();
 
-    winrt::check_hresult(
-        dwriteFactory->CreateTextFormat(
-            L"Segoe UI",
-            nullptr,
-            DWRITE_FONT_WEIGHT_LIGHT,
-            DWRITE_FONT_STYLE_NORMAL,
-            DWRITE_FONT_STRETCH_NORMAL,
-            UIConstants::HudBodyPointSize,
-            L"en-us",
-            m_textFormatBody.put()
-        )
-    );
-    winrt::check_hresult(
-        dwriteFactory->CreateTextFormat(
-            L"Segoe UI Symbol",
-            nullptr,
-            DWRITE_FONT_WEIGHT_LIGHT,
-            DWRITE_FONT_STYLE_NORMAL,
-            DWRITE_FONT_STRETCH_NORMAL,
-            UIConstants::HudBodyPointSize,
-            L"en-us",
-            m_textFormatBodySymbol.put()
-        )
-    );
-    winrt::check_hresult(
-        dwriteFactory->CreateTextFormat(
-            L"Segoe UI Light",
-            nullptr,
-            DWRITE_FONT_WEIGHT_LIGHT,
-            DWRITE_FONT_STYLE_NORMAL,
-            DWRITE_FONT_STRETCH_NORMAL,
-            UIConstants::HudTitleHeaderPointSize,
-            L"en-us",
-            m_textFormatTitleHeader.put()
-        )
-    );
-    winrt::check_hresult(
-        dwriteFactory->CreateTextFormat(
-            L"Segoe UI Light",
-            nullptr,
-            DWRITE_FONT_WEIGHT_LIGHT,
-            DWRITE_FONT_STYLE_NORMAL,
-            DWRITE_FONT_STRETCH_NORMAL,
-            UIConstants::HudTitleBodyPointSize,
-            L"en-us",
-            m_textFormatTitleBody.put()
-        )
-    );
-
-    winrt::check_hresult(m_textFormatBody->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING));
-    winrt::check_hresult(m_textFormatBody->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_NEAR));
-    winrt::check_hresult(m_textFormatBodySymbol->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING));
-    winrt::check_hresult(m_textFormatBodySymbol->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_NEAR));
-
-    /*winrt::check_hresult(m_textFormatTitleHeader->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING));
-    winrt::check_hresult(m_textFormatTitleHeader->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_NEAR));*/
-    winrt::check_hresult(m_textFormatTitleHeader->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_CENTER));
-    winrt::check_hresult(m_textFormatTitleHeader->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_NEAR));
-
-    winrt::check_hresult(m_textFormatTitleBody->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING));
-    winrt::check_hresult(m_textFormatTitleBody->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_NEAR));
-
-    //My Variables start
-    //create a format and layout for each text type
+    //create a format, layout for each text type
     for (int i = 0; i < static_cast<int>(TextType::END); i++)
     {
         m_textFormats.push_back(nullptr);
         m_textLayouts.push_back(nullptr);
+
+        TextType tt = static_cast<TextType>(i);
+        switch (tt)
+        {
+        case TextType::TITLE:
+            m_fontSizeRatios.push_back(UIConstants::TitleTextPointSize);
+            break;
+        case TextType::SUB_TITLE:
+            m_fontSizeRatios.push_back(UIConstants::SubTitleTextPointSize);
+            break;
+        case TextType::SENSOR_INFO:
+            m_fontSizeRatios.push_back(UIConstants::SensorInfoTextPointSize);
+            break;
+        case TextType::FOOT_NOTE:
+            m_fontSizeRatios.push_back(UIConstants::FootNoteTextPointSize);
+            break;
+        case TextType::ALERT:
+            m_fontSizeRatios.push_back(UIConstants::AlertTextPointSize);
+            break;
+        case TextType::BODY:
+        default:
+            m_fontSizeRatios.push_back(UIConstants::BodyTextPointSize);
+            break;
+        }
+
+        winrt::check_hresult(
+            dwriteFactory->CreateTextFormat(
+                L"Segoe UI",
+                nullptr,
+                DWRITE_FONT_WEIGHT_LIGHT,
+                DWRITE_FONT_STYLE_NORMAL,
+                DWRITE_FONT_STRETCH_NORMAL,
+                m_fontSizeRatios[i],
+                L"en-us",
+                m_textFormats[i].put()
+            )
+        );
+
+        if (tt == TextType::TITLE || tt == TextType::SUB_TITLE)
+        {
+            winrt::check_hresult(m_textFormats[i]->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_CENTER));
+            winrt::check_hresult(m_textFormats[i]->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_NEAR));
+        }
+        else
+        {
+            winrt::check_hresult(m_textFormats[i]->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING));
+            winrt::check_hresult(m_textFormats[i]->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_NEAR));
+        }
+        
+        //default initialize the textLayouts, textLenghts and textStartLocations as these will
+        //get changed as soon as a new mode get's loaded, including the starting mode
+        winrt::check_hresult(dwriteFactory->CreateTextLayout(L"", 0, m_textFormats[i].get(),
+            0, 0, m_textLayouts[i].put()));
+
+        m_textLengths.push_back(0);
         m_startLocations.push_back({ 0, 0 });
     }
 
-    winrt::check_hresult(
-        dwriteFactory->CreateTextFormat(
-            L"Segoe UI",
-            nullptr,
-            DWRITE_FONT_WEIGHT_LIGHT,
-            DWRITE_FONT_STYLE_NORMAL,
-            DWRITE_FONT_STRETCH_NORMAL,
-            UIConstants::TitleTextPointSize,
-            L"en-us",
-            m_textFormats[static_cast<int>(TextType::TITLE)].put()
-        )
-    );
-    winrt::check_hresult(m_textFormats[static_cast<int>(TextType::TITLE)]->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING));
-    winrt::check_hresult(m_textFormats[static_cast<int>(TextType::TITLE)]->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_NEAR));
-                
+    //winrt::check_hresult(
+    //    dwriteFactory->CreateTextFormat(
+    //        L"Segoe UI",
+    //        nullptr,
+    //        DWRITE_FONT_WEIGHT_LIGHT,
+    //        DWRITE_FONT_STYLE_NORMAL,
+    //        DWRITE_FONT_STRETCH_NORMAL,
+    //        //UIConstants::TitleTextPointSize,
+    //        36.0,
+    //        L"en-us",
+    //        m_textFormats[static_cast<int>(TextType::TITLE)].put()
+    //    )
+    //);
 
-    winrt::check_hresult(
-        dwriteFactory->CreateTextFormat(
-            L"Segoe UI",
-            nullptr,
-            DWRITE_FONT_WEIGHT_LIGHT,
-            DWRITE_FONT_STYLE_NORMAL,
-            DWRITE_FONT_STRETCH_NORMAL,
-            UIConstants::SubTitleTextPointSize,
-            L"en-us",
-            m_textFormats[static_cast<int>(TextType::SUB_TITLE)].put()
-        )
-    );
-    winrt::check_hresult(m_textFormats[static_cast<int>(TextType::SUB_TITLE)]->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING));
-    winrt::check_hresult(m_textFormats[static_cast<int>(TextType::SUB_TITLE)]->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_NEAR));
+    //
+    //winrt::check_hresult(m_textFormats[static_cast<int>(TextType::TITLE)]->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING));
+    //winrt::check_hresult(m_textFormats[static_cast<int>(TextType::TITLE)]->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_NEAR));
+    //            
 
-    winrt::check_hresult(
-        dwriteFactory->CreateTextFormat(
-            L"Segoe UI",
-            nullptr,
-            DWRITE_FONT_WEIGHT_LIGHT,
-            DWRITE_FONT_STYLE_NORMAL,
-            DWRITE_FONT_STRETCH_NORMAL,
-            UIConstants::BodyTextPointSize,
-            L"en-us",
-            m_textFormats[static_cast<int>(TextType::BODY)].put()
-        )
-    );
-    winrt::check_hresult(m_textFormats[static_cast<int>(TextType::BODY)]->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING));
-    winrt::check_hresult(m_textFormats[static_cast<int>(TextType::BODY)]->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_NEAR));
+    //winrt::check_hresult(
+    //    dwriteFactory->CreateTextFormat(
+    //        L"Segoe UI",
+    //        nullptr,
+    //        DWRITE_FONT_WEIGHT_LIGHT,
+    //        DWRITE_FONT_STYLE_NORMAL,
+    //        DWRITE_FONT_STRETCH_NORMAL,
+    //        UIConstants::SubTitleTextPointSize,
+    //        L"en-us",
+    //        m_textFormats[static_cast<int>(TextType::SUB_TITLE)].put()
+    //    )
+    //);
+    //winrt::check_hresult(m_textFormats[static_cast<int>(TextType::SUB_TITLE)]->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING));
+    //winrt::check_hresult(m_textFormats[static_cast<int>(TextType::SUB_TITLE)]->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_NEAR));
 
-    winrt::check_hresult(
-        dwriteFactory->CreateTextFormat(
-            L"Segoe UI",
-            nullptr,
-            DWRITE_FONT_WEIGHT_LIGHT,
-            DWRITE_FONT_STYLE_NORMAL,
-            DWRITE_FONT_STRETCH_NORMAL,
-            UIConstants::SensorInfoTextPointSize,
-            L"en-us",
-            m_textFormats[static_cast<int>(TextType::SENSOR_INFO)].put()
-        )
-    );
-    winrt::check_hresult(m_textFormats[static_cast<int>(TextType::SENSOR_INFO)]->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING));
-    winrt::check_hresult(m_textFormats[static_cast<int>(TextType::SENSOR_INFO)]->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_NEAR));
+    //winrt::check_hresult(
+    //    dwriteFactory->CreateTextFormat(
+    //        L"Segoe UI",
+    //        nullptr,
+    //        DWRITE_FONT_WEIGHT_LIGHT,
+    //        DWRITE_FONT_STYLE_NORMAL,
+    //        DWRITE_FONT_STRETCH_NORMAL,
+    //        UIConstants::BodyTextPointSize,
+    //        L"en-us",
+    //        m_textFormats[static_cast<int>(TextType::BODY)].put()
+    //    )
+    //);
+    //winrt::check_hresult(m_textFormats[static_cast<int>(TextType::BODY)]->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING));
+    //winrt::check_hresult(m_textFormats[static_cast<int>(TextType::BODY)]->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_NEAR));
 
-    winrt::check_hresult(
-        dwriteFactory->CreateTextFormat(
-            L"Segoe UI",
-            nullptr,
-            DWRITE_FONT_WEIGHT_LIGHT,
-            DWRITE_FONT_STYLE_NORMAL,
-            DWRITE_FONT_STRETCH_NORMAL,
-            UIConstants::FootNoteTextPointSize,
-            L"en-us",
-            m_textFormats[static_cast<int>(TextType::FOOT_NOTE)].put()
-        )
-    );
-    winrt::check_hresult(m_textFormats[static_cast<int>(TextType::FOOT_NOTE)]->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING));
-    winrt::check_hresult(m_textFormats[static_cast<int>(TextType::FOOT_NOTE)]->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_NEAR));
+    //winrt::check_hresult(
+    //    dwriteFactory->CreateTextFormat(
+    //        L"Segoe UI",
+    //        nullptr,
+    //        DWRITE_FONT_WEIGHT_LIGHT,
+    //        DWRITE_FONT_STYLE_NORMAL,
+    //        DWRITE_FONT_STRETCH_NORMAL,
+    //        UIConstants::SensorInfoTextPointSize,
+    //        L"en-us",
+    //        m_textFormats[static_cast<int>(TextType::SENSOR_INFO)].put()
+    //    )
+    //);
+    //winrt::check_hresult(m_textFormats[static_cast<int>(TextType::SENSOR_INFO)]->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING));
+    //winrt::check_hresult(m_textFormats[static_cast<int>(TextType::SENSOR_INFO)]->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_NEAR));
 
-    winrt::check_hresult(
-        dwriteFactory->CreateTextFormat(
-            L"Segoe UI",
-            nullptr,
-            DWRITE_FONT_WEIGHT_LIGHT,
-            DWRITE_FONT_STYLE_NORMAL,
-            DWRITE_FONT_STRETCH_NORMAL,
-            UIConstants::AlertTextPointSize,
-            L"en-us",
-            m_textFormats[static_cast<int>(TextType::ALERT)].put()
-        )
-    );
-    winrt::check_hresult(m_textFormats[static_cast<int>(TextType::ALERT)]->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING));
-    winrt::check_hresult(m_textFormats[static_cast<int>(TextType::ALERT)]->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_NEAR));
+    //winrt::check_hresult(
+    //    dwriteFactory->CreateTextFormat(
+    //        L"Segoe UI",
+    //        nullptr,
+    //        DWRITE_FONT_WEIGHT_LIGHT,
+    //        DWRITE_FONT_STYLE_NORMAL,
+    //        DWRITE_FONT_STRETCH_NORMAL,
+    //        UIConstants::FootNoteTextPointSize,
+    //        L"en-us",
+    //        m_textFormats[static_cast<int>(TextType::FOOT_NOTE)].put()
+    //    )
+    //);
+    //winrt::check_hresult(m_textFormats[static_cast<int>(TextType::FOOT_NOTE)]->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING));
+    //winrt::check_hresult(m_textFormats[static_cast<int>(TextType::FOOT_NOTE)]->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_NEAR));
 
-    //default initialize the textLayouts, these will get changed as soon
-    //as a new mode get's loaded, including the starting mode
-    for (int i = 0; i < static_cast<int>(TextType::END); i++)
-    {
-        winrt::check_hresult(dwriteFactory->CreateTextLayout(L"", 0, m_textFormats[i].get(),
-            0, 0, m_textLayouts[i].put()));
-        m_textLengths.push_back(0);
-    }
+    //winrt::check_hresult(
+    //    dwriteFactory->CreateTextFormat(
+    //        L"Segoe UI",
+    //        nullptr,
+    //        DWRITE_FONT_WEIGHT_LIGHT,
+    //        DWRITE_FONT_STYLE_NORMAL,
+    //        DWRITE_FONT_STRETCH_NORMAL,
+    //        UIConstants::AlertTextPointSize,
+    //        L"en-us",
+    //        m_textFormats[static_cast<int>(TextType::ALERT)].put()
+    //    )
+    //);
+    //winrt::check_hresult(m_textFormats[static_cast<int>(TextType::ALERT)]->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING));
+    //winrt::check_hresult(m_textFormats[static_cast<int>(TextType::ALERT)]->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_NEAR));
+
+    ////default initialize the textLayouts, these will get changed as soon
+    ////as a new mode get's loaded, including the starting mode
+    //for (int i = 0; i < static_cast<int>(TextType::END); i++)
+    //{
+    //    winrt::check_hresult(dwriteFactory->CreateTextLayout(L"", 0, m_textFormats[i].get(),
+    //        0, 0, m_textLayouts[i].put()));
+    //    m_textLengths.push_back(0);
+    //}
 }
 
 void TextOverlay::CreateDeviceDependentResources()
@@ -262,7 +257,7 @@ void TextOverlay::CreateDeviceDependentResources()
     );*/
 }
 
-void TextOverlay::CreateWindowSizeDependentResources(_In_ std::shared_ptr<ModeScreen> const& mode)
+void TextOverlay::CreateWindowSizeDependentResources()
 {
     auto windowBounds = m_deviceResources->GetLogicalSize();
 
@@ -327,209 +322,80 @@ void TextOverlay::UpdateTextTypeMessage(TextType tt, std::wstring const& new_mes
     //Because of this, we don't update all text, only individual text types for the 
     //current mode. This method is only for updating the physical message of the text,
     //none of the formatting gets changed
+
+    if (new_message.size() == 0) return;
     auto dwriteFactory = m_deviceResources->GetDWriteFactory();
+
+    auto originalWidth = m_textLayouts[static_cast<int>(tt)]->GetMaxWidth();
+    auto originalHeight = m_textLayouts[static_cast<int>(tt)]->GetMaxHeight();
 
     winrt::check_hresult(
         dwriteFactory->CreateTextLayout(
             &new_message[0],
             new_message.size(),
             m_textFormats[static_cast<int>(tt)].get(),
-            m_textLayouts[static_cast<int>(tt)]->GetMaxWidth(),
-            m_textLayouts[static_cast<int>(tt)]->GetMaxHeight(),
+            originalWidth,
+            originalHeight,
             m_textLayouts[static_cast<int>(tt)].put()
         )
     );
+
+    //Update the value in the m_textLengths vector
+    m_textLengths[static_cast<int>(tt)] = new_message.length();
+}
+
+void TextOverlay::UpdateTextTypeFontSize(TextType tt)
+{
+    //Since the font sizes used are based off of the window size we won't know the true
+    //size of the fonts until runtime. Furthermore, to apply the appropriate font size to 
+    //a TextLayout we need to choose which letters to apply it to. This means that changing
+    //the text by creating a new layout will default back to an unknown font size. This 
+    //means that every time we update the text on screen we need to call this method to
+    //make sure everything is rendered at the appropriate size.
+    auto windowBounds = m_deviceResources->GetLogicalSize();
+    m_textLayouts[static_cast<int>(tt)]->SetFontSize(UIConstants::TitleTextPointSize * windowBounds.Height, { 0, m_textLengths[static_cast<int>(tt)] });
 }
 
 void TextOverlay::Render(_In_ std::shared_ptr<ModeScreen> const& mode)
 {
+    //iterate through all the text types and render the TextLayout for
+    //each
     auto d2dContext = m_deviceResources->GetD2DDeviceContext();
-    auto windowBounds = m_deviceResources->GetLogicalSize();
 
-    auto dwriteFactory = m_deviceResources->GetDWriteFactory();
-
-    auto renderTextMap = mode->getRenderText();
-
+    //TODO: Need to figure out a better way to handle colors
     winrt::check_hresult(
         d2dContext->CreateSolidColorBrush(
             D2D1::ColorF(1.0, 1.0, 1.0),
             m_textBrush.put()
         )
     );
+    for (int i = 0; i < static_cast<int>(TextType::END); i++)
+    {
+        d2dContext->DrawTextLayout(
+            //Point2F(m_startLocations[i].first, m_startLocations[i].second),
+            Point2F(0, 0),
+            m_textLayouts[i].get(),
+            m_textBrush.get()
+        );
+    }
+
+    auto dwriteFactory = m_deviceResources->GetDWriteFactory();
+    m_testTextLayout = nullptr;
+    winrt::check_hresult(dwriteFactory->CreateTextLayout(
+        L"Test Text",
+        10,
+        m_textFormats[0].get(),
+        100.0,
+        100.0,
+        m_testTextLayout.put()
+    ));
 
     d2dContext->DrawTextLayout(
-        Point2F(UIConstants::Margin, UIConstants::Margin),
-        m_textLayouts[static_cast<int>(TextType::TITLE)].get(),
+        //Point2F(m_startLocations[i].first, m_startLocations[i].second),
+        Point2F(0, 0),
+        m_testTextLayout.get(),
         m_textBrush.get()
     );
-
-    /*winrt::check_hresult(
-        dwriteFactory->CreateTextFormat(
-            L"Segoe UI",
-            nullptr,
-            DWRITE_FONT_WEIGHT_LIGHT,
-            DWRITE_FONT_STYLE_NORMAL,
-            DWRITE_FONT_STRETCH_NORMAL,
-            windowBounds.Height * 0.05,
-            L"en-us",
-            m_testTextFormat.put()
-        )
-    );*/
-
-
-    //for (auto it = renderTextMap->begin(); it != renderTextMap->end(); it++)
-    //{
-    //    for (int i = 0; i < it->second.size(); i++)
-    //    {
-    //        Text* rt = &it->second[i];
-
-    //        //First create a new textBrush with the appropriate color
-    //        winrt::check_hresult(
-    //            d2dContext->CreateSolidColorBrush(
-    //                D2D1::ColorF(rt->color.r, rt->color.g, rt->color.b, rt->color.a),
-    //                m_textBrush.put()
-    //            )
-    //        );
-
-    //        //Then draw the text
-    //        /*d2dContext->DrawText(
-    //            rt->message,
-    //            rt->getMessageLength(),
-    //            m_Formats[static_cast<int>(it->first)].get(),
-    //            D2D1::RectF(rt->x, rt->y, 500, 500),
-    //            m_textBrush.get()
-    //        );*/
-
-    //        d2dContext->DrawTextLayout(
-    //            Point2F(UIConstants::Margin, UIConstants::Margin),
-    //            m_testTextLayout.get(),
-    //            m_textBrush.get()
-    //        );
-    //    }
-    //}
-
-    /*if (m_showTitle)
-    {
-        d2dContext->DrawBitmap(
-            m_logoBitmap.get(),
-            D2D1::RectF(
-                UIConstants::Margin,
-                UIConstants::Margin,
-                m_logoSize.width + UIConstants::Margin,
-                m_logoSize.height + UIConstants::Margin
-            )
-        );
-        d2dContext->DrawTextLayout(
-            Point2F(UIConstants::Margin, UIConstants::Margin),
-            m_titleHeaderLayout.get(),
-            m_textBrush.get()
-        );
-        d2dContext->DrawTextLayout(
-            Point2F(UIConstants::Margin, m_titleBodyVerticalOffset),
-            m_titleBodyLayout.get(),
-            m_textBrush.get()
-        );
-        d2dContext->DrawTextLayout(
-            Point2F(UIConstants::Margin, m_titleBodyVerticalOffset + 500.0),
-            m_testTextLayout.get(),
-            m_textBrush.get()
-        );
-    }*/
-
-    //if (game != nullptr)
-    //{
-    //    // This section is only used after the game state has been initialized.
-    //    static const int bufferLength = 256;
-    //    static wchar_t wsbuffer[bufferLength];
-    //    int length = swprintf_s(
-    //        wsbuffer,
-    //        bufferLength,
-    //        L"Hits:\t%10dShots:\t%10d\nTizime:\t%8.1f",
-    //        game->TotalHits(),
-    //        game->TotalShots(),
-    //        game->TimeRemaining()
-    //    );
-
-    //    d2dContext->DrawText(
-    //        wsbuffer,
-    //        length,
-    //        m_textFormatBody.get(),
-    //        D2D1::RectF(
-    //            windowBounds.Width - UIConstants::HudRightOffset,
-    //            UIConstants::HudTopOffset,
-    //            windowBounds.Width,
-    //            UIConstants::HudTopOffset + (UIConstants::HudBodyPointSize + UIConstants::Margin) * 3
-    //        ),
-    //        m_textBrush.get()
-    //    );
-
-    //    uint32_t levelCharacter[6];
-    //    for (uint32_t i = 0; i < 6; i++)
-    //    {
-    //        levelCharacter[i] = 0x2780 + i + ((static_cast<uint32_t>(game->LevelCompleted()) == i) ? 10 : 0);
-    //    }
-    //    length = swprintf_s(
-    //        wsbuffer,
-    //        bufferLength,
-    //        L"%lc %lc %lc %lc %lc %lc",
-    //        levelCharacter[0],
-    //        levelCharacter[1],
-    //        levelCharacter[2],
-    //        levelCharacter[3],
-    //        levelCharacter[4],
-    //        levelCharacter[5]
-    //    );
-    //    d2dContext->DrawText(
-    //        wsbuffer,
-    //        length,
-    //        m_textFormatBodySymbol.get(),
-    //        D2D1::RectF(
-    //            windowBounds.Width - UIConstants::HudRightOffset,
-    //            UIConstants::HudTopOffset + (UIConstants::HudBodyPointSize + UIConstants::Margin) * 3 + UIConstants::Margin,
-    //            windowBounds.Width,
-    //            UIConstants::HudTopOffset + (UIConstants::HudBodyPointSize + UIConstants::Margin) * 4
-    //        ),
-    //        m_textBrush.get()
-    //    );
-
-    //    if (game->IsActivePlay())
-    //    {
-    //        // Draw a rectangle for the touch input for the move control.
-    //        d2dContext->DrawRectangle(
-    //            D2D1::RectF(
-    //                0.0f,
-    //                windowBounds.Height - UIConstants::TouchRectangleSize,
-    //                UIConstants::TouchRectangleSize,
-    //                windowBounds.Height
-    //            ),
-    //            m_textBrush.get()
-    //        );
-    //        // Draw a rectangle for the touch input for the fire control.
-    //        d2dContext->DrawRectangle(
-    //            D2D1::RectF(
-    //                windowBounds.Width - UIConstants::TouchRectangleSize,
-    //                windowBounds.Height - UIConstants::TouchRectangleSize,
-    //                windowBounds.Width,
-    //                windowBounds.Height
-    //            ),
-    //            m_textBrush.get()
-    //        );
-
-    //        // Draw the cross hairs
-    //        d2dContext->DrawLine(
-    //            D2D1::Point2F(windowBounds.Width / 2.0f - UIConstants::CrossHairHalfSize, windowBounds.Height / 2.0f),
-    //            D2D1::Point2F(windowBounds.Width / 2.0f + UIConstants::CrossHairHalfSize, windowBounds.Height / 2.0f),
-    //            m_textBrush.get(),
-    //            3.0f
-    //        );
-    //        d2dContext->DrawLine(
-    //            D2D1::Point2F(windowBounds.Width / 2.0f, windowBounds.Height / 2.0f - UIConstants::CrossHairHalfSize),
-    //            D2D1::Point2F(windowBounds.Width / 2.0f, windowBounds.Height / 2.0f + UIConstants::CrossHairHalfSize),
-    //            m_textBrush.get(),
-    //            3.0f
-    //        );
-    //    }
-    //}
 }
 
 void TextOverlay::ReleaseDeviceDependentResources()

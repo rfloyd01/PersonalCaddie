@@ -22,7 +22,7 @@ public:
 	//PUBLIC FUNCTIONS
 	virtual void Initialize() = 0;
 
-	std::shared_ptr<std::map<TextType, std::vector<Text> > > getModeText() { return m_modeText; }
+	std::shared_ptr<std::map<TextType, Text> > getModeText() { return m_modeText; }
 
 protected:
 	//PROTECTED FUNCTIONS
@@ -30,5 +30,5 @@ protected:
 	void clearModeText();
 
 	//a map used to store all words to be rendered on screen, a map is used to make it easier when adding and deleting messages
-	std::shared_ptr<std::map<TextType, std::vector<Text> > > m_modeText; //TODO: I can probably make this a unique pointer 
+	std::shared_ptr<std::map<TextType, Text > > m_modeText; //TODO: I can probably make this a unique pointer 
 };

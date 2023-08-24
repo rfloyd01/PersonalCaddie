@@ -4,8 +4,9 @@
 using namespace DirectX;
 using namespace winrt::Windows::Foundation;
 
-MasterRenderer::MasterRenderer(std::shared_ptr<DX::DeviceResources> const& deviceResources) :
+MasterRenderer::MasterRenderer(std::shared_ptr<DX::DeviceResources> const& deviceResources, std::shared_ptr<ModeScreen> const& modeScreen) :
     m_deviceResources(deviceResources),
+    m_mode(modeScreen),
     m_initialized(false),
     m_gameResourcesLoaded(false),
     m_levelResourcesLoaded(false),
@@ -25,7 +26,7 @@ void MasterRenderer::CreateDeviceDependentResources()
 
 void MasterRenderer::CreateWindowSizeDependentResources()
 {
-    m_textOverlay.CreateWindowSizeDependentResources(m_mode);
+    m_textOverlay.CreateWindowSizeDependentResources();
 
     auto d3dContext = m_deviceResources->GetD3DDeviceContext();
     auto renderTargetSize = m_deviceResources->GetRenderTargetSize();
@@ -66,7 +67,18 @@ void MasterRenderer::CreateModeResources(_In_ std::shared_ptr<ModeScreen> mode)
     //In the original DirectX example this is an asynchronus function that loads certain resources for 
     //the game. For now just make this a normal function, but if loading starts taking awhile then
     //make this asynchronus
-    m_mode = mode;
+    auto renderTextMap = mode->getRenderText();
+
+    //When loading a new mode we need to pass in all the text in the textMap
+    for (auto it = renderTextMap->begin(); it != renderTextMap->end(); it++)
+    {
+        SetRenderText(it->first, it->second.message);
+    }
+}
+
+void MasterRenderer::SetRenderText(TextType tt, std::wstring const& new_message)
+{
+    m_textOverlay.UpdateTextTypeMessage(tt, new_message);
 }
 
 void MasterRenderer::ReleaseDeviceDependentResources()

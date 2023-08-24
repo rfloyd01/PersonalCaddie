@@ -17,7 +17,7 @@ public:
 	void operator=(TextOverlay const&) = delete;
 
     void CreateDeviceDependentResources();
-    void CreateWindowSizeDependentResources(_In_ std::shared_ptr<ModeScreen> const& mode);
+    void CreateWindowSizeDependentResources();
     void ReleaseDeviceDependentResources();
 
     void UpdateTextTypeMessage(TextType tt, std::wstring const& new_message);
@@ -25,6 +25,7 @@ public:
     void Render(_In_ std::shared_ptr<ModeScreen> const& mode);
 
 private:
+    void UpdateTextTypeFontSize(TextType tt);
     // Cached pointer to device resources.
     std::shared_ptr<DX::DeviceResources> m_deviceResources;
 
@@ -55,5 +56,6 @@ private:
     std::vector<winrt::com_ptr<IDWriteTextFormat> >    m_textFormats;
     std::vector<winrt::com_ptr<IDWriteTextLayout> >    m_textLayouts;
     std::vector<std::pair<float, float>>               m_startLocations;
-    std::vector<uint32_t>                                   m_textLengths;
+    std::vector<uint32_t>                              m_textLengths;
+    std::vector<float>                                 m_fontSizeRatios;
 };

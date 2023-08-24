@@ -24,5 +24,5 @@ void MainMenuMode::initializeMainMenuModeText()
 	TextType tt = TextType::SUB_TITLE;
 	Text t{ L"This is a real test", 15, 50, white };
 
-	m_modeText->at(tt).push_back(t);
+	m_modeText->at(tt) = t;
 }
