@@ -51,12 +51,12 @@ private:
     D2D1_SIZE_F                          m_maxTitleSize;
 
     //My variables start
-    std::vector<winrt::com_ptr<IDWriteTextFormat> >                  m_textFormats;
-    std::vector<winrt::com_ptr<IDWriteTextLayout> >                  m_textLayouts;
-    std::vector<std::vector<winrt::com_ptr<ID2D1SolidColorBrush> > > m_textColorBrushes;
-    std::vector<std::pair<float, float>>                             m_startLocations;
-    std::vector<uint32_t>                                            m_textLengths;
-    std::vector<float>                                               m_fontSizeRatios;
-    std::vector<std::pair<float, float>>                             m_renderRectangleDimensions;
+    std::vector<winrt::com_ptr<IDWriteTextFormat> >                          m_textFormats;
+    std::vector<winrt::com_ptr<IDWriteTextLayout> >                          m_textLayouts;
+    std::vector<std::vector<winrt::com_ptr<ID2D1SolidColorBrush> > >         m_textColorBrushes;
+    std::vector<uint32_t>                                                    m_textLengths;
+    std::vector<float>                                                       m_fontSizeRatios;
+    std::vector<std::pair<std::pair<float, float>, std::pair<float, float>>> m_renderBorderRatios;
+    std::vector<std::pair<float, float> >                                    m_startLocations;
     //std::vector<std::pair<TextColor, std>>
 };
