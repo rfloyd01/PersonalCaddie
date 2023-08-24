@@ -32,7 +32,7 @@ namespace UIConstants
     //The below values are expressed as a percentage of the full width or height
     //of the app window
     static const float TitleTextPointSize = 0.10f;
-    static const float SubTitleTextPointSize = 0.067f;
+    static const float SubTitleTextPointSize = 0.033f;
     static const float BodyTextPointSize = 0.055f;
     static const float SensorInfoTextPointSize = 0.05f;
     static const float FootNoteTextPointSize = 0.033f;
@@ -49,7 +49,7 @@ namespace UIConstants
     static const float SensorInfoRectangleWidth = (1.0f - 4.0 * WidthMargin) / 3.0;
     static const float SensorInfoRectangleHeight = 0.97 - (0.75 + HeightMargin);
     static const float AlertRectangleWidth = (1.0f - 4.0 * WidthMargin) / 3.0;
-    static const float AlertInfoRectangleHeight = 0.97 - (0.75 + HeightMargin);
+    static const float AlertRectangleHeight = 0.97 - (0.75 + HeightMargin);
     static const float FootNoteRectangleWidth = (1.0f - 4.0 * WidthMargin) / 3.0;
     static const float FootNoteRectangleHeight = 0.97 - (0.75 + HeightMargin);
 };

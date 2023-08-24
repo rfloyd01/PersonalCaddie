@@ -25,6 +25,7 @@ public:
     void Render(_In_ std::shared_ptr<ModeScreen> const& mode);
 
 private:
+    void SetTextRegionAlignments(TextType tt);
     void UpdateTextTypeFontSize(TextType tt);
     // Cached pointer to device resources.
     std::shared_ptr<DX::DeviceResources> m_deviceResources;
