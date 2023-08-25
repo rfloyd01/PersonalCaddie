@@ -244,6 +244,15 @@ void TextOverlay::CreateTextBrushes(_In_ std::shared_ptr<ModeScreen> const& mode
     }
 }
 
+void TextOverlay::DeleteTextBrushes()
+{
+    for (int i = 0; i < static_cast<int>(TextType::END); i++)
+    {
+        //TODO: will this free up the resources held by the com-ptrs?
+        m_textColorBrushes[i].clear(); //just clear out all existing brushes
+    }
+}
+
 void TextOverlay::UpdateTextTypeMessage(TextType tt, std::wstring const& new_message)
 {
     //This method gets called either when a new mode is first entered, or, when 
@@ -254,7 +263,6 @@ void TextOverlay::UpdateTextTypeMessage(TextType tt, std::wstring const& new_mes
     //current mode. This method is only for updating the physical message of the text,
     //none of the formatting gets changed
 
-    if (new_message.size() == 0) return;
     auto dwriteFactory = m_deviceResources->GetDWriteFactory();
 
     auto originalWidth = m_textLayouts[static_cast<int>(tt)]->GetMaxWidth();

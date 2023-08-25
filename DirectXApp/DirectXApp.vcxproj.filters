@@ -55,6 +55,9 @@
     <ClCompile Include="Modes\MainMenuMode.cpp">
       <Filter>Modes</Filter>
     </ClCompile>
+    <ClCompile Include="Modes\SettingsMode.cpp">
+      <Filter>Modes</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -123,6 +126,9 @@
     </ClInclude>
     <ClInclude Include="Graphics\Utilities\Text.h">
       <Filter>Graphics\Utilities</Filter>
+    </ClInclude>
+    <ClInclude Include="Modes\SettingsMode.h">
+      <Filter>Modes</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

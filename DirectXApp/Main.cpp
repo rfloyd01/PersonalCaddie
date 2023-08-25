@@ -33,7 +33,6 @@ void Main::Run()
     //Then, pass class pointers to the ModeScreen class (this is really the main 
     //state of the application) and load up the main menu
     m_modeScreen->Initialize(m_personalCaddie, m_inputProcessor, m_renderer);
-    m_renderer->CreateModeResources(m_modeScreen);
 
     //With the main menu mode loaded we can now activate the keyboard
     //for input processing

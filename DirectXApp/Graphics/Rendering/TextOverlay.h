@@ -14,6 +14,7 @@ public:
 
     void CreateDeviceDependentResources();
     void CreateTextBrushes(_In_ std::shared_ptr<ModeScreen> const& mode);
+    void DeleteTextBrushes();
     void CreateWindowSizeDependentResources();
     void ReleaseDeviceDependentResources();
 

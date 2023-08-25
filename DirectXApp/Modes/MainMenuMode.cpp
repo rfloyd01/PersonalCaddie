@@ -3,28 +3,28 @@
 
 MainMenuMode::MainMenuMode()
 {
-	//set the background color for the mode
+	//set a black background color for the mode
 	m_backgroundColor[0] = 0.0;
 	m_backgroundColor[1] = 0.0;
 	m_backgroundColor[2] = 0.0;
 	m_backgroundColor[3] = 1.0;
 }
 
-void MainMenuMode::Initialize()
+uint32_t MainMenuMode::initializeMode()
 {
 	//Create a new map for storing all of the text for this mode
 	initializeModeText();
 	initializeMainMenuModeText();
 	
+	//When this mode is initialzed we go into a state of CanTransfer
+	return ModeState::CanTransfer;
 }
 
-void MainMenuMode::processInput(InputState* inputState)
+void MainMenuMode::uninitializeMode()
 {
-	if (inputState->currentPressedKey != KeyboardKeys::DeadKey)
-	{
-		//we have a key that needs processing
-		OutputDebugString(L"Processing input in the MainMenuMode class!\n");
-	}
+	//The only thing to do when leaving the main menu mode is to clear
+	//out all text in the text map and color map
+	clearModeText();
 }
 
 void MainMenuMode::initializeMainMenuModeText()

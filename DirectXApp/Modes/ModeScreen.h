@@ -20,18 +20,6 @@ enum class ConnectionState
 	NotConnected,
 };
 
-//The ModeState enum class keeps track of what the current state of the app is. When idle,
-//nothing is happening except for displaying text or a static 3D model. In active mode,
-//we are taking real time data from the Personal Caddie to render a moving golf club on
-//the screen. In recording mode we're saving data from the Personal Caddie for either 
-//calibration or creating graphs.
-enum class ModeState
-{
-	Idle,
-	Active,
-	Recording,
-};
-
 class MasterRenderer;
 
 class ModeScreen
@@ -53,6 +41,13 @@ public:
 	std::shared_ptr<std::map<TextType, TextTypeColorSplit> > getRenderTextColors();
 
 private:
+	void processKeyboardInput(winrt::Windows::System::VirtualKey pressedKey);
+
+	void initializeCurrentMode();
+	void uninitializeCurrentMode();
+
+	uint32_t                            m_modeState; //holds info on the current mode state
+
 	std::shared_ptr<PersonalCaddie>     m_personalCaddie;
 	std::shared_ptr<InputProcessor>     m_inputProcessor;
 	std::shared_ptr<MasterRenderer>     m_renderer;

@@ -62,21 +62,23 @@ void MasterRenderer::CreateWindowSizeDependentResources()
     //}
 }
 
-void MasterRenderer::CreateModeResources(_In_ std::shared_ptr<ModeScreen> mode)
+void MasterRenderer::CreateModeResources()
 {
     //In the original DirectX example this is an asynchronus function that loads certain resources for 
     //the game. For now just make this a normal function, but if loading starts taking awhile then
     //make this asynchronus
-    auto renderTextMap = mode->getRenderText();
+    auto renderTextMap = m_mode->getRenderText();
 
-    //When loading a new mode we need to pass in all the text in the textMap
+    //When loading a new mode we need to pass in all the text in the textMap. This will override
+    //any text currently in place.
     for (auto it = renderTextMap->begin(); it != renderTextMap->end(); it++)
     {
         SetRenderText(it->first, it->second);
     }
 
-    //We also need to create color brushes for all of this text
-    m_textOverlay.CreateTextBrushes(mode);
+    //We also need to create color brushes for all of this text. Delete any existing brushes first
+    m_textOverlay.DeleteTextBrushes();
+    m_textOverlay.CreateTextBrushes(m_mode);
 }
 
 void MasterRenderer::SetRenderText(TextType tt, std::wstring const& new_message)

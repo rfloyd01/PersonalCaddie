@@ -2,19 +2,18 @@
 
 #include "Mode.h"
 
-class MainMenuMode : public Mode
+class SettingsMode : public Mode
 {
 public:
 	//PUBLIC FUNCTIONS
 	//Constructors
-	MainMenuMode();
+	SettingsMode();
 
 	virtual uint32_t initializeMode() override;
 	virtual void uninitializeMode() override;
-	//virtual void processInput(InputState* inputState) override;
 
 	//Updating and Advancement Functions
 private:
-	void initializeMainMenuModeText();
+	void initializeSettingsModeText();
 
 };

@@ -38,7 +38,7 @@ class MasterRenderer : public std::enable_shared_from_this<MasterRenderer>
 public:
 	MasterRenderer(std::shared_ptr<DX::DeviceResources> const& deviceResources, std::shared_ptr<ModeScreen> const& modeScreen);
 
-    void CreateModeResources(_In_ std::shared_ptr<ModeScreen> mode);
+    void CreateModeResources();
 
     void CreateDeviceDependentResources();
     void CreateWindowSizeDependentResources();
