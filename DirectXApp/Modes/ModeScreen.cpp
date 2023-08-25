@@ -7,13 +7,17 @@
 #include "Graphics/Rendering/MasterRenderer.h"
 
 ModeScreen::ModeScreen() :
-	m_currentMode(ModeType::MAIN_MENU)
+	m_currentMode(ModeType::MAIN_MENU),
+	alert_active(false)
 {
 	//Create instances for all different modes.
 	for (int i = 0; i < static_cast<int>(ModeType::END); i++) m_modes.push_back(nullptr);
 
 	m_modes[static_cast<int>(ModeType::MAIN_MENU)] = std::make_shared<MainMenuMode>();
 	m_modes[static_cast<int>(ModeType::SETTINGS)] = std::make_shared<SettingsMode>();
+
+	//Set default time for alerts to be 5 seconds
+	alert_timer_duration = 5000;
 }
 
 void ModeScreen::Initialize(
@@ -26,8 +30,10 @@ void ModeScreen::Initialize(
 	m_inputProcessor = input;
 	m_renderer = renderer;
 
-	//Load the main mode (which is set in the constructor) and update the current modeState
-	initializeCurrentMode();
+	//Load the main mode (which is set in the constructor) and pass any resources
+	//generated to the master renderer
+	m_modeState = m_modes[static_cast<int>(m_currentMode)]->initializeMode();
+	m_renderer->CreateModeResources();
 }
 
 void ModeScreen::update()
@@ -40,6 +46,9 @@ void ModeScreen::update()
 	{
 		if (inputUpdate->currentPressedKey != KeyboardKeys::DeadKey) processKeyboardInput(inputUpdate->currentPressedKey);
 	}
+
+	//after processing input, see if there are any timers that are going on or expired
+	processTimers();
 }
 
 void ModeScreen::processKeyboardInput(winrt::Windows::System::VirtualKey pressedKey)
@@ -66,8 +75,7 @@ void ModeScreen::processKeyboardInput(winrt::Windows::System::VirtualKey pressed
 			}
 			else
 			{
-				OutputDebugString(L"Going back to main menu.\n");
-				//TODO: deallocate whatever resources necessary and initialize the main menu mode
+				changeCurrentMode(ModeType::MAIN_MENU);
 			}
 		}
 		break;
@@ -79,12 +87,7 @@ void ModeScreen::processKeyboardInput(winrt::Windows::System::VirtualKey pressed
 			{
 				//If we're on the Main Menu screen then pressing the 5 key will take us to the
 				//sensor settings page
-				OutputDebugString(L"Going to sensor settings page.\n");
-
-				uninitializeCurrentMode();
-
-				m_currentMode = ModeType::SETTINGS;
-				initializeCurrentMode();
+				changeCurrentMode(ModeType::SETTINGS);
 			}
 		}
 		break;
@@ -92,15 +95,67 @@ void ModeScreen::processKeyboardInput(winrt::Windows::System::VirtualKey pressed
 	
 }
 
-void ModeScreen::initializeCurrentMode()
+void ModeScreen::processTimers()
 {
-	m_modeState = m_modes[static_cast<int>(m_currentMode)]->initializeMode();
-	m_renderer->CreateModeResources();
+	if (alert_active)
+	{
+		//we have an active alert, see if the alert timer has expired yet and if so delete
+		//all active alerts
+		auto time_elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - alert_timer).count();
+		if (time_elapsed >= alert_timer_duration)
+		{
+			//the timer has gone off so turn the timer off
+			alert_active = false;
+
+			//then remove the current alerts both from the mode text map, as well
+			//as from being rendered on the screen
+			m_modes[static_cast<int>(m_currentMode)]->removeCurrentAlerts();
+			m_renderer->removeCurrentAlerts();
+		}
+	}
+
+	//TODO: add other timers here after creating them
 }
 
-void ModeScreen::uninitializeCurrentMode()
+void ModeScreen::changeCurrentMode(ModeType mt)
 {
+	//This method unitializes the current mode and initializes the mode selected.
+	//Any active alerts will get copied into the text map for the new mode
+
+	if (mt == m_currentMode) return; //no need to change anything, already on this mode
+
+	//First, get any active alerts before deleting the text and color map of the 
+	//current mode
+	auto currentAlerts = getCurrentModeAlerts();
 	m_modes[static_cast<int>(m_currentMode)]->uninitializeMode();
+
+	//Switch to the new mode and initialize it
+	m_currentMode = mt;
+	m_modeState = m_modes[static_cast<int>(m_currentMode)]->initializeMode();
+
+	//After initializing, add any alerts that were copied over to the text and
+	//color maps and then create text and color resources in the renderer
+	if (currentAlerts.first != L"") setCurrentModeAlerts(currentAlerts);
+	m_renderer->CreateModeResources();
+	
+}
+
+std::pair<std::wstring, TextTypeColorSplit> ModeScreen::getCurrentModeAlerts()
+{
+	return m_modes[static_cast<int>(m_currentMode)]->getCurrentAlerts();
+}
+void ModeScreen::setCurrentModeAlerts(std::pair<std::wstring, TextTypeColorSplit> alerts)
+{
+	m_modes[static_cast<int>(m_currentMode)]->setCurrentAlerts(alerts);
+	if (!alert_active)
+	{
+		//this is a brand new alert so we need to set the alert timer
+		alert_active = true;
+		alert_timer = std::chrono::steady_clock::now();
+
+		//we also need to tell the renderer to draw this alert
+		m_renderer->renderNewAlerts(alerts);
+	}
 }
 
 std::shared_ptr<std::map<TextType, std::wstring> > ModeScreen::getRenderText()

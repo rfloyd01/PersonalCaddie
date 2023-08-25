@@ -45,8 +45,12 @@ public:
     void ReleaseDeviceDependentResources();
     void Render();
 
+    void renderNewAlerts(std::pair<std::wstring, TextTypeColorSplit> alerts);
+    void removeCurrentAlerts();
+
 private:
     void SetRenderText(TextType tt, std::wstring const& new_message);
+    void editTextTypeMessage(TextType tt, std::wstring message, TextTypeColorSplit const& colors);
 
     // Cached pointer to device resources.
     std::shared_ptr<DX::DeviceResources>        m_deviceResources;

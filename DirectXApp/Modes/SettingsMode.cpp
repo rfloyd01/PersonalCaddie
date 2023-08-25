@@ -35,4 +35,25 @@ void SettingsMode::initializeSettingsModeText()
 	m_modeTextColors->at(TextType::TITLE).colors.push_back({ 1, 1, 1, 1 });
 	m_modeTextColors->at(TextType::TITLE).locations.push_back(titleText.size());
 
+	//Subtitle Information
+	std::wstring subtitleText = L"(Press one of the keys listed below to select a mode)";
+	m_modeText->at(TextType::SUB_TITLE) = subtitleText;
+	m_modeTextColors->at(TextType::SUB_TITLE).colors.push_back({ 1, 1, 1, 1 });
+	m_modeTextColors->at(TextType::SUB_TITLE).locations.push_back(subtitleText.size());
+
+	//Body Information
+	std::wstring bodyText1 = L"1. Connect/Disconnect from Personal Caddie \n";
+	std::wstring bodyText2 = L"2. IMU Settings \n";
+	m_modeText->at(TextType::BODY) = bodyText1 + bodyText2;
+	m_modeTextColors->at(TextType::BODY).colors.push_back({ 0, 0, 0, 1.0 });
+	m_modeTextColors->at(TextType::BODY).colors.push_back({ 0.2, 0.2, 0.2, 1 });
+	m_modeTextColors->at(TextType::BODY).locations.push_back(bodyText1.size());
+	m_modeTextColors->at(TextType::BODY).locations.push_back(bodyText2.size());
+
+	//Footnote information
+	std::wstring footnoteText = L"Press Esc. to return to main menu.";
+	m_modeText->at(TextType::FOOT_NOTE) = footnoteText;
+	m_modeTextColors->at(TextType::FOOT_NOTE).colors.push_back({ 1, 1, 1, 1 });
+	m_modeTextColors->at(TextType::FOOT_NOTE).locations.push_back(footnoteText.size());
+
 }

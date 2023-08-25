@@ -18,13 +18,16 @@ public:
     void CreateWindowSizeDependentResources();
     void ReleaseDeviceDependentResources();
 
-    void UpdateTextTypeMessage(TextType tt, std::wstring const& new_message);
+    void UpdateTextTypeMessage(TextType tt, std::wstring const& new_message, TextTypeColorSplit const& colors);
 
     void Render(_In_ std::shared_ptr<ModeScreen> const& mode);
 
 private:
     void SetTextRegionAlignments(TextType tt);
     void UpdateTextTypeFontSize(TextType tt);
+
+    void CreateTextTypeBrushes(TextType tt, TextTypeColorSplit const& colors);
+    void DeleteTextTypeBrushes(TextType tt);
     // Cached pointer to device resources.
     std::shared_ptr<DX::DeviceResources> m_deviceResources;
 

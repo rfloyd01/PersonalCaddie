@@ -83,7 +83,7 @@ void MasterRenderer::CreateModeResources()
 
 void MasterRenderer::SetRenderText(TextType tt, std::wstring const& new_message)
 {
-    m_textOverlay.UpdateTextTypeMessage(tt, new_message);
+    m_textOverlay.UpdateTextTypeMessage(tt, new_message, { {}, {} }); //set color structure to be empty
 }
 
 void MasterRenderer::ReleaseDeviceDependentResources()
@@ -209,4 +209,22 @@ void MasterRenderer::Render()
     {
         winrt::check_hresult(hr);
     }
+}
+
+void MasterRenderer::renderNewAlerts(std::pair<std::wstring, TextTypeColorSplit> alerts)
+{
+    //render any new incoming alert messages
+    editTextTypeMessage(TextType::ALERT, alerts.first, alerts.second);
+}
+
+void MasterRenderer::removeCurrentAlerts()
+{
+    //stop any alerts from being rendered on screen
+    editTextTypeMessage(TextType::ALERT, L"", { {}, {} });
+}
+
+void MasterRenderer::editTextTypeMessage(TextType tt, std::wstring message, TextTypeColorSplit const& colors)
+{
+    //just a pass through function to the text renderer
+    m_textOverlay.UpdateTextTypeMessage(tt, message, colors);
 }

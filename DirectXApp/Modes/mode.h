@@ -39,6 +39,12 @@ public:
 
 	const float* getBackgroundColor();
 
+	//Alert messages can carry over between different modes so they
+	//have special functions for handling them
+	std::pair<std::wstring, TextTypeColorSplit> getCurrentAlerts();
+	void setCurrentAlerts(std::pair<std::wstring, TextTypeColorSplit> alert);
+	void removeCurrentAlerts();
+
 	std::shared_ptr<std::map<TextType, std::wstring> > getModeText() { return m_modeText; }
 	std::shared_ptr<std::map<TextType, TextTypeColorSplit> > getModeTextColors() { return m_modeTextColors; }
 

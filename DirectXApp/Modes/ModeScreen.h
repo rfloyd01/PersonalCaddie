@@ -37,14 +37,18 @@ public:
 
 	const float* getBackgroundColor();
 
+	void setCurrentModeAlerts(std::pair<std::wstring, TextTypeColorSplit> alerts);
+
 	std::shared_ptr<std::map<TextType, std::wstring> > getRenderText();
 	std::shared_ptr<std::map<TextType, TextTypeColorSplit> > getRenderTextColors();
 
 private:
 	void processKeyboardInput(winrt::Windows::System::VirtualKey pressedKey);
+	void processTimers();
 
-	void initializeCurrentMode();
-	void uninitializeCurrentMode();
+	void changeCurrentMode(ModeType mt);
+
+	std::pair<std::wstring, TextTypeColorSplit> getCurrentModeAlerts();
 
 	uint32_t                            m_modeState; //holds info on the current mode state
 
@@ -55,4 +59,9 @@ private:
 	//Modes
 	std::vector<std::shared_ptr<Mode> > m_modes;
 	ModeType                            m_currentMode;
+
+	//Timing variables
+	uint32_t alert_timer_duration; //duration of the alert timer in milliseconds
+	bool alert_active;
+	std::chrono::steady_clock::time_point alert_timer;
 };

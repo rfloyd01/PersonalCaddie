@@ -53,7 +53,6 @@ void MainMenuMode::initializeMainMenuModeText()
 	m_modeTextColors->at(TextType::BODY).colors.push_back({ 0.71, 0.541, 0.416, 1 });
 	m_modeTextColors->at(TextType::BODY).colors.push_back({ 0.498, 0.498, 0.498, 1 });
 	m_modeTextColors->at(TextType::BODY).colors.push_back({ 0.749, 0.749, 0.749, 1 });
-
 	m_modeTextColors->at(TextType::BODY).locations.push_back(bodyText1.size());
 	m_modeTextColors->at(TextType::BODY).locations.push_back(bodyText2.size());
 	m_modeTextColors->at(TextType::BODY).locations.push_back(bodyText3.size());

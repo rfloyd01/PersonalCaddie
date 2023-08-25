@@ -35,8 +35,11 @@ void Main::Run()
     m_modeScreen->Initialize(m_personalCaddie, m_inputProcessor, m_renderer);
 
     //With the main menu mode loaded we can now activate the keyboard
-    //for input processing
+    //for input processing. Also alert the user to the fact that we're
+    //currently trying to connect to a personal caddie
+    auto yeet = L"Currently searching for a Personal Caddie device.";
     m_inputProcessor->setKeyboardState(KeyboardState::WaitForInput);
+    m_modeScreen->setCurrentModeAlerts({ L"Currently searching for a Personal Caddie device.", {{ {1.0, 0.788, 0.055, 0.75} }, {0, 50} }});
 
     while (!m_windowClosed)
     {

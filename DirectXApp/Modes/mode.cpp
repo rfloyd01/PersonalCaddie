@@ -20,12 +20,10 @@ void Mode::initializeModeText()
 
 void Mode::clearModeText()
 {
-	//clears all Text and colors from the mode's text maps (with the exception of alert texts as these
-	//get displayed even when travelling between different modes).
+	//clears all Text and colors from the mode's text maps.
 	for (int i = 0; i < static_cast<int>(TextType::END); i++)
 	{
 		TextType tt = static_cast<TextType>(i);
-		if (tt == TextType::ALERT) continue;
 
 		m_modeText->at(tt) = L"";
 		m_modeTextColors->at(tt) = { {}, {0} };
@@ -35,4 +33,21 @@ void Mode::clearModeText()
 const float* Mode::getBackgroundColor()
 {
 	return m_backgroundColor;
+}
+
+std::pair<std::wstring, TextTypeColorSplit> Mode::getCurrentAlerts()
+{
+	return {m_modeText->at(TextType::ALERT), m_modeTextColors->at(TextType::ALERT)};
+}
+
+void Mode::setCurrentAlerts(std::pair<std::wstring, TextTypeColorSplit> alert)
+{
+	m_modeText->at(TextType::ALERT) = alert.first;
+	m_modeTextColors->at(TextType::ALERT) = alert.second;
+}
+
+void Mode::removeCurrentAlerts()
+{
+	m_modeText->at(TextType::ALERT) = L"";
+	m_modeTextColors->at(TextType::ALERT) = { {}, {0} };
 }
