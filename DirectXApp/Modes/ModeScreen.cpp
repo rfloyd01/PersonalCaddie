@@ -21,12 +21,10 @@ ModeScreen::ModeScreen() :
 }
 
 void ModeScreen::Initialize(
-	_In_ std::shared_ptr<PersonalCaddie> const& pc,
 	_In_ std::shared_ptr<InputProcessor> const& input,
 	_In_ std::shared_ptr<MasterRenderer> const& renderer
 )
 {
-	m_personalCaddie = pc;
 	m_inputProcessor = input;
 	m_renderer = renderer;
 
@@ -34,6 +32,11 @@ void ModeScreen::Initialize(
 	//generated to the master renderer
 	m_modeState = m_modes[static_cast<int>(m_currentMode)]->initializeMode();
 	m_renderer->CreateModeResources();
+}
+
+void ModeScreen::setPersonalCaddie(_In_ std::shared_ptr<PersonalCaddie> const& pc)
+{
+	m_personalCaddie = pc;
 }
 
 void ModeScreen::update()
@@ -174,4 +177,12 @@ const float* ModeScreen::getBackgroundColor()
 {
 	//returns the background color of the current mode
 	return m_modes[static_cast<int>(m_currentMode)]->getBackgroundColor();
+}
+
+void ModeScreen::PersonalCaddieAlertHandler(std::pair<std::wstring, TextTypeColorSplit> alert)
+{
+	//This method will automaticall get alerts from the Personal Caddie device. Messages
+	//related to the BLE device are in light blue, messages related to the IMU are in green
+	//and messages about the Personal Caddie itself are in yellow
+	setCurrentModeAlerts(alert);
 }

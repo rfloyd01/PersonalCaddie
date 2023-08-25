@@ -5,6 +5,7 @@
 
 #include "IMU.h"
 #include "BLE.h"
+#include "Modes/mode.h"
 
 using namespace winrt;
 using namespace Windows::Devices;
@@ -50,7 +51,7 @@ class PersonalCaddie
 {
 public:
 	//Constructors
-	PersonalCaddie();
+	PersonalCaddie(std::function<void(std::pair<std::wstring, TextTypeColorSplit>)> function);
 
 	//BLE Related Functions
 	//void turnOnDataNotifications();
@@ -89,6 +90,9 @@ private:
 
 	std::unique_ptr<BLE> p_ble;
 	std::unique_ptr<IMU> p_imu;
+
+	//Handler Methods
+	std::function<void(std::pair<std::wstring, TextTypeColorSplit>)> message_handler; //sends messages to the ModeScreen class for rendering on screen
 
 	//BLE Functionality
 	void BLEDeviceConnectedHandler();

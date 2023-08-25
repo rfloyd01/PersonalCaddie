@@ -27,19 +27,23 @@ Main::~Main()
 
 void Main::Run()
 {
-    //First create a Personal Caddie instance
-    m_personalCaddie = std::make_shared<PersonalCaddie>();
+    //First, create the main app instance (the mode screen class) and pass in pointers
+    //to the input processor and the master renderer.
+    m_modeScreen->Initialize(m_inputProcessor, m_renderer);
 
-    //Then, pass class pointers to the ModeScreen class (this is really the main 
-    //state of the application) and load up the main menu
-    m_modeScreen->Initialize(m_personalCaddie, m_inputProcessor, m_renderer);
+    //Then create a Personal Caddie instance and pass a handler function from the Mode
+    //screen class for rendering alerts on the screen
+    m_personalCaddie = std::make_shared<PersonalCaddie>(std::bind(&ModeScreen::PersonalCaddieAlertHandler, m_modeScreen.get(), std::placeholders::_1));
+
+    //After successfully creating the Personal Caddie instance, pass a pointer
+    //of it to the Mode Screen app as well so that the Personal Caddie can send
+    //the necessary data to be rendered.
+    m_modeScreen->setPersonalCaddie(m_personalCaddie);
 
     //With the main menu mode loaded we can now activate the keyboard
     //for input processing. Also alert the user to the fact that we're
     //currently trying to connect to a personal caddie
-    auto yeet = L"Currently searching for a Personal Caddie device.";
     m_inputProcessor->setKeyboardState(KeyboardState::WaitForInput);
-    m_modeScreen->setCurrentModeAlerts({ L"Currently searching for a Personal Caddie device.", {{ {1.0, 0.788, 0.055, 0.75} }, {0, 50} }});
 
     while (!m_windowClosed)
     {

@@ -1,6 +1,7 @@
 #include "pch.h"
 
 #include "PersonalCaddie.h"
+#include "Modes/ModeScreen.h"
 #include "../Math/quaternion_functions.h"
 #include "../Math/sensor_fusion.h"
 
@@ -13,8 +14,10 @@ using namespace Bluetooth::GenericAttributeProfile;
 
 //PUBLIC FUNCTIONS
 //Constructors
-PersonalCaddie::PersonalCaddie()
+PersonalCaddie::PersonalCaddie(std::function<void(std::pair<std::wstring, TextTypeColorSplit>)> function)
 {
+    message_handler = function;
+
     this->ble_device_connected = false;
     this->p_ble = std::make_unique<BLE>(std::bind(&PersonalCaddie::BLEDeviceConnectedHandler, this));
 
@@ -49,6 +52,9 @@ PersonalCaddie::PersonalCaddie()
         glm::quat q = { 1, 0, 0, 0 };
         orientation_quaternions.push_back(q);
     }
+
+    std::wstring message = L"Personal Caddie finished initializing";
+    message_handler({ message, {{{0, 1, 0, 1}}, {0, (unsigned int)message.length()}} });
 }
 
 void PersonalCaddie::BLEDeviceConnectedHandler()

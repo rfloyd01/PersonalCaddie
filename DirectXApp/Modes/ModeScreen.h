@@ -28,16 +28,18 @@ public:
 	ModeScreen();
 
 	void Initialize(
-		_In_ std::shared_ptr<PersonalCaddie> const& pc,
 		_In_ std::shared_ptr<InputProcessor> const& input,
 		_In_ std::shared_ptr<MasterRenderer> const& renderer
 	);
+
+	void setPersonalCaddie(_In_ std::shared_ptr<PersonalCaddie> const& pc);
 
 	void update();
 
 	const float* getBackgroundColor();
 
-	void setCurrentModeAlerts(std::pair<std::wstring, TextTypeColorSplit> alerts);
+	//Handler Methods
+	void PersonalCaddieAlertHandler(std::pair<std::wstring, TextTypeColorSplit> alert);
 
 	std::shared_ptr<std::map<TextType, std::wstring> > getRenderText();
 	std::shared_ptr<std::map<TextType, TextTypeColorSplit> > getRenderTextColors();
@@ -48,7 +50,10 @@ private:
 
 	void changeCurrentMode(ModeType mt);
 
+	
+
 	std::pair<std::wstring, TextTypeColorSplit> getCurrentModeAlerts();
+	void setCurrentModeAlerts(std::pair<std::wstring, TextTypeColorSplit> alerts);
 
 	uint32_t                            m_modeState; //holds info on the current mode state
 
