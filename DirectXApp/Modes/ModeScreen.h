@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Input/InputProcessor.h"
+#include "Devices/PersonalCaddie.h"
 #include "Mode.h"
 
 /*
@@ -39,9 +40,12 @@ public:
 	ModeScreen();
 
 	void Initialize(
+		_In_ std::shared_ptr<PersonalCaddie> const& pc,
 		_In_ std::shared_ptr<InputProcessor> const& input,
 		_In_ std::shared_ptr<MasterRenderer> const& renderer
 	);
+
+	void update();
 
 	const float* getBackgroundColor();
 
@@ -49,6 +53,7 @@ public:
 	std::shared_ptr<std::map<TextType, TextTypeColorSplit> > getRenderTextColors();
 
 private:
+	std::shared_ptr<PersonalCaddie>     m_personalCaddie;
 	std::shared_ptr<InputProcessor>     m_inputProcessor;
 	std::shared_ptr<MasterRenderer>     m_renderer;
 

@@ -11,15 +11,30 @@ ModeScreen::ModeScreen() :
 }
 
 void ModeScreen::Initialize(
+	_In_ std::shared_ptr<PersonalCaddie> const& pc,
 	_In_ std::shared_ptr<InputProcessor> const& input,
 	_In_ std::shared_ptr<MasterRenderer> const& renderer
 )
 {
+	m_personalCaddie = pc;
 	m_inputProcessor = input;
 	m_renderer = renderer;
 
 	//Load the main mode
 	m_modes[static_cast<int>(m_currentMode)]->Initialize();
+
+}
+
+void ModeScreen::update()
+{
+	//TODO: the first thing to update is any new data from the Personal Caddie
+
+	//check for any input form the mouse/keyboard that needs processing by the current mode
+	auto inputUpdate = m_inputProcessor->update();
+	if (inputUpdate != nullptr)
+	{
+		//TODO: send input to the current mode
+	}
 }
 
 std::shared_ptr<std::map<TextType, std::wstring> > ModeScreen::getRenderText()

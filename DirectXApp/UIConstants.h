@@ -46,7 +46,7 @@ namespace UIConstants
     static const float SubTitleRectangleX0 = WidthMargin;
     static const float SubTitleRectangleX1 = 1.0 - WidthMargin;
     static const float SubTitleRectangleY0 = TitleRectangleY1 + HeightMargin;
-    static const float SubTitleRectangleY1 = SubTitleRectangleY0 + 0.7;
+    static const float SubTitleRectangleY1 = SubTitleRectangleY0 + 0.07;
 
     //TextType::BODY constants
     static const float BodyTextPointSize = 0.055f;

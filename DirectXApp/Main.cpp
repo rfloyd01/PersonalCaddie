@@ -30,16 +30,21 @@ void Main::Run()
     //First create a Personal Caddie instance
     m_personalCaddie = std::make_shared<PersonalCaddie>();
 
-    //Then load up the main menu
-    m_modeScreen->Initialize(m_inputProcessor, m_renderer);
+    //Then, pass class pointers to the ModeScreen class (this is really the main 
+    //state of the application) and load up the main menu
+    m_modeScreen->Initialize(m_personalCaddie, m_inputProcessor, m_renderer);
     m_renderer->CreateModeResources(m_modeScreen);
+
+    //With the main menu mode loaded we can now activate the keyboard
+    //for input processing
+    m_inputProcessor->setKeyboardState(KeyboardState::WaitForInput);
 
     while (!m_windowClosed)
     {
-        //TODO: Update as the app gets more complex
         if (m_visible)
         {
             CoreWindow::GetForCurrentThread().Dispatcher().ProcessEvents(CoreProcessEventsOption::ProcessAllIfPresent);
+            m_modeScreen->update();
             m_renderer->Render();
             m_deviceResources->Present();
         }
