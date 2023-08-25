@@ -33,7 +33,7 @@ void ModeScreen::update()
 	auto inputUpdate = m_inputProcessor->update();
 	if (inputUpdate != nullptr)
 	{
-		//TODO: send input to the current mode
+		m_modes[static_cast<int>(m_currentMode)]->processInput(inputUpdate);
 	}
 }
 

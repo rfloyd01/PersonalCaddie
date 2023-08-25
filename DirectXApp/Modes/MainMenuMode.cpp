@@ -18,6 +18,15 @@ void MainMenuMode::Initialize()
 	
 }
 
+void MainMenuMode::processInput(InputState* inputState)
+{
+	if (inputState->currentPressedKey != KeyboardKeys::DeadKey)
+	{
+		//we have a key that needs processing
+		OutputDebugString(L"Processing input in the MainMenuMode class!\n");
+	}
+}
+
 void MainMenuMode::initializeMainMenuModeText()
 {
 	//Title information

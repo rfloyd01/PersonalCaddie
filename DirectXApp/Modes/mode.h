@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Graphics/Utilities/Text.h"
+#include "Input/InputProcessor.h"
 #include <string>
 
 //Classes, structs and enums that are helpful for this class
@@ -22,6 +23,7 @@ class Mode
 public:
 	//PUBLIC FUNCTIONS
 	virtual void Initialize() = 0;
+	virtual void processInput(InputState* inputState) = 0;
 
 	const float* getBackgroundColor();
 

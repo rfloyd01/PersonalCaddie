@@ -12,6 +12,7 @@ using namespace winrt::Windows::System;
 InputProcessor::InputProcessor(_In_ CoreWindow const& window) :
     m_keyboardState(KeyboardState::None)
 {
+    m_state.currentPressedKey = KeyboardKeys::DeadKey;
     InitWindow(window);
 }
 
@@ -431,8 +432,6 @@ void InputProcessor::OnKeyDown(
         m_keyboardState = KeyboardState::KeyPressed;
         m_state.currentPressedKey = args.VirtualKey();
         newInput = true; //flag to Main.cpp that a new key was pressed
-
-        OutputDebugString(L"Pressed a key baby\n");
     }
     
 }
@@ -445,7 +444,7 @@ void InputProcessor::OnKeyUp(
     if (m_keyboardState == KeyboardState::KeyPressed)
     {
         m_keyboardState = KeyboardState::WaitForInput;
-        m_state.currentPressedKey = VirtualKey::F12; //set the current key to some random value that isn't used in the program
+        m_state.currentPressedKey = KeyboardKeys::DeadKey;
     }
 }
 

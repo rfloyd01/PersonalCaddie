@@ -5,6 +5,12 @@
 * transferred to other classes for use.
 */
 
+//Define a random key to signify no keyboard key is actually being pressed
+namespace KeyboardKeys
+{
+    const static winrt::Windows::System::VirtualKey DeadKey = winrt::Windows::System::VirtualKey::F12;
+}
+
 
 //This enum class tells us the current state of the InputProcessor. When in the none state 
 //we are currently accepting any input. When in the WaitForInput state we are currently waiting 
