@@ -10,6 +10,8 @@ using namespace winrt;
 using namespace Windows::Foundation;
 using namespace Windows::Devices::Bluetooth;
 
+struct DeviceInfoDisplay;
+
 /*
 * This class holds relevent information and methods for the Bluetooth Low Energy device that's
 * on the Personal Caddie (in this case the physical chip is an nRF52840 SOC). Characteristic and 
@@ -17,13 +19,18 @@ using namespace Windows::Devices::Bluetooth;
 * class.
 */
 
-struct DeviceInfoDisplay;
+enum class BLEState
+{
+	DeviceFound,
+	DeviceNotFound,
+	Connected
+};
 
 class BLE
 {
 public:
 	//Constructors
-	BLE(std::function<void()> function);
+	BLE(std::function<void(BLEState)> function);
 
 	//Device Connection and Discovery Methods
 	//void startBLEScan();
@@ -36,13 +43,15 @@ public:
 	void connect();
 	volatile bool ble_device_created = false;
 
+	std::set<DeviceInfoDisplay>* getScannedDevices() { return &m_scannedDevices; }
+
 	BluetoothLEDevice* getBLEDevice() { return &(this->m_bleDevice); }
 
 private:
 	void startDeviceWatcher();
 
 	//Handler Methods
-	std::function<void()> connected_handler; //pointer to a connected event handler in the Personal Caddie class
+	std::function<void(BLEState)> state_change_handler; //pointer to an event handler in the Personal Caddie class
 	void deviceFoundHandler(IAsyncOperation<BluetoothLEDevice> const& sender, AsyncStatus const asyncStatus);
 	
 	std::wstring formatBluetoothAddress(unsigned long long BluetoothAddress);

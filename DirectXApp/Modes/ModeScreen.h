@@ -39,21 +39,20 @@ public:
 	const float* getBackgroundColor();
 
 	//Handler Methods
-	void PersonalCaddieAlertHandler(std::pair<std::wstring, TextTypeColorSplit> alert);
+	void PersonalCaddieHandler(PersonalCaddieEventType pcEvent, void* eventArgs);
 
-	std::shared_ptr<std::map<TextType, std::wstring> > getRenderText();
-	std::shared_ptr<std::map<TextType, TextTypeColorSplit> > getRenderTextColors();
+	std::shared_ptr<std::vector<Text> > getCurrentModeText();
 
 private:
 	void processKeyboardInput(winrt::Windows::System::VirtualKey pressedKey);
+	void processEvents();
 	void processTimers();
 
 	void changeCurrentMode(ModeType mt);
+	void addCurrentModeText(Text const& text);
+	void setCurrentModeText(Text const& text);
 
-	
-
-	std::pair<std::wstring, TextTypeColorSplit> getCurrentModeAlerts();
-	void setCurrentModeAlerts(std::pair<std::wstring, TextTypeColorSplit> alerts);
+	void createModeScreenAlert(std::wstring alert);
 
 	uint32_t                            m_modeState; //holds info on the current mode state
 
@@ -64,6 +63,9 @@ private:
 	//Modes
 	std::vector<std::shared_ptr<Mode> > m_modes;
 	ModeType                            m_currentMode;
+
+	//Event variables
+	volatile PersonalCaddieEventType personal_caddy_event; //let's the main thread know that a new alert has been created from a different thread and needs to be rendered
 
 	//Timing variables
 	uint32_t alert_timer_duration; //duration of the alert timer in milliseconds

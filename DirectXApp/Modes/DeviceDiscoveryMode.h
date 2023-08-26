@@ -2,18 +2,28 @@
 
 #include "Mode.h"
 
-class SettingsMode : public Mode
+enum class DeviceDiscoveryState
+{
+	IDLE,
+	DISCOVERY,
+	DISCONNECT
+};
+
+class DeviceDiscoveryMode : public Mode
 {
 public:
 	//PUBLIC FUNCTIONS
 	//Constructors
-	SettingsMode();
+	DeviceDiscoveryMode();
 
 	virtual uint32_t initializeMode() override;
 	virtual void uninitializeMode() override;
 
+	void enterActiveState(int state);
+
 	//Updating and Advancement Functions
 private:
 	void initializeSettingsModeText();
+	DeviceDiscoveryState m_state;
 
 };

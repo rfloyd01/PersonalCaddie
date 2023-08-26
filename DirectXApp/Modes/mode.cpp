@@ -3,30 +3,23 @@
 
 void Mode::initializeModeText()
 {
-	m_modeText = std::make_shared<std::map<TextType, std::wstring>>();
-	m_modeTextColors = std::make_shared<std::map<TextType, TextTypeColorSplit>>();
+	m_modeText = std::make_shared<std::vector<Text>>();
 
-	//Initialize the text map to have an empty vector for each category
+	//Initialize the text vector so that there's an entry for every current TextType
 	for (int i = 0; i < static_cast<int>(TextType::END); i++)
 	{
-		m_modeText->insert({ static_cast<TextType>(i), L""}); //text is null initialized with no color
-		m_modeTextColors->insert({ static_cast<TextType>(i), { {}, {0} } }); //color split starts out empty
-
-		//Note, the locations portion of the TextTypeColorSplit will always start with a 0, 
-		//regardless of whether or not there's actually any text. Because of this the locations
-		//vector will always have a length that's 1 greater than the colors vector.
+		Text text(L"", {}, { 0 }, static_cast<TextType>(i)); //default text
+		m_modeText->push_back(text);
 	}
 }
 
 void Mode::clearModeText()
 {
-	//clears all Text and colors from the mode's text maps.
+	//set all text to empty strings, and remove any colors
 	for (int i = 0; i < static_cast<int>(TextType::END); i++)
 	{
-		TextType tt = static_cast<TextType>(i);
-
-		m_modeText->at(tt) = L"";
-		m_modeTextColors->at(tt) = { {}, {0} };
+		Text defaultText(L"", {}, { 0 }, static_cast<TextType>(i));
+		m_modeText->at(i) = defaultText;
 	}
 }
 
@@ -35,19 +28,10 @@ const float* Mode::getBackgroundColor()
 	return m_backgroundColor;
 }
 
-std::pair<std::wstring, TextTypeColorSplit> Mode::getCurrentAlerts()
+void Mode::setModeText(Text const& text)
 {
-	return {m_modeText->at(TextType::ALERT), m_modeTextColors->at(TextType::ALERT)};
-}
-
-void Mode::setCurrentAlerts(std::pair<std::wstring, TextTypeColorSplit> alert)
-{
-	m_modeText->at(TextType::ALERT) = alert.first;
-	m_modeTextColors->at(TextType::ALERT) = alert.second;
-}
-
-void Mode::removeCurrentAlerts()
-{
-	m_modeText->at(TextType::ALERT) = L"";
-	m_modeTextColors->at(TextType::ALERT) = { {}, {0} };
+	//sets the text for a single TextType in the m_modeText vector. To update
+	//all text for the current mode this method needs to be called multiple
+	//times.
+	m_modeText->at(static_cast<int>(text.textType)) = text;
 }

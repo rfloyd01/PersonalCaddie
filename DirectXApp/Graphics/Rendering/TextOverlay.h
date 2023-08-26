@@ -13,12 +13,11 @@ public:
 	void operator=(TextOverlay const&) = delete;
 
     void CreateDeviceDependentResources();
-    void CreateTextBrushes(_In_ std::shared_ptr<ModeScreen> const& mode);
     void DeleteTextBrushes();
     void CreateWindowSizeDependentResources();
     void ReleaseDeviceDependentResources();
 
-    void UpdateTextTypeMessage(TextType tt, std::wstring const& new_message, TextTypeColorSplit const& colors);
+    void UpdateText(Text const& text);
 
     void Render(_In_ std::shared_ptr<ModeScreen> const& mode);
 
@@ -26,8 +25,9 @@ private:
     void SetTextRegionAlignments(TextType tt);
     void UpdateTextTypeFontSize(TextType tt);
 
-    void CreateTextTypeBrushes(TextType tt, TextTypeColorSplit const& colors);
+    void CreateTextTypeBrushes(Text const& text);
     void DeleteTextTypeBrushes(TextType tt);
+
     // Cached pointer to device resources.
     std::shared_ptr<DX::DeviceResources> m_deviceResources;
 

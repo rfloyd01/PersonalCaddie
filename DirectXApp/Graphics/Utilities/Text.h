@@ -23,33 +23,19 @@ struct TextColor
 };
 
 //This struct holds information about text to be rendered on the screen
-//struct Text
-//{
-//	Text(std::wstring message, const TextColor& color) :
-//		message(message),
-//		color(color)
-//	{
-//
-//	}
-//
-//	/*int getMessageLength()
-//	{
-//		int length = 0;
-//		auto it = message;
-//
-//		while (*it++ != L'\0') length++;
-//
-//		return length;
-//	}*/
-//
-//	std::wstring message;
-//	TextColor color;
-//};
-
-struct TextTypeColorSplit
+struct Text
 {
-	//this struct is used to apply different colors to a single
-	//block of text.
-	std::vector<TextColor> colors;
-	std::vector<uint32_t> locations; //holds the index of all characters where the color switches
+	Text(std::wstring const& message, std::vector<TextColor> const& colors, std::vector<unsigned long long> const & locations, TextType textType) :
+		message(message),
+		colors(colors),
+		locations(locations),
+		textType(textType)
+	{
+
+	}
+
+	std::wstring message;
+	std::vector<TextColor> colors; //holds the different colors of the text (in order)
+	std::vector<unsigned long long> locations; //holds the index of all characters where the text color switches. This vector must be 1 element longer than the colors vector
+	TextType textType;
 };

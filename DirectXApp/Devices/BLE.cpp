@@ -10,7 +10,7 @@ using namespace Windows::Foundation;
 using namespace Windows::Devices;
 
 //Constructors
-BLE::BLE(std::function<void()> function)
+BLE::BLE(std::function<void(BLEState)> function)
 {
 	//When first creating a new BLE device we attempt to automatically connect to the first 'Personal Caddie' we can find.
     //Set up the device watcher so that it saves any new device it encounters, but stop the watcher if and when a Peronsal
@@ -43,7 +43,7 @@ BLE::BLE(std::function<void()> function)
     );
 
     //Set the onConnected() event handler from the Personal Caddie class
-    this->connected_handler = function;
+    this->state_change_handler = function;
 
 }
 
@@ -52,8 +52,8 @@ IAsyncOperation<BluetoothLEDevice> BLE::connectToExistingDevice()
     //This method attempts to connect to the most recently paired Personal Caddie device. If no device exists, or this method
     //is unsuccessful then the device watcher will be called
 
-    uint64_t personal_caddie_address = 274381568618262;  //TODO: This should be saved in an external file
-    //uint64_t personal_caddie_address = 230350333228259; //This is the address for the nRF DK onboard chip
+    uint64_t personal_caddie_address = 27438156861826;  //TODO: This should be saved in an external file
+    //274381568618262
     IAsyncOperation<BluetoothLEDevice> FindBLEAsync = Bluetooth::BluetoothLEDevice::FromBluetoothAddressAsync(personal_caddie_address);
 
     //create a handler that will get called when the BLEDevice is created
@@ -83,8 +83,6 @@ winrt::Windows::Foundation::IAsyncAction yeet()
 
 void BLE::connect()
 {
-    OutputDebugString(L"Found a Personal Caddie, attempting to connect.\n");
-    
     //First create a winrt::BluetoothLEDevice for the BLE class
     //this->m_bleDevice = Bluetooth::BluetoothLEDevice::FromBluetoothAddressAsync(ble_address).get(); //get will block the calling thread (similar to co_await)
 
@@ -96,7 +94,7 @@ void BLE::connect()
     this->m_bleAdvertisementsWatcher.Stop();*/
 
     //Envoke the connected event function passed in from the Personal Caddie class
-    this->connected_handler();
+    this->state_change_handler(BLEState::DeviceFound);
 }
 
 bool BLE::isConnected()
@@ -141,13 +139,11 @@ void BLE::deviceFoundHandler(IAsyncOperation<BluetoothLEDevice> const& sender, A
     //check to see if the device was actually found
     if (m_bleDevice.as<winrt::Windows::Foundation::IUnknown>() == NULL)
     {
-        OutputDebugString(L"Couldn't find existing Personal Caddie, scanning for new devices now.");
+        state_change_handler(BLEState::DeviceNotFound);
         startDeviceWatcher();
     }
     else
     {
-        OutputDebugString(L"Found a Personal Caddie, attempting to connect.\n");
-        //TODO: Uncomment this when done with inputprocessor class
-        //this->connected_handler();
+        state_change_handler(BLEState::DeviceFound);
     }
 }

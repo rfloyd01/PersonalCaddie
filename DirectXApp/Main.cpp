@@ -32,8 +32,8 @@ void Main::Run()
     m_modeScreen->Initialize(m_inputProcessor, m_renderer);
 
     //Then create a Personal Caddie instance and pass a handler function from the Mode
-    //screen class for rendering alerts on the screen
-    m_personalCaddie = std::make_shared<PersonalCaddie>(std::bind(&ModeScreen::PersonalCaddieAlertHandler, m_modeScreen.get(), std::placeholders::_1));
+    //screen class for receiving BLE events
+    m_personalCaddie = std::make_shared<PersonalCaddie>(std::bind(&ModeScreen::PersonalCaddieHandler, m_modeScreen.get(), std::placeholders::_1, std::placeholders::_2));
 
     //After successfully creating the Personal Caddie instance, pass a pointer
     //of it to the Mode Screen app as well so that the Personal Caddie can send

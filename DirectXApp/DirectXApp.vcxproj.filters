@@ -55,7 +55,10 @@
     <ClCompile Include="Modes\MainMenuMode.cpp">
       <Filter>Modes</Filter>
     </ClCompile>
-    <ClCompile Include="Modes\SettingsMode.cpp">
+    <ClCompile Include="Modes\SettingsMenuMode.cpp">
+      <Filter>Modes</Filter>
+    </ClCompile>
+    <ClCompile Include="Modes\DeviceDiscoveryMode.cpp">
       <Filter>Modes</Filter>
     </ClCompile>
   </ItemGroup>
@@ -127,7 +130,10 @@
     <ClInclude Include="Graphics\Utilities\Text.h">
       <Filter>Graphics\Utilities</Filter>
     </ClInclude>
-    <ClInclude Include="Modes\SettingsMode.h">
+    <ClInclude Include="Modes\SettingsMenuMode.h">
+      <Filter>Modes</Filter>
+    </ClInclude>
+    <ClInclude Include="Modes\DeviceDiscoveryMode.h">
       <Filter>Modes</Filter>
     </ClInclude>
   </ItemGroup>

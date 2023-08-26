@@ -207,43 +207,6 @@ void TextOverlay::CreateWindowSizeDependentResources()
     }
 }
 
-void TextOverlay::CreateTextBrushes(_In_ std::shared_ptr<ModeScreen> const& mode)
-{
-    //When a new mode has been created we need to create brushes to color any and all
-    //text on the screen.
-    auto textColors = mode->getRenderTextColors();
-    auto d2dContext = m_deviceResources->GetD2DDeviceContext();
-
-    //iterate over all different text types
-    for (int i = 0; i < static_cast<int>(TextType::END); i++)
-    {
-        TextType tt = static_cast<TextType>(i);
-        if (textColors->at(tt).colors.size() == 0) continue; //if there's no text of this type then skip it
-
-        unsigned int current_location = 0;
-
-        for (int j = 0; j < textColors->at(tt).colors.size(); j++)
-        {
-            TextColor c = textColors->at(tt).colors[j];
-            m_textColorBrushes[i].push_back(nullptr);
-            winrt::check_hresult(
-                d2dContext->CreateSolidColorBrush(
-                    D2D1::ColorF(c.r, c.g, c.b, c.a),
-                    m_textColorBrushes[i].back().put()
-                )
-            );
-
-            //After creating a new brush, apply it to the appropriate characters of the text. The locations vector
-            //of the TextTypeColorSplit struct will always have a length that's 1 greater than the colors vector,
-            //so accessing elements with j+1 is safe.
-            m_textLayouts[i]->SetDrawingEffect(m_textColorBrushes[i].back().get(), { current_location,
-                textColors->at(tt).locations[j + 1] });
-
-            current_location += textColors->at(tt).locations[j + 1];
-        }
-    }
-}
-
 void TextOverlay::DeleteTextBrushes()
 {
     for (int i = 0; i < static_cast<int>(TextType::END); i++)
@@ -253,43 +216,41 @@ void TextOverlay::DeleteTextBrushes()
     }
 }
 
-void TextOverlay::UpdateTextTypeMessage(TextType tt, std::wstring const& new_message, TextTypeColorSplit const& colors)
+void TextOverlay::UpdateText(Text const& text)
 {
-    //This method gets called either when a new mode is first entered, or, when 
-    //a new part of the mode is entered requiring different rendering text. New text
-    //requires the creation of new textLayouts objects. I don't know how resource
+    //New text requires the creation of new textLayouts objects. I don't know how resource
     //intensive this is but I'd prefer to only create new Layouts if absolutely necessary.
-    //Because of this, we don't update all text, only individual text types for the 
-    //current mode. This method is only for updating the physical message of the text,
-    //none of the formatting gets changed
+    //Because of this, we don't update all text on screen in one shot, only individual text
+    //snippets are updated at a time (this way we don't recreate resources for text not 
+    //getting updated).
 
     auto dwriteFactory = m_deviceResources->GetDWriteFactory();
 
-    auto originalWidth = m_textLayouts[static_cast<int>(tt)]->GetMaxWidth();
-    auto originalHeight = m_textLayouts[static_cast<int>(tt)]->GetMaxHeight();
+    int index = static_cast<int>(text.textType);
+    auto originalWidth = m_textLayouts[index]->GetMaxWidth();
+    auto originalHeight = m_textLayouts[index]->GetMaxHeight();
 
     winrt::check_hresult(
         dwriteFactory->CreateTextLayout(
-            &new_message[0],
-            new_message.size(),
-            m_textFormats[static_cast<int>(tt)].get(),
+            &text.message[0],
+            text.message.size(),
+            m_textFormats[static_cast<int>(text.textType)].get(),
             originalWidth,
             originalHeight,
-            m_textLayouts[static_cast<int>(tt)].put()
+            m_textLayouts[static_cast<int>(text.textType)].put()
         )
     );
 
     //Update the value in the m_textLengths vector and then make sure 
     //that any styling gets applied to the entirety of the new message
-    m_textLengths[static_cast<int>(tt)] = new_message.length();
-    UpdateTextTypeFontSize(tt);
+    m_textLengths[index] = text.message.length();
+    UpdateTextTypeFontSize(text.textType);
 
     //After updating the physical text, we update the colors (if applicable). If the passed in string is empty
     //or the passed in colors array isn't empty, we delete any existing text brushes for the given TextType.
     //Furthermore, if the passed in colors array isn't empty, we create new brushes as specified.
-    if (new_message.size() == 0 || colors.colors.size() > 0) DeleteTextTypeBrushes(tt);
-
-    if (colors.colors.size() > 0) CreateTextTypeBrushes(tt, colors);
+    if (text.message.size() == 0 || text.colors.size() > 0) DeleteTextTypeBrushes(text.textType);
+    if (text.colors.size() > 0) CreateTextTypeBrushes(text);
 }
 
 void TextOverlay::UpdateTextTypeFontSize(TextType tt)
@@ -336,7 +297,7 @@ void TextOverlay::ReleaseDeviceDependentResources()
     m_logoBitmap = nullptr;
 }
 
-void TextOverlay::CreateTextTypeBrushes(TextType tt, TextTypeColorSplit const& colors)
+void TextOverlay::CreateTextTypeBrushes(Text const& text)
 {
     //This method creates text brushes for a single TextType based on the text color
     //split passed in.
@@ -346,12 +307,12 @@ void TextOverlay::CreateTextTypeBrushes(TextType tt, TextTypeColorSplit const& c
 
     auto d2dContext = m_deviceResources->GetD2DDeviceContext();
 
-    int i = static_cast<int>(tt);
+    int i = static_cast<int>(text.textType);
     unsigned int current_location = 0;
 
-    for (int j = 0; j < colors.colors.size(); j++)
+    for (int j = 0; j < text.colors.size(); j++)
     {
-        TextColor c = colors.colors[j];
+        TextColor c = text.colors[j];
         m_textColorBrushes[i].push_back(nullptr);
         winrt::check_hresult(
             d2dContext->CreateSolidColorBrush(
@@ -364,15 +325,15 @@ void TextOverlay::CreateTextTypeBrushes(TextType tt, TextTypeColorSplit const& c
         //of the TextTypeColorSplit struct will always have a length that's 1 greater than the colors vector,
         //so accessing elements with j+1 is safe.
         m_textLayouts[i]->SetDrawingEffect(m_textColorBrushes[i].back().get(), { current_location,
-            colors.locations[j + 1] });
+            (unsigned int)text.locations[j + 1] });
 
-        current_location += colors.locations[j + 1];
+        current_location += (unsigned int)text.locations[j + 1];
     }
 }
 
 void TextOverlay::DeleteTextTypeBrushes(TextType tt)
 {
-    //Deletes all text brushes for the given TextType
+    //Deletes all text brushes (if they exist) for the given TextType
     for (int i = 0; i < m_textColorBrushes[static_cast<int>(tt)].size(); i++) m_textColorBrushes[static_cast<int>(tt)][i] = nullptr;
     m_textColorBrushes[static_cast<int>(tt)].clear();
 }

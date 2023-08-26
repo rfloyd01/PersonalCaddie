@@ -14,12 +14,12 @@ using namespace Bluetooth::GenericAttributeProfile;
 
 //PUBLIC FUNCTIONS
 //Constructors
-PersonalCaddie::PersonalCaddie(std::function<void(std::pair<std::wstring, TextTypeColorSplit>)> function)
+PersonalCaddie::PersonalCaddie(std::function<void(PersonalCaddieEventType, void*)> function)
 {
-    message_handler = function;
+    event_handler = function;
 
     this->ble_device_connected = false;
-    this->p_ble = std::make_unique<BLE>(std::bind(&PersonalCaddie::BLEDeviceConnectedHandler, this));
+    this->p_ble = std::make_unique<BLE>(std::bind(&PersonalCaddie::BLEDeviceHandler, this, std::placeholders::_1));
 
     //After creating the BLE device, attempt to connect to the most recently paire
     //device
@@ -53,11 +53,9 @@ PersonalCaddie::PersonalCaddie(std::function<void(std::pair<std::wstring, TextTy
         orientation_quaternions.push_back(q);
     }
 
-    std::wstring message = L"Personal Caddie finished initializing";
-    message_handler({ message, {{{0, 1, 0, 1}}, {0, (unsigned int)message.length()}} });
 }
 
-void PersonalCaddie::BLEDeviceConnectedHandler()
+void PersonalCaddie::BLEDeviceHandler(BLEState state)
 {
     //This is my take on creating a handler function. A reference to this method gets passed to the BLE class via its cunstructor.
     //The BLE class will independently try and connect to a physical BLE device and as soon as it does, this method gets called
@@ -71,58 +69,70 @@ void PersonalCaddie::BLEDeviceConnectedHandler()
     //the device and then get the characteristics from each. Use the BluetoothCacheMode::Uncached flag so that we get the 
     //services from the physical device and not from what's saved in the PC's cache memory. This ensures that we are physically 
     //connecting to a device.
-    auto gattServices = this->p_ble->getBLEDevice()->GetGattServicesAsync(BluetoothCacheMode::Uncached).get().Services();
-
-    for (int i = 0; i < gattServices.Size(); i++)
+    switch (state)
     {
-        auto gattService = gattServices.GetAt(i);
-        uint16_t short_uuid = (gattService.Uuid().Data1 & 0xFFFF);
-        
-        switch (short_uuid)
+    case BLEState::DeviceFound:
+    {
+        std::wstring message = L"Found a Personal Caddie device, attempting to connect...";
+        event_handler(PersonalCaddieEventType::BLE_ALERT, (void*)&message);
+
+        auto gattServices = this->p_ble->getBLEDevice()->GetGattServicesAsync(BluetoothCacheMode::Uncached).get().Services();
+
+        for (int i = 0; i < gattServices.Size(); i++)
         {
-        case SENSOR_SERVICE_UUID:
-            getDataCharacteristics(gattService);
-            break;
-        case SENSOR_INFO_UUID:
-            OutputDebugString(L"Found the Device Info service, getting info about on-board sensors.\n");
-            break;
-        default:
-            break;
+            auto gattService = gattServices.GetAt(i);
+            uint16_t short_uuid = (gattService.Uuid().Data1 & 0xFFFF);
+
+            switch (short_uuid)
+            {
+            case SENSOR_SERVICE_UUID:
+                getDataCharacteristics(gattService);
+                break;
+            case SENSOR_INFO_UUID:
+                OutputDebugString(L"Found the Device Info service, getting info about on-board sensors.\n");
+                break;
+            default:
+                break;
+            }
         }
+
+        this->ble_device_connected = true;
+
+        //Read the sensor settings characteristic to get some basic information about the sensors attached to
+        //the Personal Caddie
+        uint8_t sensor_settings_array[SENSOR_SETTINGS_LENGTH] = { 0 };
+
+        try
+        {
+            auto sensor_settings_buffer = m_settings_characteristic.ReadValueAsync(Bluetooth::BluetoothCacheMode::Uncached).get().Value(); //use unchached to read value from the device
+            auto sensor_settings = Windows::Storage::Streams::DataReader::FromBuffer(sensor_settings_buffer);
+            sensor_settings.ByteOrder(Windows::Storage::Streams::ByteOrder::LittleEndian); //the nRF52840 uses little endian so we match it here
+
+            for (int i = 0; i < SENSOR_SETTINGS_LENGTH; i++) sensor_settings_array[i] = sensor_settings.ReadByte();
+        }
+        catch (...)
+        {
+            OutputDebugString(L"something went wrong when reading characteristic\n");
+        }
+
+        //Use the data read from the settings characteristic to create a new IMU instance
+        this->p_imu = std::make_unique<IMU>(sensor_settings_array);
+        auto rates = this->p_imu->getSensorConversionRates();
+        auto odrs = this->p_imu->getSensorODRs();
+
+        sampleFreq = this->p_imu->getMaxODR(); //Set the sample frequency to be equal to the largest of the sensor ODRs
+
+        //update calibration numbers
+
+
+        //Send an alert to the graphics interface letting it know that the connection has been made
+        OutputDebugString(L"Successfully connected to the Personal Caddie.\n");
+        break;
     }
-
-    this->ble_device_connected = true;
-
-    //Read the sensor settings characteristic to get some basic information about the sensors attached to
-    //the Personal Caddie
-    uint8_t sensor_settings_array[SENSOR_SETTINGS_LENGTH] = { 0 };
-
-    try
-    {
-        auto sensor_settings_buffer = m_settings_characteristic.ReadValueAsync(Bluetooth::BluetoothCacheMode::Uncached).get().Value(); //use unchached to read value from the device
-        auto sensor_settings = Windows::Storage::Streams::DataReader::FromBuffer(sensor_settings_buffer);
-        sensor_settings.ByteOrder(Windows::Storage::Streams::ByteOrder::LittleEndian); //the nRF52840 uses little endian so we match it here
-
-        for (int i = 0; i < SENSOR_SETTINGS_LENGTH; i++) sensor_settings_array[i] = sensor_settings.ReadByte();
+    case BLEState::DeviceNotFound:
+        std::wstring message = L"Couldn't find an existing Personal Caddie, searching for nearby devices. Go to the settings menu to connect to one.";
+        event_handler(PersonalCaddieEventType::PC_ALERT, (void*)&message);
     }
-    catch (...)
-    {
-        OutputDebugString(L"something went wrong when reading characteristic\n");
-    }
-
-    //Use the data read from the settings characteristic to create a new IMU instance
-    this->p_imu = std::make_unique<IMU>(sensor_settings_array);
-    auto rates = this->p_imu->getSensorConversionRates();
-    auto odrs = this->p_imu->getSensorODRs();
-
-    sampleFreq = this->p_imu->getMaxODR(); //Set the sample frequency to be equal to the largest of the sensor ODRs
-
-    //update calibration numbers
-
-
-    //Send an alert to the graphics interface letting it know that the connection has been made
-    //this->graphic_update_handler(34);
-    OutputDebugString(L"Successfully connected to the Personal Caddie.\n");
 }
 
 void PersonalCaddie::getDataCharacteristics(Bluetooth::GenericAttributeProfile::GattDeviceService& data_service)
@@ -360,14 +370,6 @@ void PersonalCaddie::changePowerMode(PersonalCaddiePowerMode mode)
         OutputDebugString(L"The write operation was successful.\n");
         this->current_power_mode = mode; //update the current power mode
     }
-}
-
-void PersonalCaddie::setGraphicsHandler(std::function<void(int)> function)
-{
-    //The 'function' parameter is a method that's defined in the Graphics interface. We can use this 
-    //function to automatically make graphics updates when certain events happen (such as the BLE device
-    //getting disconnected)
-    this->graphic_update_handler = function;
 }
 
 //Methods and fields from original BluetoothLE Class

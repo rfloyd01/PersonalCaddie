@@ -53,7 +53,7 @@ namespace UIConstants
     static const float BodyRectangleX0 = WidthMargin;
     static const float BodyRectangleX1 = 1.0 - WidthMargin;
     static const float BodyRectangleY0 = SubTitleRectangleY1 + HeightMargin;
-    static const float BodyRectangleY1 = BodyRectangleY0 + 0.4;
+    static const float BodyRectangleY1 = BodyRectangleY0 + 0.5;
 
     //TextType::SENSOR_INFO constants
     static const float SensorInfoTextPointSize = 0.05f;
@@ -63,7 +63,7 @@ namespace UIConstants
     static const float SensorInfoRectangleY1 = 1.0 - HeightMargin;
 
     //TextType::ALERT constants
-    static const float AlertTextPointSize = 0.033f;
+    static const float AlertTextPointSize = 0.025f;
     static const float AlertRectangleX0 = SensorInfoRectangleX1 + WidthMargin;
     static const float AlertRectangleX1 = SensorInfoRectangleX1 + (1.0 - WidthMargin) / 3.0;
     static const float AlertRectangleY0 = SensorInfoRectangleY0;
@@ -75,4 +75,11 @@ namespace UIConstants
     static const float FootNoteRectangleX1 = 1.0 - WidthMargin;
     static const float FootNoteRectangleY0 = SensorInfoRectangleY0;
     static const float FootNoteRectangleY1 = 1.0 - HeightMargin;
+};
+
+namespace AlertColors
+{
+    static const TextColor alertRed{ 1.0, 0.0, 0.0, 1.0 };
+    static const TextColor alertLightBlue{ 0.6, 0.85, 0.92, 1 };
+    static const TextColor alertYellow{ 1.0, 0.788, 0.055, 1.0 };
 };

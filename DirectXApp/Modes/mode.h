@@ -14,8 +14,9 @@ enum class ModeType
 	FREE = 1,
 	CALIBRATION = 2,
 	TRAINING = 3,
-	SETTINGS = 4,
-	END = 5 //allows for looping through of ModeType enum class
+	SETTINGS_MENU = 4,
+	DEVICE_DISCOVERY = 5,
+	END = 6 //allows for looping through of ModeType enum class. This number should be one more than previous value
 };
 
 //The ModeState enum keeps track of what the current state of the app is. Each of these
@@ -35,18 +36,12 @@ public:
 	//PUBLIC FUNCTIONS
 	virtual uint32_t initializeMode() = 0;
 	virtual void uninitializeMode() = 0;
-	//virtual void processInput(InputState* inputState) = 0;
+	virtual void enterActiveState(int state) {};
 
 	const float* getBackgroundColor();
 
-	//Alert messages can carry over between different modes so they
-	//have special functions for handling them
-	std::pair<std::wstring, TextTypeColorSplit> getCurrentAlerts();
-	void setCurrentAlerts(std::pair<std::wstring, TextTypeColorSplit> alert);
-	void removeCurrentAlerts();
-
-	std::shared_ptr<std::map<TextType, std::wstring> > getModeText() { return m_modeText; }
-	std::shared_ptr<std::map<TextType, TextTypeColorSplit> > getModeTextColors() { return m_modeTextColors; }
+	std::shared_ptr<std::vector<Text>> getModeText() { return m_modeText; }
+	void setModeText(Text const& text);
 
 protected:
 	//PROTECTED FUNCTIONS
@@ -61,6 +56,5 @@ protected:
 
 	//a map used to store all words to be rendered on screen and their colors,
 	//a map is used to make it easier when adding and deleting messages
-	std::shared_ptr<std::map<TextType, std::wstring > > m_modeText;
-	std::shared_ptr<std::map<TextType, TextTypeColorSplit > > m_modeTextColors;
+	std::shared_ptr<std::vector<Text>> m_modeText;
 };

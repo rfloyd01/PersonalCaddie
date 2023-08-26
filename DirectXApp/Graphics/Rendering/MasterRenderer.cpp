@@ -67,23 +67,12 @@ void MasterRenderer::CreateModeResources()
     //In the original DirectX example this is an asynchronus function that loads certain resources for 
     //the game. For now just make this a normal function, but if loading starts taking awhile then
     //make this asynchronus
-    auto renderTextMap = m_mode->getRenderText();
+    auto renderText = m_mode->getCurrentModeText();
 
-    //When loading a new mode we need to pass in all the text in the textMap. This will override
-    //any text currently in place.
-    for (auto it = renderTextMap->begin(); it != renderTextMap->end(); it++)
+    for (int i = 0; i < renderText->size(); i++)
     {
-        SetRenderText(it->first, it->second);
+       editText(renderText->at(i));
     }
-
-    //We also need to create color brushes for all of this text. Delete any existing brushes first
-    m_textOverlay.DeleteTextBrushes();
-    m_textOverlay.CreateTextBrushes(m_mode);
-}
-
-void MasterRenderer::SetRenderText(TextType tt, std::wstring const& new_message)
-{
-    m_textOverlay.UpdateTextTypeMessage(tt, new_message, { {}, {} }); //set color structure to be empty
 }
 
 void MasterRenderer::ReleaseDeviceDependentResources()
@@ -211,20 +200,8 @@ void MasterRenderer::Render()
     }
 }
 
-void MasterRenderer::renderNewAlerts(std::pair<std::wstring, TextTypeColorSplit> alerts)
-{
-    //render any new incoming alert messages
-    editTextTypeMessage(TextType::ALERT, alerts.first, alerts.second);
-}
-
-void MasterRenderer::removeCurrentAlerts()
-{
-    //stop any alerts from being rendered on screen
-    editTextTypeMessage(TextType::ALERT, L"", { {}, {} });
-}
-
-void MasterRenderer::editTextTypeMessage(TextType tt, std::wstring message, TextTypeColorSplit const& colors)
+void MasterRenderer::editText(Text const& text)
 {
     //just a pass through function to the text renderer
-    m_textOverlay.UpdateTextTypeMessage(tt, message, colors);
+    m_textOverlay.UpdateText(text);
 }

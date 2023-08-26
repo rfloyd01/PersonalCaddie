@@ -41,6 +41,17 @@ enum class DataType
 	EULER_ANGLES
 };
 
+enum class PersonalCaddieEventType
+{
+	NONE = 0,
+	PC_ALERT = 1,
+	BLE_ALERT = 2,
+	IMU_ALERT = 3,
+	DEVICE_WATCHER_UPDATE = 4
+};
+
+enum class TextType;
+
 /*
 * This class is a representation of the physical Personal Caddie device. The real device is composed of a 
 * BluetoothLE module (specifically the nRF52840) and an IMU (I've worked with a handful of different sensors
@@ -51,15 +62,13 @@ class PersonalCaddie
 {
 public:
 	//Constructors
-	PersonalCaddie(std::function<void(std::pair<std::wstring, TextTypeColorSplit>)> function);
+	PersonalCaddie(std::function<void(PersonalCaddieEventType, void*)> function);
 
 	//BLE Related Functions
 	//void turnOnDataNotifications();
 	void changePowerMode(PersonalCaddiePowerMode mode);
 
 	volatile bool ble_device_connected;
-
-	void setGraphicsHandler(std::function<void(int)> function);
 
 	PersonalCaddiePowerMode getCurrentPowerMode();
 
@@ -86,16 +95,18 @@ public:
 	//void updateCalibrationNumbers();
 	void setRotationQuaternion(glm::quat q, int sample);
 
+	std::set<DeviceInfoDisplay>* getScannedDevices() { return p_ble->getScannedDevices(); }
+
 private:
 
 	std::unique_ptr<BLE> p_ble;
 	std::unique_ptr<IMU> p_imu;
 
 	//Handler Methods
-	std::function<void(std::pair<std::wstring, TextTypeColorSplit>)> message_handler; //sends messages to the ModeScreen class for rendering on screen
+	std::function<void(PersonalCaddieEventType, void*)> event_handler; //sends events to the ModeScreen class for rendering on screen
+	void BLEDeviceHandler(BLEState state);
 
 	//BLE Functionality
-	void BLEDeviceConnectedHandler();
 	void getDataCharacteristics(Bluetooth::GenericAttributeProfile::GattDeviceService& data_service);
 	void dataCharacteristicEventHandler(Bluetooth::GenericAttributeProfile::GattCharacteristic& car, Bluetooth::GenericAttributeProfile::GattValueChangedEventArgs& args);
 
@@ -105,7 +116,7 @@ private:
 	PersonalCaddiePowerMode current_power_mode;
 	bool dataNotificationsOn;
 
-	std::function<void(int)> graphic_update_handler; //pointer to a method in the graphic module
+	
 
 	volatile bool sensor_data_updated[3] = { false, false, false };
 	volatile bool data_available = false;
