@@ -10,9 +10,6 @@
     <ClCompile Include="Graphics\Rendering\MasterRenderer.cpp">
       <Filter>Graphics\Rendering</Filter>
     </ClCompile>
-    <ClCompile Include="Graphics\Rendering\TextOverlay.cpp">
-      <Filter>Graphics\Rendering</Filter>
-    </ClCompile>
     <ClCompile Include="Devices\BLE.cpp">
       <Filter>Devices</Filter>
     </ClCompile>
@@ -67,6 +64,15 @@
     <ClCompile Include="Graphics\Objects\2D\Button.cpp">
       <Filter>Graphics\Objects\2D</Filter>
     </ClCompile>
+    <ClCompile Include="Graphics\Rendering\MenuObjectRenderer.cpp">
+      <Filter>Graphics\Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\Rendering\Direct2DRenderer.cpp">
+      <Filter>Graphics\Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\Rendering\TextRenderer.cpp">
+      <Filter>Graphics\Rendering</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -75,9 +81,6 @@
       <Filter>Graphics\Utilities</Filter>
     </ClInclude>
     <ClInclude Include="Graphics\Rendering\MasterRenderer.h">
-      <Filter>Graphics\Rendering</Filter>
-    </ClInclude>
-    <ClInclude Include="Graphics\Rendering\TextOverlay.h">
       <Filter>Graphics\Rendering</Filter>
     </ClInclude>
     <ClInclude Include="Graphics\Utilities\GraphicsHelpers.h">
@@ -147,6 +150,15 @@
     </ClInclude>
     <ClInclude Include="Graphics\Objects\2D\Button.h">
       <Filter>Graphics\Objects\2D</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Rendering\MenuObjectRenderer.h">
+      <Filter>Graphics\Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Rendering\Direct2DRenderer.h">
+      <Filter>Graphics\Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Rendering\TextRenderer.h">
+      <Filter>Graphics\Rendering</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -10,7 +10,7 @@ MasterRenderer::MasterRenderer(std::shared_ptr<DX::DeviceResources> const& devic
     m_initialized(false),
     m_gameResourcesLoaded(false),
     m_levelResourcesLoaded(false),
-    m_textOverlay(deviceResources)
+    m_textRenderer(deviceResources)
 {
     CreateDeviceDependentResources();
     CreateWindowSizeDependentResources();
@@ -21,12 +21,12 @@ void MasterRenderer::CreateDeviceDependentResources()
     m_gameResourcesLoaded = false;
     m_levelResourcesLoaded = false;
 
-    m_textOverlay.CreateDeviceDependentResources();
+    m_textRenderer.CreateDeviceDependentResources();
 }
 
 void MasterRenderer::CreateWindowSizeDependentResources()
 {
-    m_textOverlay.CreateWindowSizeDependentResources();
+    m_textRenderer.CreateWindowSizeDependentResources();
 
     auto d3dContext = m_deviceResources->GetD3DDeviceContext();
     auto renderTargetSize = m_deviceResources->GetRenderTargetSize();
@@ -82,7 +82,7 @@ void MasterRenderer::ReleaseDeviceDependentResources()
     // Simple3DGame object. It will be reset as a part of the
     // game devices resources being recreated.
     //m_game = nullptr;
-    m_textOverlay.ReleaseDeviceDependentResources();
+    m_textRenderer.ReleaseDeviceDependentResources();
 }
 
 void MasterRenderer::Render()
@@ -183,7 +183,7 @@ void MasterRenderer::Render()
     d2dContext->SetTransform(m_deviceResources->GetOrientationTransform2D());
 
     //Render on screen text
-    m_textOverlay.Render(m_mode);
+    m_textRenderer.Render(m_mode);
 
     //Render 2D UI elements like drop down boxes and buttons
     for (int i = 0; i < m_mode->getCurrentModeMenuObjects().size(); i++) m_mode->getCurrentModeMenuObjects()[i]->Render(d2dContext);
@@ -201,5 +201,5 @@ void MasterRenderer::Render()
 void MasterRenderer::editText(Text const& text)
 {
     //just a pass through function to the text renderer
-    m_textOverlay.UpdateText(text);
+    m_textRenderer.UpdateText(text);
 }

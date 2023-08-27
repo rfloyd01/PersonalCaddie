@@ -1,6 +1,6 @@
 #pragma once
 
-#include "TextOverlay.h"
+#include "TextRenderer.h"
 #include "UIConstants.h"
 
 // MasterRenderer:
@@ -54,7 +54,7 @@ private:
     bool                                        m_initialized;
     bool                                        m_gameResourcesLoaded;
     bool                                        m_levelResourcesLoaded;
-    TextOverlay                                 m_textOverlay;
+    TextRenderer                                m_textRenderer;
     std::shared_ptr<ModeScreen>                 m_mode;
     D2D_RECT_F                                  m_gameInfoOverlayRect;
     D2D_SIZE_F                                  m_gameInfoOverlaySize;

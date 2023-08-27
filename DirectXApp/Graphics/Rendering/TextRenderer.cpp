@@ -1,16 +1,16 @@
 #include "pch.h"
-#include "TextOverlay.h"
+#include "TextRenderer.h"
 #include "UIConstants.h"
 
 using namespace D2D1;
 using namespace winrt::Windows::ApplicationModel;
 
-TextOverlay::TextOverlay(_In_ std::shared_ptr<DX::DeviceResources> const& deviceResources) :
+TextRenderer::TextRenderer(_In_ std::shared_ptr<DX::DeviceResources> const& deviceResources) :
 	m_deviceResources(deviceResources)
 {
-    m_showTitle = true;
+    /*m_showTitle = true;
     m_titleBodyVerticalOffset = UIConstants::Margin;
-    m_logoSize = D2D1::SizeF(0.0f, 0.0f);
+    m_logoSize = D2D1::SizeF(0.0f, 0.0f);*/
 
     auto dwriteFactory = m_deviceResources->GetDWriteFactory();
 
@@ -92,7 +92,7 @@ TextOverlay::TextOverlay(_In_ std::shared_ptr<DX::DeviceResources> const& device
     }
 }
 
-void TextOverlay::SetTextRegionAlignments(TextType tt)
+void TextRenderer::SetTextRegionAlignments(TextType tt)
 {
     int i = static_cast<int>(tt);
     switch (tt)
@@ -131,67 +131,67 @@ void TextOverlay::SetTextRegionAlignments(TextType tt)
     }
 }
 
-void TextOverlay::CreateDeviceDependentResources()
+void TextRenderer::CreateDeviceDependentResources()
 {
-     auto location = Package::Current().InstalledLocation();
-    winrt::hstring path{ location.Path() + L"\\Assets\\windows-sdk.png" };
+    // auto location = Package::Current().InstalledLocation();
+    //winrt::hstring path{ location.Path() + L"\\Assets\\windows-sdk.png" };
 
-    auto wicFactory = m_deviceResources->GetWicImagingFactory();
+    //auto wicFactory = m_deviceResources->GetWicImagingFactory();
 
-    winrt::com_ptr<IWICBitmapDecoder> wicBitmapDecoder;
-    winrt::check_hresult(
-        wicFactory->CreateDecoderFromFilename(
-            path.c_str(),
-            nullptr,
-            GENERIC_READ,
-            WICDecodeMetadataCacheOnDemand,
-            wicBitmapDecoder.put()
-        )
-    );
+    //winrt::com_ptr<IWICBitmapDecoder> wicBitmapDecoder;
+    //winrt::check_hresult(
+    //    wicFactory->CreateDecoderFromFilename(
+    //        path.c_str(),
+    //        nullptr,
+    //        GENERIC_READ,
+    //        WICDecodeMetadataCacheOnDemand,
+    //        wicBitmapDecoder.put()
+    //    )
+    //);
 
-    winrt::com_ptr<IWICBitmapFrameDecode> wicBitmapFrame;
-    winrt::check_hresult(
-        wicBitmapDecoder->GetFrame(0, wicBitmapFrame.put())
-    );
+    //winrt::com_ptr<IWICBitmapFrameDecode> wicBitmapFrame;
+    //winrt::check_hresult(
+    //    wicBitmapDecoder->GetFrame(0, wicBitmapFrame.put())
+    //);
 
-    winrt::com_ptr<IWICFormatConverter> wicFormatConverter;
-    winrt::check_hresult(
-        wicFactory->CreateFormatConverter(wicFormatConverter.put())
-    );
+    //winrt::com_ptr<IWICFormatConverter> wicFormatConverter;
+    //winrt::check_hresult(
+    //    wicFactory->CreateFormatConverter(wicFormatConverter.put())
+    //);
 
-    winrt::check_hresult(
-        wicFormatConverter->Initialize(
-            wicBitmapFrame.get(),
-            GUID_WICPixelFormat32bppPBGRA,
-            WICBitmapDitherTypeNone,
-            nullptr,
-            0.0,
-            WICBitmapPaletteTypeCustom  // The BGRA format has no palette so this value is ignored.
-        )
-    );
+    //winrt::check_hresult(
+    //    wicFormatConverter->Initialize(
+    //        wicBitmapFrame.get(),
+    //        GUID_WICPixelFormat32bppPBGRA,
+    //        WICBitmapDitherTypeNone,
+    //        nullptr,
+    //        0.0,
+    //        WICBitmapPaletteTypeCustom  // The BGRA format has no palette so this value is ignored.
+    //    )
+    //);
 
-    double dpiX = 96.0f;
-    double dpiY = 96.0f;
-    winrt::check_hresult(
-        wicFormatConverter->GetResolution(&dpiX, &dpiY)
-    );
+    //double dpiX = 96.0f;
+    //double dpiY = 96.0f;
+    //winrt::check_hresult(
+    //    wicFormatConverter->GetResolution(&dpiX, &dpiY)
+    //);
 
-    auto d2dContext = m_deviceResources->GetD2DDeviceContext();
+    //auto d2dContext = m_deviceResources->GetD2DDeviceContext();
 
-    // Create D2D Resources
-    winrt::check_hresult(
-        d2dContext->CreateBitmapFromWicBitmap(
-            wicFormatConverter.get(),
-            BitmapProperties(
-                PixelFormat(DXGI_FORMAT_B8G8R8A8_UNORM, D2D1_ALPHA_MODE_PREMULTIPLIED),
-                static_cast<float>(dpiX),
-                static_cast<float>(dpiY)
-            ),
-            m_logoBitmap.put()
-        )
-    );
+    //// Create D2D Resources
+    //winrt::check_hresult(
+    //    d2dContext->CreateBitmapFromWicBitmap(
+    //        wicFormatConverter.get(),
+    //        BitmapProperties(
+    //            PixelFormat(DXGI_FORMAT_B8G8R8A8_UNORM, D2D1_ALPHA_MODE_PREMULTIPLIED),
+    //            static_cast<float>(dpiX),
+    //            static_cast<float>(dpiY)
+    //        ),
+    //        m_logoBitmap.put()
+    //    )
+    //);
 
-    m_logoSize = m_logoBitmap->GetSize();
+    //m_logoSize = m_logoBitmap->GetSize();
 
     /*winrt::check_hresult(
         d2dContext->CreateSolidColorBrush(
@@ -201,7 +201,7 @@ void TextOverlay::CreateDeviceDependentResources()
     );*/
 }
 
-void TextOverlay::CreateWindowSizeDependentResources()
+void TextRenderer::CreateWindowSizeDependentResources()
 {
     auto windowBounds = m_deviceResources->GetLogicalSize();
 
@@ -221,7 +221,7 @@ void TextOverlay::CreateWindowSizeDependentResources()
     }
 }
 
-void TextOverlay::DeleteTextBrushes()
+void TextRenderer::DeleteTextBrushes()
 {
     for (int i = 0; i < static_cast<int>(TextType::END); i++)
     {
@@ -230,7 +230,7 @@ void TextOverlay::DeleteTextBrushes()
     }
 }
 
-void TextOverlay::UpdateText(Text const& text)
+void TextRenderer::UpdateText(Text const& text)
 {
     //New text requires the creation of new textLayouts objects. I don't know how resource
     //intensive this is but I'd prefer to only create new Layouts if absolutely necessary.
@@ -267,7 +267,7 @@ void TextOverlay::UpdateText(Text const& text)
     if (text.colors.size() > 0) CreateTextTypeBrushes(text);
 }
 
-void TextOverlay::UpdateTextTypeFontSize(TextType tt)
+void TextRenderer::UpdateTextTypeFontSize(TextType tt)
 {
     //Since the font sizes used are based off of the window size we won't know the true
     //size of the fonts until runtime. Furthermore, to apply the appropriate font size to 
@@ -281,7 +281,7 @@ void TextOverlay::UpdateTextTypeFontSize(TextType tt)
     m_textLayouts[i]->SetFontSize(m_fontSizeRatios[i] * windowBounds.Height, { 0, m_textLengths[i] });
 }
 
-void TextOverlay::Render(_In_ std::shared_ptr<ModeScreen> const& mode)
+void TextRenderer::Render(_In_ std::shared_ptr<ModeScreen> const& mode)
 {
     //iterate through all the text types and render the TextLayout for
     //each
@@ -297,14 +297,14 @@ void TextOverlay::Render(_In_ std::shared_ptr<ModeScreen> const& mode)
     }
 }
 
-void TextOverlay::ReleaseDeviceDependentResources()
+void TextRenderer::ReleaseDeviceDependentResources()
 {
     //TODO: need to update this to apply to all textBrushes in the vector
-    m_textBrush = nullptr;
-    m_logoBitmap = nullptr;
+    //m_textBrush = nullptr;
+    //m_logoBitmap = nullptr;
 }
 
-void TextOverlay::CreateTextTypeBrushes(Text const& text)
+void TextRenderer::CreateTextTypeBrushes(Text const& text)
 {
     //This method creates text brushes for a single TextType based on the text color
     //split passed in.
@@ -338,7 +338,7 @@ void TextOverlay::CreateTextTypeBrushes(Text const& text)
     }
 }
 
-void TextOverlay::DeleteTextTypeBrushes(TextType tt)
+void TextRenderer::DeleteTextTypeBrushes(TextType tt)
 {
     //Deletes all text brushes (if they exist) for the given TextType
     for (int i = 0; i < m_textColorBrushes[static_cast<int>(tt)].size(); i++) m_textColorBrushes[static_cast<int>(tt)][i] = nullptr;

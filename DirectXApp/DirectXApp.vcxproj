@@ -142,8 +142,10 @@
     <ClInclude Include="Devices\Sensors\Sensor.h" />
     <ClInclude Include="Graphics\Objects\2D\Button.h" />
     <ClInclude Include="Graphics\Objects\2D\MenuObject.h" />
+    <ClInclude Include="Graphics\Rendering\Direct2DRenderer.h" />
     <ClInclude Include="Graphics\Rendering\MasterRenderer.h" />
-    <ClInclude Include="Graphics\Rendering\TextOverlay.h" />
+    <ClInclude Include="Graphics\Rendering\MenuObjectRenderer.h" />
+    <ClInclude Include="Graphics\Rendering\TextRenderer.h" />
     <ClInclude Include="Graphics\Utilities\DeviceResources.h" />
     <ClInclude Include="Graphics\Utilities\GraphicsHelpers.h" />
     <ClInclude Include="Graphics\Utilities\Text.h" />
@@ -195,8 +197,10 @@
     <ClCompile Include="Devices\Sensors\Sensor.cpp" />
     <ClCompile Include="Graphics\Objects\2D\Button.cpp" />
     <ClCompile Include="Graphics\Objects\2D\MenuObject.cpp" />
+    <ClCompile Include="Graphics\Rendering\Direct2DRenderer.cpp" />
     <ClCompile Include="Graphics\Rendering\MasterRenderer.cpp" />
-    <ClCompile Include="Graphics\Rendering\TextOverlay.cpp" />
+    <ClCompile Include="Graphics\Rendering\MenuObjectRenderer.cpp" />
+    <ClCompile Include="Graphics\Rendering\TextRenderer.cpp" />
     <ClCompile Include="Graphics\Utilities\DeviceResources.cpp" />
     <ClCompile Include="Input\InputProcessor.cpp" />
     <ClCompile Include="Main.cpp" />
