@@ -44,6 +44,7 @@ void Main::Run()
     //for input processing. Also alert the user to the fact that we're
     //currently trying to connect to a personal caddie
     m_inputProcessor->setKeyboardState(KeyboardState::WaitForInput);
+    m_inputProcessor->setMouseState(MouseState::WaitForInput);
 
     while (!m_windowClosed)
     {

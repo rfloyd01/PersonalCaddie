@@ -27,120 +27,87 @@ void Button::SetButtonLengthAndWidth(DirectX::XMFLOAT2 LenghtWidth)
 	this->Length = LenghtWidth.x;
 	this->Width = LenghtWidth.y;
 }
-//bool Button::inSpace(Message Msg)
-//{
-//	if (Msg.CursorPos._x >= this->ObjectPos._x &&
-//		Msg.CursorPos._x <= this->ObjectPos._x + this->Length &&
-//		Msg.CursorPos._y >= this->ObjectPos._y &&
-//		Msg.CursorPos._y <= this->ObjectPos._y + this->Width)
-//	{
-//		return true;
-//	}
-//	else
-//	{
-//		return false;
-//	}
-//}
+
+bool Button::inSpace(DirectX::XMFLOAT2 const & mousePosition)
+{
+	if ((mousePosition.x >= (m_position.x - Length / 2.0)) &&
+		(mousePosition.x <= (m_position.x + Length / 2.0)) &&
+		(mousePosition.y >= (m_position.y - Width / 2.0)) &&
+		(mousePosition.y <= (m_position.y + Width / 2.0)))
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+
 void Button::Render(_In_ ID2D1DeviceContext2* context)
 {
-	/*DWORD ButtonColor = 123;
-	switch (this->ObjectState)
+
+	/*switch (this->ObjectState)
 	{
 	case OS_Default:     ButtonColor = MenuMediumColor; break;
 	case OS_HighLighted: ButtonColor = MenuLightColor; break;
 	case OS_Clicked:     ButtonColor = MenuDarkColor; break;
-	}
-	pD3D->FillRGB(this->ObjectPos.x,
-		this->ObjectPos.y,
-		this->Length,
-		this->Width,
-		ButtonColor);
-	pD3D->DrawBoxWithLines(this->ObjectPos.x,
-		this->ObjectPos.y,
-		this->Length,
-		this->Width,
-		0xFF000000);
-	pD3D->DrawBoxWithLines(this->ObjectPos.x + 2,
-		this->ObjectPos.y + 2,
-		this->Length - 4,
-		this->Width - 4,
-		0xFF000000);
-	this->PostRender();*/
+	}*/
 
-	const D2D1_ELLIPSE ell = D2D1::Ellipse(
-		D2D1::Point2F(100.0f, 100.0f),
-		75.0f,
-		50.0f
+	const D2D1_RECT_F outline = D2D1::RectF(
+		m_position.x - Length / 2.0,
+		m_position.y - Width / 2.0,
+		m_position.x + Length / 2.0,
+		m_position.y + Width / 2.0
 	);
 
-	const D2D1_RECT_F rect = D2D1::RectF(
-		10, 10, 50, 50
+	//This acts as a shadow/outline for the main button
+	const D2D1_RECT_F outline2 = D2D1::RectF(
+		(m_position.x + 2) - (Length - 4) / 2.0,
+		(m_position.y + 2) - (Width - 4) / 2.0,
+		(m_position.x + 2) + (Length - 4) / 2.0,
+		(m_position.y + 2) + (Width - 4) / 2.0
 	);
 
-	//Create a brush
-	winrt::com_ptr<ID2D1SolidColorBrush> new_brush = nullptr;
+	const D2D1_RECT_F fill = D2D1::RectF(
+		m_position.x - Length / 2.0,
+		m_position.y - Width / 2.0,
+		m_position.x + Length / 2.0,
+		m_position.y + Width / 2.0
+	);
+
+	//Create brushes
+	winrt::com_ptr<ID2D1SolidColorBrush> fill_brush = nullptr, outline_brush = nullptr;
 	winrt::check_hresult(
 		context->CreateSolidColorBrush(
 			D2D1::ColorF(1.0, 0, 0, 1.0),
-			new_brush.put()
+			fill_brush.put()
 		)
 	);
 
-	//TODO: Why does the line draw but the rectangle doesn't?
-	context->DrawLine(
-		D2D1::Point2F(0.0f, 0.0),
-		D2D1::Point2F(0.0, 100.0),
-		new_brush.get(),
-		0.5f
+	winrt::check_hresult(
+		context->CreateSolidColorBrush(
+			D2D1::ColorF(0, 0, 0, 1.0),
+			outline_brush.put()
+		)
 	);
-	context->DrawLine(
-		D2D1::Point2F(0.0f, 100.0),
-		D2D1::Point2F(100.0, 100.0),
-		new_brush.get(),
-		0.5f
-	);
-	context->DrawLine(
-		D2D1::Point2F(100.0f, 100.0),
-		D2D1::Point2F(100.0, 0.0),
-		new_brush.get(),
-		0.5f
-	);
-	context->DrawLine(
-		D2D1::Point2F(100.0f, 0.0),
-		D2D1::Point2F(0.0, 0.0),
-		new_brush.get(),
-		0.5f
-	);
-	context->DrawEllipse(ell, new_brush.get(), 2.5f);
-	context->FillRectangle(rect, new_brush.get());
-	
-	new_brush = nullptr;
+
+	context->DrawRectangle(outline, outline_brush.get(), 2.5f);
+	context->DrawRectangle(outline2, outline_brush.get(), 2.5f);
+	context->FillRectangle(fill, fill_brush.get());
 }
-//void Button::OnMessage(Message Msg, bool doRENDER)
-//{
-//	if (this->inSpace(Msg))
-//	{
-//		if (Msg.Info == MI_LMouseDown)
-//		{
-//			this->SetObjectState(OS_Clicked);
-//		}
-//		else if (Msg.Info == MI_LMouseUp)
-//		{
-//			if (this->LastChangeTimeStamp != Msg.TimeStamp)
-//			{
-//				this->LastChangeTimeStamp = Msg.TimeStamp;
-//				this->SetObjectState(OS_Default);
-//				this->OnClick();
-//			}
-//			else this->SetObjectState(OS_HighLighted);
-//		}
-//		else this->SetObjectState(OS_HighLighted);
-//	}
-//	else this->SetObjectState(OS_Default);
-//
-//	if (doRENDER)
-//		this->Render();
-//}
+
+void Button::update(DirectX::XMFLOAT2 mousePosition, bool mouseClick)
+{
+	
+	if (this->inSpace(mousePosition))
+	{
+		if (mouseClick)
+		{
+			OutputDebugString(L"The button was clicked!!");
+		}
+	}
+}
+
 void Button::PostRender()
 {
 }

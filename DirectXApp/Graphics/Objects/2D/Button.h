@@ -11,6 +11,7 @@ public:
 protected:
 	int    Length;
 	int    Width;
+	int buttonCount = 0;
 
 public:
 	DWORD  LastChangeTimeStamp;
@@ -24,10 +25,10 @@ public:
 	void    SetButtonLengthAndWidth(int _Length, int _Width);
 	void    SetButtonLengthAndWidth(DirectX::XMFLOAT2 LenghtWidth);
 
-	//bool    inSpace(Message Msg);
-	virtual void    Render(_In_ ID2D1DeviceContext2* context) override;
+	bool    inSpace(DirectX::XMFLOAT2 const& mousePosition);
+	virtual void Render(_In_ ID2D1DeviceContext2* context) override;
 
-	//virtual void    OnMessage(Message Msg, bool doRENDER);
+	virtual void update(DirectX::XMFLOAT2 mousePosition, bool mouseClick) override;
 
 	virtual void    PostRender();
 	virtual void    OnClick();

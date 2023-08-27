@@ -10,7 +10,8 @@ using namespace winrt::Windows::Gaming::Input;
 using namespace winrt::Windows::System;
 
 InputProcessor::InputProcessor(_In_ CoreWindow const& window) :
-    m_keyboardState(KeyboardState::None)
+    m_keyboardState(KeyboardState::None),
+    m_mouseState(MouseState::None)
 {
     m_state.currentPressedKey = KeyboardKeys::DeadKey;
     m_state.mousePosition = { 0, 0 };
@@ -22,10 +23,11 @@ void InputProcessor::InitWindow(_In_ CoreWindow const& window)
 {
     ResetState();
 
-    /*window.PointerPressed({ this, &InputProcessor::OnPointerPressed });
+    window.PointerPressed({ this, &InputProcessor::OnPointerPressed });
 
     window.PointerReleased({ this, &InputProcessor::OnPointerReleased });
 
+    /*
     window.PointerExited({ this, &InputProcessor::OnPointerExited });*/
 
     window.PointerMoved({ this, &InputProcessor::OnPointerMoved });
@@ -45,143 +47,36 @@ void InputProcessor::setKeyboardState(KeyboardState ks)
     m_keyboardState = ks;
 }
 
-//void InputProcessor::OnPointerPressed(
-//    _In_ CoreWindow const& /* sender */,
-//    _In_ PointerEventArgs const& args
-//)
-//{
-//    PointerPoint point = args.CurrentPoint();
-//    uint32_t pointerID = point.PointerId();
-//    Point pointerPosition = point.Position();
-//    PointerPointProperties pointProperties = point.Properties();
-//    auto pointerDevice = point.PointerDevice();
-//    auto pointerDeviceType = pointerDevice.PointerDeviceType();
-//
-//    XMFLOAT2 position = XMFLOAT2(pointerPosition.X, pointerPosition.Y);
-//
-//#ifdef InputProcessor_TRACE
-//    DebugTrace(L"%-7s (%d) at (%4.0f, %4.0f)", L"Pressed", pointerID, position.x, position.y);
-//#endif
-//
-//    OutputDebugString(L"The Mouse is being pressed.\n");
-//
-//    switch (m_state)
-//    {
-//    case InputState::WaitForInput:
-//        if (position.x > m_buttonUpperLeft.x &&
-//            position.x < m_buttonLowerRight.x &&
-//            position.y > m_buttonUpperLeft.y &&
-//            position.y < m_buttonLowerRight.y)
-//        {
-//            // Wait until button released before setting variable.
-//            m_buttonPointerID = pointerID;
-//            m_buttonInUse = true;
-//#ifdef InputProcessor_TRACE
-//            DebugTrace(L"\tWaitForInput(%d) - BUTTON in USE", pointerID);
-//#endif
-//        }
-//        break;
-//
-//    case InputState::Active:
-//        switch (pointerDeviceType)
-//        {
-//        case winrt::Windows::Devices::Input::PointerDeviceType::Touch:
-//            if (position.x > m_moveUpperLeft.x &&
-//                position.x < m_moveLowerRight.x &&
-//                position.y > m_moveUpperLeft.y &&
-//                position.y < m_moveLowerRight.y)
-//            {
-//                // This pointer is in the move control.
-//                if (!m_moveInUse)
-//                {
-//                    // There is not an active pointer in this control yet.
-//                    // Process a DPad touch down event.
-//                    m_moveFirstDown = position;                 // Save location of initial contact.
-//                    m_movePointerID = pointerID;                // Store the pointer using this control.
-//                    m_moveInUse = true;
-//                }
-//            }
-//            else if (position.x > m_fireUpperLeft.x &&
-//                position.x < m_fireLowerRight.x &&
-//                position.y > m_fireUpperLeft.y &&
-//                position.y < m_fireLowerRight.y)
-//            {
-//                // This pointer is in the fire control.
-//                if (!m_fireInUse)
-//                {
-//                    m_fireLastPoint = position;
-//                    m_firePointerID = pointerID;
-//                    m_fireInUse = true;
-//                    if (!m_autoFire)
-//                    {
-//                        m_firePressed = true;
-//                    }
-//                }
-//            }
-//            else
-//            {
-//                if (!m_lookInUse)
-//                {
-//                    // There is not an active pointer in this control yet.
-//                    m_lookLastPoint = position;                   // Save point for later move.
-//                    m_lookPointerID = pointerID;                  // Store the pointer using this control.
-//                    m_lookLastDelta.x = m_lookLastDelta.y = 0;    // These are for smoothing.
-//                    m_lookInUse = true;
-//                }
-//            }
-//            break;
-//
-//        default:
-//            bool rightButton = pointProperties.IsRightButtonPressed();
-//            bool leftButton = pointProperties.IsLeftButtonPressed();
-//
-//            if (!m_autoFire && (!m_mouseLeftInUse && leftButton))
-//            {
-//                m_firePressed = true;
-//            }
-//
-//            if (!m_mouseInUse)
-//            {
-//                m_mouseInUse = true;
-//                m_mouseLastPoint = position;
-//                m_mousePointerID = pointerID;
-//                m_mouseLeftInUse = leftButton;
-//                m_mouseRightInUse = rightButton;
-//                m_lookLastDelta.x = m_lookLastDelta.y = 0;          // These are for smoothing.
-//            }
-//            else
-//            {
-//#ifdef InputProcessor_TRACE
-//                DebugTrace(L"\tWARNING: OnPointerPressed()  Mouse aleady in use (%d-%s%s) and new event id: %d %s%s",
-//                    m_mousePointerID,
-//                    m_mouseLeftInUse ? "L" : "",
-//                    m_mouseRightInUse ? "R" : "",
-//                    pointerID,
-//                    leftButton ? "L" : "",
-//                    rightButton ? "R" : ""
-//                );
-//#endif
-//            }
-//            break;
-//        }
-//#ifdef InputProcessor_TRACE
-//        DebugTrace(
-//            L"\t%s%s%s %s%s%s",
-//            m_moveInUse ? L"Move " : L"",
-//            m_lookInUse ? L"Look " : L"",
-//            m_fireInUse ? L"Fire " : L"",
-//            m_mouseInUse ? L"Mouse:" : L"",
-//            m_mouseLeftInUse ? L"L" : L"-",
-//            m_mouseRightInUse ? L"R" : L"-"
-//        );
-//#endif
-//        break;
-//    }
-//#ifdef InputProcessor_TRACE
-//    DebugTrace(L"\n");
-//#endif
-//    return;
-//}
+void InputProcessor::setMouseState(MouseState ms)
+{
+    m_mouseState = ms;
+}
+
+void InputProcessor::OnPointerPressed(
+    _In_ CoreWindow const& /* sender */,
+    _In_ PointerEventArgs const& args
+)
+{
+    if (m_mouseState ==MouseState::WaitForInput)
+    {
+        //When a key is pressed we change the keyboard state 
+        //so that all other keys are disabled until this key
+        //is released
+        m_mouseState = MouseState::ButtonPressed;
+        m_state.mouseClick = true;
+    }
+}
+
+void InputProcessor::OnPointerReleased(
+    _In_ CoreWindow const& /* sender */,
+    _In_ PointerEventArgs const& args
+)
+{
+    if (m_mouseState == MouseState::ButtonPressed)
+    {
+        m_mouseState = MouseState::WaitForInput;
+    }
+}
 
 void InputProcessor::OnPointerMoved(
     _In_ CoreWindow const& /* sender */,
@@ -241,67 +136,6 @@ void InputProcessor::OnPointerMoved(
 //    }
 //}
 
-//void InputProcessor::OnPointerReleased(
-//    _In_ CoreWindow const& /* sender */,
-//    _In_ PointerEventArgs const& args
-//)
-//{
-//    PointerPoint point = args.CurrentPoint();
-//    uint32_t pointerID = point.PointerId();
-//    Point pointerPosition = point.Position();
-//    PointerPointProperties pointProperties = point.Properties();
-//
-//    XMFLOAT2 position = XMFLOAT2(pointerPosition.X, pointerPosition.Y);
-//
-//#ifdef InputProcessor_TRACE
-//    DebugTrace(L"%-7s (%d) at (%4.0f, %4.0f)\n", L"Release", pointerID, position.x, position.y);
-//#endif
-//
-//    switch (m_state)
-//    {
-//    case InputState::WaitForInput:
-//        if (m_buttonInUse && (pointerID == m_buttonPointerID))
-//        {
-//            m_buttonInUse = false;
-//            m_buttonPressed = true;
-//#ifdef InputProcessor_TRACE
-//            DebugTrace(L"\tWaitForInput: ButtonPressed = true\n");
-//#endif
-//        }
-//        break;
-//
-//    case InputState::Active:
-//        if (pointerID == m_movePointerID)
-//        {
-//            m_velocity = XMFLOAT3(0, 0, 0);      // Stop on release.
-//            m_moveInUse = false;
-//            m_movePointerID = 0;
-//        }
-//        else if (pointerID == m_lookPointerID)
-//        {
-//            m_lookInUse = false;
-//            m_lookPointerID = 0;
-//        }
-//        else if (pointerID == m_firePointerID)
-//        {
-//            m_fireInUse = false;
-//            m_firePointerID = 0;
-//        }
-//        else if (pointerID == m_mousePointerID)
-//        {
-//            bool rightButton = pointProperties.IsRightButtonPressed();
-//            bool leftButton = pointProperties.IsLeftButtonPressed();
-//
-//            m_mouseInUse = false;
-//
-//            // Don't clear the mouse Pointer ID so that Move events still result in Look changes.
-//            m_mouseLeftInUse = leftButton;
-//            m_mouseRightInUse = rightButton;
-//        }
-//        break;
-//    }
-//}
-//
 //void InputProcessor::OnPointerExited(
 //    _In_ CoreWindow const& /* sender */,
 //    _In_ PointerEventArgs const& args
@@ -384,7 +218,6 @@ void InputProcessor::OnKeyUp(
     if (m_keyboardState == KeyboardState::KeyPressed)
     {
         m_keyboardState = KeyboardState::WaitForInput;
-        
     }
 }
 
@@ -397,6 +230,11 @@ InputState* InputProcessor::update()
         //times due to how fast the program executes.
         m_state.currentPressedKey = KeyboardKeys::DeadKey;
         m_keyboardState = KeyboardState::KeyPressed;
+    }
+    if (m_mouseState == MouseState::ButtonProcessed)
+    {
+        m_state.mouseClick = false;
+        m_mouseState = MouseState::ButtonPressed;
     }
 
     return &m_state;

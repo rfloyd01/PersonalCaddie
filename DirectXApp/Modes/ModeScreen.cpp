@@ -53,8 +53,8 @@ void ModeScreen::update()
 		processKeyboardInput(inputUpdate->currentPressedKey);
 		m_inputProcessor->setKeyboardState(KeyboardState::KeyProcessed); //let the input processor now to deactivate this key until it's released
 	}
-	processMouseLocation(inputUpdate->mousePosition);
-	processMouseClick(inputUpdate->mouseClick);
+
+	processMouseInput(inputUpdate->mousePosition, inputUpdate->mouseClick);
 
 	//after processing input, see if there are any event handlers that were triggered
 	processEvents();
@@ -138,15 +138,15 @@ void ModeScreen::processKeyboardInput(winrt::Windows::System::VirtualKey pressed
 	}
 }
 
-void ModeScreen::processMouseLocation(DirectX::XMFLOAT2 mousePosition)
+void ModeScreen::processMouseInput(DirectX::XMFLOAT2 mousePosition, bool mouseClick)
 {
 	//need to poll all of the 2D elements in the current mode to see if the mouse is
 	//over any of them
-}
-
-void ModeScreen::processMouseClick(bool mouseClick)
-{
-
+	for (int i = 0; i < m_modes[static_cast<int>(m_currentMode)]->getMenuObjects().size(); i++)
+	{
+		m_modes[static_cast<int>(m_currentMode)]->getMenuObjects()[i]->update(mousePosition, mouseClick);
+		if (mouseClick) m_inputProcessor->setMouseState(MouseState::ButtonProcessed); //let the input processor know that the click has been handled
+	}
 }
 
 void ModeScreen::processEvents()

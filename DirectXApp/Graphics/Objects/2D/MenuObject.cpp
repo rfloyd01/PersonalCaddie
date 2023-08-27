@@ -3,25 +3,22 @@
 
 DirectX::XMFLOAT2 MenuObject::GetObjectPos()
 {
-	return this->ObjectPos;
+	return this->m_position;
 }
 void MenuObject::SetObjectPos(int x, int y)
 {
-	this->ObjectPos.x = x;
-	this->ObjectPos.y = y;
+	this->m_position.x = x;
+	this->m_position.y = y;
 }
 void MenuObject::SetObjectPos(DirectX::XMFLOAT2 Pos)
 {
-	this->ObjectPos = Pos;
+	this->m_position = Pos;
 }
 int MenuObject::GetObjectState()
 {
-	return this->ObjectState;
+	return this->m_state;
 }
 void MenuObject::SetObjectState(int State)
 {
-	this->ObjectState = State;
-}
-void MenuObject::OnMessage(std::wstring Msg, bool doRENDER)
-{
+	this->m_state = State;
 }

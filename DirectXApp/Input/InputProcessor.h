@@ -24,6 +24,14 @@ enum class KeyboardState
     KeyProcessed,
 };
 
+enum class MouseState
+{
+    None,
+    WaitForInput,
+    ButtonPressed,
+    ButtonProcessed,
+};
+
 //An update package that is sent to the rest of the application on keypress or 
 //mouse move/click
 struct InputState
@@ -41,6 +49,7 @@ public:
 	void InitWindow(_In_ winrt::Windows::UI::Core::CoreWindow const& window);
 
     void setKeyboardState(KeyboardState ks);
+    void setMouseState(MouseState ms);
 
     InputState* update();
 
@@ -52,15 +61,17 @@ private:
         _In_ winrt::Windows::UI::Core::PointerEventArgs const& args
     );
 
-    /*void OnPointerPressed(
+    void OnPointerPressed(
         _In_ winrt::Windows::UI::Core::CoreWindow const& sender,
         _In_ winrt::Windows::UI::Core::PointerEventArgs const& args
     );
-    
+
     void OnPointerReleased(
         _In_ winrt::Windows::UI::Core::CoreWindow const& sender,
         _In_ winrt::Windows::UI::Core::PointerEventArgs const& args
     );
+
+    /*
     void OnPointerExited(
         _In_ winrt::Windows::UI::Core::CoreWindow const& sender,
         _In_ winrt::Windows::UI::Core::PointerEventArgs const& args
@@ -84,6 +95,7 @@ private:
 
     InputState           m_state;
     KeyboardState        m_keyboardState; // Enum to keep track of whether or not keyboard presses are allowed
+    MouseState           m_mouseState;   // Enum to keep track of whether or not mouse presses are allowed
 
     bool newKeyPress = false;
 };

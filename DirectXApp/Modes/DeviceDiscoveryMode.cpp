@@ -20,7 +20,10 @@ uint32_t DeviceDiscoveryMode::initializeMode()
 	initializeSettingsModeText();
 
 	//TODO: Testing of UI elements, remove when done
-	m_menuObjects.push_back(std::make_shared<Button>());
+	auto butt = std::make_shared<Button>();
+	butt->SetObjectPos({ 100.0, 100.0 });
+	butt->SetButtonLengthAndWidth({ 100.0, 50.0 });
+	m_menuObjects.push_back(butt);
 	
 	//When this mode is initialzed we go into a state of CanTransfer and Active.
 	//Can Transfer allows us to use the esc. key to go back to the settings menu
