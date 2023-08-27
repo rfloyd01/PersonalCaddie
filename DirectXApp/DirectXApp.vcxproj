@@ -140,6 +140,8 @@
     <ClInclude Include="Devices\Sensors\Gyroscope.h" />
     <ClInclude Include="Devices\Sensors\Magnetometer.h" />
     <ClInclude Include="Devices\Sensors\Sensor.h" />
+    <ClInclude Include="Graphics\Objects\2D\Button.h" />
+    <ClInclude Include="Graphics\Objects\2D\MenuObject.h" />
     <ClInclude Include="Graphics\Rendering\MasterRenderer.h" />
     <ClInclude Include="Graphics\Rendering\TextOverlay.h" />
     <ClInclude Include="Graphics\Utilities\DeviceResources.h" />
@@ -191,6 +193,8 @@
     <ClCompile Include="Devices\Sensors\Gyroscope.cpp" />
     <ClCompile Include="Devices\Sensors\Magnetometer.cpp" />
     <ClCompile Include="Devices\Sensors\Sensor.cpp" />
+    <ClCompile Include="Graphics\Objects\2D\Button.cpp" />
+    <ClCompile Include="Graphics\Objects\2D\MenuObject.cpp" />
     <ClCompile Include="Graphics\Rendering\MasterRenderer.cpp" />
     <ClCompile Include="Graphics\Rendering\TextOverlay.cpp" />
     <ClCompile Include="Graphics\Utilities\DeviceResources.cpp" />

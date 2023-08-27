@@ -52,8 +52,7 @@ IAsyncOperation<BluetoothLEDevice> BLE::connectToExistingDevice()
     //This method attempts to connect to the most recently paired Personal Caddie device. If no device exists, or this method
     //is unsuccessful then the device watcher will be called
 
-    uint64_t personal_caddie_address = 27438156861826;  //TODO: This should be saved in an external file
-    //274381568618262
+    uint64_t personal_caddie_address = 274381568618262;  //TODO: This should be saved in an external file
     IAsyncOperation<BluetoothLEDevice> FindBLEAsync = Bluetooth::BluetoothLEDevice::FromBluetoothAddressAsync(personal_caddie_address);
 
     //create a handler that will get called when the BLEDevice is created

@@ -73,10 +73,16 @@ void PersonalCaddie::BLEDeviceHandler(BLEState state)
     {
     case BLEState::DeviceFound:
     {
-        std::wstring message = L"Found a Personal Caddie device, attempting to connect...";
+        std::wstring message = L"Found a Personal Caddie device, attempting to connect...\n";
         event_handler(PersonalCaddieEventType::BLE_ALERT, (void*)&message);
 
         auto gattServices = this->p_ble->getBLEDevice()->GetGattServicesAsync(BluetoothCacheMode::Uncached).get().Services();
+        if (gattServices.Size() == 0)
+        {
+            message = L"Couldn't connect to the Personal Caddie. Go to the settings menu to manually connect.\n";
+            event_handler(PersonalCaddieEventType::BLE_ALERT, (void*)&message);
+            return;
+        }
 
         for (int i = 0; i < gattServices.Size(); i++)
         {
@@ -96,6 +102,8 @@ void PersonalCaddie::BLEDeviceHandler(BLEState state)
             }
         }
 
+        //Successfully reading the Gatt services initiates a connection with the ble device so we set the 
+        //ble_device_connected variable to true
         this->ble_device_connected = true;
 
         //Read the sensor settings characteristic to get some basic information about the sensors attached to
@@ -125,12 +133,12 @@ void PersonalCaddie::BLEDeviceHandler(BLEState state)
         //update calibration numbers
 
 
-        //Send an alert to the graphics interface letting it know that the connection has been made
-        OutputDebugString(L"Successfully connected to the Personal Caddie.\n");
+        message = L"Successfully connected to the Personal Caddie\n";
+        event_handler(PersonalCaddieEventType::BLE_ALERT, (void*)&message);
         break;
     }
     case BLEState::DeviceNotFound:
-        std::wstring message = L"Couldn't find an existing Personal Caddie, searching for nearby devices. Go to the settings menu to connect to one.";
+        std::wstring message = L"Couldn't find an existing Personal Caddie. Go to the settings menu to connect to one.";
         event_handler(PersonalCaddieEventType::PC_ALERT, (void*)&message);
     }
 }

@@ -61,6 +61,12 @@
     <ClCompile Include="Modes\DeviceDiscoveryMode.cpp">
       <Filter>Modes</Filter>
     </ClCompile>
+    <ClCompile Include="Graphics\Objects\2D\MenuObject.cpp">
+      <Filter>Graphics\Objects\2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\Objects\2D\Button.cpp">
+      <Filter>Graphics\Objects\2D</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -136,6 +142,12 @@
     <ClInclude Include="Modes\DeviceDiscoveryMode.h">
       <Filter>Modes</Filter>
     </ClInclude>
+    <ClInclude Include="Graphics\Objects\2D\MenuObject.h">
+      <Filter>Graphics\Objects\2D</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Objects\2D\Button.h">
+      <Filter>Graphics\Objects\2D</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Assets\Wide310x150Logo.scale-200.png">
@@ -193,6 +205,12 @@
     </Filter>
     <Filter Include="Input">
       <UniqueIdentifier>{20521567-d6b5-488b-bb17-eeb9c843e712}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Graphics\Objects">
+      <UniqueIdentifier>{876038b0-22b5-4044-919b-283b544f698a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Graphics\Objects\2D">
+      <UniqueIdentifier>{2cd3c85b-547a-4a1d-a9de-00c4f41a3c8b}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

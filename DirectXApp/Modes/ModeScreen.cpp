@@ -48,16 +48,23 @@ void ModeScreen::update()
 
 	//check for any input form the mouse/keyboard that needs processing by the current mode
 	auto inputUpdate = m_inputProcessor->update();
-	if (inputUpdate != nullptr)
+	if (inputUpdate->currentPressedKey != KeyboardKeys::DeadKey)
 	{
-		if (inputUpdate->currentPressedKey != KeyboardKeys::DeadKey) processKeyboardInput(inputUpdate->currentPressedKey);
+		processKeyboardInput(inputUpdate->currentPressedKey);
+		m_inputProcessor->setKeyboardState(KeyboardState::KeyProcessed); //let the input processor now to deactivate this key until it's released
 	}
+	processMouseLocation(inputUpdate->mousePosition);
+	processMouseClick(inputUpdate->mouseClick);
 
 	//after processing input, see if there are any event handlers that were triggered
 	processEvents();
 
 	//finally, check to see if there are any timers that are going on or expired
 	processTimers();
+
+	//after all input, events and timers have been handled defer to the current mode
+	//to update its state if necessary. This only occurs when in the Active ModeState
+	if (m_modeState & ModeState::Active) m_modes[static_cast<int>(m_currentMode)]->update();
 }
 
 void ModeScreen::processKeyboardInput(winrt::Windows::System::VirtualKey pressedKey)
@@ -113,14 +120,6 @@ void ModeScreen::processKeyboardInput(winrt::Windows::System::VirtualKey pressed
 			{
 				changeCurrentMode(ModeType::DEVICE_DISCOVERY);
 			}
-			else if (m_currentMode == ModeType::DEVICE_DISCOVERY)
-			{
-				//This envokes the "connect to a device" state for the device discovery mode
-				m_modeState = ModeState::Active;
-				m_modes[static_cast<int>(m_currentMode)]->enterActiveState(1);
-
-				m_renderer->editText(getCurrentModeText()->at(static_cast<int>(TextType::TITLE)));
-			}
 		}
 
 		break;
@@ -137,6 +136,17 @@ void ModeScreen::processKeyboardInput(winrt::Windows::System::VirtualKey pressed
 		}
 		break;
 	}
+}
+
+void ModeScreen::processMouseLocation(DirectX::XMFLOAT2 mousePosition)
+{
+	//need to poll all of the 2D elements in the current mode to see if the mouse is
+	//over any of them
+}
+
+void ModeScreen::processMouseClick(bool mouseClick)
+{
+
 }
 
 void ModeScreen::processEvents()
@@ -208,6 +218,12 @@ std::shared_ptr<std::vector<Text> > ModeScreen::getCurrentModeText()
 {
 	//returns a reference to any text that needs to be rendered on screen
 	return m_modes[static_cast<int>(m_currentMode)]->getModeText();
+}
+
+std::vector<std::shared_ptr<MenuObject> > const& ModeScreen::getCurrentModeMenuObjects()
+{
+	//returns a reference to all UI elements to be rendered on screen
+	return m_modes[static_cast<int>(m_currentMode)]->getMenuObjects();
 }
 
 const float* ModeScreen::getBackgroundColor()

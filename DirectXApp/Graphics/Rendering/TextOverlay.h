@@ -32,6 +32,7 @@ private:
     std::shared_ptr<DX::DeviceResources> m_deviceResources;
 
     winrt::com_ptr<ID2D1SolidColorBrush> m_textBrush;
+    winrt::com_ptr<ID2D1SolidColorBrush> m_defaultBrush;
     winrt::com_ptr<IDWriteTextFormat>    m_textFormatBody;
     winrt::com_ptr<IDWriteTextFormat>    m_textFormatBodySymbol;
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Graphics/Utilities/Text.h"
+#include "Graphics/Objects/2D/MenuObject.h"
 #include "Input/InputProcessor.h"
 #include <string>
 
@@ -36,9 +37,14 @@ public:
 	//PUBLIC FUNCTIONS
 	virtual uint32_t initializeMode() = 0;
 	virtual void uninitializeMode() = 0;
-	virtual void enterActiveState(int state) {};
+
+	virtual void enterActiveState(int state) {}; //not a pure virtual method as not all modes require this method
+	virtual void update() {}; //not a pure virtual method as not all modes require this method
 
 	const float* getBackgroundColor();
+
+	//Test remove when done
+	std::vector<std::shared_ptr<MenuObject> > const& getMenuObjects() { return m_menuObjects; }
 
 	std::shared_ptr<std::vector<Text>> getModeText() { return m_modeText; }
 	void setModeText(Text const& text);
@@ -54,7 +60,8 @@ protected:
 	//to change (swapping to a new mode for example)
 	//std::pair<ModeState, uint32_t> externalAction;
 
-	//a map used to store all words to be rendered on screen and their colors,
-	//a map is used to make it easier when adding and deleting messages
-	std::shared_ptr<std::vector<Text>> m_modeText;
+	//each mode owns all objects to be rendered on screen
+	std::shared_ptr<std::vector<Text>>          m_modeText;
+
+	std::vector<std::shared_ptr<MenuObject> >   m_menuObjects; //2d objects like Drop downs, combo boxes, buttons, etc
 };

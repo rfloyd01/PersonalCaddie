@@ -13,6 +13,8 @@ InputProcessor::InputProcessor(_In_ CoreWindow const& window) :
     m_keyboardState(KeyboardState::None)
 {
     m_state.currentPressedKey = KeyboardKeys::DeadKey;
+    m_state.mousePosition = { 0, 0 };
+    m_state.mouseClick = false;
     InitWindow(window);
 }
 
@@ -22,11 +24,11 @@ void InputProcessor::InitWindow(_In_ CoreWindow const& window)
 
     /*window.PointerPressed({ this, &InputProcessor::OnPointerPressed });
 
-    window.PointerMoved({ this, &InputProcessor::OnPointerMoved });
-
     window.PointerReleased({ this, &InputProcessor::OnPointerReleased });
 
     window.PointerExited({ this, &InputProcessor::OnPointerExited });*/
+
+    window.PointerMoved({ this, &InputProcessor::OnPointerMoved });
 
     window.KeyDown({ this, &InputProcessor::OnKeyDown });
 
@@ -181,86 +183,24 @@ void InputProcessor::setKeyboardState(KeyboardState ks)
 //    return;
 //}
 
-//void InputProcessor::OnPointerMoved(
-//    _In_ CoreWindow const& /* sender */,
-//    _In_ PointerEventArgs const& args
-//)
-//{
-//    PointerPoint point = args.CurrentPoint();
-//    uint32_t pointerID = point.PointerId();
-//    Point pointerPosition = point.Position();
-//    PointerPointProperties pointProperties = point.Properties();
-//    auto pointerDevice = point.PointerDevice();
-//
-//    XMFLOAT2 position = XMFLOAT2(pointerPosition.X, pointerPosition.Y);     // convert to allow math
-//
-//#ifdef InputProcessor_TRACE
-//    DebugTrace(L"%-7s (%d) at (%4.0f, %4.0f)", L"Moved", pointerID, position.x, position.y);
-//#endif
-//
-//    switch (m_state)
-//    {
-//    case InputState::Active:
-//        // Decide which control this pointer is operating.
-//        if (pointerID == m_movePointerID)
-//        {
-//            m_movePointerPosition = position;       // Save the current position.
-//        }
-//        else if (pointerID == m_lookPointerID)
-//        {
-//            // Look control.
-//            XMFLOAT2 pointerDelta;
-//            pointerDelta.x = position.x - m_lookLastPoint.x;        // How far did pointer move?
-//            pointerDelta.y = position.y - m_lookLastPoint.y;
-//
-//            XMFLOAT2 rotationDelta;
-//            rotationDelta.x = pointerDelta.x * MoveLookConstants::RotationGain;       // Scale for control sensitivity.
-//            rotationDelta.y = pointerDelta.y * MoveLookConstants::RotationGain;
-//            m_lookLastPoint = position;                             // Save for next time through.
-//
-//#ifdef InputProcessor_TRACE
-//            DebugTrace(L"\tDelta (%4.0f, %4.0f)", pointerDelta.x, pointerDelta.y);
-//#endif
-//
-//            // Update our orientation based on the command.
-//            m_pitch -= rotationDelta.y;
-//            m_yaw += rotationDelta.x;
-//
-//            // Limit pitch to straight up or straight down.
-//            float limit = XM_PI / 2.0f - 0.01f;
-//            m_pitch = __max(-limit, m_pitch);
-//            m_pitch = __min(+limit, m_pitch);
-//
-//            // Keep longitude in sane range by wrapping.
-//            if (m_yaw > XM_PI)
-//            {
-//                m_yaw -= XM_PI * 2.0f;
-//            }
-//            else if (m_yaw < -XM_PI)
-//            {
-//                m_yaw += XM_PI * 2.0f;
-//            }
-//        }
-//        else if (pointerID == m_firePointerID)
-//        {
-//            m_fireLastPoint = position;
-//        }
-//        else if (pointerID == m_mousePointerID)
-//        {
-//            m_mouseLeftInUse = pointProperties.IsLeftButtonPressed();
-//            m_mouseRightInUse = pointProperties.IsRightButtonPressed();
-//            m_mouseLastPoint = position;                            // Save for next time through.
-//        }
-//
-//        // Mouse movement is handled via a separate relative mouse movement handler (OnMouseMoved).
-//
-//        break;
-//    }
-//#ifdef InputProcessor_TRACE
-//    DebugTrace(L"\n");
-//#endif
-//}
-//
+void InputProcessor::OnPointerMoved(
+    _In_ CoreWindow const& /* sender */,
+    _In_ PointerEventArgs const& args
+)
+{
+    //For now I only really care about the location of the pointer. This isn't a game
+    //where moving the mouse will move the camera or anything like that so just update
+    //the local pointer position variable
+
+    PointerPoint point = args.CurrentPoint();
+    uint32_t pointerID = point.PointerId();
+    Point pointerPosition = point.Position();
+    PointerPointProperties pointProperties = point.Properties();
+    auto pointerDevice = point.PointerDevice();
+
+    m_state.mousePosition = XMFLOAT2(pointerPosition.X, pointerPosition.Y);     // convert to allow math
+}
+
 //void InputProcessor::OnMouseMoved(
 //    _In_ MouseDevice const& /* mouseDevice */,
 //    _In_ MouseEventArgs const& args
@@ -431,7 +371,7 @@ void InputProcessor::OnKeyDown(
         //is released
         m_keyboardState = KeyboardState::KeyPressed;
         m_state.currentPressedKey = args.VirtualKey();
-        newInput = true; //flag to Main.cpp that a new key was pressed
+        newKeyPress = true; //flag to Main.cpp that a new key was pressed
     }
     
 }
@@ -444,21 +384,22 @@ void InputProcessor::OnKeyUp(
     if (m_keyboardState == KeyboardState::KeyPressed)
     {
         m_keyboardState = KeyboardState::WaitForInput;
-        m_state.currentPressedKey = KeyboardKeys::DeadKey;
+        
     }
 }
 
 InputState* InputProcessor::update()
 {
-    //This method gets called in every iteration of the main application loop
-    //to see if anything new has happened
-    if (newInput)
+    if (m_keyboardState == KeyboardState::KeyProcessed)
     {
-        //only update if there's something new to actually process
-        newInput = false;
-        return &m_state;
+        //The key processed state is necessary to only execute the necessary command from a key press
+        //a single time. Otherwise a single key press would most likely trigger the same thing multiple
+        //times due to how fast the program executes.
+        m_state.currentPressedKey = KeyboardKeys::DeadKey;
+        m_keyboardState = KeyboardState::KeyPressed;
     }
-    else return nullptr;
+
+    return &m_state;
 }
 
 void InputProcessor::ResetState()

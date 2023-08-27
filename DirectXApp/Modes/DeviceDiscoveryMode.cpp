@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "DeviceDiscoveryMode.h"
+#include "Graphics/Objects/2D/Button.h"
 
 DeviceDiscoveryMode::DeviceDiscoveryMode()
 {
@@ -17,9 +18,14 @@ uint32_t DeviceDiscoveryMode::initializeMode()
 	//Create a new map for storing all of the text for this mode
 	initializeModeText();
 	initializeSettingsModeText();
+
+	//TODO: Testing of UI elements, remove when done
+	m_menuObjects.push_back(std::make_shared<Button>());
 	
-	//When this mode is initialzed we go into a state of CanTransfer
-	return ModeState::CanTransfer;
+	//When this mode is initialzed we go into a state of CanTransfer and Active.
+	//Can Transfer allows us to use the esc. key to go back to the settings menu
+	//while active diverts state control to this mode
+	return (ModeState::CanTransfer | ModeState::Active);
 }
 
 void DeviceDiscoveryMode::uninitializeMode()
@@ -38,22 +44,22 @@ void DeviceDiscoveryMode::initializeSettingsModeText()
 	m_modeText->at(index).colors.push_back({ 1, 1, 1, 1 });
 	m_modeText->at(index).locations.push_back(titleText.size());
 
-	//Subtitle Information
-	index = static_cast<int>(TextType::SUB_TITLE);
-	std::wstring subtitleText = L"(Select from one of the options below.)";
-	m_modeText->at(index).message = subtitleText;
-	m_modeText->at(index).colors.push_back({ 1, 1, 1, 1 });
-	m_modeText->at(index).locations.push_back(subtitleText.size());
+	////Subtitle Information
+	//index = static_cast<int>(TextType::SUB_TITLE);
+	//std::wstring subtitleText = L"(Select from one of the options below.)";
+	//m_modeText->at(index).message = subtitleText;
+	//m_modeText->at(index).colors.push_back({ 1, 1, 1, 1 });
+	//m_modeText->at(index).locations.push_back(subtitleText.size());
 
-	//Body Information
-	index = static_cast<int>(TextType::BODY);
-	std::wstring bodyText1 = L"1. Connect to a Personal Caddie \n";
-	std::wstring bodyText2 = L"2. Disconnect from Personal Caddie \n";
-	m_modeText->at(index).message = bodyText1 + bodyText2;
-	m_modeText->at(index).colors.push_back({ 0, 0, 0, 1.0 });
-	m_modeText->at(index).colors.push_back({ 0.2, 0.2, 0.2, 1 });
-	m_modeText->at(index).locations.push_back(bodyText1.size());
-	m_modeText->at(index).locations.push_back(bodyText2.size());
+	////Body Information
+	//index = static_cast<int>(TextType::BODY);
+	//std::wstring bodyText1 = L"1. Connect to a Personal Caddie \n";
+	//std::wstring bodyText2 = L"2. Disconnect from Personal Caddie \n";
+	//m_modeText->at(index).message = bodyText1 + bodyText2;
+	//m_modeText->at(index).colors.push_back({ 0, 0, 0, 1.0 });
+	//m_modeText->at(index).colors.push_back({ 0.2, 0.2, 0.2, 1 });
+	//m_modeText->at(index).locations.push_back(bodyText1.size());
+	//m_modeText->at(index).locations.push_back(bodyText2.size());
 
 	//Footnote information
 	index = static_cast<int>(TextType::FOOT_NOTE);

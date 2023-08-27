@@ -182,13 +182,11 @@ void MasterRenderer::Render()
     // To handle the swapchain being pre-rotated, set the D2D transformation to include it.
     d2dContext->SetTransform(m_deviceResources->GetOrientationTransform2D());
 
+    //Render on screen text
     m_textOverlay.Render(m_mode);
 
-    //if (m_game != nullptr && m_gameResourcesLoaded)
-    //{
-    //    // This is only used after the game state has been initialized.
-    //    m_textOverlay.Render(m_game);
-    //}
+    //Render 2D UI elements like drop down boxes and buttons
+    for (int i = 0; i < m_mode->getCurrentModeMenuObjects().size(); i++) m_mode->getCurrentModeMenuObjects()[i]->Render(d2dContext);
 
     // We ignore D2DERR_RECREATE_TARGET here. This error indicates that the device
     // is lost. It will be handled during the next call to Present.

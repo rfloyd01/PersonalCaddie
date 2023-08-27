@@ -41,10 +41,13 @@ public:
 	//Handler Methods
 	void PersonalCaddieHandler(PersonalCaddieEventType pcEvent, void* eventArgs);
 
-	std::shared_ptr<std::vector<Text> > getCurrentModeText();
+	std::shared_ptr<std::vector<Text> >       getCurrentModeText();
+	std::vector<std::shared_ptr<MenuObject> > const& getCurrentModeMenuObjects();
 
 private:
 	void processKeyboardInput(winrt::Windows::System::VirtualKey pressedKey);
+	void processMouseLocation(DirectX::XMFLOAT2 mousePosition);
+	void processMouseClick(bool mouseClick);
 	void processEvents();
 	void processTimers();
 

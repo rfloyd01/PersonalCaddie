@@ -21,6 +21,7 @@ enum class KeyboardState
 	None,
 	WaitForInput,
 	KeyPressed,
+    KeyProcessed,
 };
 
 //An update package that is sent to the rest of the application on keypress or 
@@ -28,7 +29,8 @@ enum class KeyboardState
 struct InputState
 {
     winrt::Windows::System::VirtualKey currentPressedKey;
-    //TODO: add mouse variables at some point in the future
+    DirectX::XMFLOAT2                  mousePosition;
+    bool                               mouseClick;
 };
 
 class InputProcessor
@@ -45,14 +47,16 @@ public:
 private:
     void ResetState();
 
-    /*void OnPointerPressed(
-        _In_ winrt::Windows::UI::Core::CoreWindow const& sender,
-        _In_ winrt::Windows::UI::Core::PointerEventArgs const& args
-    );
     void OnPointerMoved(
         _In_ winrt::Windows::UI::Core::CoreWindow const& sender,
         _In_ winrt::Windows::UI::Core::PointerEventArgs const& args
     );
+
+    /*void OnPointerPressed(
+        _In_ winrt::Windows::UI::Core::CoreWindow const& sender,
+        _In_ winrt::Windows::UI::Core::PointerEventArgs const& args
+    );
+    
     void OnPointerReleased(
         _In_ winrt::Windows::UI::Core::CoreWindow const& sender,
         _In_ winrt::Windows::UI::Core::PointerEventArgs const& args
@@ -78,9 +82,8 @@ private:
         _In_ winrt::Windows::UI::Core::BackRequestedEventArgs const& args
     );*/
 
-    InputState                              m_state;
-    KeyboardState                           m_keyboardState; // Enum to keep track of whether or not keyboard presses are allowed
+    InputState           m_state;
+    KeyboardState        m_keyboardState; // Enum to keep track of whether or not keyboard presses are allowed
 
-    bool newInput = false;
-
+    bool newKeyPress = false;
 };

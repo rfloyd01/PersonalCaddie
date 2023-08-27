@@ -79,6 +79,16 @@ TextOverlay::TextOverlay(_In_ std::shared_ptr<DX::DeviceResources> const& device
         //We also need to create a vector to hold text brushes for each TextType
         std::vector<winrt::com_ptr<ID2D1SolidColorBrush> > textTypeBrushes;
         m_textColorBrushes.push_back(textTypeBrushes);
+
+        //Finally, create a default brush (this can be overridden at any point, but we need 
+        //something that isn't null to start off)
+        auto d2dContext = m_deviceResources->GetD2DDeviceContext();
+        winrt::check_hresult(
+            d2dContext->CreateSolidColorBrush(
+                D2D1::ColorF(1.0, 1.0, 1.0, 1.0),
+                m_defaultBrush.put()
+            )
+        );
     }
 }
 
@@ -98,10 +108,14 @@ void TextOverlay::SetTextRegionAlignments(TextType tt)
         winrt::check_hresult(m_textFormats[i]->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_FAR));
         break;
     case TextType::SUB_TITLE:
-    case TextType::ALERT:
-        //Subtitle and Alert text starts at the top center of the render box
+        //Subtitle text starts at the top center of the render box
         winrt::check_hresult(m_textFormats[i]->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_CENTER));
         winrt::check_hresult(m_textFormats[i]->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_NEAR));
+        break;
+    case TextType::ALERT:
+        //Alert text starts at the bottom center of the render box
+        winrt::check_hresult(m_textFormats[i]->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_CENTER));
+        winrt::check_hresult(m_textFormats[i]->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_FAR));
         break;
     case TextType::FOOT_NOTE:
         //Foot note text starts at the bottom right of the render box
@@ -273,19 +287,12 @@ void TextOverlay::Render(_In_ std::shared_ptr<ModeScreen> const& mode)
     //each
     auto d2dContext = m_deviceResources->GetD2DDeviceContext();
 
-    //TODO: Need to figure out a better way to handle colors
-    winrt::check_hresult(
-        d2dContext->CreateSolidColorBrush(
-            D2D1::ColorF(1.0, 1.0, 1.0),
-            m_textBrush.put()
-        )
-    );
     for (int i = 0; i < static_cast<int>(TextType::END); i++)
     {
         d2dContext->DrawTextLayout(
             Point2F(m_startLocations[i].first, m_startLocations[i].second),
             m_textLayouts[i].get(),
-            m_textBrush.get()
+            m_defaultBrush.get()
         );
     }
 }
