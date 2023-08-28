@@ -1,6 +1,6 @@
 #pragma once
 
-#include "TextRenderer.h"
+#include "Direct2DRenderer.h"
 #include "UIConstants.h"
 
 // MasterRenderer:
@@ -45,6 +45,8 @@ public:
     void ReleaseDeviceDependentResources();
     void Render();
 
+    winrt::Windows::Foundation::Size getCurrentScreenSize();
+
     void editText(Text const& text); //consider making this a private method
 
 private:
@@ -54,7 +56,7 @@ private:
     bool                                        m_initialized;
     bool                                        m_gameResourcesLoaded;
     bool                                        m_levelResourcesLoaded;
-    TextRenderer                                m_textRenderer;
+    Direct2DRenderer                            m_2DRenderer;
     std::shared_ptr<ModeScreen>                 m_mode;
     D2D_RECT_F                                  m_gameInfoOverlayRect;
     D2D_SIZE_F                                  m_gameInfoOverlaySize;

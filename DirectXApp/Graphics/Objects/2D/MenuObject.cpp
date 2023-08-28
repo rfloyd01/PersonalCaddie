@@ -1,24 +1,56 @@
 #include "pch.h"
 #include "MenuObject.h"
 
-DirectX::XMFLOAT2 MenuObject::GetObjectPos()
+std::vector<DirectX::XMFLOAT2> const& MenuObject::getObjectLocations()
 {
-	return this->m_position;
+	return this->m_locations;
 }
-void MenuObject::SetObjectPos(int x, int y)
+void MenuObject::setObjectPosition(int i, DirectX::XMFLOAT2 pos)
 {
-	this->m_position.x = x;
-	this->m_position.y = y;
+	//moves a single one of the objects that composes the overall
+	//menu object.
+	if (i < 0 || i >= m_locations.size()) return; //index out of range so do nothing
+
+	m_locations[i].x = pos.x;
+	m_locations[i].y = pos.y;
 }
-void MenuObject::SetObjectPos(DirectX::XMFLOAT2 Pos)
+void MenuObject::moveObject(DirectX::XMFLOAT2 pos)
 {
-	this->m_position = Pos;
+	//Move all objects composing the menuObject by the amount given. This method
+	//doesn't move TO a location, it moves BY the given amount. This means that 
+	//negative numbers are allowed here.
+	for (int i = 0; i < m_locations.size(); i++)
+	{
+		setObjectPosition(i, { m_locations[i].x + pos.x, m_locations[i].y + pos.y });
+	}
 }
-int MenuObject::GetObjectState()
+
+std::vector<MenuObjectState> const& MenuObject::getObjectStates()
 {
-	return this->m_state;
+	return m_states;
 }
-void MenuObject::SetObjectState(int State)
+
+void MenuObject::setObjectState(int i, MenuObjectState state)
 {
-	this->m_state = State;
+	//sets the state of a single one of the objects that composes
+	//the overall menu object
+	if (i < 0 || i >= m_locations.size()) return; //index out of range so do nothing
+
+	m_states[i] = state;
+}
+
+std::vector<DirectX::XMFLOAT2> const& MenuObject::getDimensions()
+{
+	return m_dimensions;
+}
+
+void MenuObject::changeDimensions(float ratio)
+{
+	//increases or decreases the dimensions of all objects composing the 
+	//menu object by the given ratio
+	for (int i = 0; i < m_dimensions.size(); i++)
+	{
+		m_dimensions[i].x *= ratio;
+		m_dimensions[i].y *= ratio;
+	}
 }

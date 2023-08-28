@@ -1,22 +1,35 @@
 #pragma once
 
+enum class MenuObjectState
+{
+	PassiveOutline,
+	PassiveBackground,
+	Pressed,
+	NotPressed
+};
+
 class MenuObject
 {
 public:
 	MenuObject() {}
 	~MenuObject() {}
 protected:
-	DirectX::XMFLOAT2   m_position;
-	int                 m_state;
+	virtual void setObjectPosition(int i, DirectX::XMFLOAT2 pos);
+
+	std::vector<DirectX::XMFLOAT2>   m_locations;
+	std::vector<DirectX::XMFLOAT2>   m_dimensions;
+	std::vector<MenuObjectState>     m_states;
 
 public:
-	virtual DirectX::XMFLOAT2 GetObjectPos();
-	virtual void SetObjectPos(int x, int y);
-	virtual void SetObjectPos(DirectX::XMFLOAT2 Pos);
+	virtual std::vector<DirectX::XMFLOAT2> const& getObjectLocations();
+	
+	virtual void moveObject(DirectX::XMFLOAT2 pos);
 
-	virtual int GetObjectState();
-	virtual void SetObjectState(int State);
+	virtual std::vector<MenuObjectState> const& getObjectStates();
+	virtual void setObjectState(int i, MenuObjectState state);
 
-	virtual void update(DirectX::XMFLOAT2 mousePosition, bool mouseClick) = 0;
-	virtual void Render(_In_ ID2D1DeviceContext2* context) = 0;
+	virtual std::vector<DirectX::XMFLOAT2> const& getDimensions();
+	void changeDimensions(float ratio);
+
+	virtual void update(DirectX::XMFLOAT2 mousePosition, bool mouseClick, winrt::Windows::Foundation::Size windowSize) = 0;
 };

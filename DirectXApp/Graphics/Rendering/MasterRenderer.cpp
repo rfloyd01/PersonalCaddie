@@ -10,7 +10,7 @@ MasterRenderer::MasterRenderer(std::shared_ptr<DX::DeviceResources> const& devic
     m_initialized(false),
     m_gameResourcesLoaded(false),
     m_levelResourcesLoaded(false),
-    m_textRenderer(deviceResources)
+    m_2DRenderer(deviceResources)
 {
     CreateDeviceDependentResources();
     CreateWindowSizeDependentResources();
@@ -21,12 +21,17 @@ void MasterRenderer::CreateDeviceDependentResources()
     m_gameResourcesLoaded = false;
     m_levelResourcesLoaded = false;
 
-    m_textRenderer.CreateDeviceDependentResources();
+    //m_2DRenderer.CreateDeviceDependentResources();
+}
+
+winrt::Windows::Foundation::Size MasterRenderer::getCurrentScreenSize()
+{
+    return m_deviceResources->GetLogicalSize();
 }
 
 void MasterRenderer::CreateWindowSizeDependentResources()
 {
-    m_textRenderer.CreateWindowSizeDependentResources();
+    m_2DRenderer.CreateWindowSizeDependentResources(m_mode->getCurrentModeMenuObjects());
 
     auto d3dContext = m_deviceResources->GetD3DDeviceContext();
     auto renderTargetSize = m_deviceResources->GetRenderTargetSize();
@@ -82,7 +87,7 @@ void MasterRenderer::ReleaseDeviceDependentResources()
     // Simple3DGame object. It will be reset as a part of the
     // game devices resources being recreated.
     //m_game = nullptr;
-    m_textRenderer.ReleaseDeviceDependentResources();
+    m_2DRenderer.ReleaseDeviceDependentResources();
 }
 
 void MasterRenderer::Render()
@@ -182,11 +187,11 @@ void MasterRenderer::Render()
     // To handle the swapchain being pre-rotated, set the D2D transformation to include it.
     d2dContext->SetTransform(m_deviceResources->GetOrientationTransform2D());
 
-    //Render on screen text
-    m_textRenderer.Render(m_mode);
+    //Render any UI elements or text on screen text
+    m_2DRenderer.Render(m_mode);
 
     //Render 2D UI elements like drop down boxes and buttons
-    for (int i = 0; i < m_mode->getCurrentModeMenuObjects().size(); i++) m_mode->getCurrentModeMenuObjects()[i]->Render(d2dContext);
+    //for (int i = 0; i < m_mode->getCurrentModeMenuObjects().size(); i++) m_mode->getCurrentModeMenuObjects()[i]->Render(d2dContext);
 
     // We ignore D2DERR_RECREATE_TARGET here. This error indicates that the device
     // is lost. It will be handled during the next call to Present.
@@ -201,5 +206,5 @@ void MasterRenderer::Render()
 void MasterRenderer::editText(Text const& text)
 {
     //just a pass through function to the text renderer
-    m_textRenderer.UpdateText(text);
+    m_2DRenderer.UpdateText(text);
 }

@@ -1,7 +1,8 @@
 #pragma once
 
 #include "Graphics/Utilities/DeviceResources.h"
-#include "Modes/ModeScreen.h"
+#include "TextRenderer.h"
+#include "MenuObjectRenderer.h"
 
 #include <string>
 
@@ -11,8 +12,19 @@
 class Direct2DRenderer
 {
 public:
+	Direct2DRenderer(_In_ std::shared_ptr<DX::DeviceResources> const& deviceResources);
 
+	void CreateWindowSizeDependentResources(_In_ std::vector<std::shared_ptr<MenuObject> > const& menuObjects);
+	void ReleaseDeviceDependentResources();
+
+	void Render(_In_ std::shared_ptr<ModeScreen> const& mode);
+
+	void UpdateText(Text const& text);
+	void addMenuObject(std::shared_ptr<MenuObject> menuObject);
 
 private:
-	std::shared_ptr<DX::DeviceResources>                                     m_deviceResources;
+	std::shared_ptr<DX::DeviceResources>        m_deviceResources;
+
+	MenuObjectRenderer                          m_menuObjectRenderer;
+	TextRenderer                                m_textRenderer;
 };

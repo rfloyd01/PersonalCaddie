@@ -8,10 +8,6 @@ using namespace winrt::Windows::ApplicationModel;
 TextRenderer::TextRenderer(_In_ std::shared_ptr<DX::DeviceResources> const& deviceResources) :
 	m_deviceResources(deviceResources)
 {
-    /*m_showTitle = true;
-    m_titleBodyVerticalOffset = UIConstants::Margin;
-    m_logoSize = D2D1::SizeF(0.0f, 0.0f);*/
-
     auto dwriteFactory = m_deviceResources->GetDWriteFactory();
 
     //create a format, layout for each text type

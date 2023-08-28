@@ -144,7 +144,7 @@ void ModeScreen::processMouseInput(DirectX::XMFLOAT2 mousePosition, bool mouseCl
 	//over any of them
 	for (int i = 0; i < m_modes[static_cast<int>(m_currentMode)]->getMenuObjects().size(); i++)
 	{
-		m_modes[static_cast<int>(m_currentMode)]->getMenuObjects()[i]->update(mousePosition, mouseClick);
+		m_modes[static_cast<int>(m_currentMode)]->getMenuObjects()[i]->update(mousePosition, mouseClick, m_renderer->getCurrentScreenSize());
 		if (mouseClick) m_inputProcessor->setMouseState(MouseState::ButtonProcessed); //let the input processor know that the click has been handled
 	}
 }
