@@ -95,6 +95,9 @@ public:
 	//void updateCalibrationNumbers();
 	void setRotationQuaternion(glm::quat q, int sample);
 
+	void startBLEAdvertisementWatcher() { return p_ble->startBLEAdvertisementWatcher(); }
+	void stopBLEAdvertisementWatcher() { return p_ble->stopBLEAdvertisementWatcher(); }
+
 	std::set<DeviceInfoDisplay>* getScannedDevices() { return p_ble->getScannedDevices(); }
 
 private:

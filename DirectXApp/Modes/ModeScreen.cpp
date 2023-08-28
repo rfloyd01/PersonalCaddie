@@ -150,17 +150,28 @@ void ModeScreen::processMouseInput(DirectX::XMFLOAT2 mousePosition, bool mouseCl
 		{
 		case MenuObjectState::Pressed:
 		{
-			m_modes[static_cast<int>(m_currentMode)]->handleMenuObjectClick(i);
+			uint32_t new_state = m_modes[static_cast<int>(m_currentMode)]->handleMenuObjectClick(i);
 			m_renderer->updateMenuObjects(m_modes[static_cast<int>(m_currentMode)]->getMenuObjects());
 
 			//start a short timer that will change the color of the button from PRESSED to NOT_PRESSED
 			button_pressed = true;
 			button_pressed_timer = std::chrono::steady_clock::now();
+
+			//See if the button press forced into or out of active mode
+			if (m_modeState & ModeState::Active)
+			{
+				if (new_state & ModeState::Idle) leaveActiveState();
+			}
+			else if (m_modeState & ModeState::Idle)
+			{
+				if (new_state & ModeState::Active) enterActiveState();
+			}
+
 			break;
 		}
 		}
-		if (mouseClick) m_inputProcessor->setMouseState(MouseState::ButtonProcessed); //let the input processor know that the click has been handled
 	}
+	if (mouseClick) m_inputProcessor->setMouseState(MouseState::ButtonProcessed); //let the input processor know that the click has been handled
 }
 
 void ModeScreen::processEvents()
@@ -295,6 +306,22 @@ void ModeScreen::PersonalCaddieHandler(PersonalCaddieEventType pcEvent, void* ev
 		addCurrentModeText(text); //add the alert on top of any existing ones
 		break;
 	}
+	case PersonalCaddieEventType::DEVICE_WATCHER_UPDATE:
+	{
+		std::set<DeviceInfoDisplay>* foundDevices = (std::set<DeviceInfoDisplay>*)eventArgs;
+		std::wstring devices;
+		for (auto it = foundDevices->begin(); it != foundDevices->end(); it++)
+		{
+			devices += L"Name: " + it->device_name;
+			devices += L", Address: " + it->device_address.second + L"\n";
+		}
+
+		//Update the body text of the current mode with the discovered devices
+		//Body Information
+		Text newBodyText(devices, { {1.0, 1.0, 1.0, 1.0} }, { 0, devices.length() }, TextType::BODY);
+		setCurrentModeText(newBodyText);
+		break;
+	}
 	}
 
 }
@@ -316,6 +343,9 @@ void ModeScreen::addCurrentModeText(Text const& text)
 		//*note - the locations vector is always 1 larger than the colors vector so the i + 1
 		//in the above line is safe and intended
 	}
+
+	//after adding new text let the master renderer know to render it
+	m_renderer->editText(getCurrentModeText()->at(static_cast<int>(text.textType)));
 }
 
 void ModeScreen::setCurrentModeText(Text const& text)
@@ -323,6 +353,9 @@ void ModeScreen::setCurrentModeText(Text const& text)
 	//This method overwrites the current mode text with the text given
 	auto currentModeText = m_modes[static_cast<int>(m_currentMode)]->getModeText();
 	currentModeText->at(static_cast<int>(text.textType)) = text;
+
+	//after adding new text let the master renderer know to render it
+	m_renderer->editText(getCurrentModeText()->at(static_cast<int>(text.textType)));
 }
 
 void ModeScreen::createModeScreenAlert(std::wstring alert)
@@ -337,4 +370,34 @@ void ModeScreen::createModeScreenAlert(std::wstring alert)
 	//Make sure to set/reset the alert timer
 	alert_timer = std::chrono::steady_clock::now(); //set/reset the alert timer
 	alert_active = true;
+}
+
+void ModeScreen::enterActiveState()
+{
+	m_modeState ^= (ModeState::Active | ModeState::Idle); //swap the active and idle states
+
+	switch (m_currentMode)
+	{
+	case ModeType::DEVICE_DISCOVERY:
+	{
+		//Going into active mode while in device discovery means that we need to start the BLEAdvertisement watcher of 
+		//the Personal Caddie
+		m_personalCaddie->startBLEAdvertisementWatcher();
+	}
+	}
+}
+
+void ModeScreen::leaveActiveState()
+{
+	m_modeState ^= (ModeState::Active | ModeState::Idle); //swap the active and idle states
+
+	switch (m_currentMode)
+	{
+	case ModeType::DEVICE_DISCOVERY:
+	{
+		//Leaving active mode while in device discovery means that we need to stop the BLEAdvertisement watcher of 
+		//the Personal Caddie
+		m_personalCaddie->stopBLEAdvertisementWatcher();
+	}
+	}
 }

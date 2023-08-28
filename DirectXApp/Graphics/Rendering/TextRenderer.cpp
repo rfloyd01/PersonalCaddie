@@ -264,7 +264,7 @@ void TextRenderer::CreateWindowSizeDependentResources()
         m_menuObjectTextLayouts[i]->SetMaxWidth((m_menuObjectRenderBorderRatios[i].second.first - m_menuObjectRenderBorderRatios[i].first.first) * windowBounds.Width);
         m_menuObjectTextLayouts[i]->SetMaxHeight((m_menuObjectRenderBorderRatios[i].second.second - m_menuObjectRenderBorderRatios[i].first.second) * windowBounds.Height);
 
-        UpdateMenuObjectFontSize(i, m_menuObjectTextLayouts[i]->GetMaxHeight()); //font should already be based on height of menu object so set the height multiplier to 1.0
+        UpdateMenuObjectFontSize(i, m_menuObjectTextLayouts[i]->GetMaxHeight());
     }
 }
 

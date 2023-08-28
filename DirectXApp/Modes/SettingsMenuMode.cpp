@@ -62,7 +62,7 @@ void SettingsMenuMode::initializeSettingsModeText()
 
 }
 
-void SettingsMenuMode::handleMenuObjectClick(int i)
+uint32_t SettingsMenuMode::handleMenuObjectClick(int i)
 {
-	//do nothing for now
+	return ModeState::Idle;
 }

@@ -23,7 +23,8 @@ enum class BLEState
 {
 	DeviceFound,
 	DeviceNotFound,
-	Connected
+	Connected,
+	NewAdvertisement
 };
 
 class BLE
@@ -47,8 +48,10 @@ public:
 
 	BluetoothLEDevice* getBLEDevice() { return &(this->m_bleDevice); }
 
+	void startBLEAdvertisementWatcher();
+	void stopBLEAdvertisementWatcher();
+
 private:
-	void startDeviceWatcher();
 
 	//Handler Methods
 	std::function<void(BLEState)> state_change_handler; //pointer to an event handler in the Personal Caddie class

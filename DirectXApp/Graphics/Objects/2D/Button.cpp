@@ -48,9 +48,11 @@ MenuObjectState Button::update(DirectX::XMFLOAT2 mousePosition, bool mouseClick,
 		if (mouseClick)
 		{
 			m_states[2] = MenuObjectState::Pressed;
-			return m_states[2];
+			return MenuObjectState::Pressed;
 		}
 	}
+
+	return MenuObjectState::None; //there's nothing to update
 }
 
 MenuObjectState Button::getReleventState()

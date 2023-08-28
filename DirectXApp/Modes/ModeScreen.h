@@ -56,6 +56,9 @@ private:
 
 	void createModeScreenAlert(std::wstring alert);
 
+	void enterActiveState(); //depending on the current mode, something different will happen here
+	void leaveActiveState();
+
 	uint32_t                            m_modeState; //holds info on the current mode state
 
 	std::shared_ptr<PersonalCaddie>     m_personalCaddie;

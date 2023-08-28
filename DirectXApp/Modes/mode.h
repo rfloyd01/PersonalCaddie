@@ -24,10 +24,10 @@ enum class ModeType
 //enums act as binary flags that go into a larger number
 enum ModeState
 {
-	Idle = 0,
-	Active = 1,
-	Recording = 2,
-	CanTransfer = 4
+	Idle = 1,
+	Active = 2,
+	Recording = 4,
+	CanTransfer = 8
 };
 
 //Class definition
@@ -38,13 +38,12 @@ public:
 	virtual uint32_t initializeMode() = 0;
 	virtual void uninitializeMode() = 0;
 
-	virtual void enterActiveState(int state) {}; //not a pure virtual method as not all modes require this method
 	virtual void update() {}; //not a pure virtual method as not all modes require this method
 
 	const float* getBackgroundColor();
 
 	std::vector<std::shared_ptr<MenuObject> > const& getMenuObjects() { return m_menuObjects; }
-	virtual void handleMenuObjectClick(int i) = 0;
+	virtual uint32_t handleMenuObjectClick(int i) = 0;
 
 	std::shared_ptr<std::vector<Text>> getModeText() { return m_modeText; }
 	void setModeText(Text const& text);

@@ -7,6 +7,7 @@ enum class MenuObjectState
 	ActiveBackground,
 	Pressed,
 	NotPressed,
+	None
 };
 
 class MenuObject

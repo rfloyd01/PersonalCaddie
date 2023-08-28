@@ -138,8 +138,18 @@ void PersonalCaddie::BLEDeviceHandler(BLEState state)
         break;
     }
     case BLEState::DeviceNotFound:
+    {
         std::wstring message = L"Couldn't find an existing Personal Caddie. Go to the settings menu to connect to one.";
         event_handler(PersonalCaddieEventType::PC_ALERT, (void*)&message);
+        break;
+    }
+    case BLEState::NewAdvertisement:
+    {
+        //A new device was found by the advertisement watcher, send the updated device list to the mode screen class
+        auto foundDevices = p_ble->getScannedDevices();
+        event_handler(PersonalCaddieEventType::DEVICE_WATCHER_UPDATE, (void*)foundDevices);
+        break;
+    }
     }
 }
 

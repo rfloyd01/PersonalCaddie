@@ -30,15 +30,11 @@ BLE::BLE(std::function<void(BLEState)> function)
             foundDevice.device_address.first = eventArgs.BluetoothAddress();
             foundDevice.device_address.second = formatBluetoothAddress(foundDevice.device_address.first);
 
+            int currentFoundDevices = m_scannedDevices.size();
             this->addScannedDevice(foundDevice); //add the device to the scanned device set for potential later use
 
-            //After adding the device, check and see if it's a Personal Caddie and then attempt to connect to it
-            if (foundDevice.device_name == winrt::to_hstring("Personal Caddie"))
-            {
-                //TODO: Shouldn't automatically connect from here
-                this->m_bleDevice = Bluetooth::BluetoothLEDevice::FromBluetoothAddressAsync(foundDevice.device_address.first).get(); //get will block the calling thread (similar to co_await)
-                this->connect();
-            }
+            //If a new device is found, send an alert to the Personal Caddie to let it know
+            if (m_scannedDevices.size() > currentFoundDevices) state_change_handler(BLEState::NewAdvertisement);
         })
     );
 
@@ -66,13 +62,19 @@ IAsyncOperation<BluetoothLEDevice> BLE::connectToExistingDevice()
     return FindBLEAsync;
 }
 
-void BLE::startDeviceWatcher()
+void BLE::startBLEAdvertisementWatcher()
 {
     //When manually starting the device watcher we don't attempt to automatically connect to devices like we do
     //in the constructor for this class. We just scan for devices and add them to the m_scannedDevices set as a 
     //different function handles picking which one to connect to.
     OutputDebugString(L"Device watcher started\n");
     this->m_bleAdvertisementsWatcher.Start();
+}
+
+void BLE::stopBLEAdvertisementWatcher()
+{
+    OutputDebugString(L"Device watcher stopped\n");
+    this->m_bleAdvertisementsWatcher.Stop();
 }
 
 winrt::Windows::Foundation::IAsyncAction yeet()
@@ -139,7 +141,7 @@ void BLE::deviceFoundHandler(IAsyncOperation<BluetoothLEDevice> const& sender, A
     if (m_bleDevice.as<winrt::Windows::Foundation::IUnknown>() == NULL)
     {
         state_change_handler(BLEState::DeviceNotFound);
-        startDeviceWatcher();
+        startBLEAdvertisementWatcher();
     }
     else
     {

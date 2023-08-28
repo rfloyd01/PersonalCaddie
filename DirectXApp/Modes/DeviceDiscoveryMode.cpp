@@ -27,7 +27,7 @@ uint32_t DeviceDiscoveryMode::initializeMode()
 	//When this mode is initialzed we go into a state of CanTransfer and Active.
 	//Can Transfer allows us to use the esc. key to go back to the settings menu
 	//while active diverts state control to this mode
-	return (ModeState::CanTransfer | ModeState::Active);
+	return (ModeState::CanTransfer | ModeState::Idle);
 }
 
 void DeviceDiscoveryMode::uninitializeMode()
@@ -104,7 +104,7 @@ void DeviceDiscoveryMode::enterActiveState(int state)
 	}
 }
 
-void DeviceDiscoveryMode::handleMenuObjectClick(int i)
+uint32_t DeviceDiscoveryMode::handleMenuObjectClick(int i)
 {
 	if (i == 0)
 	{
@@ -112,11 +112,13 @@ void DeviceDiscoveryMode::handleMenuObjectClick(int i)
 		{
 			m_state = DeviceDiscoveryState::DISCOVERY;
 			m_menuObjects[0]->updateText(L"Stop Device Watcher");
+			return ModeState::Active;
 		}
 		else if (m_state == DeviceDiscoveryState::DISCOVERY)
 		{
 			m_state = DeviceDiscoveryState::IDLE;
 			m_menuObjects[0]->updateText(L"Start Device Watcher");
+			return ModeState::Idle;
 		}
 	}
 }
