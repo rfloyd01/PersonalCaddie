@@ -20,7 +20,7 @@ MenuObjectRenderer::MenuObjectRenderer(_In_ std::shared_ptr<DX::DeviceResources>
 
     winrt::check_hresult(
         d2dContext->CreateSolidColorBrush(
-            D2D1::ColorF(0.75, 0.75, 0.75, 1.0),
+            D2D1::ColorF(0.9, 0.9, 0.9, 1.0),
             m_brushes[static_cast<int>(MenuObjectBrushType::ButtonNotPressedFill)].put()
         )
     );
@@ -61,30 +61,8 @@ void MenuObjectRenderer::CreateWindowSizeDependentResources(_In_ std::vector<std
     auto windowBounds = m_deviceResources->GetLogicalSize();
     m_rectangles.clear();   //clear out all existing render rectangles and start over from scratch
     m_brushIndices.clear(); //we also need to reset the vector holding the appropriate brush for each rectangle to be rendered
-    int index = 0;
     
-    for (auto&& object : menuObjects)
-    {
-        //Every menu object is composes of one or more rectangles. Each one of these rectangles
-        //needs to be rendered
-        auto locations = object->getObjectLocations();
-        auto dimensions = object->getDimensions();
-        auto states = object->getObjectStates();
-
-        for (int i = 0; i < locations.size(); i++)
-        {
-            D2D1_RECT_F rect = D2D1::RectF(
-                (locations[i].x - dimensions[i].x / 2.0) * windowBounds.Width,
-                (locations[i].y - dimensions[i].y / 2.0) * windowBounds.Height,
-                (locations[i].x + dimensions[i].x / 2.0) * windowBounds.Width,
-                (locations[i].y + dimensions[i].y / 2.0) * windowBounds.Height
-            );
-
-            //Choose a brush for the new rectangle based on the current state of the object
-            m_brushIndices.push_back(0); //default to the first brush
-            updateMenuObjectBrush(index++, states[i]);
-        }
-    }
+    for (auto&& object : menuObjects) addMenuObject(object);
 }
 
 void MenuObjectRenderer::addMenuObject(std::shared_ptr<MenuObject> menuObject)
@@ -106,6 +84,7 @@ void MenuObjectRenderer::addMenuObject(std::shared_ptr<MenuObject> menuObject)
             (locations[i].x + dimensions[i].x / 2.0) * windowBounds.Width,
             (locations[i].y + dimensions[i].y / 2.0) * windowBounds.Height
         );
+        m_rectangles.push_back(rect);
 
         //Choose a brush for the new rectangle based on the current state of the object
         m_brushIndices.push_back(0); //default to the first brush

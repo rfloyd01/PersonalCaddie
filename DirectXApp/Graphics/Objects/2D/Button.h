@@ -5,7 +5,7 @@
 class Button : public MenuObject
 {
 public:
-	Button(DirectX::XMFLOAT2 location);
+	Button(DirectX::XMFLOAT2 location, std::wstring text = L"");
 	~Button() {}
 
 protected:

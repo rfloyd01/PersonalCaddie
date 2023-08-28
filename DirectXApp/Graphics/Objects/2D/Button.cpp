@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "Button.h"
 
-Button::Button(DirectX::XMFLOAT2 location)
+Button::Button(DirectX::XMFLOAT2 location, std::wstring text)
 {
 	//A button is made up of three different rectangles. There are two outlines (one of which is
 	//offset from the first by a little to give the impression of a shadow) and a background color.
@@ -16,6 +16,7 @@ Button::Button(DirectX::XMFLOAT2 location)
 	m_dimensions = { {0.10, 0.10}, {0.10 - 0.004, 0.10 - 0.004}, {0.10, 0.10} };
 	m_states = { MenuObjectState::PassiveOutline, MenuObjectState::PassiveOutline, MenuObjectState::NotPressed };
 	m_locations = { {location.x, location.y}, {location.x + (float)0.002, location.y + (float)0.002}, {location.x, location.y} };
+	m_text = text;
 }
 
 bool Button::inSpace(DirectX::XMFLOAT2 const & mousePosition, winrt::Windows::Foundation::Size windowSize)

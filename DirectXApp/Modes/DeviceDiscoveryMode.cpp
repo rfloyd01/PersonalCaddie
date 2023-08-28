@@ -20,7 +20,7 @@ uint32_t DeviceDiscoveryMode::initializeMode()
 	initializeSettingsModeText();
 
 	//Create a button towards the top middle portion of the screen
-	DirectX::XMFLOAT2 buttonLocation = { 0.5, 0.1 };
+	DirectX::XMFLOAT2 buttonLocation = { 0.5, 0.5 };
 	m_menuObjects.push_back(std::make_shared<Button>(buttonLocation));
 	
 	//When this mode is initialzed we go into a state of CanTransfer and Active.

@@ -73,11 +73,10 @@ void MasterRenderer::CreateModeResources()
     //the game. For now just make this a normal function, but if loading starts taking awhile then
     //make this asynchronus
     auto renderText = m_mode->getCurrentModeText();
+    for (int i = 0; i < renderText->size(); i++) editText(renderText->at(i));
 
-    for (int i = 0; i < renderText->size(); i++)
-    {
-       editText(renderText->at(i));
-    }
+    auto renderMenuObjects = m_mode->getCurrentModeMenuObjects();
+    for (int i = 0; i < renderMenuObjects.size(); i++) m_2DRenderer.addMenuObject(renderMenuObjects[i]);
 }
 
 void MasterRenderer::ReleaseDeviceDependentResources()

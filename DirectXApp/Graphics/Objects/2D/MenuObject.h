@@ -19,6 +19,7 @@ protected:
 	std::vector<DirectX::XMFLOAT2>   m_locations;
 	std::vector<DirectX::XMFLOAT2>   m_dimensions;
 	std::vector<MenuObjectState>     m_states;
+	std::wstring                     m_text;
 
 public:
 	virtual std::vector<DirectX::XMFLOAT2> const& getObjectLocations();
