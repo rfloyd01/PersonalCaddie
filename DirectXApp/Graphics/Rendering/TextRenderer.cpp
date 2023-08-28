@@ -76,16 +76,56 @@ TextRenderer::TextRenderer(_In_ std::shared_ptr<DX::DeviceResources> const& devi
         std::vector<winrt::com_ptr<ID2D1SolidColorBrush> > textTypeBrushes;
         m_textColorBrushes.push_back(textTypeBrushes);
 
-        //Finally, create a default brush (this can be overridden at any point, but we need 
-        //something that isn't null to start off)
-        auto d2dContext = m_deviceResources->GetD2DDeviceContext();
-        winrt::check_hresult(
-            d2dContext->CreateSolidColorBrush(
-                D2D1::ColorF(1.0, 1.0, 1.0, 1.0),
-                m_defaultBrush.put()
-            )
-        );
     }
+
+    //Create Text formats for menu objects. There are only two different formats.
+    //Unlike the formats created above, the font ratios here are based on the size
+    //of the menu object, not the window.
+    winrt::check_hresult(
+        dwriteFactory->CreateTextFormat(
+            L"Segoe UI",
+            nullptr,
+            DWRITE_FONT_WEIGHT_LIGHT,
+            DWRITE_FONT_STYLE_NORMAL,
+            DWRITE_FONT_STRETCH_NORMAL,
+            0.33,
+            L"en-us",
+            m_menuObjectTextCenterFormat.put()
+        )
+    );
+    winrt::check_hresult(m_menuObjectTextCenterFormat->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_CENTER));
+    winrt::check_hresult(m_menuObjectTextCenterFormat->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_CENTER));
+
+    winrt::check_hresult(
+        dwriteFactory->CreateTextFormat(
+            L"Segoe UI",
+            nullptr,
+            DWRITE_FONT_WEIGHT_LIGHT,
+            DWRITE_FONT_STYLE_NORMAL,
+            DWRITE_FONT_STRETCH_NORMAL,
+            0.1,
+            L"en-us",
+            m_menuObjectTextTopLeftFormat.put()
+        )
+    );
+    winrt::check_hresult(m_menuObjectTextTopLeftFormat->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING));
+    winrt::check_hresult(m_menuObjectTextTopLeftFormat->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_NEAR));
+
+    //Finally, create some default brushes (this can be overridden at any point, but we need 
+    //something that isn't null to start off)
+    auto d2dContext = m_deviceResources->GetD2DDeviceContext();
+    winrt::check_hresult(
+        d2dContext->CreateSolidColorBrush(
+            D2D1::ColorF(1.0, 1.0, 1.0, 1.0),
+            m_defaultBrush.put()
+        )
+    );
+    winrt::check_hresult(
+        d2dContext->CreateSolidColorBrush(
+            D2D1::ColorF(0.0, 0.0, 0.0, 1.0),
+            m_menuObjectDefaultBrush.put()
+        )
+    );
 }
 
 void TextRenderer::SetTextRegionAlignments(TextType tt)
@@ -206,7 +246,7 @@ void TextRenderer::CreateWindowSizeDependentResources()
     //the sizes of the rendering rectangle fo each TextLayout as well as the 
     //start location for where each TextLayout should be rendered
 
-    //Alter the font sizes and rendering rectangle sizes to fit the current windows (font's are only based on window height for now)
+    //Alter the font sizes and rendering rectangle sizes for default text types to fit the current window (font's are only based on window height for now)
     for (int i = 0; i < static_cast<int>(TextType::END); i++)
     {
         m_startLocations[i].first = m_renderBorderRatios[i].first.first * windowBounds.Width;
@@ -215,6 +255,29 @@ void TextRenderer::CreateWindowSizeDependentResources()
         m_textLayouts[i]->SetMaxHeight((m_renderBorderRatios[i].second.second - m_renderBorderRatios[i].first.second) * windowBounds.Height);
         UpdateTextTypeFontSize(static_cast<TextType>(i));
     }
+
+    //Alter the font sizes and rendering rectangle sizes for menu object to fit the current window (font's are only based on window height for now)
+    for (int i = 0; i < m_menuObjectTextLayouts.size(); i++)
+    {
+        m_menuObjectStartLocations[i].first = m_menuObjectRenderBorderRatios[i].first.first * windowBounds.Width;
+        m_menuObjectStartLocations[i].second = m_menuObjectRenderBorderRatios[i].first.second * windowBounds.Height;
+        m_menuObjectTextLayouts[i]->SetMaxWidth((m_menuObjectRenderBorderRatios[i].second.first - m_menuObjectRenderBorderRatios[i].first.first) * windowBounds.Width);
+        m_menuObjectTextLayouts[i]->SetMaxHeight((m_menuObjectRenderBorderRatios[i].second.second - m_menuObjectRenderBorderRatios[i].first.second) * windowBounds.Height);
+        UpdateMenuObjectFontSize(i, 1.0); //font should already be based on height of menu object so set the height multiplier to 1.0
+    }
+}
+
+void TextRenderer::deleteMenuObjects()
+{
+    //This method deletes all text layouts (if they exists) for menu objects and clears
+    //the ratio vectors for menu objects
+    for (int i = 0; i < m_menuObjectTextLayouts.size(); i++) m_menuObjectTextLayouts[i] = nullptr;
+
+    m_menuObjectTextLayouts.clear();
+    m_menuObjectRenderBorderRatios.clear();
+    m_menuObjectStartLocations.clear();
+    m_menuObjectTextLengths.clear();
+    m_menuObjectFontSizeRatios.clear();
 }
 
 void TextRenderer::DeleteTextBrushes()
@@ -263,6 +326,65 @@ void TextRenderer::UpdateText(Text const& text)
     if (text.colors.size() > 0) CreateTextTypeBrushes(text);
 }
 
+void TextRenderer::addMenuObjectText(DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, std::wstring text, MenuObjectState state)
+{
+    //unlike the standard text types, there isn't a set amount of menu object text so we need different methods
+    //for adding new text and updating existing text. This method adds new text layouts by simply appending values
+    //to the back of the necessary arrays and then calling the update method.
+    m_menuObjectTextLayouts.push_back(nullptr);
+    m_menuObjectRenderBorderRatios.push_back({ {1, 1}, {1, 1} }); //{{X0, Y0}, {X1, Y1}}
+    m_menuObjectStartLocations.push_back({ 1, 1 });
+    m_menuObjectTextLengths.push_back(0);
+    m_menuObjectFontSizeRatios.push_back(0.0);
+
+    updateMenuObjectText(location, size, text, state, m_menuObjectTextLayouts.size() - 1);
+}
+
+void TextRenderer::updateMenuObjectText(DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, std::wstring text, MenuObjectState state, int i)
+{
+    //the XMfloat variables passed in to this method represent ratios of the window size so there's no math that
+    //needs to be carried out here
+    auto dwriteFactory = m_deviceResources->GetDWriteFactory();
+
+    IDWriteTextFormat* format = nullptr;
+    
+    switch (state)
+    {
+    case MenuObjectState::PassiveBackground:
+        format = m_menuObjectTextTopLeftFormat.get();
+        break;
+    case MenuObjectState::PassiveOutline:
+    default:
+        format = m_menuObjectTextCenterFormat.get();
+        break;
+    }
+
+    //After creating the physicalt layout, add the necessary ratios for rendering the text 
+    //according to the current window size. 
+
+    //The location variable passed in gives the location of the center of the menu object, so we need to calculate the location
+    //for the left, top, bottom and right of the text layout manually
+    auto windowBounds = m_deviceResources->GetLogicalSize();
+
+    m_menuObjectRenderBorderRatios[i] = { {location.x - size.x / 2.0, location.y - size.y / 2.0}, {location.x + size.x / 2.0, location.y + size.y / 2.0} }; //{{X0, Y0}, {X1, Y1}}
+    m_menuObjectStartLocations[i] = { m_menuObjectRenderBorderRatios[i].first.first * windowBounds.Width, m_menuObjectRenderBorderRatios[i].first.second * windowBounds.Height };
+    m_menuObjectTextLengths[i] = text.length();
+    m_menuObjectFontSizeRatios[i] = format->GetFontSize();
+
+    winrt::check_hresult(
+        dwriteFactory->CreateTextLayout(
+            &text[0],
+            text.size(),
+            format,
+            windowBounds.Width * size.x,
+            windowBounds.Height * size.y,
+            m_menuObjectTextLayouts[i].put()
+        )
+    );
+
+    UpdateMenuObjectFontSize(i, size.y);
+}
+
 void TextRenderer::UpdateTextTypeFontSize(TextType tt)
 {
     //Since the font sizes used are based off of the window size we won't know the true
@@ -277,6 +399,15 @@ void TextRenderer::UpdateTextTypeFontSize(TextType tt)
     m_textLayouts[i]->SetFontSize(m_fontSizeRatios[i] * windowBounds.Height, { 0, m_textLengths[i] });
 }
 
+void TextRenderer::UpdateMenuObjectFontSize(int index, float objectHeight)
+{
+    //Same thing as the UpdateTextTypeFontSize() method with the exception that font sizes
+    //for menu objects are based off the size of the object itself, not the window
+    auto windowBounds = m_deviceResources->GetLogicalSize();
+    auto fontSize = m_menuObjectFontSizeRatios[index] * windowBounds.Height * objectHeight;
+    m_menuObjectTextLayouts[index]->SetFontSize(m_menuObjectFontSizeRatios[index] * windowBounds.Height * objectHeight, { 0, m_menuObjectTextLengths[index] });
+}
+
 void TextRenderer::Render(_In_ std::shared_ptr<ModeScreen> const& mode)
 {
     //iterate through all the text types and render the TextLayout for
@@ -289,6 +420,16 @@ void TextRenderer::Render(_In_ std::shared_ptr<ModeScreen> const& mode)
             Point2F(m_startLocations[i].first, m_startLocations[i].second),
             m_textLayouts[i].get(),
             m_defaultBrush.get()
+        );
+    }
+
+    //also render any menu object text
+    for (int i = 0; i < m_menuObjectTextLayouts.size(); i++)
+    {
+        d2dContext->DrawTextLayout(
+            Point2F(m_menuObjectStartLocations[i].first, m_menuObjectStartLocations[i].second),
+            m_menuObjectTextLayouts[i].get(),
+            m_menuObjectDefaultBrush.get()
         );
     }
 }

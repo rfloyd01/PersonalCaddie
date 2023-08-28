@@ -22,6 +22,8 @@ public:
 	void UpdateText(Text const& text);
 	void addMenuObject(std::shared_ptr<MenuObject> menuObject);
 
+	void delteExistingMenuObjects();
+
 private:
 	std::shared_ptr<DX::DeviceResources>        m_deviceResources;
 

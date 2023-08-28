@@ -44,13 +44,23 @@ std::vector<DirectX::XMFLOAT2> const& MenuObject::getDimensions()
 	return m_dimensions;
 }
 
-void MenuObject::changeDimensions(float ratio)
+void MenuObject::changeDimensions(DirectX::XMFLOAT2 ratios)
 {
 	//increases or decreases the dimensions of all objects composing the 
 	//menu object by the given ratio
 	for (int i = 0; i < m_dimensions.size(); i++)
 	{
-		m_dimensions[i].x *= ratio;
-		m_dimensions[i].y *= ratio;
+		m_dimensions[i].x *= ratios.x;
+		m_dimensions[i].y *= ratios.y;
 	}
+}
+
+std::wstring MenuObject::getText()
+{
+	return m_text;
+}
+
+void MenuObject::updateText(std::wstring text)
+{
+	m_text = text;
 }

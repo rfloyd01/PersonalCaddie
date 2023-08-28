@@ -46,6 +46,12 @@ void MenuObjectRenderer::ReleaseDeviceDependentResources()
     DeleteBrushes();
 }
 
+void MenuObjectRenderer::deleteMenuObjects()
+{
+    m_rectangles.clear();   //clear out all existing render rectangles and start over from scratch
+    m_brushIndices.clear(); //we also need to reset the vector holding the appropriate brush for each rectangle to be rendered
+}
+
 void MenuObjectRenderer::DeleteBrushes()
 {
 	//Deletes all of the current paint brushes and clears the vector
@@ -57,11 +63,9 @@ void MenuObjectRenderer::CreateWindowSizeDependentResources(_In_ std::vector<std
 {
     //The size and location of every rectangle that gets rendered is dependent
     //on the current size of the scren. Any time the size of the window changes we 
-    //need to update all rectangles accordingly
-    auto windowBounds = m_deviceResources->GetLogicalSize();
-    m_rectangles.clear();   //clear out all existing render rectangles and start over from scratch
-    m_brushIndices.clear(); //we also need to reset the vector holding the appropriate brush for each rectangle to be rendered
-    
+    //need to update all rectangles accordingly. Delete any existing objects and
+    //recreate them at the new size
+    deleteMenuObjects();
     for (auto&& object : menuObjects) addMenuObject(object);
 }
 

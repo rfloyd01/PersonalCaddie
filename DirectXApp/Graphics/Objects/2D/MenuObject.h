@@ -30,7 +30,10 @@ public:
 	virtual void setObjectState(int i, MenuObjectState state);
 
 	virtual std::vector<DirectX::XMFLOAT2> const& getDimensions();
-	void changeDimensions(float ratio);
+	void changeDimensions(DirectX::XMFLOAT2 ratios);
+
+	std::wstring getText();
+	void updateText(std::wstring text);
 
 	virtual void update(DirectX::XMFLOAT2 mousePosition, bool mouseClick, winrt::Windows::Foundation::Size windowSize) = 0;
 };

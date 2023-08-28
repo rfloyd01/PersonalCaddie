@@ -75,6 +75,8 @@ void MasterRenderer::CreateModeResources()
     auto renderText = m_mode->getCurrentModeText();
     for (int i = 0; i < renderText->size(); i++) editText(renderText->at(i));
 
+    //delete any existing menuObjects from the renderer
+    deleteExistingMenuObjects();
     auto renderMenuObjects = m_mode->getCurrentModeMenuObjects();
     for (int i = 0; i < renderMenuObjects.size(); i++) m_2DRenderer.addMenuObject(renderMenuObjects[i]);
 }
@@ -206,4 +208,9 @@ void MasterRenderer::editText(Text const& text)
 {
     //just a pass through function to the text renderer
     m_2DRenderer.UpdateText(text);
+}
+
+void MasterRenderer::deleteExistingMenuObjects()
+{
+    m_2DRenderer.delteExistingMenuObjects();
 }

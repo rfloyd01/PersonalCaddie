@@ -37,4 +37,18 @@ void Direct2DRenderer::UpdateText(Text const& text)
 void Direct2DRenderer::addMenuObject(std::shared_ptr<MenuObject> menuObject)
 {
 	m_menuObjectRenderer.addMenuObject(menuObject);
+
+	if (menuObject->getText() != L"")
+	{
+		//this menu object has some text to render which means we need to add a new
+		//text layout/format to the text renderer
+		m_textRenderer.addMenuObjectText(menuObject->getObjectLocations()[0], menuObject->getDimensions()[0], menuObject->getText(), menuObject->getObjectStates()[0]);
+	}
+}
+
+void Direct2DRenderer::delteExistingMenuObjects()
+{
+	//deletes all menu objects from the screen and any associated text
+	m_textRenderer.deleteMenuObjects();
+	m_menuObjectRenderer.deleteMenuObjects();
 }

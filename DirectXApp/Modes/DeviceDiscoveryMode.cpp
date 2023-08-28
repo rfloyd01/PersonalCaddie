@@ -20,8 +20,9 @@ uint32_t DeviceDiscoveryMode::initializeMode()
 	initializeSettingsModeText();
 
 	//Create a button towards the top middle portion of the screen
-	DirectX::XMFLOAT2 buttonLocation = { 0.5, 0.5 };
-	m_menuObjects.push_back(std::make_shared<Button>(buttonLocation));
+	DirectX::XMFLOAT2 buttonLocation = { 0.4, 0.25 };
+	m_menuObjects.push_back(std::make_shared<Button>(buttonLocation, L"Start Device Watcher"));
+	m_menuObjects[0]->changeDimensions({ 1.25, 1.00 }); //Make the device watcher button a little wider than standard
 	
 	//When this mode is initialzed we go into a state of CanTransfer and Active.
 	//Can Transfer allows us to use the esc. key to go back to the settings menu
@@ -34,6 +35,8 @@ void DeviceDiscoveryMode::uninitializeMode()
 	//The only thing to do when leaving the main menu mode is to clear
 	//out all text in the text map and color map
 	clearModeText();
+	for (int i = 0; i < m_menuObjects.size(); i++) m_menuObjects[i] = nullptr;
+	m_menuObjects.clear();
 }
 
 void DeviceDiscoveryMode::initializeSettingsModeText()

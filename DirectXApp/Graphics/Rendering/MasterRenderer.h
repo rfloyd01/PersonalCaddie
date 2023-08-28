@@ -49,6 +49,8 @@ public:
 
     void editText(Text const& text); //consider making this a private method
 
+    void deleteExistingMenuObjects();
+
 private:
     // Cached pointer to device resources.
     std::shared_ptr<DX::DeviceResources>        m_deviceResources;

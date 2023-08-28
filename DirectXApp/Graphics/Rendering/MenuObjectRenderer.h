@@ -27,6 +27,7 @@ public:
 	void ReleaseDeviceDependentResources();
 
 	void addMenuObject(std::shared_ptr<MenuObject> menuObject);
+	void deleteMenuObjects();
 
 	void Render();
 
