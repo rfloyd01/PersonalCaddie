@@ -421,7 +421,8 @@ void TextRenderer::Render(_In_ std::shared_ptr<ModeScreen> const& mode)
         d2dContext->DrawTextLayout(
             Point2F(m_startLocations[i].first, m_startLocations[i].second),
             m_textLayouts[i].get(),
-            m_defaultBrush.get()
+            m_defaultBrush.get(),
+            D2D1_DRAW_TEXT_OPTIONS_CLIP //clip any text not inside the target rectangle
         );
     }
 
@@ -432,7 +433,8 @@ void TextRenderer::Render(_In_ std::shared_ptr<ModeScreen> const& mode)
         d2dContext->DrawTextLayout(
             Point2F(m_menuObjectStartLocations[i].first, m_menuObjectStartLocations[i].second),
             m_menuObjectTextLayouts[i].get(),
-            m_menuObjectDefaultBrush.get()
+            m_menuObjectDefaultBrush.get(),
+            D2D1_DRAW_TEXT_OPTIONS_CLIP //clip any text not inside the target rectangle
         );
     }
 }
