@@ -69,3 +69,8 @@ void MainMenuMode::initializeMainMenuModeText()
 	m_modeText->at(index).colors.push_back({ 1, 1, 1, 1 });
 	m_modeText->at(index).locations.push_back(footnoteText.size());
 }
+
+void MainMenuMode::handleMenuObjectClick(int i)
+{
+	//do nothing for now
+}

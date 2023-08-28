@@ -70,7 +70,7 @@ private:
 	volatile PersonalCaddieEventType personal_caddy_event; //let's the main thread know that a new alert has been created from a different thread and needs to be rendered
 
 	//Timing variables
-	uint32_t alert_timer_duration; //duration of the alert timer in milliseconds
-	bool alert_active;
-	std::chrono::steady_clock::time_point alert_timer;
+	bool alert_active, button_pressed;
+	uint32_t alert_timer_duration, button_pressed_duration; //duration of the alert timer in milliseconds
+	std::chrono::steady_clock::time_point alert_timer, button_pressed_timer;
 };

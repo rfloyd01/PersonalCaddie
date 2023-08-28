@@ -29,7 +29,7 @@ public:
 private:
     void SetTextRegionAlignments(TextType tt);
     void UpdateTextTypeFontSize(TextType tt);
-    void UpdateMenuObjectFontSize(int index, float objectHeight);
+    void UpdateMenuObjectFontSize(int index, float newHeightRatio);
 
     void CreateTextTypeBrushes(Text const& text);
     void DeleteTextTypeBrushes(TextType tt);

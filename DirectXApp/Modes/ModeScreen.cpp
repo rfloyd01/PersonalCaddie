@@ -19,8 +19,9 @@ ModeScreen::ModeScreen() :
 	m_modes[static_cast<int>(ModeType::SETTINGS_MENU)] = std::make_shared<SettingsMenuMode>();
 	m_modes[static_cast<int>(ModeType::DEVICE_DISCOVERY)] = std::make_shared<DeviceDiscoveryMode>();
 
-	//Set default time for alerts to be 5 seconds
+	//Set default times for various timers (in milliseconds)
 	alert_timer_duration = 5000;
+	button_pressed_duration = 100;
 }
 
 void ModeScreen::Initialize(
@@ -144,7 +145,20 @@ void ModeScreen::processMouseInput(DirectX::XMFLOAT2 mousePosition, bool mouseCl
 	//over any of them
 	for (int i = 0; i < m_modes[static_cast<int>(m_currentMode)]->getMenuObjects().size(); i++)
 	{
-		m_modes[static_cast<int>(m_currentMode)]->getMenuObjects()[i]->update(mousePosition, mouseClick, m_renderer->getCurrentScreenSize());
+		MenuObjectState objectState = m_modes[static_cast<int>(m_currentMode)]->getMenuObjects()[i]->update(mousePosition, mouseClick, m_renderer->getCurrentScreenSize());
+		switch (objectState)
+		{
+		case MenuObjectState::Pressed:
+		{
+			m_modes[static_cast<int>(m_currentMode)]->handleMenuObjectClick(i);
+			m_renderer->updateMenuObjects(m_modes[static_cast<int>(m_currentMode)]->getMenuObjects());
+
+			//start a short timer that will change the color of the button from PRESSED to NOT_PRESSED
+			button_pressed = true;
+			button_pressed_timer = std::chrono::steady_clock::now();
+			break;
+		}
+		}
 		if (mouseClick) m_inputProcessor->setMouseState(MouseState::ButtonProcessed); //let the input processor know that the click has been handled
 	}
 }
@@ -188,6 +202,30 @@ void ModeScreen::processTimers()
 			//as from being rendered on the screen
 			setCurrentModeText({ L"", {}, {0}, TextType::ALERT });
 			m_renderer->editText({ L"", {}, {0}, TextType::ALERT });
+		}
+	}
+
+	if (button_pressed)
+	{
+		//a button has been pressed recently, see if the button press timer has expired yet and if so change the color
+		//of all buttons in the current mode to be PRESSED
+		auto time_elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - button_pressed_timer).count();
+		if (time_elapsed >= button_pressed_duration)
+		{
+			//the timer has gone off so turn the timer off
+			button_pressed = false;
+
+			//then change the color of all pressed buttons
+			for (int i = 0; i < m_modes[static_cast<int>(m_currentMode)]->getMenuObjects().size(); i++)
+			{
+				if (m_modes[static_cast<int>(m_currentMode)]->getMenuObjects()[i]->getReleventState() == MenuObjectState::Pressed)
+				{
+					m_modes[static_cast<int>(m_currentMode)]->getMenuObjects()[i]->setReleventState(MenuObjectState::NotPressed);
+				}
+			}
+
+			//rerender all menu objects
+			m_renderer->updateMenuObjects(m_modes[static_cast<int>(m_currentMode)]->getMenuObjects());
 		}
 	}
 }

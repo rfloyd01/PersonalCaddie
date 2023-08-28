@@ -12,6 +12,8 @@ public:
 	virtual uint32_t initializeMode() override;
 	virtual void uninitializeMode() override;
 
+	virtual void handleMenuObjectClick(int i) override;
+
 	//Updating and Advancement Functions
 private:
 	void initializeSettingsModeText();

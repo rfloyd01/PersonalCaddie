@@ -20,8 +20,9 @@ public:
 	void Render(_In_ std::shared_ptr<ModeScreen> const& mode);
 
 	void UpdateText(Text const& text);
-	void addMenuObject(std::shared_ptr<MenuObject> menuObject);
 
+	void addMenuObject(std::shared_ptr<MenuObject> menuObject);
+	void updateMenuObjects(std::vector<std::shared_ptr<MenuObject>> const& objects);
 	void delteExistingMenuObjects();
 
 private:

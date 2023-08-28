@@ -46,6 +46,16 @@ void Direct2DRenderer::addMenuObject(std::shared_ptr<MenuObject> menuObject)
 	}
 }
 
+void Direct2DRenderer::updateMenuObjects(std::vector<std::shared_ptr<MenuObject>> const& objects)
+{
+	//due to how each menu object can have multiple things that need to be rendered, it's easier to just delete
+	//everything and create from scratch than to attempt to update individual render targets
+	m_menuObjectRenderer.deleteMenuObjects();
+	m_textRenderer.deleteMenuObjects();
+	for (int i = 0; i < objects.size(); i++) addMenuObject(objects[i]);
+
+}
+
 void Direct2DRenderer::delteExistingMenuObjects()
 {
 	//deletes all menu objects from the screen and any associated text

@@ -61,3 +61,8 @@ void SettingsMenuMode::initializeSettingsModeText()
 	m_modeText->at(index).locations.push_back(footnoteText.size());
 
 }
+
+void SettingsMenuMode::handleMenuObjectClick(int i)
+{
+	//do nothing for now
+}

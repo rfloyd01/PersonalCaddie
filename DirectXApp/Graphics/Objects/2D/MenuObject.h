@@ -4,8 +4,9 @@ enum class MenuObjectState
 {
 	PassiveOutline,
 	PassiveBackground,
+	ActiveBackground,
 	Pressed,
-	NotPressed
+	NotPressed,
 };
 
 class MenuObject
@@ -35,5 +36,8 @@ public:
 	std::wstring getText();
 	void updateText(std::wstring text);
 
-	virtual void update(DirectX::XMFLOAT2 mousePosition, bool mouseClick, winrt::Windows::Foundation::Size windowSize) = 0;
+	virtual MenuObjectState update(DirectX::XMFLOAT2 mousePosition, bool mouseClick, winrt::Windows::Foundation::Size windowSize) = 0;
+
+	virtual void setReleventState(MenuObjectState state) = 0;
+	virtual MenuObjectState getReleventState() = 0;
 };

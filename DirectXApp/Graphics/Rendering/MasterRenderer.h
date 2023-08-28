@@ -47,7 +47,8 @@ public:
 
     winrt::Windows::Foundation::Size getCurrentScreenSize();
 
-    void editText(Text const& text); //consider making this a private method
+    void editText(Text const& text);
+    void updateMenuObjects(std::vector<std::shared_ptr<MenuObject> > const& objects);
 
     void deleteExistingMenuObjects();
 

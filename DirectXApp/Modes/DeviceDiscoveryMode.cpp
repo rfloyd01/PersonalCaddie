@@ -103,3 +103,20 @@ void DeviceDiscoveryMode::enterActiveState(int state)
 		//m_modeTextColors->at(TextType::BODY).locations.push_back(bodyText2.size());
 	}
 }
+
+void DeviceDiscoveryMode::handleMenuObjectClick(int i)
+{
+	if (i == 0)
+	{
+		if (m_state == DeviceDiscoveryState::IDLE)
+		{
+			m_state = DeviceDiscoveryState::DISCOVERY;
+			m_menuObjects[0]->updateText(L"Stop Device Watcher");
+		}
+		else if (m_state == DeviceDiscoveryState::DISCOVERY)
+		{
+			m_state = DeviceDiscoveryState::IDLE;
+			m_menuObjects[0]->updateText(L"Start Device Watcher");
+		}
+	}
+}

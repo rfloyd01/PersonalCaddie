@@ -37,22 +37,32 @@ bool Button::inSpace(DirectX::XMFLOAT2 const & mousePosition, winrt::Windows::Fo
 	}
 }
 
-void Button::update(DirectX::XMFLOAT2 mousePosition, bool mouseClick, winrt::Windows::Foundation::Size windowSize)
+MenuObjectState Button::update(DirectX::XMFLOAT2 mousePosition, bool mouseClick, winrt::Windows::Foundation::Size windowSize)
 {
-	
+	//If a button is clicked we return a value of true which initiates two things. First, the button will change it's 
+	//color to reflect that it's being pressed (this color change will be put into a timer and reverted back when the timer
+	//expires). It will also send a signale to the current mode to see how to handle the button press.
+
 	if (this->inSpace(mousePosition, windowSize))
 	{
 		if (mouseClick)
 		{
 			m_states[2] = MenuObjectState::Pressed;
-			OutputDebugString(L"The button was clicked!!");
+			return m_states[2];
 		}
 	}
 }
 
-void Button::PostRender()
+MenuObjectState Button::getReleventState()
 {
+	//the relevent state for the button is the third state which let's us know if the button is 
+	//being pressed or not
+	return m_states[2];
 }
-void Button::OnClick()
+
+void Button::setReleventState(MenuObjectState state)
 {
+	//the relevent state for the button is the third state which let's us know if the button is 
+	//being pressed or not
+	m_states[2] = state;
 }

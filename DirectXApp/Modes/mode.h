@@ -43,8 +43,8 @@ public:
 
 	const float* getBackgroundColor();
 
-	//Test remove when done
 	std::vector<std::shared_ptr<MenuObject> > const& getMenuObjects() { return m_menuObjects; }
+	virtual void handleMenuObjectClick(int i) = 0;
 
 	std::shared_ptr<std::vector<Text>> getModeText() { return m_modeText; }
 	void setModeText(Text const& text);

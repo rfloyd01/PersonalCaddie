@@ -20,6 +20,7 @@ public:
 	virtual void uninitializeMode() override;
 
 	void enterActiveState(int state);
+	virtual void handleMenuObjectClick(int i) override;
 
 	//Updating and Advancement Functions
 private:

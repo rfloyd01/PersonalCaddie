@@ -263,7 +263,8 @@ void TextRenderer::CreateWindowSizeDependentResources()
         m_menuObjectStartLocations[i].second = m_menuObjectRenderBorderRatios[i].first.second * windowBounds.Height;
         m_menuObjectTextLayouts[i]->SetMaxWidth((m_menuObjectRenderBorderRatios[i].second.first - m_menuObjectRenderBorderRatios[i].first.first) * windowBounds.Width);
         m_menuObjectTextLayouts[i]->SetMaxHeight((m_menuObjectRenderBorderRatios[i].second.second - m_menuObjectRenderBorderRatios[i].first.second) * windowBounds.Height);
-        UpdateMenuObjectFontSize(i, 1.0); //font should already be based on height of menu object so set the height multiplier to 1.0
+
+        UpdateMenuObjectFontSize(i, m_menuObjectTextLayouts[i]->GetMaxHeight()); //font should already be based on height of menu object so set the height multiplier to 1.0
     }
 }
 
@@ -382,7 +383,7 @@ void TextRenderer::updateMenuObjectText(DirectX::XMFLOAT2 location, DirectX::XMF
         )
     );
 
-    UpdateMenuObjectFontSize(i, size.y);
+    UpdateMenuObjectFontSize(i, size.y * windowBounds.Height);
 }
 
 void TextRenderer::UpdateTextTypeFontSize(TextType tt)
@@ -399,13 +400,14 @@ void TextRenderer::UpdateTextTypeFontSize(TextType tt)
     m_textLayouts[i]->SetFontSize(m_fontSizeRatios[i] * windowBounds.Height, { 0, m_textLengths[i] });
 }
 
-void TextRenderer::UpdateMenuObjectFontSize(int index, float objectHeight)
+void TextRenderer::UpdateMenuObjectFontSize(int index, float newHeightRatio)
 {
     //Same thing as the UpdateTextTypeFontSize() method with the exception that font sizes
     //for menu objects are based off the size of the object itself, not the window
     auto windowBounds = m_deviceResources->GetLogicalSize();
-    auto fontSize = m_menuObjectFontSizeRatios[index] * windowBounds.Height * objectHeight;
-    m_menuObjectTextLayouts[index]->SetFontSize(m_menuObjectFontSizeRatios[index] * windowBounds.Height * objectHeight, { 0, m_menuObjectTextLengths[index] });
+    auto oldFontSize = m_menuObjectTextLayouts[index]->GetFontSize();
+    auto newFontSize = oldFontSize * newHeightRatio;
+    m_menuObjectTextLayouts[index]->SetFontSize(m_menuObjectTextLayouts[index]->GetFontSize() * newHeightRatio, { 0, m_menuObjectTextLengths[index] });
 }
 
 void TextRenderer::Render(_In_ std::shared_ptr<ModeScreen> const& mode)
@@ -426,6 +428,7 @@ void TextRenderer::Render(_In_ std::shared_ptr<ModeScreen> const& mode)
     //also render any menu object text
     for (int i = 0; i < m_menuObjectTextLayouts.size(); i++)
     {
+        auto currentFontSize = m_menuObjectTextLayouts[i]->GetFontSize();
         d2dContext->DrawTextLayout(
             Point2F(m_menuObjectStartLocations[i].first, m_menuObjectStartLocations[i].second),
             m_menuObjectTextLayouts[i].get(),

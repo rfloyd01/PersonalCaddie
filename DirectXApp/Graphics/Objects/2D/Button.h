@@ -16,8 +16,8 @@ public:
 
 	bool    inSpace(DirectX::XMFLOAT2 const& mousePosition, winrt::Windows::Foundation::Size windowSize);
 
-	virtual void update(DirectX::XMFLOAT2 mousePosition, bool mouseClick, winrt::Windows::Foundation::Size windowSize) override;
+	virtual MenuObjectState update(DirectX::XMFLOAT2 mousePosition, bool mouseClick, winrt::Windows::Foundation::Size windowSize) override;
 
-	virtual void    PostRender();
-	virtual void    OnClick();
+	virtual MenuObjectState getReleventState() override;
+	virtual void setReleventState(MenuObjectState state) override;
 };
