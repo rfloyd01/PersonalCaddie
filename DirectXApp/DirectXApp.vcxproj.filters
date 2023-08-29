@@ -73,6 +73,21 @@
     <ClCompile Include="Graphics\Rendering\TextRenderer.cpp">
       <Filter>Graphics\Rendering</Filter>
     </ClCompile>
+    <ClCompile Include="Graphics\Objects\2D\UIElement.cpp">
+      <Filter>Graphics\Objects\2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\Objects\2D\TextBoxes\StaticTextBox.cpp">
+      <Filter>Graphics\Objects\2D\TextBoxes</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\Objects\2D\UIText.cpp">
+      <Filter>Graphics\Objects\2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\Objects\2D\UIShape.cpp">
+      <Filter>Graphics\Objects\2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\Rendering\UIElementRenderer.cpp">
+      <Filter>Graphics\Rendering</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -160,6 +175,27 @@
     <ClInclude Include="Graphics\Rendering\TextRenderer.h">
       <Filter>Graphics\Rendering</Filter>
     </ClInclude>
+    <ClInclude Include="Graphics\Objects\2D\Interfaces\IScrollableUI.h">
+      <Filter>Graphics\Objects\2D\Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Objects\2D\UIElement.h">
+      <Filter>Graphics\Objects\2D</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Objects\2D\TextBoxes\StaticTextBox.h">
+      <Filter>Graphics\Objects\2D\TextBoxes</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Objects\2D\Interfaces\ITextBoxUI.h">
+      <Filter>Graphics\Objects\2D\Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Objects\2D\UIText.h">
+      <Filter>Graphics\Objects\2D</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Objects\2D\UIShape.h">
+      <Filter>Graphics\Objects\2D</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Rendering\UIElementRenderer.h">
+      <Filter>Graphics\Rendering</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Assets\Wide310x150Logo.scale-200.png">
@@ -223,6 +259,12 @@
     </Filter>
     <Filter Include="Graphics\Objects\2D">
       <UniqueIdentifier>{2cd3c85b-547a-4a1d-a9de-00c4f41a3c8b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Graphics\Objects\2D\Interfaces">
+      <UniqueIdentifier>{23192d1f-53a2-4a3b-ad24-54dfb54a16ed}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Graphics\Objects\2D\TextBoxes">
+      <UniqueIdentifier>{a73bc7c2-c197-40c5-ae17-5056fe2aa12c}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

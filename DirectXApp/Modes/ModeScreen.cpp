@@ -295,14 +295,14 @@ void ModeScreen::PersonalCaddieHandler(PersonalCaddieEventType pcEvent, void* ev
 	case PersonalCaddieEventType::BLE_ALERT:
 	{
 		std::wstring alertText = *((std::wstring*)eventArgs); //cast the eventArgs into a wide string
-		Text text(alertText, { AlertColors::alertLightBlue }, { 0, alertText.size() }, TextType::ALERT);
+		Text text(alertText, { { 0.6, 0.85, 0.92, 1 } }, { 0, alertText.size() }, TextType::ALERT);
 		addCurrentModeText(text); //add the alert on top of any existing ones
 		break;
 	}
 	case PersonalCaddieEventType::PC_ALERT:
 	{
 		std::wstring alertText = *((std::wstring*)eventArgs); //cast the eventArgs into a wide string
-		Text text(alertText, { AlertColors::alertYellow }, { 0, alertText.size() }, TextType::ALERT);
+		Text text(alertText, { { 1.0, 0.788, 0.055, 1.0 } }, { 0, alertText.size() }, TextType::ALERT);
 		addCurrentModeText(text); //add the alert on top of any existing ones
 		break;
 	}
@@ -363,7 +363,7 @@ void ModeScreen::createModeScreenAlert(std::wstring alert)
 	//this method is for creating alerts originating from this class. This method
 	//only gets invoked on the main rendering thread so there's no issues with 
 	//making direct calls to the master renderer. These alerts are red colored.
-	Text newAlert(alert, { AlertColors::alertRed }, { 0, alert.size() }, TextType::ALERT);
+	Text newAlert(alert, { { 1.0, 0.0, 0.0, 1.0 } }, { 0, alert.size() }, TextType::ALERT);
 	addCurrentModeText(newAlert);
 	m_renderer->editText(getCurrentModeText()->at(static_cast<int>(TextType::ALERT)));
 
