@@ -5,6 +5,7 @@ enum class MenuObjectState
 	PassiveOutline,
 	PassiveBackground,
 	ActiveBackground,
+	CoverBackground,
 	Pressed,
 	NotPressed,
 	None
