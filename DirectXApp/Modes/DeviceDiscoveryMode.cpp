@@ -25,7 +25,7 @@ uint32_t DeviceDiscoveryMode::initializeMode(winrt::Windows::Foundation::Size wi
 	m_menuObjects.push_back(std::make_shared<Button>(buttonLocation, L"Start Device Watcher"));
 	m_menuObjects[0]->changeDimensions({ 1.25, 1.00 }); //Make the device watcher button a little wider than standard
 	
-	StaticTextBox stb({ 0.5, 0.5 }, { 0.1, 0.1 }, L"Test text box", windowSize);
+	StaticTextBox stb({ 0.5, 0.575 }, { 0.85, 0.5 }, L"Start the device watcher to being enumerating nearby BluetoothLE devices...", windowSize);
 	m_uiElements.push_back(std::make_shared<StaticTextBox>(stb));
 
 	//When this mode is initialzed we go into a state of CanTransfer and Active.
@@ -90,21 +90,6 @@ void DeviceDiscoveryMode::enterActiveState(int state)
 		std::wstring titleText = L"Connect to a Device";
 		m_modeText->at(index).message = titleText;
 		m_modeText->at(index).locations.back() = titleText.size();
-
-		////Update the sub-title text
-		//std::wstring subtitleText = L"(Select from one of the options below.)";
-		//m_modeText->at(TextType::SUB_TITLE) = subtitleText;
-		//m_modeTextColors->at(TextType::SUB_TITLE).colors.push_back({ 1, 1, 1, 1 });
-		//m_modeTextColors->at(TextType::SUB_TITLE).locations.push_back(subtitleText.size());
-
-		////Update the body text
-		//std::wstring bodyText1 = L"1. Connect to a Personal Caddie \n";
-		//std::wstring bodyText2 = L"2. Disconnect from Personal Caddie \n";
-		//m_modeText->at(TextType::BODY) = bodyText1 + bodyText2;
-		//m_modeTextColors->at(TextType::BODY).colors.push_back({ 0, 0, 0, 1.0 });
-		//m_modeTextColors->at(TextType::BODY).colors.push_back({ 0.2, 0.2, 0.2, 1 });
-		//m_modeTextColors->at(TextType::BODY).locations.push_back(bodyText1.size());
-		//m_modeTextColors->at(TextType::BODY).locations.push_back(bodyText2.size());
 	}
 }
 
@@ -116,6 +101,7 @@ uint32_t DeviceDiscoveryMode::handleMenuObjectClick(int i)
 		{
 			m_state = DeviceDiscoveryState::DISCOVERY;
 			m_menuObjects[0]->updateText(L"Stop Device Watcher");
+			((StaticTextBox*)m_uiElements[0].get())->addText(L""); //clear out text in the results box when starting the device watcher
 			return ModeState::Active;
 		}
 		else if (m_state == DeviceDiscoveryState::DISCOVERY)

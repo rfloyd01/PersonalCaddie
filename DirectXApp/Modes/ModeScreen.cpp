@@ -6,6 +6,7 @@
 #include "DeviceDiscoveryMode.h"
 
 #include "Graphics/Rendering/MasterRenderer.h"
+#include "Graphics/Objects/2D/TextBoxes/StaticTextBox.h"
 
 ModeScreen::ModeScreen() :
 	m_currentMode(ModeType::MAIN_MENU),
@@ -330,8 +331,10 @@ void ModeScreen::PersonalCaddieHandler(PersonalCaddieEventType pcEvent, void* ev
 
 		//Update the body text of the current mode with the discovered devices
 		//Body Information
-		Text newBodyText(devices, { {1.0, 1.0, 1.0, 1.0} }, { 0, devices.length() }, TextType::BODY);
-		setCurrentModeText(newBodyText);
+		//Text newBodyText(devices, { {1.0, 1.0, 1.0, 1.0} }, { 0, devices.length() }, TextType::BODY);
+		//setCurrentModeText(newBodyText);
+		auto textBox = (StaticTextBox*)(getCurrentModeUIElements()[0].get());
+		textBox->addText(devices);
 		break;
 	}
 	}

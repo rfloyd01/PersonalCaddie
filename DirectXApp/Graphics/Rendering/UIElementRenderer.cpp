@@ -88,8 +88,8 @@ UIElementRenderer::UIElementRenderer(_In_ std::shared_ptr<DX::DeviceResources> c
             m_defaultTextFormat.put()
         )
     );
-    winrt::check_hresult(m_defaultTextFormat->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_CENTER));
-    winrt::check_hresult(m_defaultTextFormat->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_CENTER));
+    winrt::check_hresult(m_defaultTextFormat->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING));
+    winrt::check_hresult(m_defaultTextFormat->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_NEAR));
 
     //Create a default brush
     winrt::check_hresult(
@@ -126,6 +126,7 @@ void UIElementRenderer::render(std::vector<std::shared_ptr<UIElement> > const& u
                 {
                     text = (UIText*)uiElements[i]->render(renderOrder, k);
 
+                    m_textLayout = nullptr; //erase whatever settings were put into the layout previously
                     //A new text layout is create every time text is rendered
                     winrt::check_hresult(
                         dwriteFactory->CreateTextLayout(
