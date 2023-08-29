@@ -22,6 +22,7 @@ private:
     //text layout. Every time a group of text is rendered on the screen a new layout will be created
     //and overwrite the same IDWriteTextLayout pointer. This will be inefficient but will get rid of 
     //the need of trying to keep track of which format belongs to which text
+    winrt::com_ptr<IDWriteTextFormat>                                        m_defaultTextFormat;
     std::vector<winrt::com_ptr<IDWriteTextFormat> >                          m_textFormats;
     winrt::com_ptr<IDWriteTextLayout>                                        m_textLayout;
 

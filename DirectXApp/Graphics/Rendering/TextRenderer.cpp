@@ -429,7 +429,6 @@ void TextRenderer::Render(_In_ std::shared_ptr<ModeScreen> const& mode)
     //also render any menu object text
     for (int i = 0; i < m_menuObjectTextLayouts.size(); i++)
     {
-        auto currentFontSize = m_menuObjectTextLayouts[i]->GetFontSize();
         d2dContext->DrawTextLayout(
             Point2F(m_menuObjectStartLocations[i].first, m_menuObjectStartLocations[i].second),
             m_menuObjectTextLayouts[i].get(),

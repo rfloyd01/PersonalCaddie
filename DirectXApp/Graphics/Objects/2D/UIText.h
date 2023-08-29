@@ -30,10 +30,12 @@ enum class UITextColor
 //This struct holds information about text to be rendered on the screen
 struct UIText
 {
-	UIText(std::wstring const& message, float fontSize, DirectX::XMFLOAT2 startLocation, std::vector<UITextColor> const& colors, std::vector<unsigned long long> const & colorLocations, UITextType textType) :
+	UIText(std::wstring const& message, float fontSize, DirectX::XMFLOAT2 startLocation, DirectX::XMFLOAT2 renderArea,
+		std::vector<UITextColor> const& colors, std::vector<unsigned long long> const & colorLocations, UITextType textType) :
 		message(message),
 		fontSize(fontSize),
 		startLocation(startLocation),
+		renderArea(renderArea),
 		colors(colors),
 		colorLocations(colorLocations),
 		textType(textType)
@@ -43,6 +45,7 @@ struct UIText
 
 	std::wstring message;
 	DirectX::XMFLOAT2 startLocation; //the top left corner of the rendering box for the text (the size of the render box is calculated elsewhere)
+	DirectX::XMFLOAT2 renderArea; //the size of the rendering area for the text
 	float fontSize;
 	std::vector<UITextColor> colors; //holds the different colors of the text (in order)
 	std::vector<unsigned long long> colorLocations; //holds the index of all characters where the text color switches. This vector must be 1 element longer than the colors vector

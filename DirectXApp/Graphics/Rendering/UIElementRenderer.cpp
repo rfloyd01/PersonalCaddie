@@ -74,7 +74,32 @@ UIElementRenderer::UIElementRenderer(_In_ std::shared_ptr<DX::DeviceResources> c
             )
         );
     }
-   
+
+    //create a defualt text format
+    winrt::check_hresult(
+        dwriteFactory->CreateTextFormat(
+            L"Segoe UI",
+            nullptr,
+            DWRITE_FONT_WEIGHT_LIGHT,
+            DWRITE_FONT_STYLE_NORMAL,
+            DWRITE_FONT_STRETCH_NORMAL,
+            0.33,
+            L"en-us",
+            m_defaultTextFormat.put()
+        )
+    );
+    winrt::check_hresult(m_defaultTextFormat->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_CENTER));
+    winrt::check_hresult(m_defaultTextFormat->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_CENTER));
+
+    //Create a default brush
+    winrt::check_hresult(
+        d2dContext->CreateSolidColorBrush(
+            D2D1::ColorF(1.0, 1.0, 1.0, 1.0),
+            m_defaultBrush.put()
+        )
+    );
+
+    m_textLayout = nullptr; //initialize the text layout to null
 }
 
 void UIElementRenderer::render(std::vector<std::shared_ptr<UIElement> > const& uiElements)
@@ -82,6 +107,8 @@ void UIElementRenderer::render(std::vector<std::shared_ptr<UIElement> > const& u
     //The input vector contains all of the UI Elements to be rendered from the current mode. The order in which 
     //the elements get rendered is important. Some elements (like scroll boxes) need to have shapes rendered over
     //their text to give the illusion that all text is contained inside the box.
+    auto dwriteFactory = m_deviceResources->GetDWriteFactory();
+    auto d2dContext = m_deviceResources->GetD2DDeviceContext();
 
     UIShape* shape = nullptr;
     UIText* text = nullptr;
@@ -90,10 +117,62 @@ void UIElementRenderer::render(std::vector<std::shared_ptr<UIElement> > const& u
     {
         for (int j = 0; j < static_cast<int>(RenderOrder::End); j++)
         {
-            int renderLength = uiElements[i]->getRenderVectorSize(static_cast<RenderOrder>(j));
-            for (int k = 0; k < renderLength; k++)
+            RenderOrder renderOrder = static_cast<RenderOrder>(j);
+            int renderLength = uiElements[i]->getRenderVectorSize(renderOrder);
+            if (renderOrder == RenderOrder::ElementText || renderOrder == RenderOrder::TextOverlay)
             {
+                //This is one of the text sections so render text
+                for (int k = 0; k < renderLength; k++)
+                {
+                    text = (UIText*)uiElements[i]->render(renderOrder, k);
 
+                    //A new text layout is create every time text is rendered
+                    winrt::check_hresult(
+                        dwriteFactory->CreateTextLayout(
+                            &text->message[0],
+                            text->message.size(),
+                            m_defaultTextFormat.get(),
+                            text->renderArea.x,
+                            text->renderArea.y,
+                            m_textLayout.put()
+                        )
+                    );
+
+                    //After creating the text layout, update colors and font size as necessary
+                    unsigned int currentLocation = 0;
+                    for (int l = 0; l < text->colors.size(); l++)
+                    {
+                        m_textLayout->SetDrawingEffect(m_textColorBrushes[static_cast<int>(text->colors[l])].get(), { currentLocation,
+                            (unsigned int)text->colorLocations[l + 1] });
+
+                        currentLocation += (unsigned int)text->colorLocations[l + 1];
+                    }
+                    m_textLayout->SetFontSize(text->fontSize, { 0, (unsigned int)text->message.length() });
+
+                    d2dContext->DrawTextLayout(
+                        Point2F(text->startLocation.x, text->startLocation.y),
+                        m_textLayout.get(),
+                        m_defaultBrush.get(),
+                        D2D1_DRAW_TEXT_OPTIONS_CLIP //clip any text not inside the target rectangle
+                    );
+                }
+            }
+            else
+            {
+                //This is one of the shape sections so render shapes
+                for (int k = 0; k < renderLength; k++)
+                {
+                    shape = (UIShape*)uiElements[i]->render(renderOrder, k);
+                    switch (shape->m_fillType)
+                    {
+                    case UIShapeFillType::NoFill:
+                        d2dContext->DrawRectangle(shape->m_rectangle, m_shapeColorBrushes[static_cast<int>(shape->m_color)].get(), 2.5f);
+                        break;
+                    case UIShapeFillType::Fill:
+                        d2dContext->FillRectangle(shape->m_rectangle, m_shapeColorBrushes[static_cast<int>(shape->m_color)].get());
+                        break;
+                    }
+                }
             }
         }
     }
