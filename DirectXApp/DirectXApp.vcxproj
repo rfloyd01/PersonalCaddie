@@ -79,28 +79,28 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
-    <IncludePath>C:\Users\Bobby\Documents\Coding\include;D:\Coding\PersonalCaddie\Firmware\MEMs_Drivers;$(IncludePath)</IncludePath>
+    <IncludePath>$(USERPROFILE)\Documents\Coding\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
-    <IncludePath>C:\Users\Bobby\Documents\Coding\include;D:\Coding\PersonalCaddie\Firmware\MEMs_Drivers;$(IncludePath)</IncludePath>
+    <IncludePath>$(USERPROFILE)\Documents\Coding\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
-    <IncludePath>C:\Users\Bobby\Documents\Coding\include;D:\Coding\PersonalCaddie\Firmware\MEMs_Drivers;$(IncludePath)</IncludePath>
+    <IncludePath>$(USERPROFILE)\Documents\Coding\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
-    <IncludePath>C:\Users\Bobby\Documents\Coding\include;D:\Coding\PersonalCaddie\Firmware\MEMs_Drivers;$(IncludePath)</IncludePath>
+    <IncludePath>$(USERPROFILE)\Documents\Coding\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>C:\Users\Bobby\Documents\Coding\include;D:\Coding\PersonalCaddie\Firmware\MEMs_Drivers;$(IncludePath)</IncludePath>
+    <IncludePath>$(USERPROFILE)\Documents\Coding\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <IncludePath>C:\Users\Bobby\Documents\Coding\include;D:\Coding\PersonalCaddie\Firmware\MEMs_Drivers;$(IncludePath)</IncludePath>
+    <IncludePath>$(USERPROFILE)\Documents\Coding\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>C:\Users\Bobby\Documents\Coding\include;D:\Coding\PersonalCaddie\Firmware\MEMs_Drivers;$(IncludePath)</IncludePath>
+    <IncludePath>$(USERPROFILE)\Documents\Coding\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>C:\Users\Bobby\Documents\Coding\include;D:\Coding\PersonalCaddie\Firmware\MEMs_Drivers;$(IncludePath)</IncludePath>
+    <IncludePath>$(USERPROFILE)\Documents\Coding\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>

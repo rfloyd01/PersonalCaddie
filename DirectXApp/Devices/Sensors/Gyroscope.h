@@ -1,6 +1,6 @@
 #pragma once
 
-#include <sensor_settings.h>
+#include "../Firmware/MEMs_Drivers/sensor_settings.h"
 #include "Sensor.h"
 
 
