@@ -43,6 +43,8 @@ public:
 
 	std::shared_ptr<std::vector<Text> >       getCurrentModeText();
 	std::vector<std::shared_ptr<MenuObject> > const& getCurrentModeMenuObjects();
+	std::vector<std::shared_ptr<UIElement> > const& getCurrentModeUIElements();
+	void resizeCurrentModeUIElements(winrt::Windows::Foundation::Size windowSize);
 
 private:
 	void processKeyboardInput(winrt::Windows::System::VirtualKey pressedKey);

@@ -2,14 +2,15 @@
 
 #include <string>
 
-//used to make D2D1 brushes
+//used to make and keep track of D2D1 brushes
 enum class UIShapeColor
 {
-	White,
-	Red,
-	Green,
-	Blue,
-	Black
+	White = 0,
+	Red = 1,
+	Green = 2,
+	Blue = 3,
+	Black = 4,
+	END = 5
 };
 
 //used to select the correct D2D1 drawing method

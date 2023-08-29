@@ -34,7 +34,7 @@ void ModeScreen::Initialize(
 
 	//Load the main mode (which is set in the constructor) and pass any resources
 	//generated to the master renderer
-	m_modeState = m_modes[static_cast<int>(m_currentMode)]->initializeMode();
+	m_modeState = m_modes[static_cast<int>(m_currentMode)]->initializeMode(m_renderer->getCurrentScreenSize());
 	m_renderer->CreateModeResources();
 }
 
@@ -254,7 +254,7 @@ void ModeScreen::changeCurrentMode(ModeType mt)
 
 	//Switch to the new mode and initialize it
 	m_currentMode = mt;
-	m_modeState = m_modes[static_cast<int>(m_currentMode)]->initializeMode();
+	m_modeState = m_modes[static_cast<int>(m_currentMode)]->initializeMode(m_renderer->getCurrentScreenSize());
 
 	//After initializing, add any alerts that were copied over to the text and
 	//color maps and then create text and color resources in the renderer
@@ -273,6 +273,18 @@ std::vector<std::shared_ptr<MenuObject> > const& ModeScreen::getCurrentModeMenuO
 {
 	//returns a reference to all UI elements to be rendered on screen
 	return m_modes[static_cast<int>(m_currentMode)]->getMenuObjects();
+}
+
+std::vector<std::shared_ptr<UIElement> > const& ModeScreen::getCurrentModeUIElements()
+{
+	//returns a reference to all UI elements to be rendered on screen
+	return m_modes[static_cast<int>(m_currentMode)]->getUIElements();
+}
+
+void ModeScreen::resizeCurrentModeUIElements(winrt::Windows::Foundation::Size windowSize)
+{
+	auto uiElements = getCurrentModeUIElements();
+	for (int i = 0; i < uiElements.size(); i++) uiElements[i]->resize(windowSize);
 }
 
 const float* ModeScreen::getBackgroundColor()

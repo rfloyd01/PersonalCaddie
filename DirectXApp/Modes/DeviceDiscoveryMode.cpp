@@ -14,7 +14,7 @@ DeviceDiscoveryMode::DeviceDiscoveryMode()
 	m_state = DeviceDiscoveryState::IDLE;
 }
 
-uint32_t DeviceDiscoveryMode::initializeMode()
+uint32_t DeviceDiscoveryMode::initializeMode(winrt::Windows::Foundation::Size windowSize)
 {
 	//Create a new map for storing all of the text for this mode
 	initializeModeText();
@@ -25,7 +25,8 @@ uint32_t DeviceDiscoveryMode::initializeMode()
 	m_menuObjects.push_back(std::make_shared<Button>(buttonLocation, L"Start Device Watcher"));
 	m_menuObjects[0]->changeDimensions({ 1.25, 1.00 }); //Make the device watcher button a little wider than standard
 	
-	StaticTextBox stb({ 1, 2 }, { 3, 4 }, L"Test text box");
+	StaticTextBox stb({ 1, 2 }, { 3, 4 }, L"Test text box", windowSize);
+	m_uiElements.push_back(std::make_shared<StaticTextBox>(stb));
 
 	//When this mode is initialzed we go into a state of CanTransfer and Active.
 	//Can Transfer allows us to use the esc. key to go back to the settings menu

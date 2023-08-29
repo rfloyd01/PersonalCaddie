@@ -9,7 +9,7 @@ public:
 	//Constructors
 	MainMenuMode();
 
-	virtual uint32_t initializeMode() override;
+	virtual uint32_t initializeMode(winrt::Windows::Foundation::Size windowSize) override;
 	virtual void uninitializeMode() override;
 	
 	virtual uint32_t handleMenuObjectClick(int i) override;

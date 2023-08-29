@@ -9,11 +9,14 @@
 class StaticTextBox : public UIElement, ITextBoxUI
 {
 public:
-	StaticTextBox(DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, std::wstring text);
+	StaticTextBox(DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, std::wstring text, winrt::Windows::Foundation::Size windowSize);
 
 	//Depending on the type of text box being created text will be
 	//added differently
 	virtual void addText(std::wstring text) override;
 
 protected:
+	virtual void resize(winrt::Windows::Foundation::Size windowSize) override;
+
+	float m_fontSize;
 };

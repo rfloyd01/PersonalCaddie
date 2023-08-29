@@ -66,6 +66,7 @@ void Main::Run()
 void Main::CreateWindowSizeDependentResources()
 {
     m_renderer->CreateWindowSizeDependentResources();
+    m_modeScreen->resizeCurrentModeUIElements(m_renderer->getCurrentScreenSize());
 }
 
 void Main::WindowActivationChanged(CoreWindowActivationState activationState)

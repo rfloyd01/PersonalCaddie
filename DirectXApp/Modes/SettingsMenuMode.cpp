@@ -10,7 +10,7 @@ SettingsMenuMode::SettingsMenuMode()
 	m_backgroundColor[3] = 1.0;
 }
 
-uint32_t SettingsMenuMode::initializeMode()
+uint32_t SettingsMenuMode::initializeMode(winrt::Windows::Foundation::Size windowSize)
 {
 	//Create a new map for storing all of the text for this mode
 	initializeModeText();

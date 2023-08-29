@@ -9,22 +9,72 @@ UIElementRenderer::UIElementRenderer(_In_ std::shared_ptr<DX::DeviceResources> c
 	m_deviceResources(deviceResources)
 {
     auto dwriteFactory = m_deviceResources->GetDWriteFactory();
+    auto d2dContext = m_deviceResources->GetD2DDeviceContext();
 
     //Create solid color brushes for all shape and text colors defined in the
     //UIShape and UIText classes
-    auto d2dContext = m_deviceResources->GetD2DDeviceContext();
-    winrt::check_hresult(
-        d2dContext->CreateSolidColorBrush(
-            D2D1::ColorF(1.0, 1.0, 1.0, 1.0),
-            m_defaultBrush.put()
-        )
-    );
-    winrt::check_hresult(
-        d2dContext->CreateSolidColorBrush(
-            D2D1::ColorF(0.0, 0.0, 0.0, 1.0),
-            m_menuObjectDefaultBrush.put()
-        )
-    );
+    for (int i = 0; i < static_cast<int>(UITextColor::END); i++)
+    {
+        D2D1::ColorF color(1, 1, 1, 1);
+        switch (static_cast<UITextColor>(i))
+        {
+        case UITextColor::Black:
+            color = { 0, 0, 0, 1 };
+            break;
+        case UITextColor::Blue:
+            color = { 0, 0, 1, 1 };
+            break;
+        case UITextColor::Green:
+            color = { 0, 1, 0, 1 };
+            break;
+        case UITextColor::Red:
+            color = { 1, 0, 0, 1 };
+            break;
+        case UITextColor::White:
+            color = { 1, 1, 1, 1 };
+            break;
+        }
+
+        m_textColorBrushes.push_back(nullptr);
+        winrt::check_hresult(
+            d2dContext->CreateSolidColorBrush(
+                color,
+                m_textColorBrushes.back().put()
+            )
+        );
+    }
+    
+    for (int i = 0; i < static_cast<int>(UIShapeColor::END); i++)
+    {
+        D2D1::ColorF color(1, 1, 1, 1);
+        switch (static_cast<UIShapeColor>(i))
+        {
+        case UIShapeColor::Black:
+            color = { 0, 0, 0, 1 };
+            break;
+        case UIShapeColor::Blue:
+            color = { 0, 0, 1, 1 };
+            break;
+        case UIShapeColor::Green:
+            color = { 0, 1, 0, 1 };
+            break;
+        case UIShapeColor::Red:
+            color = { 1, 0, 0, 1 };
+            break;
+        case UIShapeColor::White:
+            color = { 1, 1, 1, 1 };
+            break;
+        }
+
+        m_shapeColorBrushes.push_back(nullptr);
+        winrt::check_hresult(
+            d2dContext->CreateSolidColorBrush(
+                color,
+                m_shapeColorBrushes.back().put()
+            )
+        );
+    }
+   
 }
 
 void UIElementRenderer::render(std::vector<std::shared_ptr<UIElement> > const& uiElements)

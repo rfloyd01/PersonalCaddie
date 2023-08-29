@@ -2,6 +2,7 @@
 
 #include <string>
 
+
 enum class UITextType
 {
 	//this enum class is used to group different messages displayed on screen
@@ -15,11 +16,24 @@ enum class UITextType
 	END = 7  //Used to mark the end of the enum class for potentially looping through
 };
 
+//used to make and keep track of D2D1 brushes
+enum class UITextColor
+{
+	White = 0,
+	Red = 1,
+	Green = 2,
+	Blue = 3,
+	Black = 4,
+	END = 5
+};
+
 //This struct holds information about text to be rendered on the screen
 struct UIText
 {
-	UIText(std::wstring const& message, std::vector<D2D1_COLOR_F> const& colors, std::vector<unsigned long long> const & colorLocations, UITextType textType) :
+	UIText(std::wstring const& message, float fontSize, DirectX::XMFLOAT2 startLocation, std::vector<UITextColor> const& colors, std::vector<unsigned long long> const & colorLocations, UITextType textType) :
 		message(message),
+		fontSize(fontSize),
+		startLocation(startLocation),
 		colors(colors),
 		colorLocations(colorLocations),
 		textType(textType)
@@ -28,7 +42,10 @@ struct UIText
 	}
 
 	std::wstring message;
-	std::vector<D2D1_COLOR_F> colors; //holds the different colors of the text (in order)
+	DirectX::XMFLOAT2 startLocation; //the top left corner of the rendering box for the text (the size of the render box is calculated elsewhere)
+	float fontSize;
+	std::vector<UITextColor> colors; //holds the different colors of the text (in order)
 	std::vector<unsigned long long> colorLocations; //holds the index of all characters where the text color switches. This vector must be 1 element longer than the colors vector
 	UITextType  textType;
+	
 };

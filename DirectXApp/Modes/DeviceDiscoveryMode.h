@@ -16,7 +16,7 @@ public:
 	//Constructors
 	DeviceDiscoveryMode();
 
-	virtual uint32_t initializeMode() override;
+	virtual uint32_t initializeMode(winrt::Windows::Foundation::Size windowSize) override;
 	virtual void uninitializeMode() override;
 
 	void enterActiveState(int state);

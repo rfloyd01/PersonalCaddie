@@ -10,7 +10,8 @@ MasterRenderer::MasterRenderer(std::shared_ptr<DX::DeviceResources> const& devic
     m_initialized(false),
     m_gameResourcesLoaded(false),
     m_levelResourcesLoaded(false),
-    m_2DRenderer(deviceResources)
+    m_2DRenderer(deviceResources),
+    m_uiElementRenderer(deviceResources)
 {
     CreateDeviceDependentResources();
     CreateWindowSizeDependentResources();
@@ -190,6 +191,7 @@ void MasterRenderer::Render()
 
     //Render any UI elements or text on screen text
     m_2DRenderer.Render(m_mode);
+    m_uiElementRenderer.render(m_mode->getCurrentModeUIElements());
 
     //Render 2D UI elements like drop down boxes and buttons
     //for (int i = 0; i < m_mode->getCurrentModeMenuObjects().size(); i++) m_mode->getCurrentModeMenuObjects()[i]->Render(d2dContext);

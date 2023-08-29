@@ -26,6 +26,6 @@ private:
     winrt::com_ptr<IDWriteTextLayout>                                        m_textLayout;
 
     winrt::com_ptr<ID2D1SolidColorBrush>                                     m_defaultBrush;
-    winrt::com_ptr<ID2D1SolidColorBrush>                                     m_menuObjectDefaultBrush;
-    std::vector<std::vector<winrt::com_ptr<ID2D1SolidColorBrush> > >         m_textColorBrushes;
+    std::vector<winrt::com_ptr<ID2D1SolidColorBrush> >                       m_textColorBrushes;
+    std::vector<winrt::com_ptr<ID2D1SolidColorBrush> >                       m_shapeColorBrushes;
 };

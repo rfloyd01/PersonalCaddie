@@ -28,11 +28,13 @@ enum class RenderOrder
 class UIElement
 {
 public:
-	UIElement() {}
+	//UIElement() {}
 	~UIElement() {}
 
 	int getRenderVectorSize(RenderOrder render);
 	void* render(RenderOrder render, int element);
+
+	virtual void resize(winrt::Windows::Foundation::Size windowSize) = 0; //since all UI elements are different they each need to resize differently
 
 protected:
 	DirectX::XMFLOAT2                        m_location; //location of the center of the element

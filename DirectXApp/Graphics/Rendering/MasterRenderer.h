@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Direct2DRenderer.h"
+#include "UIElementRenderer.h"
 #include "UIConstants.h"
 
 // MasterRenderer:
@@ -60,6 +61,8 @@ private:
     bool                                        m_gameResourcesLoaded;
     bool                                        m_levelResourcesLoaded;
     Direct2DRenderer                            m_2DRenderer;
+    UIElementRenderer                           m_uiElementRenderer;
+
     std::shared_ptr<ModeScreen>                 m_mode;
     D2D_RECT_F                                  m_gameInfoOverlayRect;
     D2D_SIZE_F                                  m_gameInfoOverlaySize;

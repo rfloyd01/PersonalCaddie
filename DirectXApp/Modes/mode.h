@@ -2,6 +2,7 @@
 
 #include "Graphics/Utilities/Text.h"
 #include "Graphics/Objects/2D/MenuObject.h"
+#include "Graphics/Objects/2D/UIElement.h"
 #include "Input/InputProcessor.h"
 #include <string>
 
@@ -35,7 +36,7 @@ class Mode
 {
 public:
 	//PUBLIC FUNCTIONS
-	virtual uint32_t initializeMode() = 0;
+	virtual uint32_t initializeMode(winrt::Windows::Foundation::Size windowSize) = 0;
 	virtual void uninitializeMode() = 0;
 
 	virtual void update() {}; //not a pure virtual method as not all modes require this method
@@ -43,6 +44,7 @@ public:
 	const float* getBackgroundColor();
 
 	std::vector<std::shared_ptr<MenuObject> > const& getMenuObjects() { return m_menuObjects; }
+	std::vector<std::shared_ptr<UIElement> > const& getUIElements() { return m_uiElements; }
 	virtual uint32_t handleMenuObjectClick(int i) = 0;
 
 	std::shared_ptr<std::vector<Text>> getModeText() { return m_modeText; }
@@ -63,4 +65,5 @@ protected:
 	std::shared_ptr<std::vector<Text>>          m_modeText;
 
 	std::vector<std::shared_ptr<MenuObject> >   m_menuObjects; //2d objects like Drop downs, combo boxes, buttons, etc
+	std::vector<std::shared_ptr<UIElement> >    m_uiElements; //2d objects like Drop downs, combo boxes, buttons and text
 };
