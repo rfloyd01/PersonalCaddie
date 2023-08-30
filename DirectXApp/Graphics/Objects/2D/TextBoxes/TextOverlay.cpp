@@ -66,6 +66,20 @@ TextOverlay::TextOverlay(std::wstring const& text, std::vector<UITextColor> cons
 	m_state = UIElementState::Idle; //The state of the text overlay will always be idle
 }
 
+TextOverlay::TextOverlay(std::wstring const& text, std::vector<UITextColor> const& colors, std::vector<unsigned long long> const& colorLocations,
+	DirectX::XMFLOAT2 start, DirectX::XMFLOAT2 size, float fontSize, UITextType type, UITextJustification justification)
+{
+	//This constructor is used when creating a new text overlay out of an existing one. In this case, the dimensions are already known
+	//so we don't need to look at the size of the current window.
+	m_location = start;
+	m_size = size;
+	m_fontSize = fontSize;
+	UIText overlay(text, fontSize, start, size, colors, colorLocations, type, justification);
+	
+	m_textOverlay.push_back(overlay);
+	m_state = UIElementState::Idle; //The state of the text overlay will always be idle
+}
+
 void TextOverlay::addText(std::wstring text)
 {
 	//We can only overwrite the message of the current text, the font, colors, etc. are set
@@ -91,4 +105,11 @@ void TextOverlay::resize(winrt::Windows::Foundation::Size windowSize)
 UIElementState TextOverlay::update(DirectX::XMFLOAT2 mousePosition, bool mouseClick)
 {
 	return m_state;
+}
+
+UIText TextOverlay::getText()
+{
+	//since we can't update text, it's useful to have a method that returns the current text so 
+	//that we can create a new TextOverlay object with some of the existing text
+	if (m_textOverlay.size() != 0) return m_textOverlay[0];
 }

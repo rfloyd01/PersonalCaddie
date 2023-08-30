@@ -2,13 +2,10 @@
 
 #include "Graphics/Utilities/Text.h"
 #include "Graphics/Objects/2D/MenuObject.h"
-#include "Graphics/Objects/2D/UIElement.h"
+#include "Graphics/Objects/2D/UIElements.h"
 #include "Input/InputProcessor.h"
 #include <string>
 
-//UI Elements, find a better include solution at some point
-#include "Graphics/Objects/2D/TextBoxes/StaticTextBox.h"
-#include "Graphics/Objects/2D/TextBoxes/TextOverlay.h"
 
 //Classes, structs and enums that are helpful for this class
 enum class ModeType
@@ -50,6 +47,12 @@ public:
 	std::vector<std::shared_ptr<MenuObject> > const& getMenuObjects() { return m_menuObjects; }
 	std::vector<std::shared_ptr<UIElement> > const& getUIElements() { return m_uiElements; }
 
+	void addUIElement(UIElement const& element) { m_uiElements.push_back(std::make_shared<UIElement>(element)); }
+
+	//Alert Methods
+	void createAlert(std::wstring message, UITextColor color);
+	TextOverlay removeAlerts();
+
 	virtual uint32_t handleUIElementStateChange(int i) = 0;
 
 	std::shared_ptr<std::vector<Text>> getModeText() { return m_modeText; }
@@ -61,10 +64,6 @@ protected:
 	void clearModeText();
 
 	float m_backgroundColor[4]; //represents the background color when this mode is being rendered
-
-	//after processing data and input, this get's updated to let the main program known if anything needs
-	//to change (swapping to a new mode for example)
-	//std::pair<ModeState, uint32_t> externalAction;
 
 	//each mode owns all objects to be rendered on screen
 	std::shared_ptr<std::vector<Text>>          m_modeText;

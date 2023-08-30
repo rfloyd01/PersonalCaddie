@@ -55,3 +55,16 @@ int UIElement::getRenderVectorSize(RenderOrder render)
 		break;
 	}
 }
+
+bool UIElement::isAlert()
+{
+	//a special method used for finding alerts
+	if (m_textOverlay.size() > 0)
+	{
+		for (int i = 0; i < m_textOverlay.size(); i++)
+		{
+			if (m_textOverlay[i].textType == UITextType::ALERT) return true;
+		}
+	}
+	return false; //alerts must be text overlays
+}

@@ -1,7 +1,6 @@
 #include "pch.h"
 #include "DeviceDiscoveryMode.h"
 #include "Graphics/Objects/2D/UIButton.h"
-#include "Graphics/Objects/2D/Button.h"
 
 
 DeviceDiscoveryMode::DeviceDiscoveryMode()

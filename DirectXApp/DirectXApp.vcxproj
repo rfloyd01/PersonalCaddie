@@ -150,6 +150,7 @@
     <ClInclude Include="Graphics\Objects\2D\TextBoxes\TextOverlay.h" />
     <ClInclude Include="Graphics\Objects\2D\UIButton.h" />
     <ClInclude Include="Graphics\Objects\2D\UIElement.h" />
+    <ClInclude Include="Graphics\Objects\2D\UIElements.h" />
     <ClInclude Include="Graphics\Objects\2D\UIShape.h" />
     <ClInclude Include="Graphics\Objects\2D\UIText.h" />
     <ClInclude Include="Graphics\Rendering\Direct2DRenderer.h" />
