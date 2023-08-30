@@ -12,6 +12,7 @@ public:
 	TextOverlay(std::wstring const& text, std::vector<UITextColor> const& colors, std::vector<unsigned long long> const& colorLocations, UITextType textType, winrt::Windows::Foundation::Size windowSize);
 
 	virtual void addText(std::wstring text) override;
+	virtual UIElementState update(DirectX::XMFLOAT2 mousePosition, bool mouseClick) override;
 
 protected:
 	virtual void resize(winrt::Windows::Foundation::Size windowSize) override;

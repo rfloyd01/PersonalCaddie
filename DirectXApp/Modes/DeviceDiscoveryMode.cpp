@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "DeviceDiscoveryMode.h"
+#include "Graphics/Objects/2D/UIButton.h"
 #include "Graphics/Objects/2D/Button.h"
 
 
@@ -18,14 +19,12 @@ uint32_t DeviceDiscoveryMode::initializeMode(winrt::Windows::Foundation::Size wi
 {
 	//Create a new map for storing all of the text for this mode
 	initializeModeText();
-
-	//Create a button towards the top middle portion of the screen
-	DirectX::XMFLOAT2 buttonLocation = { 0.4, 0.25 };
-	m_menuObjects.push_back(std::make_shared<Button>(buttonLocation, L"Start Device Watcher"));
-	m_menuObjects[0]->changeDimensions({ 1.25, 1.00 }); //Make the device watcher button a little wider than standard
 	
+	//Create UI Elements on the page
 	StaticTextBox stb({ 0.5, 0.575 }, { 0.85, 0.5 }, L"Start the device watcher to being enumerating nearby BluetoothLE devices...", windowSize);
+	UIButton butt({ 0.4, 0.25 }, { 0.12, 0.1 }, windowSize, L"Start Device Watcher");
 	m_uiElements.push_back(std::make_shared<StaticTextBox>(stb));
+	m_uiElements.push_back(std::make_shared<UIButton>(butt));
 
 	initializeTextOverlay(windowSize);
 
@@ -53,40 +52,26 @@ void DeviceDiscoveryMode::initializeTextOverlay(winrt::Windows::Foundation::Size
 
 	//Footnote information
 	message = L"Press Esc. to return to settings menu.";
-	TextOverlay footNote(message, { UITextColor::Black }, { 0,  (unsigned int)message.length() }, UITextType::FOOT_NOTE, windowSize);
+	TextOverlay footNote(message, { UITextColor::White }, { 0,  (unsigned int)message.length() }, UITextType::FOOT_NOTE, windowSize);
 	m_uiElements.push_back(std::make_shared<TextOverlay>(footNote));
 }
 
-void DeviceDiscoveryMode::enterActiveState(int state)
+uint32_t DeviceDiscoveryMode::handleUIElementStateChange(int i)
 {
-	if (state == 1)
+	if (i == 1)
 	{
-		//We're entering the device discovery state
-		m_state = DeviceDiscoveryState::DISCOVERY;
-
-		//Update Title text
-		int index = static_cast<int>(TextType::TITLE);
-		std::wstring titleText = L"Connect to a Device";
-		m_modeText->at(index).message = titleText;
-		m_modeText->at(index).locations.back() = titleText.size();
-	}
-}
-
-uint32_t DeviceDiscoveryMode::handleMenuObjectClick(int i)
-{
-	if (i == 0)
-	{
+		//UI Element 1 is the device watcher button
 		if (m_state == DeviceDiscoveryState::IDLE)
 		{
 			m_state = DeviceDiscoveryState::DISCOVERY;
-			m_menuObjects[0]->updateText(L"Stop Device Watcher");
+			((UIButton*)m_uiElements[i].get())->updateButtonText(L"Stop Device Watcher");
 			((StaticTextBox*)m_uiElements[0].get())->addText(L""); //clear out text in the results box when starting the device watcher
 			return ModeState::Active;
 		}
 		else if (m_state == DeviceDiscoveryState::DISCOVERY)
 		{
 			m_state = DeviceDiscoveryState::IDLE;
-			m_menuObjects[0]->updateText(L"Start Device Watcher");
+			((UIButton*)m_uiElements[i].get())->updateButtonText(L"Start Device Watcher");
 			return ModeState::Idle;
 		}
 	}

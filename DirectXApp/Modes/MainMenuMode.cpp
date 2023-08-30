@@ -70,8 +70,7 @@ void MainMenuMode::initializeMainMenuModeText()
 	m_modeText->at(index).locations.push_back(footnoteText.size());
 }
 
-uint32_t MainMenuMode::handleMenuObjectClick(int i)
+uint32_t MainMenuMode::handleUIElementStateChange(int i)
 {
-	//do nothing for now
 	return ModeState::Idle;
 }

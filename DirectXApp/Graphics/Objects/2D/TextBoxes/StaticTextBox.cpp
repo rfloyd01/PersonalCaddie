@@ -14,6 +14,8 @@ StaticTextBox::StaticTextBox(DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size,
 	m_backgroundShapes.push_back(background);
 	addText(text);
 	resize(windowSize); //sets the appropriate sizes for both the rectangle and text
+
+	m_state = UIElementState::Idle; //the static text box will always have an idle state
 }
 
 void StaticTextBox::addText(std::wstring text)
@@ -56,4 +58,10 @@ void StaticTextBox::resize(winrt::Windows::Foundation::Size windowSize)
 	m_elementText[0].startLocation = { rect.left, rect.top }; //set the start location of the rendering box to be at the top left of the text box
 	m_elementText[0].renderArea = { rect.right - rect.left, rect.bottom - rect.top }; //the rendering area is the same as the rectangle area
 	m_elementText[0].fontSize = windowSize.Height * m_fontSize;
+}
+
+//the StaticTextBox class has nothing to update but this pure virtual method must be implemented
+UIElementState StaticTextBox::update(DirectX::XMFLOAT2 mousePosition, bool mouseClick)
+{
+	return m_state;
 }

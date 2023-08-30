@@ -49,7 +49,8 @@ public:
 
 	std::vector<std::shared_ptr<MenuObject> > const& getMenuObjects() { return m_menuObjects; }
 	std::vector<std::shared_ptr<UIElement> > const& getUIElements() { return m_uiElements; }
-	virtual uint32_t handleMenuObjectClick(int i) = 0;
+
+	virtual uint32_t handleUIElementStateChange(int i) = 0;
 
 	std::shared_ptr<std::vector<Text>> getModeText() { return m_modeText; }
 	void setModeText(Text const& text);

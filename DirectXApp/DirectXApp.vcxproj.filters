@@ -91,6 +91,9 @@
     <ClCompile Include="Graphics\Objects\2D\TextBoxes\TextOverlay.cpp">
       <Filter>Graphics\Objects\2D\TextBoxes</Filter>
     </ClCompile>
+    <ClCompile Include="Graphics\Objects\2D\UIButton.cpp">
+      <Filter>Graphics\Objects\2D</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -201,6 +204,15 @@
     </ClInclude>
     <ClInclude Include="Graphics\Objects\2D\TextBoxes\TextOverlay.h">
       <Filter>Graphics\Objects\2D\TextBoxes</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Objects\2D\Interfaces\IClickableUI.h">
+      <Filter>Graphics\Objects\2D\Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Objects\2D\Interfaces\IHoverableUI.h">
+      <Filter>Graphics\Objects\2D\Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Objects\2D\UIButton.h">
+      <Filter>Graphics\Objects\2D</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

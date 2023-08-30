@@ -64,6 +64,12 @@ UIElementRenderer::UIElementRenderer(_In_ std::shared_ptr<DX::DeviceResources> c
         case UIShapeColor::White:
             color = { 1, 1, 1, 1 };
             break;
+        case UIShapeColor::UnpressedButton:
+            color = { 0.9, 0.9, 0.9, 1 };
+            break;
+        case UIShapeColor::PressedButton:
+            color = { 0.33, 0.33, 0.33, 1 };
+            break;
         }
 
         m_shapeColorBrushes.push_back(nullptr);
@@ -217,7 +223,7 @@ void UIElementRenderer::renderShape(const UIShape* shape)
     switch (shape->m_fillType)
     {
     case UIShapeFillType::NoFill:
-        d2dContext->DrawRectangle(shape->m_rectangle, m_shapeColorBrushes[static_cast<int>(shape->m_color)].get(), 2.5f);
+        d2dContext->DrawRectangle(shape->m_rectangle, m_shapeColorBrushes[static_cast<int>(shape->m_color)].get(), 1.0f);
         break;
     case UIShapeFillType::Fill:
         d2dContext->FillRectangle(shape->m_rectangle, m_shapeColorBrushes[static_cast<int>(shape->m_color)].get());

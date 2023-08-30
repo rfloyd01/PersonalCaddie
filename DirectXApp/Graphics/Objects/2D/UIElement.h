@@ -35,7 +35,11 @@ public:
 	int getRenderVectorSize(RenderOrder render);
 	void* render(RenderOrder render, int element);
 
+	UIElementState getState() { return m_state; }
+	virtual void setState(UIElementState state) { m_state = state; } //need the ability to manually set the element state from outside the class
+
 	virtual void resize(winrt::Windows::Foundation::Size windowSize) = 0; //since all UI elements are different they each need to resize differently
+	virtual UIElementState update(DirectX::XMFLOAT2 mousePosition, bool mouseClick) = 0; //gets called in main render loop to check interactions with UI element
 
 protected:
 	DirectX::XMFLOAT2                        m_location; //location of the center of the element

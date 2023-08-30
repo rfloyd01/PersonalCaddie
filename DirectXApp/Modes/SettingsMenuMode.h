@@ -12,7 +12,7 @@ public:
 	virtual uint32_t initializeMode(winrt::Windows::Foundation::Size windowSize) override;
 	virtual void uninitializeMode() override;
 
-	virtual uint32_t handleMenuObjectClick(int i) override;
+	virtual uint32_t handleUIElementStateChange(int i) override;
 
 	//Updating and Advancement Functions
 private:

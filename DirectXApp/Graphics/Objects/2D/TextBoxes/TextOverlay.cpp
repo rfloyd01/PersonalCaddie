@@ -62,6 +62,8 @@ TextOverlay::TextOverlay(std::wstring const& text, std::vector<UITextColor> cons
 
 	m_textOverlay.push_back(defaultText);
 	resize(windowSize); //sets the appropriate sizes for both the rectangle and text
+
+	m_state = UIElementState::Idle; //The state of the text overlay will always be idle
 }
 
 void TextOverlay::addText(std::wstring text)
@@ -83,4 +85,10 @@ void TextOverlay::resize(winrt::Windows::Foundation::Size windowSize)
 	m_textOverlay[0].renderArea.y = m_size.y * windowSize.Height;
 
 	m_textOverlay[0].fontSize = m_fontSize * windowSize.Height;
+}
+
+//the textOverlay class has nothing to update but this pure virtual method must be implemented
+UIElementState TextOverlay::update(DirectX::XMFLOAT2 mousePosition, bool mouseClick)
+{
+	return m_state;
 }

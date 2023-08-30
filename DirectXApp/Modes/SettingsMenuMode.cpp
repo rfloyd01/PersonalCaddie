@@ -62,7 +62,7 @@ void SettingsMenuMode::initializeSettingsModeText()
 
 }
 
-uint32_t SettingsMenuMode::handleMenuObjectClick(int i)
+uint32_t SettingsMenuMode::handleUIElementStateChange(int i)
 {
 	return ModeState::Idle;
 }

@@ -10,7 +10,9 @@ enum class UIShapeColor
 	Green = 2,
 	Blue = 3,
 	Black = 4,
-	END = 5
+	UnpressedButton = 5,
+	PressedButton = 6,
+	END = 7
 };
 
 //used to select the correct D2D1 drawing method
@@ -31,7 +33,8 @@ enum class UIShapeType
 //This struct holds information about text to be rendered on the screen
 struct UIShape
 {
-	UIShape(D2D1_RECT_F const& rectangle, UIShapeColor color, UIShapeFillType fillType, UIShapeType shapeType) :
+	//constructor defaults to a rectangle shape
+	UIShape(D2D1_RECT_F const& rectangle, UIShapeColor color, UIShapeFillType fillType, UIShapeType shapeType = UIShapeType::RECTANGLE) :
 		m_rectangle(rectangle),
 		m_color(color),
 		m_fillType(fillType),

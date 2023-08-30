@@ -7,10 +7,12 @@
 
 #include "Graphics/Rendering/MasterRenderer.h"
 #include "Graphics/Objects/2D/TextBoxes/StaticTextBox.h"
+#include "Graphics/Objects/2D/UIButton.h"
 
 ModeScreen::ModeScreen() :
 	m_currentMode(ModeType::MAIN_MENU),
 	alert_active(false),
+	button_pressed(false),
 	personal_caddy_event(PersonalCaddieEventType::NONE)
 {
 	//Create instances for all different modes.
@@ -144,15 +146,17 @@ void ModeScreen::processMouseInput(DirectX::XMFLOAT2 mousePosition, bool mouseCl
 {
 	//need to poll all of the 2D elements in the current mode to see if the mouse is
 	//over any of them
-	for (int i = 0; i < m_modes[static_cast<int>(m_currentMode)]->getMenuObjects().size(); i++)
+	for (int i = 0; i < m_modes[static_cast<int>(m_currentMode)]->getUIElements().size(); i++)
 	{
-		MenuObjectState objectState = m_modes[static_cast<int>(m_currentMode)]->getMenuObjects()[i]->update(mousePosition, mouseClick, m_renderer->getCurrentScreenSize());
+		/*MenuObjectState objectState = m_modes[static_cast<int>(m_currentMode)]->getMenuObjects()[i]->update(mousePosition, mouseClick, m_renderer->getCurrentScreenSize());*/
+		UIElementState objectState = m_modes[static_cast<int>(m_currentMode)]->getUIElements()[i]->update(mousePosition, mouseClick);
 		switch (objectState)
 		{
-		case MenuObjectState::Pressed:
+		case UIElementState::Clicked:
 		{
-			uint32_t new_state = m_modes[static_cast<int>(m_currentMode)]->handleMenuObjectClick(i);
-			m_renderer->updateMenuObjects(m_modes[static_cast<int>(m_currentMode)]->getMenuObjects());
+			//The current UI Element has been clicked
+			uint32_t new_state = m_modes[static_cast<int>(m_currentMode)]->handleUIElementStateChange(i);
+			//m_renderer->updateMenuObjects(m_modes[static_cast<int>(m_currentMode)]->getMenuObjects());
 
 			//start a short timer that will change the color of the button from PRESSED to NOT_PRESSED
 			button_pressed = true;
@@ -228,16 +232,18 @@ void ModeScreen::processTimers()
 			button_pressed = false;
 
 			//then change the color of all pressed buttons
-			for (int i = 0; i < m_modes[static_cast<int>(m_currentMode)]->getMenuObjects().size(); i++)
+			for (int i = 0; i < m_modes[static_cast<int>(m_currentMode)]->getUIElements().size(); i++)
 			{
-				if (m_modes[static_cast<int>(m_currentMode)]->getMenuObjects()[i]->getReleventState() == MenuObjectState::Pressed)
+				if (m_modes[static_cast<int>(m_currentMode)]->getUIElements()[i]->getState() == UIElementState::Clicked)
 				{
-					m_modes[static_cast<int>(m_currentMode)]->getMenuObjects()[i]->setReleventState(MenuObjectState::NotPressed);
+					//The ui button class overrides the ui element setState() method so case to a UI button
+					//before setting the state to idle
+					((UIButton*)m_modes[static_cast<int>(m_currentMode)]->getUIElements()[i].get())->setState(UIElementState::Idle);
 				}
 			}
 
 			//rerender all menu objects
-			m_renderer->updateMenuObjects(m_modes[static_cast<int>(m_currentMode)]->getMenuObjects());
+			//m_renderer->updateMenuObjects(m_modes[static_cast<int>(m_currentMode)]->getMenuObjects());
 		}
 	}
 }

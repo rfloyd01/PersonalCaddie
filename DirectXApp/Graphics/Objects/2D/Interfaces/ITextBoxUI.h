@@ -1,7 +1,5 @@
 #pragma once
 
-#include "../UIElement.h"
-
 //An interface for creating text boxes. Depending on the type
 //of text box being made text will be added differently so the
 //addText method must be overridden (for example, a static text
