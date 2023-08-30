@@ -82,6 +82,9 @@
     <ClCompile Include="Graphics\Utilities\UIElementColors.cpp">
       <Filter>Graphics\Utilities</Filter>
     </ClCompile>
+    <ClCompile Include="Modes\UITestMode.cpp">
+      <Filter>Modes</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -189,6 +192,9 @@
     </ClInclude>
     <ClInclude Include="Graphics\Utilities\UIElementColors.h">
       <Filter>Graphics\Utilities</Filter>
+    </ClInclude>
+    <ClInclude Include="Modes\UITestMode.h">
+      <Filter>Modes</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

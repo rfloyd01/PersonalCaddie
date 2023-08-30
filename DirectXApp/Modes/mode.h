@@ -17,7 +17,8 @@ enum class ModeType
 	TRAINING = 3,
 	SETTINGS_MENU = 4,
 	DEVICE_DISCOVERY = 5,
-	END = 6 //allows for looping through of ModeType enum class. This number should be one more than previous value
+	UI_TEST_MODE = 6,
+	END = 7 //allows for looping through of ModeType enum class. This number should be one more than previous value
 };
 
 //The ModeState enum keeps track of what the current state of the app is. Each of these

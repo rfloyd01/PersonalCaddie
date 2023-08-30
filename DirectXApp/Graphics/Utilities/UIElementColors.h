@@ -14,6 +14,7 @@ enum class UIColor
 	Black,
 	White,
 	Red,
+	LightBlue,
 	Blue,
 	Green,
 	Yellow,

@@ -4,6 +4,7 @@
 #include "MainMenuMode.h"
 #include "SettingsMenuMode.h"
 #include "DeviceDiscoveryMode.h"
+#include "UITestMode.h"
 
 #include "Graphics/Rendering/MasterRenderer.h"
 #include "Graphics/Objects/2D/TextBoxes/StaticTextBox.h"
@@ -21,7 +22,7 @@ ModeScreen::ModeScreen() :
 	m_modes[static_cast<int>(ModeType::MAIN_MENU)] = std::make_shared<MainMenuMode>();
 	m_modes[static_cast<int>(ModeType::SETTINGS_MENU)] = std::make_shared<SettingsMenuMode>();
 	m_modes[static_cast<int>(ModeType::DEVICE_DISCOVERY)] = std::make_shared<DeviceDiscoveryMode>();
-
+	m_modes[static_cast<int>(ModeType::UI_TEST_MODE)] = std::make_shared<UITestMode>();
 	//Set default times for various timers (in milliseconds)
 	alert_timer_duration = 5000;
 	button_pressed_duration = 100;
@@ -93,7 +94,7 @@ void ModeScreen::processKeyboardInput(winrt::Windows::System::VirtualKey pressed
 				//TODO: disconnect from the Personal Caddie of connected and release
 				//any resources
 			}
-			else if (m_currentMode == ModeType::SETTINGS_MENU)
+			else if (m_currentMode == ModeType::SETTINGS_MENU || m_currentMode == ModeType::UI_TEST_MODE)
 			{
 				changeCurrentMode(ModeType::MAIN_MENU);
 			}
@@ -135,6 +136,17 @@ void ModeScreen::processKeyboardInput(winrt::Windows::System::VirtualKey pressed
 				//If we're on the Main Menu screen then pressing the 5 key will take us to the
 				//sensor settings page
 				changeCurrentMode(ModeType::SETTINGS_MENU);
+			}
+		}
+		break;
+	case winrt::Windows::System::VirtualKey::Number6:
+		if (m_modeState & ModeState::CanTransfer)
+		{
+			if (m_currentMode == ModeType::MAIN_MENU)
+			{
+				//If we're on the Main Menu screen then pressing the 5 key will take us to the
+				//sensor settings page
+				changeCurrentMode(ModeType::UI_TEST_MODE);
 			}
 		}
 		break;
