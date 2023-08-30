@@ -36,13 +36,13 @@ void Mode::setModeText(Text const& text)
 	m_modeText->at(static_cast<int>(text.textType)) = text;
 }
 
-void Mode::createAlert(std::wstring message, UITextColor color)
+void Mode::createAlert(std::wstring message, UITextColor color, winrt::Windows::Foundation::Size windowSize)
 {
 	//When creating a new alert, instead of overriding the current one we 
 	//add it onto the back. The TextOverylay class doesn't allow for updating
 	//text so we must delete the current alert (if it exists) and create
 	//a new one from scratch
-	auto existingAlert = removeAlerts().getText();
+	auto existingAlert = removeAlerts().getText(); //This removes any existing alerts and saves the text
 
 	if (existingAlert.message != L"")
 	{
@@ -55,6 +55,14 @@ void Mode::createAlert(std::wstring message, UITextColor color)
 
 		TextOverlay newAlert(existingAlert.message + message, colors, colorLocations, existingAlert.startLocation, existingAlert.renderArea,
 			existingAlert.fontSize, existingAlert.textType, existingAlert.justification);
+
+		addUIElement(newAlert);
+	}
+	else
+	{
+		//There were no existing alerts so we create a new one
+		TextOverlay newAlert(message, { color }, { 0, (unsigned long long)message.length() }, UITextType::ALERT, windowSize);
+		addUIElement(newAlert);
 	}
 }
 
@@ -68,7 +76,7 @@ TextOverlay Mode::removeAlerts()
 	//back. There should only ever be one alert textOverlay at a time so after removing
 	//it break off the search
 	TextOverlay alert(L"", {}, {}, UITextType::ALERT, { 0, 0 }); //create an empty alert
-	for (int i = m_uiElements.size(); i >= 0; i--)
+	for (int i = m_uiElements.size() - 1; i >= 0; i--)
 	{
 		if (m_uiElements[i]->isAlert())
 		{

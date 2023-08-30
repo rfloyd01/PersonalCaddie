@@ -45,6 +45,7 @@ public:
 	std::vector<std::shared_ptr<MenuObject> > const& getCurrentModeMenuObjects();
 	std::vector<std::shared_ptr<UIElement> > const& getCurrentModeUIElements();
 	void resizeCurrentModeUIElements(winrt::Windows::Foundation::Size windowSize);
+	void createAlert(std::wstring message, UITextColor color);
 
 private:
 	void processKeyboardInput(winrt::Windows::System::VirtualKey pressedKey);

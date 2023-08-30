@@ -47,10 +47,11 @@ public:
 	std::vector<std::shared_ptr<MenuObject> > const& getMenuObjects() { return m_menuObjects; }
 	std::vector<std::shared_ptr<UIElement> > const& getUIElements() { return m_uiElements; }
 
-	void addUIElement(UIElement const& element) { m_uiElements.push_back(std::make_shared<UIElement>(element)); }
+	template <typename T>
+	void addUIElement(T const& element) { m_uiElements.push_back(std::make_shared<T>(element)); }
 
 	//Alert Methods
-	void createAlert(std::wstring message, UITextColor color);
+	void createAlert(std::wstring message, UITextColor color, winrt::Windows::Foundation::Size windowSize);
 	TextOverlay removeAlerts();
 
 	virtual uint32_t handleUIElementStateChange(int i) = 0;

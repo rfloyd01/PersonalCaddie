@@ -211,13 +211,9 @@ void ModeScreen::processTimers()
 		auto time_elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - alert_timer).count();
 		if (time_elapsed >= alert_timer_duration)
 		{
-			//the timer has gone off so turn the timer off
+			//the timer has gone off so turn the timer off so remove all active alerts
 			alert_active = false;
-
-			//then remove the current alerts both from the mode text map, as well
-			//as from being rendered on the screen
-			setCurrentModeText({ L"", {}, {0}, TextType::ALERT });
-			m_renderer->editText({ L"", {}, {0}, TextType::ALERT });
+			m_modes[static_cast<int>(m_currentMode)]->removeAlerts();
 		}
 	}
 
@@ -300,6 +296,11 @@ const float* ModeScreen::getBackgroundColor()
 	return m_modes[static_cast<int>(m_currentMode)]->getBackgroundColor();
 }
 
+void ModeScreen::createAlert(std::wstring message, UITextColor color)
+{
+	m_modes[static_cast<int>(m_currentMode)]->createAlert(message, color, m_renderer->getCurrentScreenSize());
+}
+
 void ModeScreen::PersonalCaddieHandler(PersonalCaddieEventType pcEvent, void* eventArgs)
 {
 	//This method will get automatically called when certain things happen with the 
@@ -314,8 +315,9 @@ void ModeScreen::PersonalCaddieHandler(PersonalCaddieEventType pcEvent, void* ev
 	case PersonalCaddieEventType::BLE_ALERT:
 	{
 		std::wstring alertText = *((std::wstring*)eventArgs); //cast the eventArgs into a wide string
-		Text text(alertText, { { 0.6, 0.85, 0.92, 1 } }, { 0, alertText.size() }, TextType::ALERT);
-		addCurrentModeText(text); //add the alert on top of any existing ones
+		createAlert(alertText, UITextColor::Blue);
+		//Text text(alertText, { { 0.6, 0.85, 0.92, 1 } }, { 0, alertText.size() }, TextType::ALERT);
+		//addCurrentModeText(text); //add the alert on top of any existing ones
 		break;
 	}
 	case PersonalCaddieEventType::PC_ALERT:
