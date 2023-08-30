@@ -41,8 +41,8 @@ public:
 	//Handler Methods
 	void PersonalCaddieHandler(PersonalCaddieEventType pcEvent, void* eventArgs);
 
-	std::shared_ptr<std::vector<Text> >       getCurrentModeText();
-	std::vector<std::shared_ptr<MenuObject> > const& getCurrentModeMenuObjects();
+	/*std::shared_ptr<std::vector<Text> >       getCurrentModeText();
+	std::vector<std::shared_ptr<MenuObject> > const& getCurrentModeMenuObjects();*/
 	std::vector<std::shared_ptr<UIElement> > const& getCurrentModeUIElements();
 	void resizeCurrentModeUIElements(winrt::Windows::Foundation::Size windowSize);
 	void createAlert(std::wstring message, UITextColor color);
@@ -54,10 +54,10 @@ private:
 	void processTimers();
 
 	void changeCurrentMode(ModeType mt);
-	void addCurrentModeText(Text const& text);
-	void setCurrentModeText(Text const& text);
+	//void addCurrentModeText(Text const& text);
+	//void setCurrentModeText(Text const& text);
 
-	void createModeScreenAlert(std::wstring alert);
+	//void createModeScreenAlert(std::wstring alert);
 
 	void enterActiveState(); //depending on the current mode, something different will happen here
 	void leaveActiveState();

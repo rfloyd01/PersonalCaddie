@@ -118,7 +118,7 @@ void ModeScreen::processKeyboardInput(winrt::Windows::System::VirtualKey pressed
 			{
 				//This should take us to the free swing menu but this hasn't been implemented yet
 				//so display an alert for now
-				createModeScreenAlert(L"This mode hasn't been implemented yet.");
+				createAlert(L"This mode hasn't been implemented yet.", UITextColor::Red);
 			}
 			else if (m_currentMode == ModeType::SETTINGS_MENU)
 			{
@@ -190,8 +190,8 @@ void ModeScreen::processEvents()
 	case PersonalCaddieEventType::IMU_ALERT:
 		//An alert was passed through, this means the text vector of the current mode has been 
 		//altered. We need to pass this updated text to the master renderer
-		auto alerts = getCurrentModeText()->at(static_cast<int>(TextType::ALERT)); //Get the current alerts
-		m_renderer->editText(alerts);
+		//auto alerts = getCurrentModeText()->at(static_cast<int>(TextType::ALERT)); //Get the current alerts
+		//m_renderer->editText(alerts);
 
 		alert_timer = std::chrono::steady_clock::now(); //set/reset the alert timer
 		alert_active = true;
@@ -237,9 +237,6 @@ void ModeScreen::processTimers()
 					((UIButton*)m_modes[static_cast<int>(m_currentMode)]->getUIElements()[i].get())->setState(UIElementState::Idle);
 				}
 			}
-
-			//rerender all menu objects
-			//m_renderer->updateMenuObjects(m_modes[static_cast<int>(m_currentMode)]->getMenuObjects());
 		}
 	}
 }
@@ -252,7 +249,7 @@ void ModeScreen::changeCurrentMode(ModeType mt)
 
 	//First, get any active alerts before deleting the text and color map of the 
 	//current mode
-	auto currentAlerts = getCurrentModeText()->at(static_cast<int>(TextType::ALERT));
+	auto currentAlerts = m_modes[static_cast<int>(m_currentMode)]->removeAlerts().getText();
 	m_modes[static_cast<int>(m_currentMode)]->uninitializeMode();
 
 	//Switch to the new mode and initialize it
@@ -261,22 +258,22 @@ void ModeScreen::changeCurrentMode(ModeType mt)
 
 	//After initializing, add any alerts that were copied over to the text and
 	//color maps and then create text and color resources in the renderer
-	if (currentAlerts.message != L"") setCurrentModeText(currentAlerts);
+	if (currentAlerts.message != L"") createAlert(currentAlerts.message, currentAlerts.colors[0]); //TODO: this will make all alerts the same color, come back to this
 	m_renderer->CreateModeResources();
 	
 }
 
-std::shared_ptr<std::vector<Text> > ModeScreen::getCurrentModeText()
-{
-	//returns a reference to any text that needs to be rendered on screen
-	return m_modes[static_cast<int>(m_currentMode)]->getModeText();
-}
-
-std::vector<std::shared_ptr<MenuObject> > const& ModeScreen::getCurrentModeMenuObjects()
-{
-	//returns a reference to all UI elements to be rendered on screen
-	return m_modes[static_cast<int>(m_currentMode)]->getMenuObjects();
-}
+//std::shared_ptr<std::vector<Text> > ModeScreen::getCurrentModeText()
+//{
+//	//returns a reference to any text that needs to be rendered on screen
+//	return m_modes[static_cast<int>(m_currentMode)]->getModeText();
+//}
+//
+//std::vector<std::shared_ptr<MenuObject> > const& ModeScreen::getCurrentModeMenuObjects()
+//{
+//	//returns a reference to all UI elements to be rendered on screen
+//	return m_modes[static_cast<int>(m_currentMode)]->getMenuObjects();
+//}
 
 std::vector<std::shared_ptr<UIElement> > const& ModeScreen::getCurrentModeUIElements()
 {
@@ -299,6 +296,10 @@ const float* ModeScreen::getBackgroundColor()
 void ModeScreen::createAlert(std::wstring message, UITextColor color)
 {
 	m_modes[static_cast<int>(m_currentMode)]->createAlert(message, color, m_renderer->getCurrentScreenSize());
+
+	//after creating the alert, set the alert timer
+	alert_active = true;
+	alert_timer = std::chrono::steady_clock::now();
 }
 
 void ModeScreen::PersonalCaddieHandler(PersonalCaddieEventType pcEvent, void* eventArgs)
@@ -316,15 +317,12 @@ void ModeScreen::PersonalCaddieHandler(PersonalCaddieEventType pcEvent, void* ev
 	{
 		std::wstring alertText = *((std::wstring*)eventArgs); //cast the eventArgs into a wide string
 		createAlert(alertText, UITextColor::Blue);
-		//Text text(alertText, { { 0.6, 0.85, 0.92, 1 } }, { 0, alertText.size() }, TextType::ALERT);
-		//addCurrentModeText(text); //add the alert on top of any existing ones
 		break;
 	}
 	case PersonalCaddieEventType::PC_ALERT:
 	{
 		std::wstring alertText = *((std::wstring*)eventArgs); //cast the eventArgs into a wide string
-		Text text(alertText, { { 1.0, 0.788, 0.055, 1.0 } }, { 0, alertText.size() }, TextType::ALERT);
-		addCurrentModeText(text); //add the alert on top of any existing ones
+		createAlert(alertText, UITextColor::Blue); //TODO: Make this alert yellow after creating that color
 		break;
 	}
 	case PersonalCaddieEventType::DEVICE_WATCHER_UPDATE:
@@ -337,63 +335,64 @@ void ModeScreen::PersonalCaddieHandler(PersonalCaddieEventType pcEvent, void* ev
 			devices += L", Address: " + it->device_address.second + L"\n";
 		}
 
-		//Update the body text of the current mode with the discovered devices
-		//Body Information
-		//Text newBodyText(devices, { {1.0, 1.0, 1.0, 1.0} }, { 0, devices.length() }, TextType::BODY);
-		//setCurrentModeText(newBodyText);
-		auto textBox = (StaticTextBox*)(getCurrentModeUIElements()[0].get());
-		textBox->addText(devices);
+		//Update the text in the device discovery text box
+		if (m_currentMode == ModeType::DEVICE_DISCOVERY)
+		{
+			auto textBox = (StaticTextBox*)(getCurrentModeUIElements()[0].get());
+			textBox->addText(devices);
+			
+		}
 		break;
 	}
 	}
 
 }
 
-void ModeScreen::addCurrentModeText(Text const& text)
-{
-	//This method adds new text on top of existing text without deleting anything
-	auto currentModeText = m_modes[static_cast<int>(m_currentMode)]->getModeText();
+//void ModeScreen::addCurrentModeText(Text const& text)
+//{
+//	//This method adds new text on top of existing text without deleting anything
+//	auto currentModeText = m_modes[static_cast<int>(m_currentMode)]->getModeText();
+//
+//	//Add the new text
+//	int index = static_cast<int>(text.textType);
+//	currentModeText->at(index).message += text.message;
+//
+//	//Then add the new colors and color rendering points
+//	for (int i = 0; i < text.colors.size(); i++)
+//	{
+//		currentModeText->at(index).colors.push_back(text.colors[i]);
+//		currentModeText->at(index).locations.push_back(text.locations[i + 1]);
+//		//*note - the locations vector is always 1 larger than the colors vector so the i + 1
+//		//in the above line is safe and intended
+//	}
+//
+//	//after adding new text let the master renderer know to render it
+//	m_renderer->editText(getCurrentModeText()->at(static_cast<int>(text.textType)));
+//}
+//
+//void ModeScreen::setCurrentModeText(Text const& text)
+//{
+//	//This method overwrites the current mode text with the text given
+//	auto currentModeText = m_modes[static_cast<int>(m_currentMode)]->getModeText();
+//	currentModeText->at(static_cast<int>(text.textType)) = text;
+//
+//	//after adding new text let the master renderer know to render it
+//	m_renderer->editText(getCurrentModeText()->at(static_cast<int>(text.textType)));
+//}
 
-	//Add the new text
-	int index = static_cast<int>(text.textType);
-	currentModeText->at(index).message += text.message;
-
-	//Then add the new colors and color rendering points
-	for (int i = 0; i < text.colors.size(); i++)
-	{
-		currentModeText->at(index).colors.push_back(text.colors[i]);
-		currentModeText->at(index).locations.push_back(text.locations[i + 1]);
-		//*note - the locations vector is always 1 larger than the colors vector so the i + 1
-		//in the above line is safe and intended
-	}
-
-	//after adding new text let the master renderer know to render it
-	m_renderer->editText(getCurrentModeText()->at(static_cast<int>(text.textType)));
-}
-
-void ModeScreen::setCurrentModeText(Text const& text)
-{
-	//This method overwrites the current mode text with the text given
-	auto currentModeText = m_modes[static_cast<int>(m_currentMode)]->getModeText();
-	currentModeText->at(static_cast<int>(text.textType)) = text;
-
-	//after adding new text let the master renderer know to render it
-	m_renderer->editText(getCurrentModeText()->at(static_cast<int>(text.textType)));
-}
-
-void ModeScreen::createModeScreenAlert(std::wstring alert)
-{
-	//this method is for creating alerts originating from this class. This method
-	//only gets invoked on the main rendering thread so there's no issues with 
-	//making direct calls to the master renderer. These alerts are red colored.
-	Text newAlert(alert, { { 1.0, 0.0, 0.0, 1.0 } }, { 0, alert.size() }, TextType::ALERT);
-	addCurrentModeText(newAlert);
-	m_renderer->editText(getCurrentModeText()->at(static_cast<int>(TextType::ALERT)));
-
-	//Make sure to set/reset the alert timer
-	alert_timer = std::chrono::steady_clock::now(); //set/reset the alert timer
-	alert_active = true;
-}
+//void ModeScreen::createModeScreenAlert(std::wstring alert)
+//{
+//	//this method is for creating alerts originating from this class. This method
+//	//only gets invoked on the main rendering thread so there's no issues with 
+//	//making direct calls to the master renderer. These alerts are red colored.
+//	Text newAlert(alert, { { 1.0, 0.0, 0.0, 1.0 } }, { 0, alert.size() }, TextType::ALERT);
+//	addCurrentModeText(newAlert);
+//	m_renderer->editText(getCurrentModeText()->at(static_cast<int>(TextType::ALERT)));
+//
+//	//Make sure to set/reset the alert timer
+//	alert_timer = std::chrono::steady_clock::now(); //set/reset the alert timer
+//	alert_active = true;
+//}
 
 void ModeScreen::enterActiveState()
 {

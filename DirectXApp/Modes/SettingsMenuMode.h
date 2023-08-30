@@ -16,6 +16,6 @@ public:
 
 	//Updating and Advancement Functions
 private:
-	void initializeSettingsModeText();
+	/*void initializeSettingsModeText();*/
 	void initializeTextOverlay(winrt::Windows::Foundation::Size windowSize);
 };

@@ -16,6 +16,7 @@ public:
 
 	//Updating and Advancement Functions
 private:
-	void initializeMainMenuModeText();
+	void initializeTextOverlay(winrt::Windows::Foundation::Size windowSize);
+	//void initializeMainMenuModeText();
 
 };

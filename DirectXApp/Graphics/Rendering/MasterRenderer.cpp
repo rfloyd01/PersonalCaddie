@@ -32,7 +32,7 @@ winrt::Windows::Foundation::Size MasterRenderer::getCurrentScreenSize()
 
 void MasterRenderer::CreateWindowSizeDependentResources()
 {
-    m_2DRenderer.CreateWindowSizeDependentResources(m_mode->getCurrentModeMenuObjects());
+    //m_2DRenderer.CreateWindowSizeDependentResources(m_mode->getCurrentModeMenuObjects());
 
     auto d3dContext = m_deviceResources->GetD3DDeviceContext();
     auto renderTargetSize = m_deviceResources->GetRenderTargetSize();
@@ -73,13 +73,13 @@ void MasterRenderer::CreateModeResources()
     //In the original DirectX example this is an asynchronus function that loads certain resources for 
     //the game. For now just make this a normal function, but if loading starts taking awhile then
     //make this asynchronus
-    auto renderText = m_mode->getCurrentModeText();
-    for (int i = 0; i < renderText->size(); i++) editText(renderText->at(i));
+    //auto renderText = m_mode->getCurrentModeText();
+    //for (int i = 0; i < renderText->size(); i++) editText(renderText->at(i));
 
-    //delete any existing menuObjects from the renderer
-    deleteExistingMenuObjects();
-    auto renderMenuObjects = m_mode->getCurrentModeMenuObjects();
-    for (int i = 0; i < renderMenuObjects.size(); i++) m_2DRenderer.addMenuObject(renderMenuObjects[i]);
+    ////delete any existing menuObjects from the renderer
+    //deleteExistingMenuObjects();
+    //auto renderMenuObjects = m_mode->getCurrentModeMenuObjects();
+    //for (int i = 0; i < renderMenuObjects.size(); i++) m_2DRenderer.addMenuObject(renderMenuObjects[i]);
 }
 
 void MasterRenderer::ReleaseDeviceDependentResources()
@@ -89,7 +89,7 @@ void MasterRenderer::ReleaseDeviceDependentResources()
     // Simple3DGame object. It will be reset as a part of the
     // game devices resources being recreated.
     //m_game = nullptr;
-    m_2DRenderer.ReleaseDeviceDependentResources();
+    //m_2DRenderer.ReleaseDeviceDependentResources();
 }
 
 void MasterRenderer::Render()
@@ -190,7 +190,7 @@ void MasterRenderer::Render()
     d2dContext->SetTransform(m_deviceResources->GetOrientationTransform2D());
 
     //Render any UI elements or text on screen text
-    m_2DRenderer.Render(m_mode);
+    //m_2DRenderer.Render(m_mode);
     m_uiElementRenderer.render(m_mode->getCurrentModeUIElements());
 
     //Render 2D UI elements like drop down boxes and buttons
