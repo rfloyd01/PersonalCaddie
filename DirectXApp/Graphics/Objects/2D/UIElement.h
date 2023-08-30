@@ -4,6 +4,7 @@
 #include "UIShape.h"
 #include "Interfaces/IScrollableUI.h"
 #include "Interfaces/ITextBoxUI.h"
+#include "UIConstants.h"
 
 enum class UIElementState
 {

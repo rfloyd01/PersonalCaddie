@@ -15,6 +15,11 @@ public:
     void render(std::vector<std::shared_ptr<UIElement> > const& uiElements);
 
 private:
+    void createTextFormats();
+
+    void renderShape(const UIShape* shape);
+    void renderText(const UIText* text);
+
     // Cached pointer to device resources.
     std::shared_ptr<DX::DeviceResources>                                     m_deviceResources;
 

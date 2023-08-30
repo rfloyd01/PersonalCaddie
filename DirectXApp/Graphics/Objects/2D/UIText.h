@@ -27,18 +27,35 @@ enum class UITextColor
 	END = 5
 };
 
+//An enum describing the location inside of a UI element that text should be rendered
+enum class UITextJustification
+{
+	UpperLeft = 0,
+	UpperCenter = 1,
+	UpperRight = 2,
+	CenterLeft = 3,
+	CenterCenter = 4,
+	CenterRight = 5,
+	LowerLeft = 6,
+	LowerCenter = 7,
+	LowerRight = 8,
+	END = 9
+};
+
 //This struct holds information about text to be rendered on the screen
 struct UIText
 {
 	UIText(std::wstring const& message, float fontSize, DirectX::XMFLOAT2 startLocation, DirectX::XMFLOAT2 renderArea,
-		std::vector<UITextColor> const& colors, std::vector<unsigned long long> const & colorLocations, UITextType textType) :
+		std::vector<UITextColor> const& colors, std::vector<unsigned long long> const & colorLocations, UITextType textType,
+		UITextJustification justification = UITextJustification::UpperLeft) :
 		message(message),
 		fontSize(fontSize),
 		startLocation(startLocation),
 		renderArea(renderArea),
 		colors(colors),
 		colorLocations(colorLocations),
-		textType(textType)
+		textType(textType),
+		justification(justification)
 	{
 
 	}
@@ -50,5 +67,5 @@ struct UIText
 	std::vector<UITextColor> colors; //holds the different colors of the text (in order)
 	std::vector<unsigned long long> colorLocations; //holds the index of all characters where the text color switches. This vector must be 1 element longer than the colors vector
 	UITextType  textType;
-	
+	UITextJustification justification;
 };

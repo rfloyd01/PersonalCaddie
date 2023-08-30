@@ -88,6 +88,9 @@
     <ClCompile Include="Graphics\Rendering\UIElementRenderer.cpp">
       <Filter>Graphics\Rendering</Filter>
     </ClCompile>
+    <ClCompile Include="Graphics\Objects\2D\TextBoxes\TextOverlay.cpp">
+      <Filter>Graphics\Objects\2D\TextBoxes</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -195,6 +198,9 @@
     </ClInclude>
     <ClInclude Include="Graphics\Rendering\UIElementRenderer.h">
       <Filter>Graphics\Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Objects\2D\TextBoxes\TextOverlay.h">
+      <Filter>Graphics\Objects\2D\TextBoxes</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

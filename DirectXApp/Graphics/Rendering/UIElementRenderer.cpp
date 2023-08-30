@@ -75,7 +75,11 @@ UIElementRenderer::UIElementRenderer(_In_ std::shared_ptr<DX::DeviceResources> c
         );
     }
 
-    //create a defualt text format
+    //create some default text formats to use
+    createTextFormats();
+
+    //create a defualt text format, this is used to be overwritten by 
+    //colored text
     winrt::check_hresult(
         dwriteFactory->CreateTextFormat(
             L"Segoe UI",
@@ -102,14 +106,74 @@ UIElementRenderer::UIElementRenderer(_In_ std::shared_ptr<DX::DeviceResources> c
     m_textLayout = nullptr; //initialize the text layout to null
 }
 
+void UIElementRenderer::createTextFormats()
+{
+    //Create nine default text formats, one for each of the possible justification combinations
+    auto dwriteFactory = m_deviceResources->GetDWriteFactory();
+
+    for (int i = 0; i < static_cast<int>(UITextJustification::END); i++)
+    {
+        m_textFormats.push_back(nullptr);
+        winrt::check_hresult(
+            dwriteFactory->CreateTextFormat(
+                L"Segoe UI",
+                nullptr,
+                DWRITE_FONT_WEIGHT_LIGHT,
+                DWRITE_FONT_STYLE_NORMAL,
+                DWRITE_FONT_STRETCH_NORMAL,
+                1.0, //The font size doesn't matter as it gets overwritten before rendering
+                L"en-us",
+                m_textFormats.back().put()
+            )
+        );
+
+        switch (static_cast<UITextJustification>(i))
+        {
+        case UITextJustification::UpperLeft:
+            winrt::check_hresult(m_textFormats.back()->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING));
+            winrt::check_hresult(m_textFormats.back()->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_NEAR));
+            break;
+        case UITextJustification::UpperCenter:
+            winrt::check_hresult(m_textFormats.back()->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_CENTER));
+            winrt::check_hresult(m_textFormats.back()->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_NEAR));
+            break;
+        case UITextJustification::UpperRight:
+            winrt::check_hresult(m_textFormats.back()->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_TRAILING));
+            winrt::check_hresult(m_textFormats.back()->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_NEAR));
+            break;
+        case UITextJustification::CenterLeft:
+            winrt::check_hresult(m_textFormats.back()->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING));
+            winrt::check_hresult(m_textFormats.back()->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_CENTER));
+            break;
+        case UITextJustification::CenterCenter:
+            winrt::check_hresult(m_textFormats.back()->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_CENTER));
+            winrt::check_hresult(m_textFormats.back()->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_CENTER));
+            break;
+        case UITextJustification::CenterRight:
+            winrt::check_hresult(m_textFormats.back()->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_TRAILING));
+            winrt::check_hresult(m_textFormats.back()->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_CENTER));
+            break;
+        case UITextJustification::LowerLeft:
+            winrt::check_hresult(m_textFormats.back()->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING));
+            winrt::check_hresult(m_textFormats.back()->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_FAR));
+            break;
+        case UITextJustification::LowerCenter:
+            winrt::check_hresult(m_textFormats.back()->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_CENTER));
+            winrt::check_hresult(m_textFormats.back()->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_FAR));
+            break;
+        case UITextJustification::LowerRight:
+            winrt::check_hresult(m_textFormats.back()->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_TRAILING));
+            winrt::check_hresult(m_textFormats.back()->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_FAR));
+            break;
+        }
+    }
+}
+
 void UIElementRenderer::render(std::vector<std::shared_ptr<UIElement> > const& uiElements)
 {
     //The input vector contains all of the UI Elements to be rendered from the current mode. The order in which 
     //the elements get rendered is important. Some elements (like scroll boxes) need to have shapes rendered over
     //their text to give the illusion that all text is contained inside the box.
-    auto dwriteFactory = m_deviceResources->GetDWriteFactory();
-    auto d2dContext = m_deviceResources->GetD2DDeviceContext();
-
     UIShape* shape = nullptr;
     UIText* text = nullptr;
 
@@ -119,63 +183,81 @@ void UIElementRenderer::render(std::vector<std::shared_ptr<UIElement> > const& u
         {
             RenderOrder renderOrder = static_cast<RenderOrder>(j);
             int renderLength = uiElements[i]->getRenderVectorSize(renderOrder);
-            if (renderOrder == RenderOrder::ElementText || renderOrder == RenderOrder::TextOverlay)
+            if (renderOrder == RenderOrder::ElementText)
             {
                 //This is one of the text sections so render text
-                for (int k = 0; k < renderLength; k++)
-                {
-                    text = (UIText*)uiElements[i]->render(renderOrder, k);
-
-                    m_textLayout = nullptr; //erase whatever settings were put into the layout previously
-                    //A new text layout is create every time text is rendered
-                    winrt::check_hresult(
-                        dwriteFactory->CreateTextLayout(
-                            &text->message[0],
-                            text->message.size(),
-                            m_defaultTextFormat.get(),
-                            text->renderArea.x,
-                            text->renderArea.y,
-                            m_textLayout.put()
-                        )
-                    );
-
-                    //After creating the text layout, update colors and font size as necessary
-                    unsigned int currentLocation = 0;
-                    for (int l = 0; l < text->colors.size(); l++)
-                    {
-                        m_textLayout->SetDrawingEffect(m_textColorBrushes[static_cast<int>(text->colors[l])].get(), { currentLocation,
-                            (unsigned int)text->colorLocations[l + 1] });
-
-                        currentLocation += (unsigned int)text->colorLocations[l + 1];
-                    }
-                    m_textLayout->SetFontSize(text->fontSize, { 0, (unsigned int)text->message.length() });
-
-                    d2dContext->DrawTextLayout(
-                        Point2F(text->startLocation.x, text->startLocation.y),
-                        m_textLayout.get(),
-                        m_defaultBrush.get(),
-                        D2D1_DRAW_TEXT_OPTIONS_CLIP //clip any text not inside the target rectangle
-                    );
-                }
+                for (int k = 0; k < renderLength; k++) renderText((UIText*)uiElements[i]->render(renderOrder, k));
             }
+            else if (renderOrder == RenderOrder::TextOverlay) continue; //the text overlay for all objects is rendered at the end
             else
             {
-                //This is one of the shape sections so render shapes
-                for (int k = 0; k < renderLength; k++)
-                {
-                    shape = (UIShape*)uiElements[i]->render(renderOrder, k);
-                    switch (shape->m_fillType)
-                    {
-                    case UIShapeFillType::NoFill:
-                        d2dContext->DrawRectangle(shape->m_rectangle, m_shapeColorBrushes[static_cast<int>(shape->m_color)].get(), 2.5f);
-                        break;
-                    case UIShapeFillType::Fill:
-                        d2dContext->FillRectangle(shape->m_rectangle, m_shapeColorBrushes[static_cast<int>(shape->m_color)].get());
-                        break;
-                    }
-                }
+                for (int k = 0; k < renderLength; k++) renderShape((UIShape*)uiElements[i]->render(renderOrder, k));
             }
         }
     }
-    
+
+    //After all shapes and element text has been rendered, render any overlay text. This is typically
+    //reserved for things like the title of a page.
+    for (int i = 0; i < uiElements.size(); i++)
+    {
+        int renderLength = uiElements[i]->getRenderVectorSize(RenderOrder::TextOverlay);
+        for (int j = 0; j < renderLength; j++) renderText((UIText*)uiElements[i]->render(RenderOrder::TextOverlay, j));
+    }
+}
+
+void UIElementRenderer::renderShape(const UIShape* shape)
+{
+    //This mehod renders the given shape.
+
+    //TODO: For now the only shapes I'm dealing with are rectangles. If I end up using
+    //any of the other Direct2D shapes like ellipse or triangle then I'll need to update
+    //this method
+    auto d2dContext = m_deviceResources->GetD2DDeviceContext();
+
+    switch (shape->m_fillType)
+    {
+    case UIShapeFillType::NoFill:
+        d2dContext->DrawRectangle(shape->m_rectangle, m_shapeColorBrushes[static_cast<int>(shape->m_color)].get(), 2.5f);
+        break;
+    case UIShapeFillType::Fill:
+        d2dContext->FillRectangle(shape->m_rectangle, m_shapeColorBrushes[static_cast<int>(shape->m_color)].get());
+        break;
+    }
+}
+
+void UIElementRenderer::renderText(const UIText* text)
+{
+    auto dwriteFactory = m_deviceResources->GetDWriteFactory();
+    auto d2dContext = m_deviceResources->GetD2DDeviceContext();
+    m_textLayout = nullptr; //erase whatever settings were put into the layout previously
+
+    //A new text layout is created every time text is rendered
+    winrt::check_hresult(
+        dwriteFactory->CreateTextLayout(
+            &text->message[0],
+            text->message.size(),
+            m_textFormats[static_cast<int>(text->justification)].get(),
+            text->renderArea.x,
+            text->renderArea.y,
+            m_textLayout.put()
+        )
+    );
+
+    //After creating the text layout, update colors and font size as necessary
+    unsigned int currentLocation = 0;
+    for (int i = 0; i < text->colors.size(); i++)
+    {
+        m_textLayout->SetDrawingEffect(m_textColorBrushes[static_cast<int>(text->colors[i])].get(), { currentLocation,
+            (unsigned int)text->colorLocations[i + 1] });
+
+        currentLocation += (unsigned int)text->colorLocations[i + 1];
+    }
+    m_textLayout->SetFontSize(text->fontSize, { 0, (unsigned int)text->message.length() });
+
+    d2dContext->DrawTextLayout(
+        Point2F(text->startLocation.x, text->startLocation.y),
+        m_textLayout.get(),
+        m_defaultBrush.get(),
+        D2D1_DRAW_TEXT_OPTIONS_CLIP //clip any text not inside the target rectangle
+    );
 }

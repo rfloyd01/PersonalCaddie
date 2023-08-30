@@ -6,6 +6,10 @@
 #include "Input/InputProcessor.h"
 #include <string>
 
+//UI Elements, find a better include solution at some point
+#include "Graphics/Objects/2D/TextBoxes/StaticTextBox.h"
+#include "Graphics/Objects/2D/TextBoxes/TextOverlay.h"
+
 //Classes, structs and enums that are helpful for this class
 enum class ModeType
 {

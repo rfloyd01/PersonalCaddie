@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "DeviceDiscoveryMode.h"
 #include "Graphics/Objects/2D/Button.h"
-#include "Graphics/Objects/2D/TextBoxes/StaticTextBox.h"
+
 
 DeviceDiscoveryMode::DeviceDiscoveryMode()
 {
@@ -18,7 +18,6 @@ uint32_t DeviceDiscoveryMode::initializeMode(winrt::Windows::Foundation::Size wi
 {
 	//Create a new map for storing all of the text for this mode
 	initializeModeText();
-	initializeSettingsModeText();
 
 	//Create a button towards the top middle portion of the screen
 	DirectX::XMFLOAT2 buttonLocation = { 0.4, 0.25 };
@@ -27,6 +26,8 @@ uint32_t DeviceDiscoveryMode::initializeMode(winrt::Windows::Foundation::Size wi
 	
 	StaticTextBox stb({ 0.5, 0.575 }, { 0.85, 0.5 }, L"Start the device watcher to being enumerating nearby BluetoothLE devices...", windowSize);
 	m_uiElements.push_back(std::make_shared<StaticTextBox>(stb));
+
+	initializeTextOverlay(windowSize);
 
 	//When this mode is initialzed we go into a state of CanTransfer and Active.
 	//Can Transfer allows us to use the esc. key to go back to the settings menu
@@ -43,39 +44,17 @@ void DeviceDiscoveryMode::uninitializeMode()
 	m_menuObjects.clear();
 }
 
-void DeviceDiscoveryMode::initializeSettingsModeText()
+void DeviceDiscoveryMode::initializeTextOverlay(winrt::Windows::Foundation::Size windowSize)
 {
 	//Title information
-	int index = static_cast<int>(TextType::TITLE);
-	std::wstring titleText = L"Device Discovery";
-	m_modeText->at(index).message = titleText;
-	m_modeText->at(index).colors.push_back({ 1, 1, 1, 1 });
-	m_modeText->at(index).locations.push_back(titleText.size());
-
-	////Subtitle Information
-	//index = static_cast<int>(TextType::SUB_TITLE);
-	//std::wstring subtitleText = L"(Select from one of the options below.)";
-	//m_modeText->at(index).message = subtitleText;
-	//m_modeText->at(index).colors.push_back({ 1, 1, 1, 1 });
-	//m_modeText->at(index).locations.push_back(subtitleText.size());
-
-	////Body Information
-	//index = static_cast<int>(TextType::BODY);
-	//std::wstring bodyText1 = L"1. Connect to a Personal Caddie \n";
-	//std::wstring bodyText2 = L"2. Disconnect from Personal Caddie \n";
-	//m_modeText->at(index).message = bodyText1 + bodyText2;
-	//m_modeText->at(index).colors.push_back({ 0, 0, 0, 1.0 });
-	//m_modeText->at(index).colors.push_back({ 0.2, 0.2, 0.2, 1 });
-	//m_modeText->at(index).locations.push_back(bodyText1.size());
-	//m_modeText->at(index).locations.push_back(bodyText2.size());
+	std::wstring message = L"Device Discovery";
+	TextOverlay title(message, { UITextColor::White }, { 0,  (unsigned int)message.length() }, UITextType::TITLE, windowSize);
+	m_uiElements.push_back(std::make_shared<TextOverlay>(title));
 
 	//Footnote information
-	index = static_cast<int>(TextType::FOOT_NOTE);
-	std::wstring footnoteText = L"Press Esc. to return to settings menu.";
-	m_modeText->at(index).message = footnoteText;
-	m_modeText->at(index).colors.push_back({ 1, 1, 1, 1 });
-	m_modeText->at(index).locations.push_back(footnoteText.size());
-
+	message = L"Press Esc. to return to settings menu.";
+	TextOverlay footNote(message, { UITextColor::Black }, { 0,  (unsigned int)message.length() }, UITextType::FOOT_NOTE, windowSize);
+	m_uiElements.push_back(std::make_shared<TextOverlay>(footNote));
 }
 
 void DeviceDiscoveryMode::enterActiveState(int state)
