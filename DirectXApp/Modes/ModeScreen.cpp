@@ -118,7 +118,7 @@ void ModeScreen::processKeyboardInput(winrt::Windows::System::VirtualKey pressed
 			{
 				//This should take us to the free swing menu but this hasn't been implemented yet
 				//so display an alert for now
-				createAlert(L"This mode hasn't been implemented yet.", UITextColor::Red);
+				createAlert(L"This mode hasn't been implemented yet.", UIColor::Red);
 			}
 			else if (m_currentMode == ModeType::SETTINGS_MENU)
 			{
@@ -276,7 +276,7 @@ const float* ModeScreen::getBackgroundColor()
 	return m_modes[static_cast<int>(m_currentMode)]->getBackgroundColor();
 }
 
-void ModeScreen::createAlert(std::wstring message, UITextColor color)
+void ModeScreen::createAlert(std::wstring message, UIColor color)
 {
 	m_modes[static_cast<int>(m_currentMode)]->createAlert(message, color, m_renderer->getCurrentScreenSize());
 
@@ -299,13 +299,13 @@ void ModeScreen::PersonalCaddieHandler(PersonalCaddieEventType pcEvent, void* ev
 	case PersonalCaddieEventType::BLE_ALERT:
 	{
 		std::wstring alertText = *((std::wstring*)eventArgs); //cast the eventArgs into a wide string
-		createAlert(alertText, UITextColor::Blue);
+		createAlert(alertText, UIColor::Blue);
 		break;
 	}
 	case PersonalCaddieEventType::PC_ALERT:
 	{
 		std::wstring alertText = *((std::wstring*)eventArgs); //cast the eventArgs into a wide string
-		createAlert(alertText, UITextColor::Blue); //TODO: Make this alert yellow after creating that color
+		createAlert(alertText, UIColor::Yellow);
 		break;
 	}
 	case PersonalCaddieEventType::DEVICE_WATCHER_UPDATE:

@@ -2,19 +2,6 @@
 
 #include <string>
 
-//used to make and keep track of D2D1 brushes
-enum class UIShapeColor
-{
-	White = 0,
-	Red = 1,
-	Green = 2,
-	Blue = 3,
-	Black = 4,
-	UnpressedButton = 5,
-	PressedButton = 6,
-	END = 7
-};
-
 //used to select the correct D2D1 drawing method
 enum class UIShapeFillType
 {
@@ -34,7 +21,7 @@ enum class UIShapeType
 struct UIShape
 {
 	//constructor defaults to a rectangle shape
-	UIShape(D2D1_RECT_F const& rectangle, UIShapeColor color, UIShapeFillType fillType, UIShapeType shapeType = UIShapeType::RECTANGLE) :
+	UIShape(D2D1_RECT_F const& rectangle, UIColor color, UIShapeFillType fillType, UIShapeType shapeType = UIShapeType::RECTANGLE) :
 		m_rectangle(rectangle),
 		m_color(color),
 		m_fillType(fillType),
@@ -44,7 +31,7 @@ struct UIShape
 	}
 
 	D2D1_RECT_F m_rectangle;          //for now, all UIShapes are simply rectangles
-	UIShapeColor m_color; //holds the different colors of the text (in order)
+	UIColor m_color; //holds the different colors of the text (in order)
 	UIShapeFillType m_fillType; //holds the index of all characters where the text color switches. This vector must be 1 element longer than the colors vector
 	UIShapeType m_shapeType;
 };

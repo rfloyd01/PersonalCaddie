@@ -42,12 +42,12 @@ void DeviceDiscoveryMode::initializeTextOverlay(winrt::Windows::Foundation::Size
 {
 	//Title information
 	std::wstring message = L"Device Discovery";
-	TextOverlay title(message, { UITextColor::White }, { 0,  (unsigned int)message.length() }, UITextType::TITLE, windowSize);
+	TextOverlay title(message, { UIColor::White }, { 0,  (unsigned int)message.length() }, UITextType::TITLE, windowSize);
 	m_uiElements.push_back(std::make_shared<TextOverlay>(title));
 
 	//Footnote information
 	message = L"Press Esc. to return to settings menu.";
-	TextOverlay footNote(message, { UITextColor::White }, { 0,  (unsigned int)message.length() }, UITextType::FOOT_NOTE, windowSize);
+	TextOverlay footNote(message, { UIColor::White }, { 0,  (unsigned int)message.length() }, UITextType::FOOT_NOTE, windowSize);
 	m_uiElements.push_back(std::make_shared<TextOverlay>(footNote));
 }
 

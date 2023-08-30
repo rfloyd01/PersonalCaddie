@@ -30,12 +30,12 @@ void MainMenuMode::initializeTextOverlay(winrt::Windows::Foundation::Size window
 {
 	//Title information
 	std::wstring title_message = L"Personal Caddie v1.0";
-	TextOverlay title(title_message, { UITextColor::White }, { 0,  (unsigned int)title_message.length() }, UITextType::TITLE, windowSize);
+	TextOverlay title(title_message, { UIColor::White }, { 0,  (unsigned int)title_message.length() }, UITextType::TITLE, windowSize);
 	m_uiElements.push_back(std::make_shared<TextOverlay>(title));
 
 	//Sub-Title information
 	std::wstring subtitle_message = L"(Press one of the keys listed below to select a mode)";
-	TextOverlay subtitle(subtitle_message, { UITextColor::White }, { 0,  (unsigned int)subtitle_message.length() }, UITextType::SUB_TITLE, windowSize);
+	TextOverlay subtitle(subtitle_message, { UIColor::White }, { 0,  (unsigned int)subtitle_message.length() }, UITextType::SUB_TITLE, windowSize);
 	m_uiElements.push_back(std::make_shared<TextOverlay>(subtitle));
 
 	//Body information
@@ -44,15 +44,9 @@ void MainMenuMode::initializeTextOverlay(winrt::Windows::Foundation::Size window
 	std::wstring body_message_3 = L"3. Training Mode \n";
 	std::wstring body_message_4 = L"4. Calibration Mode \n";
 	std::wstring body_message_5 = L"5. Sensor Settings \n";
-	/* The colors when I'm ready for them
-	m_modeText->at(index).colors.push_back({ 0.39, 0.592, 0.592, 1 });
-	m_modeText->at(index).colors.push_back({ 0.58, 0.93, 0.588, 1 });
-	m_modeText->at(index).colors.push_back({ 0.71, 0.541, 0.416, 1 });
-	m_modeText->at(index).colors.push_back({ 0.498, 0.498, 0.498, 1 });
-	m_modeText->at(index).colors.push_back({ 0.749, 0.749, 0.749, 1 });
-	*/
+	
 	TextOverlay body(body_message_1 + body_message_2 + body_message_3 + body_message_4 + body_message_5,
-		{ UITextColor::White, UITextColor::White, UITextColor::White, UITextColor::White, UITextColor::White }, //TODO: update colors after creating them
+		{ UIColor::FreeSwingMode, UIColor::SwingAnalysisMode, UIColor::TrainingMode, UIColor::CalibrationMode, UIColor::DarkGray },
 		{ 0,  (unsigned int)body_message_1.length(),  (unsigned int)body_message_2.length(),  (unsigned int)body_message_3.length(), (unsigned int)body_message_4.length(), (unsigned int)body_message_5.length() },
 		UITextType::BODY, windowSize);
 
@@ -60,7 +54,7 @@ void MainMenuMode::initializeTextOverlay(winrt::Windows::Foundation::Size window
 
 	//Footnote information
 	std::wstring footnote_message = L"Press Esc. to exit the program.";
-	TextOverlay footNote(footnote_message, { UITextColor::White }, { 0,  (unsigned int)footnote_message.length() }, UITextType::FOOT_NOTE, windowSize);
+	TextOverlay footNote(footnote_message, { UIColor::White }, { 0,  (unsigned int)footnote_message.length() }, UITextType::FOOT_NOTE, windowSize);
 	m_uiElements.push_back(std::make_shared<TextOverlay>(footNote));
 }
 

@@ -6,6 +6,8 @@
 #include "Interfaces/ITextBoxUI.h"
 #include "UIConstants.h"
 
+#include "Graphics/Utilities/UIElementColors.h"
+
 enum class UIElementState
 {
 	Idle,

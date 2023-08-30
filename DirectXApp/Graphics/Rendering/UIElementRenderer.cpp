@@ -11,72 +11,16 @@ UIElementRenderer::UIElementRenderer(_In_ std::shared_ptr<DX::DeviceResources> c
     auto dwriteFactory = m_deviceResources->GetDWriteFactory();
     auto d2dContext = m_deviceResources->GetD2DDeviceContext();
 
-    //Create solid color brushes for all shape and text colors defined in the
-    //UIShape and UIText classes
-    for (int i = 0; i < static_cast<int>(UITextColor::END); i++)
+    //Create solid color brushes for all colors in the UIColor map. The first loop is necessary 
+    //to create nullptrs for all possible colors. Since a map is used then there's no way to 
+    //iterate through it in the same order as the UIColor enum dictates.
+    for (int i = 0; i < static_cast<int>(UIColor::END); i++) m_solidColorBrushes.push_back(nullptr);
+    for (int i = 0; i < static_cast<int>(UIColor::END); i++)
     {
-        D2D1::ColorF color(1, 1, 1, 1);
-        switch (static_cast<UITextColor>(i))
-        {
-        case UITextColor::Black:
-            color = { 0, 0, 0, 1 };
-            break;
-        case UITextColor::Blue:
-            color = { 0, 0, 1, 1 };
-            break;
-        case UITextColor::Green:
-            color = { 0, 1, 0, 1 };
-            break;
-        case UITextColor::Red:
-            color = { 1, 0, 0, 1 };
-            break;
-        case UITextColor::White:
-            color = { 1, 1, 1, 1 };
-            break;
-        }
-
-        m_textColorBrushes.push_back(nullptr);
         winrt::check_hresult(
             d2dContext->CreateSolidColorBrush(
-                color,
-                m_textColorBrushes.back().put()
-            )
-        );
-    }
-    
-    for (int i = 0; i < static_cast<int>(UIShapeColor::END); i++)
-    {
-        D2D1::ColorF color(1, 1, 1, 1);
-        switch (static_cast<UIShapeColor>(i))
-        {
-        case UIShapeColor::Black:
-            color = { 0, 0, 0, 1 };
-            break;
-        case UIShapeColor::Blue:
-            color = { 0, 0, 1, 1 };
-            break;
-        case UIShapeColor::Green:
-            color = { 0, 1, 0, 1 };
-            break;
-        case UIShapeColor::Red:
-            color = { 1, 0, 0, 1 };
-            break;
-        case UIShapeColor::White:
-            color = { 1, 1, 1, 1 };
-            break;
-        case UIShapeColor::UnpressedButton:
-            color = { 0.9, 0.9, 0.9, 1 };
-            break;
-        case UIShapeColor::PressedButton:
-            color = { 0.33, 0.33, 0.33, 1 };
-            break;
-        }
-
-        m_shapeColorBrushes.push_back(nullptr);
-        winrt::check_hresult(
-            d2dContext->CreateSolidColorBrush(
-                color,
-                m_shapeColorBrushes.back().put()
+                m_colors.colors.at(static_cast<UIColor>(i)),
+                m_solidColorBrushes[i].put()
             )
         );
     }
@@ -223,10 +167,10 @@ void UIElementRenderer::renderShape(const UIShape* shape)
     switch (shape->m_fillType)
     {
     case UIShapeFillType::NoFill:
-        d2dContext->DrawRectangle(shape->m_rectangle, m_shapeColorBrushes[static_cast<int>(shape->m_color)].get(), 1.0f);
+        d2dContext->DrawRectangle(shape->m_rectangle, m_solidColorBrushes[static_cast<int>(shape->m_color)].get(), 1.0f);
         break;
     case UIShapeFillType::Fill:
-        d2dContext->FillRectangle(shape->m_rectangle, m_shapeColorBrushes[static_cast<int>(shape->m_color)].get());
+        d2dContext->FillRectangle(shape->m_rectangle, m_solidColorBrushes[static_cast<int>(shape->m_color)].get());
         break;
     }
 }
@@ -253,7 +197,7 @@ void UIElementRenderer::renderText(const UIText* text)
     unsigned int currentLocation = 0;
     for (int i = 0; i < text->colors.size(); i++)
     {
-        m_textLayout->SetDrawingEffect(m_textColorBrushes[static_cast<int>(text->colors[i])].get(), { currentLocation,
+        m_textLayout->SetDrawingEffect(m_solidColorBrushes[static_cast<int>(text->colors[i])].get(), { currentLocation,
             (unsigned int)text->colorLocations[i + 1] });
 
         currentLocation += (unsigned int)text->colorLocations[i + 1];

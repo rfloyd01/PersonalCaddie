@@ -155,6 +155,7 @@
     <ClInclude Include="Graphics\Rendering\UIElementRenderer.h" />
     <ClInclude Include="Graphics\Utilities\DeviceResources.h" />
     <ClInclude Include="Graphics\Utilities\GraphicsHelpers.h" />
+    <ClInclude Include="Graphics\Utilities\UIElementColors.h" />
     <ClInclude Include="Input\InputProcessor.h" />
     <ClInclude Include="Main.h" />
     <ClInclude Include="Math\glm.h" />
@@ -210,6 +211,7 @@
     <ClCompile Include="Graphics\Rendering\MasterRenderer.cpp" />
     <ClCompile Include="Graphics\Rendering\UIElementRenderer.cpp" />
     <ClCompile Include="Graphics\Utilities\DeviceResources.cpp" />
+    <ClCompile Include="Graphics\Utilities\UIElementColors.cpp" />
     <ClCompile Include="Input\InputProcessor.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Math\quaternion_functions.cpp" />

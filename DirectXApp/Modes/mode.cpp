@@ -6,7 +6,7 @@ const float* Mode::getBackgroundColor()
 	return m_backgroundColor;
 }
 
-void Mode::createAlert(std::wstring message, UITextColor color, winrt::Windows::Foundation::Size windowSize)
+void Mode::createAlert(std::wstring message, UIColor color, winrt::Windows::Foundation::Size windowSize)
 {
 	//When creating a new alert, instead of overriding the current one we 
 	//add it onto the back. The TextOverylay class doesn't allow for updating
@@ -17,7 +17,7 @@ void Mode::createAlert(std::wstring message, UITextColor color, winrt::Windows::
 	if (existingAlert.message != L"")
 	{
 		//There was already an alert in place so add the new one on top of this one
-		std::vector<UITextColor> colors = existingAlert.colors;
+		std::vector<UIColor> colors = existingAlert.colors;
 		std::vector<unsigned long long> colorLocations = existingAlert.colorLocations;
 
 		colors.push_back(color);

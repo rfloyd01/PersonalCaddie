@@ -10,7 +10,7 @@ StaticTextBox::StaticTextBox(DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size,
 	//The StaticTextBox is the most basic of UI Elements. It's just a white rectangle that has
 	//black text overlayed on top of it. If there's too much text then it gets clipped at the
 	//bottom of the text box. The m_location variable points to the center of the rectangle.
-	UIShape background({ 0, 0, 0, 0 }, UIShapeColor::White, UIShapeFillType::Fill, UIShapeType::RECTANGLE);
+	UIShape background({ 0, 0, 0, 0 }, UIColor::White, UIShapeFillType::Fill, UIShapeType::RECTANGLE);
 	m_backgroundShapes.push_back(background);
 	addText(text);
 	resize(windowSize); //sets the appropriate sizes for both the rectangle and text
@@ -36,7 +36,7 @@ void StaticTextBox::addText(std::wstring text)
 	{
 		//This is the first time we're adding text, add in all elements that aren't dependent on the size of the screen
 		//and add the text to the text vector
-		UIText newText(text, 0, { 0, 0 }, { 0, 0 }, { UITextColor::Black }, { 0, text.length() }, UITextType::ELEMENT_TEXT);
+		UIText newText(text, 0, { 0, 0 }, { 0, 0 }, { UIColor::Black }, { 0, text.length() }, UITextType::ELEMENT_TEXT);
 		m_elementText.push_back(newText);
 	}
 	

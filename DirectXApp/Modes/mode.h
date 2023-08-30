@@ -48,7 +48,7 @@ public:
 	void addUIElement(T const& element) { m_uiElements.push_back(std::make_shared<T>(element)); }
 
 	//Alert Methods
-	void createAlert(std::wstring message, UITextColor color, winrt::Windows::Foundation::Size windowSize);
+	void createAlert(std::wstring message, UIColor color, winrt::Windows::Foundation::Size windowSize);
 	TextOverlay removeAlerts();
 
 	virtual uint32_t handleUIElementStateChange(int i) = 0;

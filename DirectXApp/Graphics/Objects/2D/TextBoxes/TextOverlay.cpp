@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "TextOverlay.h"
 
-TextOverlay::TextOverlay(std::wstring const& text, std::vector<UITextColor> const& colors, std::vector<unsigned long long> const& colorLocations, UITextType textType, winrt::Windows::Foundation::Size windowSize)
+TextOverlay::TextOverlay(std::wstring const& text, std::vector<UIColor> const& colors, std::vector<unsigned long long> const& colorLocations, UITextType textType, winrt::Windows::Foundation::Size windowSize)
 {
 	//Unlike other text boxes, the TextOverlay box doesn't feature any UI Elements other than pure text. Since there's only text,
 	//we just instantiate this class directly with a text. There are a few different classes of overlay text, so depending on the
@@ -66,7 +66,7 @@ TextOverlay::TextOverlay(std::wstring const& text, std::vector<UITextColor> cons
 	m_state = UIElementState::Idle; //The state of the text overlay will always be idle
 }
 
-TextOverlay::TextOverlay(std::wstring const& text, std::vector<UITextColor> const& colors, std::vector<unsigned long long> const& colorLocations,
+TextOverlay::TextOverlay(std::wstring const& text, std::vector<UIColor> const& colors, std::vector<unsigned long long> const& colorLocations,
 	DirectX::XMFLOAT2 start, DirectX::XMFLOAT2 size, float fontSize, UITextType type, UITextJustification justification)
 {
 	//This constructor is used when creating a new text overlay out of an existing one. In this case, the dimensions are already known

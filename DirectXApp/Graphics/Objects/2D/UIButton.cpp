@@ -16,15 +16,15 @@ UIButton::UIButton(DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, winrt::Wi
 	//Create the shapes and add them to the backgroundshapes vector, just use generic coordinates
 	//for the rectangles as they will get overriden by the resize() methhod. The render order for
 	//the button is shadow, fill and then the outline
-	m_backgroundShapes.push_back({ {1, 1, 1, 1}, UIShapeColor::Black, UIShapeFillType::NoFill });
-	m_backgroundShapes.push_back({ {1, 1, 1, 1}, UIShapeColor::UnpressedButton, UIShapeFillType::Fill });
-	m_backgroundShapes.push_back({ {1, 1, 1, 1}, UIShapeColor::Black, UIShapeFillType::NoFill });
+	m_backgroundShapes.push_back({ {1, 1, 1, 1}, UIColor::Black, UIShapeFillType::NoFill });
+	m_backgroundShapes.push_back({ {1, 1, 1, 1}, UIColor::ButtonNotPressed, UIShapeFillType::Fill });
+	m_backgroundShapes.push_back({ {1, 1, 1, 1}, UIColor::Black, UIShapeFillType::NoFill });
 
 	//Also add text if it's present
 	if (text != L"")
 	{
 		//any variables dependent on windowSize will get updated in the resize() method
-		UIText buttonText(text, 1, { 1, 1 }, { 1, 1 }, { UITextColor::Black }, { 0, (unsigned int)text.length() },
+		UIText buttonText(text, 1, { 1, 1 }, { 1, 1 }, { UIColor::Black }, { 0, (unsigned int)text.length() },
 			UITextType::ELEMENT_TEXT, UITextJustification::CenterCenter);
 		m_elementText.push_back(buttonText);
 	}
@@ -102,7 +102,7 @@ void UIButton::updateButtonText(std::wstring text)
 		DirectX::XMFLOAT2 renderArea = { button_fill->m_rectangle.right - button_fill->m_rectangle.left , button_fill->m_rectangle.bottom - button_fill->m_rectangle.top };
 		float font_size = m_fontSize * renderArea.y;
 
-		UIText buttonText(text, font_size, startLocation, renderArea, { UITextColor::Black }, { 0, (unsigned int)text.length() },
+		UIText buttonText(text, font_size, startLocation, renderArea, { UIColor::Black }, { 0, (unsigned int)text.length() },
 			UITextType::ELEMENT_TEXT, UITextJustification::CenterCenter);
 		m_elementText.push_back(buttonText);
 	}
@@ -152,7 +152,7 @@ void UIButton::onClick()
 void UIButton::setState(UIElementState state)
 {
 	//When changing the state of the button, we also change its background color
-	if (state == UIElementState::Idle) m_backgroundShapes[1].m_color = UIShapeColor::UnpressedButton;
-	else if (state == UIElementState::Clicked) m_backgroundShapes[1].m_color = UIShapeColor::PressedButton;
+	if (state == UIElementState::Idle) m_backgroundShapes[1].m_color = UIColor::ButtonNotPressed;
+	else if (state == UIElementState::Clicked) m_backgroundShapes[1].m_color = UIColor::ButtonPressed;
 	m_state = state;
 }

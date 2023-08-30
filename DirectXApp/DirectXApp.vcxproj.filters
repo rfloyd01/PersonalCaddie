@@ -79,6 +79,9 @@
     <ClCompile Include="Graphics\Objects\2D\UIButton.cpp">
       <Filter>Graphics\Objects\2D</Filter>
     </ClCompile>
+    <ClCompile Include="Graphics\Utilities\UIElementColors.cpp">
+      <Filter>Graphics\Utilities</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -183,6 +186,9 @@
     </ClInclude>
     <ClInclude Include="Graphics\Objects\2D\UIElements.h">
       <Filter>Graphics\Objects\2D</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Utilities\UIElementColors.h">
+      <Filter>Graphics\Utilities</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -76,10 +76,3 @@ namespace UIConstants
     static const float FootNoteRectangleY0 = SensorInfoRectangleY0;
     static const float FootNoteRectangleY1 = 1.0 - HeightMargin;
 };
-
-namespace AlertColors
-{
-    static const float alertRed[4] = { 1.0, 0.0, 0.0, 1.0 };
-    static const float alertLightBlue[4] = { 0.6, 0.85, 0.92, 1 };
-    static const float alertYellow[4] = { 1.0, 0.788, 0.055, 1.0 };
-};

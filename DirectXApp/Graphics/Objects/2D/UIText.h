@@ -16,17 +16,6 @@ enum class UITextType
 	END = 7  //Used to mark the end of the enum class for potentially looping through
 };
 
-//used to make and keep track of D2D1 brushes
-enum class UITextColor
-{
-	White = 0,
-	Red = 1,
-	Green = 2,
-	Blue = 3,
-	Black = 4,
-	END = 5
-};
-
 //An enum describing the location inside of a UI element that text should be rendered
 enum class UITextJustification
 {
@@ -46,7 +35,7 @@ enum class UITextJustification
 struct UIText
 {
 	UIText(std::wstring const& message, float fontSize, DirectX::XMFLOAT2 startLocation, DirectX::XMFLOAT2 renderArea,
-		std::vector<UITextColor> const& colors, std::vector<unsigned long long> const & colorLocations, UITextType textType,
+		std::vector<UIColor> const& colors, std::vector<unsigned long long> const & colorLocations, UITextType textType,
 		UITextJustification justification = UITextJustification::UpperLeft) :
 		message(message),
 		fontSize(fontSize),
@@ -64,7 +53,7 @@ struct UIText
 	DirectX::XMFLOAT2 startLocation; //the top left corner of the rendering box for the text (the size of the render box is calculated elsewhere)
 	DirectX::XMFLOAT2 renderArea; //the size of the rendering area for the text
 	float fontSize;
-	std::vector<UITextColor> colors; //holds the different colors of the text (in order)
+	std::vector<UIColor> colors; //holds the different colors of the text (in order)
 	std::vector<unsigned long long> colorLocations; //holds the index of all characters where the text color switches. This vector must be 1 element longer than the colors vector
 	UITextType  textType;
 	UITextJustification justification;
