@@ -1,7 +1,5 @@
 #pragma once
 
-#include "Graphics/Utilities/Text.h"
-#include "Graphics/Objects/2D/MenuObject.h"
 #include "Graphics/Objects/2D/UIElements.h"
 #include "Input/InputProcessor.h"
 #include <string>
@@ -44,7 +42,6 @@ public:
 
 	const float* getBackgroundColor();
 
-	//std::vector<std::shared_ptr<MenuObject> > const& getMenuObjects() { return m_menuObjects; }
 	std::vector<std::shared_ptr<UIElement> > const& getUIElements() { return m_uiElements; }
 
 	template <typename T>
@@ -56,19 +53,8 @@ public:
 
 	virtual uint32_t handleUIElementStateChange(int i) = 0;
 
-	//std::shared_ptr<std::vector<Text>> getModeText() { return m_modeText; }
-	/*void setModeText(Text const& text);*/
-
 protected:
-	//PROTECTED FUNCTIONS
-	//void initializeModeText();
-	//void clearModeText();
-
 	float m_backgroundColor[4]; //represents the background color when this mode is being rendered
 
-	//each mode owns all objects to be rendered on screen
-	//std::shared_ptr<std::vector<Text>>          m_modeText;
-
-	//std::vector<std::shared_ptr<MenuObject> >   m_menuObjects; //2d objects like Drop downs, combo boxes, buttons, etc
 	std::vector<std::shared_ptr<UIElement> >    m_uiElements; //2d objects like Drop downs, combo boxes, buttons and text
 };

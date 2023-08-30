@@ -58,21 +58,6 @@
     <ClCompile Include="Modes\DeviceDiscoveryMode.cpp">
       <Filter>Modes</Filter>
     </ClCompile>
-    <ClCompile Include="Graphics\Objects\2D\MenuObject.cpp">
-      <Filter>Graphics\Objects\2D</Filter>
-    </ClCompile>
-    <ClCompile Include="Graphics\Objects\2D\Button.cpp">
-      <Filter>Graphics\Objects\2D</Filter>
-    </ClCompile>
-    <ClCompile Include="Graphics\Rendering\MenuObjectRenderer.cpp">
-      <Filter>Graphics\Rendering</Filter>
-    </ClCompile>
-    <ClCompile Include="Graphics\Rendering\Direct2DRenderer.cpp">
-      <Filter>Graphics\Rendering</Filter>
-    </ClCompile>
-    <ClCompile Include="Graphics\Rendering\TextRenderer.cpp">
-      <Filter>Graphics\Rendering</Filter>
-    </ClCompile>
     <ClCompile Include="Graphics\Objects\2D\UIElement.cpp">
       <Filter>Graphics\Objects\2D</Filter>
     </ClCompile>
@@ -157,29 +142,11 @@
     <ClInclude Include="Modes\MainMenuMode.h">
       <Filter>Modes</Filter>
     </ClInclude>
-    <ClInclude Include="Graphics\Utilities\Text.h">
-      <Filter>Graphics\Utilities</Filter>
-    </ClInclude>
     <ClInclude Include="Modes\SettingsMenuMode.h">
       <Filter>Modes</Filter>
     </ClInclude>
     <ClInclude Include="Modes\DeviceDiscoveryMode.h">
       <Filter>Modes</Filter>
-    </ClInclude>
-    <ClInclude Include="Graphics\Objects\2D\MenuObject.h">
-      <Filter>Graphics\Objects\2D</Filter>
-    </ClInclude>
-    <ClInclude Include="Graphics\Objects\2D\Button.h">
-      <Filter>Graphics\Objects\2D</Filter>
-    </ClInclude>
-    <ClInclude Include="Graphics\Rendering\MenuObjectRenderer.h">
-      <Filter>Graphics\Rendering</Filter>
-    </ClInclude>
-    <ClInclude Include="Graphics\Rendering\Direct2DRenderer.h">
-      <Filter>Graphics\Rendering</Filter>
-    </ClInclude>
-    <ClInclude Include="Graphics\Rendering\TextRenderer.h">
-      <Filter>Graphics\Rendering</Filter>
     </ClInclude>
     <ClInclude Include="Graphics\Objects\2D\Interfaces\IScrollableUI.h">
       <Filter>Graphics\Objects\2D\Interfaces</Filter>

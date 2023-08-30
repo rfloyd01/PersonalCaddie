@@ -130,7 +130,6 @@ void ModeScreen::processKeyboardInput(winrt::Windows::System::VirtualKey pressed
 	case winrt::Windows::System::VirtualKey::Number5:
 		if (m_modeState & ModeState::CanTransfer)
 		{
-			
 			if (m_currentMode == ModeType::MAIN_MENU)
 			{
 				//If we're on the Main Menu screen then pressing the 5 key will take us to the
@@ -148,7 +147,6 @@ void ModeScreen::processMouseInput(DirectX::XMFLOAT2 mousePosition, bool mouseCl
 	//over any of them
 	for (int i = 0; i < m_modes[static_cast<int>(m_currentMode)]->getUIElements().size(); i++)
 	{
-		/*MenuObjectState objectState = m_modes[static_cast<int>(m_currentMode)]->getMenuObjects()[i]->update(mousePosition, mouseClick, m_renderer->getCurrentScreenSize());*/
 		UIElementState objectState = m_modes[static_cast<int>(m_currentMode)]->getUIElements()[i]->update(mousePosition, mouseClick);
 		switch (objectState)
 		{
@@ -156,7 +154,6 @@ void ModeScreen::processMouseInput(DirectX::XMFLOAT2 mousePosition, bool mouseCl
 		{
 			//The current UI Element has been clicked
 			uint32_t new_state = m_modes[static_cast<int>(m_currentMode)]->handleUIElementStateChange(i);
-			//m_renderer->updateMenuObjects(m_modes[static_cast<int>(m_currentMode)]->getMenuObjects());
 
 			//start a short timer that will change the color of the button from PRESSED to NOT_PRESSED
 			button_pressed = true;
@@ -190,8 +187,6 @@ void ModeScreen::processEvents()
 	case PersonalCaddieEventType::IMU_ALERT:
 		//An alert was passed through, this means the text vector of the current mode has been 
 		//altered. We need to pass this updated text to the master renderer
-		//auto alerts = getCurrentModeText()->at(static_cast<int>(TextType::ALERT)); //Get the current alerts
-		//m_renderer->editText(alerts);
 
 		alert_timer = std::chrono::steady_clock::now(); //set/reset the alert timer
 		alert_active = true;
@@ -262,18 +257,6 @@ void ModeScreen::changeCurrentMode(ModeType mt)
 	m_renderer->CreateModeResources();
 	
 }
-
-//std::shared_ptr<std::vector<Text> > ModeScreen::getCurrentModeText()
-//{
-//	//returns a reference to any text that needs to be rendered on screen
-//	return m_modes[static_cast<int>(m_currentMode)]->getModeText();
-//}
-//
-//std::vector<std::shared_ptr<MenuObject> > const& ModeScreen::getCurrentModeMenuObjects()
-//{
-//	//returns a reference to all UI elements to be rendered on screen
-//	return m_modes[static_cast<int>(m_currentMode)]->getMenuObjects();
-//}
 
 std::vector<std::shared_ptr<UIElement> > const& ModeScreen::getCurrentModeUIElements()
 {
@@ -347,52 +330,6 @@ void ModeScreen::PersonalCaddieHandler(PersonalCaddieEventType pcEvent, void* ev
 	}
 
 }
-
-//void ModeScreen::addCurrentModeText(Text const& text)
-//{
-//	//This method adds new text on top of existing text without deleting anything
-//	auto currentModeText = m_modes[static_cast<int>(m_currentMode)]->getModeText();
-//
-//	//Add the new text
-//	int index = static_cast<int>(text.textType);
-//	currentModeText->at(index).message += text.message;
-//
-//	//Then add the new colors and color rendering points
-//	for (int i = 0; i < text.colors.size(); i++)
-//	{
-//		currentModeText->at(index).colors.push_back(text.colors[i]);
-//		currentModeText->at(index).locations.push_back(text.locations[i + 1]);
-//		//*note - the locations vector is always 1 larger than the colors vector so the i + 1
-//		//in the above line is safe and intended
-//	}
-//
-//	//after adding new text let the master renderer know to render it
-//	m_renderer->editText(getCurrentModeText()->at(static_cast<int>(text.textType)));
-//}
-//
-//void ModeScreen::setCurrentModeText(Text const& text)
-//{
-//	//This method overwrites the current mode text with the text given
-//	auto currentModeText = m_modes[static_cast<int>(m_currentMode)]->getModeText();
-//	currentModeText->at(static_cast<int>(text.textType)) = text;
-//
-//	//after adding new text let the master renderer know to render it
-//	m_renderer->editText(getCurrentModeText()->at(static_cast<int>(text.textType)));
-//}
-
-//void ModeScreen::createModeScreenAlert(std::wstring alert)
-//{
-//	//this method is for creating alerts originating from this class. This method
-//	//only gets invoked on the main rendering thread so there's no issues with 
-//	//making direct calls to the master renderer. These alerts are red colored.
-//	Text newAlert(alert, { { 1.0, 0.0, 0.0, 1.0 } }, { 0, alert.size() }, TextType::ALERT);
-//	addCurrentModeText(newAlert);
-//	m_renderer->editText(getCurrentModeText()->at(static_cast<int>(TextType::ALERT)));
-//
-//	//Make sure to set/reset the alert timer
-//	alert_timer = std::chrono::steady_clock::now(); //set/reset the alert timer
-//	alert_active = true;
-//}
 
 void ModeScreen::enterActiveState()
 {

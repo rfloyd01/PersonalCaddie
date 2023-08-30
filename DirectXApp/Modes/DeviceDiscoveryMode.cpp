@@ -16,9 +16,6 @@ DeviceDiscoveryMode::DeviceDiscoveryMode()
 
 uint32_t DeviceDiscoveryMode::initializeMode(winrt::Windows::Foundation::Size windowSize)
 {
-	//Create a new map for storing all of the text for this mode
-	//initializeModeText();
-	
 	//Create UI Elements on the page
 	StaticTextBox stb({ 0.5, 0.575 }, { 0.85, 0.5 }, L"Start the device watcher to being enumerating nearby BluetoothLE devices...", windowSize);
 	UIButton butt({ 0.4, 0.25 }, { 0.12, 0.1 }, windowSize, L"Start Device Watcher");
@@ -37,9 +34,8 @@ void DeviceDiscoveryMode::uninitializeMode()
 {
 	//The only thing to do when leaving the main menu mode is to clear
 	//out all text in the text map and color map
-	//clearModeText();
-	/*for (int i = 0; i < m_menuObjects.size(); i++) m_menuObjects[i] = nullptr;
-	m_menuObjects.clear();*/
+	
+	//TODO: need to uninitialize UI Elements
 }
 
 void DeviceDiscoveryMode::initializeTextOverlay(winrt::Windows::Foundation::Size windowSize)

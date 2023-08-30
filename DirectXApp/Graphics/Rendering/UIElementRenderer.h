@@ -2,6 +2,7 @@
 
 #include "Graphics/Utilities/DeviceResources.h"
 #include "Graphics/Objects/2D/UIElement.h"
+#include "Modes/ModeScreen.h"
 
 #include <string>
 

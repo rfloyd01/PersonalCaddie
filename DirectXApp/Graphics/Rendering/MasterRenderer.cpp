@@ -10,7 +10,6 @@ MasterRenderer::MasterRenderer(std::shared_ptr<DX::DeviceResources> const& devic
     m_initialized(false),
     m_gameResourcesLoaded(false),
     m_levelResourcesLoaded(false),
-    m_2DRenderer(deviceResources),
     m_uiElementRenderer(deviceResources)
 {
     CreateDeviceDependentResources();
@@ -204,20 +203,4 @@ void MasterRenderer::Render()
     {
         winrt::check_hresult(hr);
     }
-}
-
-void MasterRenderer::editText(Text const& text)
-{
-    //just a pass through function to the text renderer
-    m_2DRenderer.UpdateText(text);
-}
-
-void MasterRenderer::updateMenuObjects(std::vector<std::shared_ptr<MenuObject> > const& objects)
-{
-    m_2DRenderer.updateMenuObjects(objects);
-}
-
-void MasterRenderer::deleteExistingMenuObjects()
-{
-    m_2DRenderer.delteExistingMenuObjects();
 }

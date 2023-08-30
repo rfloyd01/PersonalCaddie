@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Direct2DRenderer.h"
 #include "UIElementRenderer.h"
 #include "UIConstants.h"
 
@@ -48,11 +47,6 @@ public:
 
     winrt::Windows::Foundation::Size getCurrentScreenSize();
 
-    void editText(Text const& text);
-    void updateMenuObjects(std::vector<std::shared_ptr<MenuObject> > const& objects);
-
-    void deleteExistingMenuObjects();
-
 private:
     // Cached pointer to device resources.
     std::shared_ptr<DX::DeviceResources>        m_deviceResources;
@@ -60,7 +54,7 @@ private:
     bool                                        m_initialized;
     bool                                        m_gameResourcesLoaded;
     bool                                        m_levelResourcesLoaded;
-    Direct2DRenderer                            m_2DRenderer;
+
     UIElementRenderer                           m_uiElementRenderer;
 
     std::shared_ptr<ModeScreen>                 m_mode;
