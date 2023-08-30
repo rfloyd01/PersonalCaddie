@@ -2,6 +2,7 @@
 
 #include <string>
 
+enum class UIColor;
 
 enum class UITextType
 {

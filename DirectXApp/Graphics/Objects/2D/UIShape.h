@@ -17,6 +17,8 @@ enum class UIShapeType
 	END = 3
 };
 
+enum class UIColor;
+
 //This struct holds information about text to be rendered on the screen
 struct UIShape
 {
