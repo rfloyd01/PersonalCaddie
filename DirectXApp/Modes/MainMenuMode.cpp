@@ -46,7 +46,7 @@ void MainMenuMode::initializeTextOverlay(winrt::Windows::Foundation::Size window
 	std::wstring body_message_5 = L"5. Sensor Settings \n";
 	
 	TextOverlay body(body_message_1 + body_message_2 + body_message_3 + body_message_4 + body_message_5,
-		{ UIColor::FreeSwingMode, UIColor::SwingAnalysisMode, UIColor::TrainingMode, UIColor::CalibrationMode, UIColor::DarkGray },
+		{ UIColor::FreeSwingMode, UIColor::SwingAnalysisMode, UIColor::TrainingMode, UIColor::CalibrationMode, UIColor::PaleGray },
 		{ 0,  (unsigned int)body_message_1.length(),  (unsigned int)body_message_2.length(),  (unsigned int)body_message_3.length(), (unsigned int)body_message_4.length(), (unsigned int)body_message_5.length() },
 		UITextType::BODY, windowSize);
 
