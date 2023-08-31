@@ -18,7 +18,7 @@ StaticTextBox::StaticTextBox(DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size,
 	m_state = UIElementState::Idle; //the static text box will always have an idle state
 }
 
-void StaticTextBox::addText(std::wstring text)
+uint32_t StaticTextBox::addText(std::wstring text)
 {
 	//The text passed in get's converted into a Text class object and is added 
 	//to the end of the elementText vector. If any text is currently in the vector it
@@ -40,6 +40,7 @@ void StaticTextBox::addText(std::wstring text)
 		m_elementText.push_back(newText);
 	}
 	
+	return 0; //the text add worked, no need to update anything
 }
 
 void StaticTextBox::resize(winrt::Windows::Foundation::Size windowSize)

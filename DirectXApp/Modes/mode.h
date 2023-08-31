@@ -28,7 +28,8 @@ enum ModeState
 	Idle = 1,
 	Active = 2,
 	Recording = 4,
-	CanTransfer = 8
+	CanTransfer = 8,
+	NeedTextUpdate = 16
 };
 
 //Class definition

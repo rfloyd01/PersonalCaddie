@@ -15,8 +15,11 @@ uint32_t DeviceDiscoveryMode::initializeMode(winrt::Windows::Foundation::Size wi
 {
 	//Create UI Elements on the page
 	StaticTextBox stb({ 0.5, 0.575 }, { 0.85, 0.5 }, L"Start the device watcher to being enumerating nearby BluetoothLE devices...", windowSize);
+	ScrollingTextBox sctb({ 0.5, 0.5 }, { 0.5, 0.33 }, L"Start the device watcher to being enumerating nearby BluetoothLE devices...", m_backgroundColor, windowSize);
 	UIButton butt({ 0.4, 0.25 }, { 0.12, 0.1 }, windowSize, L"Start Device Watcher");
-	m_uiElements.push_back(std::make_shared<StaticTextBox>(stb));
+	
+	//m_uiElements.push_back(std::make_shared<StaticTextBox>(stb));
+	m_uiElements.push_back(std::make_shared<ScrollingTextBox>(sctb));
 	m_uiElements.push_back(std::make_shared<UIButton>(butt));
 
 	initializeTextOverlay(windowSize);

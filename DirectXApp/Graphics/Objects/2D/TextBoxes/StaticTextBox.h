@@ -13,7 +13,7 @@ public:
 
 	//Depending on the type of text box being created text will be
 	//added differently
-	virtual void addText(std::wstring text) override;
+	virtual uint32_t addText(std::wstring text) override;
 	virtual UIElementState update(InputState* inputState) override;
 
 protected:

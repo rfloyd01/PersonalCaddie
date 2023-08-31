@@ -13,7 +13,7 @@ public:
 	TextOverlay(std::wstring const& text, std::vector<UIColor> const& colors, std::vector<unsigned long long> const& colorLocations,
 		DirectX::XMFLOAT2 start, DirectX::XMFLOAT2 size, float fontSize, UITextType type, UITextJustification justification);
 
-	virtual void addText(std::wstring text) override;
+	virtual uint32_t addText(std::wstring text) override;
 	virtual UIElementState update(InputState* inputState) override;
 
 	UIText getText();

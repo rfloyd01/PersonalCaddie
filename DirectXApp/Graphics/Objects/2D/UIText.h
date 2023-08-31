@@ -64,5 +64,5 @@ struct UIText
 	//true will cause the modeScreen class to get the text layout height from the master renderer and store it
 	//int the renderingHeightDPI float. 
 	bool needDPIHeight = false;
-	float renderHeightDPI;
+	float renderHeightDPI = 0;
 };

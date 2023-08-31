@@ -80,12 +80,13 @@ TextOverlay::TextOverlay(std::wstring const& text, std::vector<UIColor> const& c
 	m_state = UIElementState::Idle; //The state of the text overlay will always be idle
 }
 
-void TextOverlay::addText(std::wstring text)
+uint32_t TextOverlay::addText(std::wstring text)
 {
 	//We can only overwrite the message of the current text, the font, colors, etc. are set
 	//in the constructor. With that said, only changing the text will make any text colors become
 	//messed up potentially, so the TextOverlay class is static. To update an instance of this
 	//class it must be deleted and a new one created.
+	return 0;
 }
 
 void TextOverlay::resize(winrt::Windows::Foundation::Size windowSize)

@@ -9,5 +9,5 @@
 
 struct ITextBoxUI
 {
-	virtual void addText(std::wstring text) = 0;
+	virtual uint32_t addText(std::wstring text) = 0;
 };

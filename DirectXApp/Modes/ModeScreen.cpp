@@ -69,6 +69,14 @@ void ModeScreen::update()
 
 	//after all input, events and timers have been handled defer to the current mode
 	//to update its state if necessary. This only occurs when in the Active ModeState
+	if (m_modeState & ModeState::NeedTextUpdate)
+	{
+		//some text in a ui element was changed so we need to recalculate the render height
+		//for the text (hits happens in elements like scroll boxes where the height can
+		//only be calculated in the renderer classes).
+		getTextRenderHeights(getCurrentModeUIElements());
+		m_modeState ^= ModeState::NeedTextUpdate; //remove the text update flag
+	}
 	if (m_modeState & ModeState::Active) m_modes[static_cast<int>(m_currentMode)]->update();
 }
 
@@ -364,9 +372,8 @@ void ModeScreen::PersonalCaddieHandler(PersonalCaddieEventType pcEvent, void* ev
 		//Update the text in the device discovery text box
 		if (m_currentMode == ModeType::DEVICE_DISCOVERY)
 		{
-			auto textBox = (StaticTextBox*)(getCurrentModeUIElements()[0].get());
-			textBox->addText(devices);
-			
+			auto textBox = (ScrollingTextBox*)(getCurrentModeUIElements()[0].get());
+			m_modeState |= textBox->addText(devices); //this new text will get resized in the main update loop
 		}
 		break;
 	}
