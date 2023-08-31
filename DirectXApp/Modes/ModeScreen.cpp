@@ -265,12 +265,39 @@ void ModeScreen::changeCurrentMode(ModeType mt)
 	//Switch to the new mode and initialize it
 	m_currentMode = mt;
 	m_modeState = m_modes[static_cast<int>(m_currentMode)]->initializeMode(m_renderer->getCurrentScreenSize());
+	
+	//See if any UI elements in the mode need to know their full render height (needed for items
+	//like scroll boxes).
+	getTextRenderHeights(getCurrentModeUIElements());
 
 	//After initializing, add any alerts that were copied over to the text and
 	//color maps and then create text and color resources in the renderer
 	if (currentAlerts.message != L"") createAlert(currentAlerts.message, currentAlerts.colors[0]); //TODO: this will make all alerts the same color, come back to this
 	m_renderer->CreateModeResources();
 	
+}
+
+void ModeScreen::getTextRenderHeights(std::vector<std::shared_ptr<UIElement>> const& uiElements)
+{
+	//iterate through all of the UI elements in the mode to see if any of them need the
+	//height in pixels for text layouts (this will happen for elements like scroll boxes).
+	for (int i = 0; i < uiElements.size(); i++)
+	{
+		if (uiElements[i]->needTextRenderHeight())
+		{
+			//This UI Element needs the height of a text layout. Get the text layout height for it,
+			//and any of its children. Of all the UI Element components, only elementText has this feature.
+			int elementTextComponents = uiElements[i]->getRenderVectorSize(RenderOrder::ElementText);
+			for (int j = 0; j < elementTextComponents; j++)
+			{
+				UIText* renderText = (UIText*)uiElements[i]->getRenderItem(RenderOrder::ElementText, j);
+				if (renderText->needDPIHeight) m_renderer->setTextLayoutHeight(renderText);
+			}
+
+			//Check any children UIElements as well, this is done recursively
+			getTextRenderHeights(uiElements[i]->getChildrenUIElements());
+		}
+	}
 }
 
 std::vector<std::shared_ptr<UIElement> > const& ModeScreen::getCurrentModeUIElements()
@@ -283,6 +310,7 @@ void ModeScreen::resizeCurrentModeUIElements(winrt::Windows::Foundation::Size wi
 {
 	auto uiElements = getCurrentModeUIElements();
 	for (int i = 0; i < uiElements.size(); i++) uiElements[i]->resize(windowSize);
+	getTextRenderHeights(uiElements);
 }
 
 const UIColor ModeScreen::getBackgroundColor()

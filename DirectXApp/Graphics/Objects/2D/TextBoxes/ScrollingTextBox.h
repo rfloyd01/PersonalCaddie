@@ -28,4 +28,5 @@ protected:
 	float m_fontSize;
 	float m_scrollIntensity, pixelsPerScroll; //how far will the text move with each scroll
 	DirectX::XMFLOAT2   m_textStart; //the absolute starting position for text. This value will change as we scroll up or down in the box
+	float               m_textCeiling; //the highest absolute location the text starting position can scroll to
 };

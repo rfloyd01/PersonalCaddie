@@ -119,6 +119,36 @@ void UIElementRenderer::createTextFormats()
     }
 }
 
+void UIElementRenderer::setTextLayoutHeight(UIText* text)
+{
+    //The passed in text element needs to know the full size of it's text layout. To figure this
+    //out simply create the text layout and call the GetMetrics() method on it.
+    auto dwriteFactory = m_deviceResources->GetDWriteFactory();
+    m_textLayout = nullptr; //erase whatever settings were put into the layout previously
+
+    //A new text layout is created every time text is rendered
+    winrt::check_hresult(
+        dwriteFactory->CreateTextLayout(
+            &text->message[0],
+            text->message.size(),
+            m_textFormats[static_cast<int>(text->justification)].get(),
+            text->renderArea.x,
+            text->renderArea.y,
+            m_textLayout.put()
+        )
+    );
+
+    //Make sure to update to the correct font size
+    m_textLayout->SetFontSize(text->fontSize, { 0, (unsigned int)text->message.length() });
+
+    DWRITE_TEXT_METRICS metrics;
+    //DWRITE_OVERHANG_METRICS oMetrics;
+    m_textLayout->GetMetrics(&metrics);
+    //m_textLayout->GetOverhangMetrics(&oMetrics);
+
+    text->renderHeightDPI = metrics.height;
+}
+
 void UIElementRenderer::render(std::vector<std::shared_ptr<UIElement> > const& uiElements)
 {
     //The input vector contains all of the UI Elements to be rendered from the current mode. The order in which 
@@ -136,12 +166,12 @@ void UIElementRenderer::render(std::vector<std::shared_ptr<UIElement> > const& u
             if (renderOrder == RenderOrder::ElementText)
             {
                 //This is one of the text sections so render text
-                for (int k = 0; k < renderLength; k++) renderText((UIText*)uiElements[i]->render(renderOrder, k));
+                for (int k = 0; k < renderLength; k++) renderText((UIText*)uiElements[i]->getRenderItem(renderOrder, k));
             }
             else if (renderOrder == RenderOrder::TextOverlay) continue; //the text overlay for all objects is rendered at the end
             else
             {
-                for (int k = 0; k < renderLength; k++) renderShape((UIShape*)uiElements[i]->render(renderOrder, k));
+                for (int k = 0; k < renderLength; k++) renderShape((UIShape*)uiElements[i]->getRenderItem(renderOrder, k));
             }
         }
 
@@ -155,7 +185,7 @@ void UIElementRenderer::render(std::vector<std::shared_ptr<UIElement> > const& u
     for (int i = 0; i < uiElements.size(); i++)
     {
         int renderLength = uiElements[i]->getRenderVectorSize(RenderOrder::TextOverlay);
-        for (int j = 0; j < renderLength; j++) renderText((UIText*)uiElements[i]->render(RenderOrder::TextOverlay, j));
+        for (int j = 0; j < renderLength; j++) renderText((UIText*)uiElements[i]->getRenderItem(RenderOrder::TextOverlay, j));
     }
 }
 

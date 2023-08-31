@@ -58,4 +58,11 @@ struct UIText
 	std::vector<unsigned long long> colorLocations; //holds the index of all characters where the text color switches. This vector must be 1 element longer than the colors vector
 	UITextType  textType;
 	UITextJustification justification;
+
+	//for some text (like in scroll boxes) we need to know the height of the textlayout in pixels to know when
+	//we've reached the bottom of the text. By daefulat the needDPIHeight bool is set to false. Setting it to
+	//true will cause the modeScreen class to get the text layout height from the master renderer and store it
+	//int the renderingHeightDPI float. 
+	bool needDPIHeight = false;
+	float renderHeightDPI;
 };

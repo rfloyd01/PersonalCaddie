@@ -91,6 +91,11 @@ void MasterRenderer::ReleaseDeviceDependentResources()
     //m_2DRenderer.ReleaseDeviceDependentResources();
 }
 
+void MasterRenderer::setTextLayoutHeight(UIText* text)
+{
+    m_uiElementRenderer.setTextLayoutHeight(text);
+}
+
 void MasterRenderer::Render()
 {
     auto d3dContext{ m_deviceResources->GetD3DDeviceContext() };

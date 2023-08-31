@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "UIElement.h"
 
-void* UIElement::render(RenderOrder render, int element)
+void* UIElement::getRenderItem(RenderOrder render, int element)
 {
 	//The UIElement renderer will call this method once for each of the different
 	//vectors of text and shapes that need to be rendered. Rendering must be done

@@ -36,7 +36,7 @@ public:
 	~UIElement() {}
 
 	int getRenderVectorSize(RenderOrder render);
-	void* render(RenderOrder render, int element);
+	void* getRenderItem(RenderOrder render, int element);
 
 	UIElementState getState() { return m_state; }
 	virtual void setState(UIElementState state) { m_state = state; } //need the ability to manually set the element state from outside the class
@@ -54,6 +54,8 @@ public:
 	std::vector<std::shared_ptr<UIElement> > const& getChildrenUIElements() { return p_children; }
 
 	bool isAlert();
+	bool needTextRenderHeight() { return m_needTextRenderHeight; }
+
 protected:
 	DirectX::XMFLOAT2                        m_location; //location of the center of the element
 	DirectX::XMFLOAT2                        m_size; //size of the ui element
@@ -67,4 +69,6 @@ protected:
 	std::vector<UIShape>                     m_foregroundShapesNoOverlap;
 	std::vector<UIShape>                     m_foregroundShapesCanOverlap;
 	std::vector<UIText>                      m_textOverlay;
+
+	bool                                     m_needTextRenderHeight = false; //lets the current mode know if we need the full height for any elementText items in pixels
 };

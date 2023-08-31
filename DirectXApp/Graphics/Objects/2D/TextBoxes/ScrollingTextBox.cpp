@@ -15,7 +15,7 @@ ScrollingTextBox::ScrollingTextBox(DirectX::XMFLOAT2 location, DirectX::XMFLOAT2
 	m_size = size;
 	m_fontSize = 0.1 * size.y; //set the font height of the text box to be 1/10 the height of the text box
 	m_textStart = { location.x - size.x / (float)2.0, location.y - size.y / (float)2.0, }; //the text always starts in the top left of the text box, only scrolling will change this
-	m_scrollIntensity = 0.01;
+	m_scrollIntensity = 0.02;
 
 	UIShape background({ 0, 0, 0, 0 }, UIColor::White, UIShapeFillType::Fill, UIShapeType::RECTANGLE); //The white background for the text
 	UIShape outline({ 0, 0, 0, 0 }, UIColor::Black, UIShapeFillType::NoFill, UIShapeType::RECTANGLE); //Outline for the text box
@@ -50,6 +50,12 @@ ScrollingTextBox::ScrollingTextBox(DirectX::XMFLOAT2 location, DirectX::XMFLOAT2
 
 	addText(text);
 	resize(windowSize); //sets the appropriate sizes for both the rectangle and text
+
+	//In order to lock the bottom of the scrolling text to the bottome of the text box, we need to know
+	//the height of the text layout. Set the appropriate booleans to true in both this class and
+	//the element text in order to update this height when the window gets resized.
+	m_needTextRenderHeight = true;
+	m_elementText[0].needDPIHeight = true;
 
 	m_state = UIElementState::Idle; //the static text box will always have an idle state
 }
@@ -148,10 +154,30 @@ void ScrollingTextBox::onHover()
 
 void ScrollingTextBox::onScrollUp()
 {
-	//TESTING: simply raise the starting location of the text in the text box
-	m_textStart.y -= m_scrollIntensity;
-	m_elementText[0].startLocation.y = m_elementText[0].startLocation.y - pixelsPerScroll;
-	m_elementText[0].renderArea = { m_elementText[0].renderArea.x, m_elementText[0].renderArea.y + pixelsPerScroll }; //bottom of text rendering area is glued to the bottom of the text box
+	//Scrolling up causes the starting point for the text to move upwards and out of the text box.
+	//We can only scroll up until the bottom of the text rendering rectangle reaches the same height
+	//as the bottom of the text box. To check this, the full height of the text rendering rectangle 
+	//is calculated when the scroll box is first created (and every time the window gets resized). The
+	//calculation for this height happens outside of this class.
+	if (m_elementText[0].renderArea.y + pixelsPerScroll > m_elementText[0].renderHeightDPI)
+	{
+		m_elementText[0].renderArea.y = m_elementText[0].renderHeightDPI;
+		m_elementText[0].startLocation.y = m_backgroundShapes[0].m_rectangle.bottom - m_elementText[0].renderHeightDPI;
+
+		//We need to calculate the absolute height for the text start (in terms of a ratio of the
+		//current window size). To do this, we calculate the window height by looking at the ratio
+		//of the current text box height vs. it's window height ratio.
+		float currentWindowHeight = (m_backgroundShapes[0].m_rectangle.bottom - m_backgroundShapes[0].m_rectangle.top) / m_size.y;
+
+		m_textStart.y = m_elementText[0].startLocation.y / currentWindowHeight; //need to calculate this exact number
+	}
+	else
+	{
+		m_textStart.y -= m_scrollIntensity;
+		m_elementText[0].startLocation.y = m_elementText[0].startLocation.y - pixelsPerScroll;
+		m_elementText[0].renderArea.y = m_elementText[0].renderArea.y + pixelsPerScroll; //bottom of text rendering area is glued to the bottom of the text box
+	}
+
 }
 
 void ScrollingTextBox::onScrollDown()
@@ -161,11 +187,12 @@ void ScrollingTextBox::onScrollDown()
 	{
 		m_textStart.y = m_location.y - m_size.y / (float)2.0;
 		m_elementText[0].startLocation.y = m_backgroundShapes[0].m_rectangle.top;
+		m_elementText[0].renderArea.y = m_backgroundShapes[0].m_rectangle.bottom - m_backgroundShapes[0].m_rectangle.top;
 	}
 	else
 	{
 		m_textStart.y += m_scrollIntensity;
 		m_elementText[0].startLocation.y = m_elementText[0].startLocation.y + pixelsPerScroll;
-		m_elementText[0].renderArea = { m_elementText[0].renderArea.x, m_elementText[0].renderArea.x - pixelsPerScroll }; //bottom of text rendering area is glued to the bottom of the text box
+		m_elementText[0].renderArea.y = m_elementText[0].renderArea.y - pixelsPerScroll; //bottom of text rendering area is glued to the bottom of the text box
 	}
 }
