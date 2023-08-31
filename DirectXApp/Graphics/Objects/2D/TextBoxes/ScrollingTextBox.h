@@ -9,7 +9,7 @@
 class ScrollingTextBox : public UIElement, ITextBoxUI, IScrollableUI
 {
 public:
-	ScrollingTextBox(DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, std::wstring text, winrt::Windows::Foundation::Size windowSize);
+	ScrollingTextBox(DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, std::wstring text, UIColor backgroundColor, winrt::Windows::Foundation::Size windowSize);
 
 	//Depending on the type of text box being created text will be
 	//added differently

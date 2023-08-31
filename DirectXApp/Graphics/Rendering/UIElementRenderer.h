@@ -15,6 +15,8 @@ public:
 
     void render(std::vector<std::shared_ptr<UIElement> > const& uiElements);
 
+    D2D1::ColorF getClearColor(UIColor backgroundColor);
+
 private:
     void createTextFormats();
 

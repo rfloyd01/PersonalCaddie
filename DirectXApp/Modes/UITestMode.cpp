@@ -5,10 +5,7 @@
 UITestMode::UITestMode()
 {
 	//set a very light gray background color for the mode
-	m_backgroundColor[0] = 0.002;
-	m_backgroundColor[1] = 0.894;
-	m_backgroundColor[2] = 0.655;
-	m_backgroundColor[3] = 1.0;
+	m_backgroundColor = UIColor::LightBlue;
 }
 
 uint32_t UITestMode::initializeMode(winrt::Windows::Foundation::Size windowSize)
@@ -18,7 +15,7 @@ uint32_t UITestMode::initializeMode(winrt::Windows::Foundation::Size windowSize)
 
 	//CURRENT TEST: Create a working Scroll Box
 	//ScrollingTextBox(DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, std::wstring text, winrt::Windows::Foundation::Size windowSize);
-	ScrollingTextBox scTB({ 0.5, 0.5 }, { 0.5, 0.33 }, L"My first scroll box!!", windowSize);
+	ScrollingTextBox scTB({ 0.5, 0.5 }, { 0.5, 0.33 }, L"My first scroll box!!", m_backgroundColor, windowSize);
 	m_uiElements.push_back(std::make_shared<ScrollingTextBox>(scTB));
 
 	//When this mode is initialzed we go into a state of CanTransfer and Active.

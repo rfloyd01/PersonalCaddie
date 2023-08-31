@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "mode.h"
 
-const float* Mode::getBackgroundColor()
+const UIColor Mode::getBackgroundColor()
 {
 	return m_backgroundColor;
 }

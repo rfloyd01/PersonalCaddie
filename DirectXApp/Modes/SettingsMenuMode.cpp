@@ -4,10 +4,7 @@
 SettingsMenuMode::SettingsMenuMode()
 {
 	//set a gray background color for the mode
-	m_backgroundColor[0] = 0.5;
-	m_backgroundColor[1] = 0.5;
-	m_backgroundColor[2] = 0.5;
-	m_backgroundColor[3] = 1.0;
+	m_backgroundColor = UIColor::Gray;
 }
 
 uint32_t SettingsMenuMode::initializeMode(winrt::Windows::Foundation::Size windowSize)

@@ -6,10 +6,7 @@
 DeviceDiscoveryMode::DeviceDiscoveryMode()
 {
 	//set a light gray background color for the mode
-	m_backgroundColor[0] = 0.75;
-	m_backgroundColor[1] = 0.75;
-	m_backgroundColor[2] = 0.75;
-	m_backgroundColor[3] = 1.0;
+	m_backgroundColor = UIColor::PaleGray;
 
 	m_state = DeviceDiscoveryState::IDLE;
 }

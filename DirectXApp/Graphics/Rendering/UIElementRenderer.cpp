@@ -215,3 +215,8 @@ void UIElementRenderer::renderText(const UIText* text)
         D2D1_DRAW_TEXT_OPTIONS_CLIP //clip any text not inside the target rectangle
     );
 }
+
+D2D1::ColorF UIElementRenderer::getClearColor(UIColor backgroundColor)
+{
+    return m_colors.colors.at(backgroundColor);
+}

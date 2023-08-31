@@ -36,7 +36,7 @@ public:
 
 	void update();
 
-	const float* getBackgroundColor();
+	const UIColor getBackgroundColor();
 
 	//Handler Methods
 	void PersonalCaddieHandler(PersonalCaddieEventType pcEvent, void* eventArgs);

@@ -2,7 +2,7 @@
 #include "ScrollingTextBox.h"
 #include "../UIButton.h"
 
-ScrollingTextBox::ScrollingTextBox(DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, std::wstring text, winrt::Windows::Foundation::Size windowSize)
+ScrollingTextBox::ScrollingTextBox(DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, std::wstring text, UIColor backgroundColor, winrt::Windows::Foundation::Size windowSize)
 {
 	//This is a compound UIElement, featuring two child buttons. There's also a number of 
 	//UI shapes, including a white rectangle (and a border for it) where text is rendered,
@@ -22,6 +22,14 @@ ScrollingTextBox::ScrollingTextBox(DirectX::XMFLOAT2 location, DirectX::XMFLOAT2
 
 	m_backgroundShapes.push_back(background);
 	m_backgroundShapes.push_back(outline);
+
+	//TODO: Add the scrolling rectangle
+
+	//One of the most important elements of the scroll box is a foreground object that's the same color as the 
+	//background of the current page. This goes on top of the text box, so any text that scrolls up and out of 
+	//the box will be covered up by this box
+	UIShape cover({ 0, 0, 0, 0 }, backgroundColor, UIShapeFillType::Fill, UIShapeType::RECTANGLE);
+	m_foregroundShapesNoOverlap.push_back(cover);
 
 	//Add the up and down buttons. The top of the top button and the bottom of the bottom button align
 	//with the top and bottom of the text box respectively. Both buttons are flush with the right
@@ -83,6 +91,10 @@ void ScrollingTextBox::resize(winrt::Windows::Foundation::Size windowSize)
 	m_backgroundShapes[0].m_rectangle = rect;
 	m_backgroundShapes[1].m_rectangle = rect;
 
+	//the foreground cover box is the same width as the text box and located directly above it. It streches
+	//all the way to the top of the page.
+	m_foregroundShapesNoOverlap[0].m_rectangle = { rect.left, 0, rect.right, rect.top };
+
 	//To acheive the illusion of text scrolling, the starting location of the text drifts upwards and
 	//out of the text box (where it get's covered by foreground UI shapes. The bottom of the rendering
 	//area for text remains glued to the bottom of the text box to make sure text is clipped properly.
@@ -139,11 +151,21 @@ void ScrollingTextBox::onScrollUp()
 	//TESTING: simply raise the starting location of the text in the text box
 	m_textStart.y -= m_scrollIntensity;
 	m_elementText[0].startLocation.y = m_elementText[0].startLocation.y - pixelsPerScroll;
+	m_elementText[0].renderArea = { m_elementText[0].renderArea.x, m_elementText[0].renderArea.y + pixelsPerScroll }; //bottom of text rendering area is glued to the bottom of the text box
 }
 
 void ScrollingTextBox::onScrollDown()
 {
-	//TESTING: simply lower the starting location of the text in the text box
-	m_textStart.y += m_scrollIntensity;
-	m_elementText[0].startLocation.y = m_elementText[0].startLocation.y + pixelsPerScroll;
+	//The render area can't get any smaller than the height of the text box
+	if (m_elementText[0].startLocation.y + pixelsPerScroll > m_backgroundShapes[0].m_rectangle.top)
+	{
+		m_textStart.y = m_location.y - m_size.y / (float)2.0;
+		m_elementText[0].startLocation.y = m_backgroundShapes[0].m_rectangle.top;
+	}
+	else
+	{
+		m_textStart.y += m_scrollIntensity;
+		m_elementText[0].startLocation.y = m_elementText[0].startLocation.y + pixelsPerScroll;
+		m_elementText[0].renderArea = { m_elementText[0].renderArea.x, m_elementText[0].renderArea.x - pixelsPerScroll }; //bottom of text rendering area is glued to the bottom of the text box
+	}
 }

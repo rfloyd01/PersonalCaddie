@@ -41,7 +41,7 @@ public:
 
 	virtual void update() {}; //not a pure virtual method as not all modes require this method
 
-	const float* getBackgroundColor();
+	const UIColor getBackgroundColor();
 
 	std::vector<std::shared_ptr<UIElement> > const& getUIElements() { return m_uiElements; }
 
@@ -55,7 +55,8 @@ public:
 	virtual uint32_t handleUIElementStateChange(int i) = 0;
 
 protected:
-	float m_backgroundColor[4]; //represents the background color when this mode is being rendered
+	//float m_backgroundColor[4]; 
+	UIColor m_backgroundColor; //represents the background color when this mode is being rendered
 
 	std::vector<std::shared_ptr<UIElement> >    m_uiElements; //2d objects like Drop downs, combo boxes, buttons and text
 };

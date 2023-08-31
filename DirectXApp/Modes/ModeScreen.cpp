@@ -285,7 +285,7 @@ void ModeScreen::resizeCurrentModeUIElements(winrt::Windows::Foundation::Size wi
 	for (int i = 0; i < uiElements.size(); i++) uiElements[i]->resize(windowSize);
 }
 
-const float* ModeScreen::getBackgroundColor()
+const UIColor ModeScreen::getBackgroundColor()
 {
 	//returns the background color of the current mode
 	return m_modes[static_cast<int>(m_currentMode)]->getBackgroundColor();

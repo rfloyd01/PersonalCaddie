@@ -4,10 +4,7 @@
 MainMenuMode::MainMenuMode()
 {
 	//set a black background color for the mode
-	m_backgroundColor[0] = 0.0;
-	m_backgroundColor[1] = 0.0;
-	m_backgroundColor[2] = 0.0;
-	m_backgroundColor[3] = 1.0;
+	m_backgroundColor = UIColor::Black;
 }
 
 uint32_t MainMenuMode::initializeMode(winrt::Windows::Foundation::Size windowSize)
