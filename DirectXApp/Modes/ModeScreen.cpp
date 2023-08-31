@@ -67,8 +67,8 @@ void ModeScreen::update()
 	//finally, check to see if there are any timers that are going on or expired
 	processTimers();
 
-	//after all input, events and timers have been handled defer to the current mode
-	//to update its state if necessary. This only occurs when in the Active ModeState
+	//See if any of the above input, timers or events have caused the need to update
+	//any UI elements
 	if (m_modeState & ModeState::NeedTextUpdate)
 	{
 		//some text in a ui element was changed so we need to recalculate the render height
@@ -77,6 +77,9 @@ void ModeScreen::update()
 		getTextRenderHeights(getCurrentModeUIElements());
 		m_modeState ^= ModeState::NeedTextUpdate; //remove the text update flag
 	}
+
+	//after all input, events and timers have been handled defer to the current mode
+	//to update its state if necessary. This only occurs when in the Active ModeState
 	if (m_modeState & ModeState::Active) m_modes[static_cast<int>(m_currentMode)]->update();
 }
 
@@ -276,13 +279,18 @@ void ModeScreen::changeCurrentMode(ModeType mt)
 	
 	//See if any UI elements in the mode need to know their full render height (needed for items
 	//like scroll boxes).
-	getTextRenderHeights(getCurrentModeUIElements());
+	//getTextRenderHeights(getCurrentModeUIElements());
 
 	//After initializing, add any alerts that were copied over to the text and
 	//color maps and then create text and color resources in the renderer
 	if (currentAlerts.message != L"") createAlert(currentAlerts.message, currentAlerts.colors[0]); //TODO: this will make all alerts the same color, come back to this
-	m_renderer->CreateModeResources();
-	
+
+	if (m_modeState & ModeState::NeedTextUpdate)
+	{
+		//See if the new mode has any complex UI text elements that need help from the master renderer to initialize.
+		getTextRenderHeights(getCurrentModeUIElements());
+		m_modeState ^= ModeState::NeedTextUpdate; //remove the text update flag
+	}
 }
 
 void ModeScreen::getTextRenderHeights(std::vector<std::shared_ptr<UIElement>> const& uiElements)

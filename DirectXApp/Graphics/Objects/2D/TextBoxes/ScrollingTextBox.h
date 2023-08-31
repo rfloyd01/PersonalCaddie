@@ -20,6 +20,9 @@ protected:
 	virtual void resize(winrt::Windows::Foundation::Size windowSize) override;
 	void repositionElementText(winrt::Windows::Foundation::Size windowSize);
 
+	void initializeScrollProgressRectangle();
+	void calculateScrollBarLocation();
+
 	bool checkHover(DirectX::XMFLOAT2 mousePosition);
 	virtual void onHover();
 
@@ -27,7 +30,9 @@ protected:
 	virtual void onScrollDown();
 
 	float m_fontSize;
-	float m_scrollIntensity, pixelsPerScroll; //how far will the text move with each scroll
-	DirectX::XMFLOAT2   m_textStart; //the absolute starting position for text. This value will change as we scroll up or down in the box
-	float               m_textCeiling; //the highest absolute location the text starting position can scroll to
+	float m_scrollIntensity, textPixelsPerScroll, rectanglePixelsPerScroll; //how far will the text move with each scroll
+	DirectX::XMFLOAT2 m_textStart; //the absolute starting position for text. This value will change as we scroll up or down in the box
+
+	bool scrollRectangleInitialized;
+	float scrollRectangleAbsoluteHeight, scrollRectangleAbsoluteLocation, scrollRectangleAbsoluteCeiling, scrollRectangleAbsoluteFloor;
 };

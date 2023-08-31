@@ -27,7 +27,7 @@ uint32_t DeviceDiscoveryMode::initializeMode(winrt::Windows::Foundation::Size wi
 	//When this mode is initialzed we go into a state of CanTransfer and Active.
 	//Can Transfer allows us to use the esc. key to go back to the settings menu
 	//while active diverts state control to this mode
-	return (ModeState::CanTransfer | ModeState::Idle);
+	return (ModeState::CanTransfer | ModeState::Idle | ModeState::NeedTextUpdate);
 }
 
 void DeviceDiscoveryMode::uninitializeMode()
