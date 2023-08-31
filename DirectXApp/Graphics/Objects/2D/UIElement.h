@@ -33,7 +33,7 @@ class UIElement
 {
 public:
 	//UIElement() {}
-	~UIElement() {}
+	~UIElement();
 
 	int getRenderVectorSize(RenderOrder render);
 	void* getRenderItem(RenderOrder render, int element);

@@ -1,6 +1,13 @@
 #include "pch.h"
 #include "UIElement.h"
 
+UIElement::~UIElement()
+{
+	//Deleting a UI Element should also delete any children that it has.
+	for (int i = 0; i < p_children.size(); i++) p_children[i] = nullptr;
+	p_children.clear();
+}
+
 void* UIElement::getRenderItem(RenderOrder render, int element)
 {
 	//The UIElement renderer will call this method once for each of the different

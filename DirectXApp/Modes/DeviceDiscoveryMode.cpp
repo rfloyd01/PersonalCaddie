@@ -34,8 +34,8 @@ void DeviceDiscoveryMode::uninitializeMode()
 {
 	//The only thing to do when leaving the main menu mode is to clear
 	//out all text in the text map and color map
-	
-	//TODO: need to uninitialize UI Elements
+	for (int i = 0; i < m_uiElements.size(); i++) m_uiElements[i] = nullptr;
+	m_uiElements.clear();
 }
 
 void DeviceDiscoveryMode::initializeTextOverlay(winrt::Windows::Foundation::Size windowSize)
