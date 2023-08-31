@@ -102,7 +102,7 @@ void TextOverlay::resize(winrt::Windows::Foundation::Size windowSize)
 }
 
 //the textOverlay class has nothing to update but this pure virtual method must be implemented
-UIElementState TextOverlay::update(DirectX::XMFLOAT2 mousePosition, bool mouseClick)
+UIElementState TextOverlay::update(InputState* inputState)
 {
 	return m_state;
 }

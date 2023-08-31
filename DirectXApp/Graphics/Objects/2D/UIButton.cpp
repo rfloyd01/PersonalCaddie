@@ -71,7 +71,7 @@ void UIButton::resize(winrt::Windows::Foundation::Size windowSize)
 	}
 }
 
-UIElementState UIButton::update(DirectX::XMFLOAT2 mousePosition, bool mouseClick)
+UIElementState UIButton::update(InputState* inputState)
 {
 	//if we're hovering over the button and the mouseClick bool is true, then we update the
 	//buttons state. Check mouseClick first so the checkHover method is only 
@@ -79,7 +79,7 @@ UIElementState UIButton::update(DirectX::XMFLOAT2 mousePosition, bool mouseClick
 
 	//To make sure we don't keep clicking the button on and off with a single press, 
 	//we only return the clicked state if the mouseClick bool is true
-	if (mouseClick && checkHover(mousePosition))
+	if (inputState->mouseClick && checkHover(inputState->mousePosition))
 	{
 		onClick();
 		return UIElementState::Clicked;

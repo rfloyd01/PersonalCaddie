@@ -47,7 +47,7 @@ public:
 
 private:
 	void processKeyboardInput(winrt::Windows::System::VirtualKey pressedKey);
-	void processMouseInput(DirectX::XMFLOAT2 mousePosition, bool mouseClick);
+	void processMouseInput(InputState* inputState);
 	void processEvents();
 	void processTimers();
 

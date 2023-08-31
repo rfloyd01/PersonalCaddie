@@ -61,7 +61,7 @@ void StaticTextBox::resize(winrt::Windows::Foundation::Size windowSize)
 }
 
 //the StaticTextBox class has nothing to update but this pure virtual method must be implemented
-UIElementState StaticTextBox::update(DirectX::XMFLOAT2 mousePosition, bool mouseClick)
+UIElementState StaticTextBox::update(InputState* inputState)
 {
 	return m_state;
 }

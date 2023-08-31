@@ -15,6 +15,7 @@ ScrollingTextBox::ScrollingTextBox(DirectX::XMFLOAT2 location, DirectX::XMFLOAT2
 	m_size = size;
 	m_fontSize = 0.1 * size.y; //set the font height of the text box to be 1/10 the height of the text box
 	m_textStart = { location.x - size.x / (float)2.0, location.y - size.y / (float)2.0, }; //the text always starts in the top left of the text box, only scrolling will change this
+	m_scrollIntensity = 0.01;
 
 	UIShape background({ 0, 0, 0, 0 }, UIColor::White, UIShapeFillType::Fill, UIShapeType::RECTANGLE); //The white background for the text
 	UIShape outline({ 0, 0, 0, 0 }, UIColor::Black, UIShapeFillType::NoFill, UIShapeType::RECTANGLE); //Outline for the text box
@@ -89,17 +90,20 @@ void ScrollingTextBox::resize(winrt::Windows::Foundation::Size windowSize)
 	m_elementText[0].renderArea = { rect.right - m_elementText[0].startLocation.x, rect.bottom - m_elementText[0].startLocation.y }; //bottom of text rendering area is glued to the bottom of the text box
 	m_elementText[0].fontSize = windowSize.Height * m_fontSize;
 
+	//set the amount of pixels the text will move with each tick of the mouse wheel
+	pixelsPerScroll = m_scrollIntensity * windowSize.Height;
+
 	//After resizing the shapes owned directly by the scroll box, we need to resize the button UI Elements as well.
 	for (int i = 0; i < p_children.size(); i++) p_children[i]->resize(windowSize);
 }
 
 //the StaticTextBox class has nothing to update but this pure virtual method must be implemented
-UIElementState ScrollingTextBox::update(DirectX::XMFLOAT2 mousePosition, bool mouseClick)
+UIElementState ScrollingTextBox::update(InputState* inputState)
 {
-	if (checkHover(mousePosition))
+	if (inputState->scrollWheelDirection != 0 && checkHover(inputState->mousePosition))
 	{
-		//TODO: Implement scrolling callback functions in the input class and pass them here
-		OutputDebugString(L"I'm in the scroll box baby.\n");
+		if (inputState->scrollWheelDirection < 0) onScrollDown();
+		else onScrollUp();
 	}
 	return m_state;
 }
@@ -132,10 +136,14 @@ void ScrollingTextBox::onHover()
 
 void ScrollingTextBox::onScrollUp()
 {
-
+	//TESTING: simply raise the starting location of the text in the text box
+	m_textStart.y -= m_scrollIntensity;
+	m_elementText[0].startLocation.y = m_elementText[0].startLocation.y - pixelsPerScroll;
 }
 
 void ScrollingTextBox::onScrollDown()
 {
-
+	//TESTING: simply lower the starting location of the text in the text box
+	m_textStart.y += m_scrollIntensity;
+	m_elementText[0].startLocation.y = m_elementText[0].startLocation.y + pixelsPerScroll;
 }

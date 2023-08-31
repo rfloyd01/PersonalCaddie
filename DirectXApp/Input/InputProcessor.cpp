@@ -16,6 +16,7 @@ InputProcessor::InputProcessor(_In_ CoreWindow const& window) :
     m_state.currentPressedKey = KeyboardKeys::DeadKey;
     m_state.mousePosition = { 0, 0 };
     m_state.mouseClick = false;
+    m_state.scrollWheelDirection = 0;
     InitWindow(window);
 }
 

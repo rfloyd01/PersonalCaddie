@@ -14,7 +14,7 @@ public:
 	//Depending on the type of text box being created text will be
 	//added differently
 	virtual void addText(std::wstring text) override;
-	virtual UIElementState update(DirectX::XMFLOAT2 mousePosition, bool mouseClick) override;
+	virtual UIElementState update(InputState* inputState) override;
 
 protected:
 	virtual void resize(winrt::Windows::Foundation::Size windowSize) override;

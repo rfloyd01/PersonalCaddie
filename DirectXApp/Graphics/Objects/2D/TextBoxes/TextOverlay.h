@@ -14,7 +14,7 @@ public:
 		DirectX::XMFLOAT2 start, DirectX::XMFLOAT2 size, float fontSize, UITextType type, UITextJustification justification);
 
 	virtual void addText(std::wstring text) override;
-	virtual UIElementState update(DirectX::XMFLOAT2 mousePosition, bool mouseClick) override;
+	virtual UIElementState update(InputState* inputState) override;
 
 	UIText getText();
 

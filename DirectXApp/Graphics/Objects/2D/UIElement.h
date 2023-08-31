@@ -5,6 +5,7 @@
 #include "Interfaces/IScrollableUI.h"
 #include "Interfaces/ITextBoxUI.h"
 #include "UIConstants.h"
+#include "Input/InputProcessor.h"
 
 #include "Graphics/Utilities/UIElementColors.h"
 
@@ -46,7 +47,7 @@ public:
 	D2D1_RECT_F getPixels(RenderOrder render, int i);
 
 	virtual void resize(winrt::Windows::Foundation::Size windowSize) = 0; //since all UI elements are different they each need to resize differently
-	virtual UIElementState update(DirectX::XMFLOAT2 mousePosition, bool mouseClick) = 0; //gets called in main render loop to check interactions with UI element
+	virtual UIElementState update(InputState* inputState) = 0; //gets called in main render loop to check interactions with UI element
 
 	//heirarchy getters and setters
 	void setParent(UIElement*  parent) { p_parent = parent; }

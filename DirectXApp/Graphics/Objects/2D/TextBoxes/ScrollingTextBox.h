@@ -14,7 +14,7 @@ public:
 	//Depending on the type of text box being created text will be
 	//added differently
 	virtual void addText(std::wstring text) override;
-	virtual UIElementState update(DirectX::XMFLOAT2 mousePosition, bool mouseClick) override;
+	virtual UIElementState update(InputState* inputState) override;
 
 protected:
 	virtual void resize(winrt::Windows::Foundation::Size windowSize) override;
@@ -26,5 +26,6 @@ protected:
 	virtual void onScrollDown();
 
 	float m_fontSize;
+	float m_scrollIntensity, pixelsPerScroll; //how far will the text move with each scroll
 	DirectX::XMFLOAT2   m_textStart; //the absolute starting position for text. This value will change as we scroll up or down in the box
 };

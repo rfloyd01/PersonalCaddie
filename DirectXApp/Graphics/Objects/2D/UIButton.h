@@ -10,7 +10,7 @@ public:
 	~UIButton() {}
 
 	virtual void resize(winrt::Windows::Foundation::Size windowSize) override;
-	virtual UIElementState update(DirectX::XMFLOAT2 mousePosition, bool mouseClick) override;
+	virtual UIElementState update(InputState* inputState) override;
 
 	void updateButtonText(std::wstring text);
 	virtual void setState(UIElementState state) override;
