@@ -39,6 +39,7 @@ struct InputState
     winrt::Windows::System::VirtualKey currentPressedKey;
     DirectX::XMFLOAT2                  mousePosition;
     bool                               mouseClick;
+    int32_t                            scrollWheelDirection;
 };
 
 class InputProcessor
@@ -71,6 +72,11 @@ private:
         _In_ winrt::Windows::UI::Core::PointerEventArgs const& args
     );
 
+    void OnPointerWheelScroll(
+        _In_ winrt::Windows::UI::Core::CoreWindow const& sender,
+        _In_ winrt::Windows::UI::Core::PointerEventArgs const& args
+    );
+
     /*
     void OnPointerExited(
         _In_ winrt::Windows::UI::Core::CoreWindow const& sender,
@@ -84,14 +90,13 @@ private:
         _In_ winrt::Windows::UI::Core::CoreWindow const& sender,
         _In_ winrt::Windows::UI::Core::KeyEventArgs const& args
     );
-    /*void OnMouseMoved(
-        _In_ winrt::Windows::Devices::Input::MouseDevice const& mouseDevice,
-        _In_ winrt::Windows::Devices::Input::MouseEventArgs const& args
-    );
+    /*
     void OnBackRequested(
         _In_ winrt::Windows::Foundation::IInspectable const& sender,
         _In_ winrt::Windows::UI::Core::BackRequestedEventArgs const& args
     );*/
+
+    
 
     InputState           m_state;
     KeyboardState        m_keyboardState; // Enum to keep track of whether or not keyboard presses are allowed

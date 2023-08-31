@@ -13,7 +13,7 @@ ScrollingTextBox::ScrollingTextBox(DirectX::XMFLOAT2 location, DirectX::XMFLOAT2
 	//of all other parts of the scroll box are derived from that.
 	m_location = location;
 	m_size = size;
-	m_fontSize = 0.1 * size.y; //set the font height to be 1/10 the height of the text box
+	m_fontSize = 0.1 * size.y; //set the font height of the text box to be 1/10 the height of the text box
 	m_textStart = { location.x - size.x / (float)2.0, location.y - size.y / (float)2.0, }; //the text always starts in the top left of the text box, only scrolling will change this
 
 	UIShape background({ 0, 0, 0, 0 }, UIColor::White, UIShapeFillType::Fill, UIShapeType::RECTANGLE); //The white background for the text
@@ -96,6 +96,11 @@ void ScrollingTextBox::resize(winrt::Windows::Foundation::Size windowSize)
 //the StaticTextBox class has nothing to update but this pure virtual method must be implemented
 UIElementState ScrollingTextBox::update(DirectX::XMFLOAT2 mousePosition, bool mouseClick)
 {
+	if (checkHover(mousePosition))
+	{
+		//TODO: Implement scrolling callback functions in the input class and pass them here
+		OutputDebugString(L"I'm in the scroll box baby.\n");
+	}
 	return m_state;
 }
 

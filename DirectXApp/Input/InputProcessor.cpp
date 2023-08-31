@@ -36,6 +36,8 @@ void InputProcessor::InitWindow(_In_ CoreWindow const& window)
 
     window.KeyUp({ this, &InputProcessor::OnKeyUp });
 
+    window.PointerWheelChanged({this, &InputProcessor::OnPointerWheelScroll});
+
     // There is a separate handler for mouse-only relative mouse movement events.
     //MouseDevice::GetForCurrentView().MouseMoved({ this, &InputProcessor::OnMouseMoved });
 
@@ -76,6 +78,17 @@ void InputProcessor::OnPointerReleased(
     {
         m_mouseState = MouseState::WaitForInput;
     }
+}
+
+void InputProcessor::OnPointerWheelScroll(
+    _In_ winrt::Windows::UI::Core::CoreWindow const& sender,
+    _In_ winrt::Windows::UI::Core::PointerEventArgs const& args
+)
+{
+    //The only thing we do when scrolling the mouse wheel is update the scrollWheelDirection
+    //property of the input state. Once the scroll has been processed elsewhere this
+    //value will be rest.
+    m_state.scrollWheelDirection = args.CurrentPoint().Properties().MouseWheelDelta();
 }
 
 void InputProcessor::OnPointerMoved(
