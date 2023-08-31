@@ -85,6 +85,9 @@
     <ClCompile Include="Modes\UITestMode.cpp">
       <Filter>Modes</Filter>
     </ClCompile>
+    <ClCompile Include="Graphics\Objects\2D\TextBoxes\ScrollingTextBox.cpp">
+      <Filter>Graphics\Objects\2D\TextBoxes</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -195,6 +198,9 @@
     </ClInclude>
     <ClInclude Include="Modes\UITestMode.h">
       <Filter>Modes</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Objects\2D\TextBoxes\ScrollingTextBox.h">
+      <Filter>Graphics\Objects\2D\TextBoxes</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

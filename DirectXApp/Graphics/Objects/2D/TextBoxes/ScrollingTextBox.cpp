@@ -1,0 +1,68 @@
+#include "pch.h"
+#include "ScrollingTextBox.h"
+
+ScrollingTextBox::ScrollingTextBox(DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, std::wstring text, winrt::Windows::Foundation::Size windowSize)
+{
+	//This is a compound UIElement, featuring two child buttons. There's also a number of 
+	//UI shapes, including a white rectangle (and a border for it) where text is rendered,
+	//some element text (which has the capability to move), and a foreground UI shape which
+	//is used to cover up any text that appears outside of the rendering area.
+	m_location = location;
+	m_size = size;
+	m_fontSize = 0.1 * size.y; //set the font height to be 1/10 the height of the text box
+
+	UIShape background({ 0, 0, 0, 0 }, UIColor::White, UIShapeFillType::Fill, UIShapeType::RECTANGLE);
+	m_backgroundShapes.push_back(background);
+	addText(text);
+	resize(windowSize); //sets the appropriate sizes for both the rectangle and text
+
+	m_state = UIElementState::Idle; //the static text box will always have an idle state
+}
+
+void ScrollingTextBox::addText(std::wstring text)
+{
+	//The text passed in get's converted into a Text class object and is added 
+	//to the end of the elementText vector. If any text is currently in the vector it
+	//will get cleared out. Added text will just be simple, black text.
+	//The start location of the text rendering box and hte font size get filled out in
+	//the resize method.
+	
+	if (m_elementText.size() > 0)
+	{
+		//we're overwriting existing text, we only need to change the message and leave everything else the same
+		m_elementText[0].message = text;
+		m_elementText[0].colorLocations.back() = text.length();
+	}
+	else
+	{
+		//This is the first time we're adding text, add in all elements that aren't dependent on the size of the screen
+		//and add the text to the text vector
+		UIText newText(text, 0, { 0, 0 }, { 0, 0 }, { UIColor::Black }, { 0, text.length() }, UITextType::ELEMENT_TEXT);
+		m_elementText.push_back(newText);
+	}
+	
+}
+
+void ScrollingTextBox::resize(winrt::Windows::Foundation::Size windowSize)
+{
+	//The Static text box doesn't have any children to worry about, we just need to resize the main rectangle
+	//which is located in the background objects array and the text that goes on top of it.
+	DirectX::XMFLOAT2 center_point = { windowSize.Width * m_location.x, windowSize.Height * m_location.y };
+	const D2D1_RECT_F rect = D2D1::RectF(
+		center_point.x - windowSize.Width * m_size.x / (float)2.0,
+		center_point.y - windowSize.Height * m_size.y / (float)2.0,
+		center_point.x + windowSize.Width * m_size.x / (float)2.0,
+		center_point.y + windowSize.Height * m_size.y / (float)2.0
+	);
+	m_backgroundShapes[0].m_rectangle = rect;
+
+	m_elementText[0].startLocation = { rect.left, rect.top }; //set the start location of the rendering box to be at the top left of the text box
+	m_elementText[0].renderArea = { rect.right - rect.left, rect.bottom - rect.top }; //the rendering area is the same as the rectangle area
+	m_elementText[0].fontSize = windowSize.Height * m_fontSize;
+}
+
+//the StaticTextBox class has nothing to update but this pure virtual method must be implemented
+UIElementState ScrollingTextBox::update(DirectX::XMFLOAT2 mousePosition, bool mouseClick)
+{
+	return m_state;
+}
