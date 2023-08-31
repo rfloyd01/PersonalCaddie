@@ -19,8 +19,12 @@ public:
 protected:
 	virtual void resize(winrt::Windows::Foundation::Size windowSize) override;
 
+	bool checkHover(DirectX::XMFLOAT2 mousePosition);
+	virtual void onHover();
+
 	virtual void onScrollUp();
 	virtual void onScrollDown();
 
 	float m_fontSize;
+	DirectX::XMFLOAT2   m_textStart; //the absolute starting position for text. This value will change as we scroll up or down in the box
 };

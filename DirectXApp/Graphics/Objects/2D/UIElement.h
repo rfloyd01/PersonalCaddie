@@ -40,8 +40,17 @@ public:
 	UIElementState getState() { return m_state; }
 	virtual void setState(UIElementState state) { m_state = state; } //need the ability to manually set the element state from outside the class
 
+	DirectX::XMFLOAT2 getLocation() { return m_location; }
+	DirectX::XMFLOAT2 getSize() { return m_size; }
+
+	D2D1_RECT_F getPixels(RenderOrder render, int i);
+
 	virtual void resize(winrt::Windows::Foundation::Size windowSize) = 0; //since all UI elements are different they each need to resize differently
 	virtual UIElementState update(DirectX::XMFLOAT2 mousePosition, bool mouseClick) = 0; //gets called in main render loop to check interactions with UI element
+
+	//heirarchy getters and setters
+	void setParent(UIElement*  parent) { p_parent = parent; }
+	std::vector<std::shared_ptr<UIElement> > const& getChildrenUIElements() { return p_children; }
 
 	bool isAlert();
 protected:
@@ -49,7 +58,7 @@ protected:
 	DirectX::XMFLOAT2                        m_size; //size of the ui element
 	UIElementState                           m_state;
 	
-	std::shared_ptr<UIElement>               p_parent; //a pointer to the parent UI element, nullptr if there is no parent
+	UIElement*                               p_parent; //a pointer to the parent UI element, nullptr if there is no parent
 	std::vector<std::shared_ptr<UIElement> > p_children; //pointers to any children UI elements
 	
 	std::vector<UIShape>                     m_backgroundShapes;

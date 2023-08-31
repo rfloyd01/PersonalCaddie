@@ -68,3 +68,25 @@ bool UIElement::isAlert()
 	}
 	return false; //alerts must be text overlays
 }
+
+D2D1_RECT_F UIElement::getPixels(RenderOrder render, int i)
+{
+	D2D1_RECT_F no_bueno = { 0, 0, 0, 0 };
+	if (render == RenderOrder::ElementText || render == RenderOrder::TextOverlay) return no_bueno;
+
+	switch (render)
+	{
+	case RenderOrder::Background:
+		if (i >= m_backgroundShapes.size()) return no_bueno;
+		return m_backgroundShapes[i].m_rectangle;
+		break;
+	case RenderOrder::ForegroundNoOverlap:
+		if (i >= m_foregroundShapesNoOverlap.size()) return no_bueno;
+		return m_foregroundShapesNoOverlap[i].m_rectangle;;
+		break;
+	case RenderOrder::ForegroundWithOverlap:
+		if (i >= m_foregroundShapesCanOverlap.size()) return no_bueno;
+		return m_foregroundShapesCanOverlap[i].m_rectangle;;
+		break;
+	}
+}

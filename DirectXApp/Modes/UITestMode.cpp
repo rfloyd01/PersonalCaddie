@@ -16,6 +16,11 @@ uint32_t UITestMode::initializeMode(winrt::Windows::Foundation::Size windowSize)
 	//Create UI Elements on the page
 	initializeTextOverlay(windowSize);
 
+	//CURRENT TEST: Create a working Scroll Box
+	//ScrollingTextBox(DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, std::wstring text, winrt::Windows::Foundation::Size windowSize);
+	ScrollingTextBox scTB({ 0.5, 0.5 }, { 0.5, 0.33 }, L"My first scroll box!!", windowSize);
+	m_uiElements.push_back(std::make_shared<ScrollingTextBox>(scTB));
+
 	//When this mode is initialzed we go into a state of CanTransfer and Active.
 	//Can Transfer allows us to use the esc. key to go back to the settings menu
 	//while active diverts state control to this mode

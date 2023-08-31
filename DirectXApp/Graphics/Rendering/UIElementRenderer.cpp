@@ -144,6 +144,10 @@ void UIElementRenderer::render(std::vector<std::shared_ptr<UIElement> > const& u
                 for (int k = 0; k < renderLength; k++) renderShape((UIShape*)uiElements[i]->render(renderOrder, k));
             }
         }
+
+        //Parent UI Elements are responsible for making sure their children get rendered. After rendering all aspects
+        //of the current element, loop through all of its children and render them as well.
+        render(uiElements[i]->getChildrenUIElements());
     }
 
     //After all shapes and element text has been rendered, render any overlay text. This is typically
