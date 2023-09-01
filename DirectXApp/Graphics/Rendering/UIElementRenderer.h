@@ -15,7 +15,7 @@ public:
 
     void render(std::vector<std::shared_ptr<UIElement> > const& uiElements);
 
-    void setTextLayoutHeight(UIText* text);
+    void setTextLayoutPixels(UIText* text);
 
     D2D1::ColorF getClearColor(UIColor backgroundColor);
 

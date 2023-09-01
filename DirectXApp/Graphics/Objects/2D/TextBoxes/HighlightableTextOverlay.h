@@ -16,6 +16,10 @@ public:
 	virtual UIElementState update(InputState* inputState) override;
 	void updateSecondaryColor(UIColor color) { m_secondaryColor = color; }
 
+	void updateLocation(DirectX::XMFLOAT2 location) { m_location = location; }
+	void updateSize(DirectX::XMFLOAT2 size) { m_size = size; }
+	void updateFontSize(float font_size) { m_fontSize = font_size; }
+
 protected:
 	virtual bool checkHover(DirectX::XMFLOAT2 mousePosition) override; //checks to see if the element is being hovered over
 	virtual void onHover() override;

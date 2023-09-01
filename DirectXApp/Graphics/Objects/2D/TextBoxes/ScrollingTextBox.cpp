@@ -73,7 +73,7 @@ ScrollingTextBox::ScrollingTextBox(DirectX::XMFLOAT2 location, DirectX::XMFLOAT2
 	//the height of the text layout. Set the appropriate booleans to true in both this class and
 	//the element text in order to update this height when the window gets resized.
 	m_needTextRenderHeight = true;
-	m_elementText[0].needDPIHeight = true;
+	m_elementText[0].needDPI = true;
 }
 
 uint32_t ScrollingTextBox::addText(std::wstring text)
@@ -152,7 +152,7 @@ void ScrollingTextBox::repositionElementText(winrt::Windows::Foundation::Size wi
 	//It's possible that at one point the screen was small enough that not all text could fit in the text box,
 	//but we've since made the screen larger and now all the text should fit, but it's no longer all in the box.
 	//Perform a quick check to make sure that the text is all in the correct place.
-	if (m_elementText[0].startLocation.y + m_elementText[0].renderHeightDPI < m_backgroundShapes[0].m_rectangle.bottom)
+	if (m_elementText[0].startLocation.y + m_elementText[0].renderDPI.y < m_backgroundShapes[0].m_rectangle.bottom)
 	{
 		if (m_elementText[0].startLocation.y < m_backgroundShapes[0].m_rectangle.top)
 		{
@@ -160,8 +160,8 @@ void ScrollingTextBox::repositionElementText(winrt::Windows::Foundation::Size wi
 			//Whichever distance is less, either the bottom of the render rectangle to the bottom of the text
 			//box, or the top of the render rectangle to the top of the text box, move the render rectangle
 			//downwards by that amount.
-			float lesserDistance = (m_backgroundShapes[0].m_rectangle.top - m_elementText[0].startLocation.y) < (m_backgroundShapes[0].m_rectangle.bottom - (m_elementText[0].startLocation.y + m_elementText[0].renderHeightDPI)) ?
-				m_backgroundShapes[0].m_rectangle.top - m_elementText[0].startLocation.y : m_backgroundShapes[0].m_rectangle.bottom - (m_elementText[0].startLocation.y + m_elementText[0].renderHeightDPI);
+			float lesserDistance = (m_backgroundShapes[0].m_rectangle.top - m_elementText[0].startLocation.y) < (m_backgroundShapes[0].m_rectangle.bottom - (m_elementText[0].startLocation.y + m_elementText[0].renderDPI.y)) ?
+				m_backgroundShapes[0].m_rectangle.top - m_elementText[0].startLocation.y : m_backgroundShapes[0].m_rectangle.bottom - (m_elementText[0].startLocation.y + m_elementText[0].renderDPI.y);
 
 			m_elementText[0].startLocation.y += lesserDistance;
 			m_textStart.y += lesserDistance / windowSize.Height;
@@ -216,8 +216,8 @@ void ScrollingTextBox::initializeScrollProgressRectangle()
 
 	//If the text doesn't take up the full text box then make the rectangle 95% of the full height of the background rectangle.
 	//Otherwise, the height should be the same as the ratio of the text box height to the total text height
-	if (m_elementText[0].renderHeightDPI <= (m_backgroundShapes[1].m_rectangle.bottom - m_backgroundShapes[1].m_rectangle.top)) scrollRectangleAbsoluteHeight = 0.98 * scrollBarBacgkroundAbsoluteHeight;
-	else scrollRectangleAbsoluteHeight = ((m_backgroundShapes[1].m_rectangle.bottom - m_backgroundShapes[1].m_rectangle.top) / m_elementText[0].renderHeightDPI) * scrollBarBacgkroundAbsoluteHeight;
+	if (m_elementText[0].renderDPI.y <= (m_backgroundShapes[1].m_rectangle.bottom - m_backgroundShapes[1].m_rectangle.top)) scrollRectangleAbsoluteHeight = 0.98 * scrollBarBacgkroundAbsoluteHeight;
+	else scrollRectangleAbsoluteHeight = ((m_backgroundShapes[1].m_rectangle.bottom - m_backgroundShapes[1].m_rectangle.top) / m_elementText[0].renderDPI.y) * scrollBarBacgkroundAbsoluteHeight;
 
 	//Create the shadow first
 	m_backgroundShapes[5].m_rectangle = { m_backgroundShapes[1].m_rectangle.right + 1, m_backgroundShapes[4].m_rectangle.top + 2, m_backgroundShapes[4].m_rectangle.right, 0 };
@@ -265,7 +265,7 @@ void ScrollingTextBox::onHover()
 void ScrollingTextBox::onScrollUp()
 {
 	//The render area can't get any smaller than the height of the text box
-	if (m_elementText[0].renderHeightDPI > (m_backgroundShapes[1].m_rectangle.bottom - m_backgroundShapes[1].m_rectangle.top))
+	if (m_elementText[0].renderDPI.y > (m_backgroundShapes[1].m_rectangle.bottom - m_backgroundShapes[1].m_rectangle.top))
 	{
 		if (m_elementText[0].startLocation.y + textPixelsPerScroll > m_backgroundShapes[1].m_rectangle.top)
 		{
@@ -295,12 +295,12 @@ void ScrollingTextBox::onScrollDown()
 	//calculation for this height happens outside of this class.
 
 	//Only attempt to scroll if not all text can fit in the text box.
-	if (m_elementText[0].renderHeightDPI > (m_backgroundShapes[1].m_rectangle.bottom - m_backgroundShapes[1].m_rectangle.top))
+	if (m_elementText[0].renderDPI.y > (m_backgroundShapes[1].m_rectangle.bottom - m_backgroundShapes[1].m_rectangle.top))
 	{
-		if (m_elementText[0].renderArea.y + textPixelsPerScroll > m_elementText[0].renderHeightDPI)
+		if (m_elementText[0].renderArea.y + textPixelsPerScroll > m_elementText[0].renderDPI.y)
 		{
-			m_elementText[0].renderArea.y = m_elementText[0].renderHeightDPI;
-			m_elementText[0].startLocation.y = m_backgroundShapes[1].m_rectangle.bottom - m_elementText[0].renderHeightDPI;
+			m_elementText[0].renderArea.y = m_elementText[0].renderDPI.y;
+			m_elementText[0].startLocation.y = m_backgroundShapes[1].m_rectangle.bottom - m_elementText[0].renderDPI.y;
 
 			//We need to calculate the absolute height for the text start (in terms of a ratio of the
 			//current window size). To do this, we calculate the window height by looking at the ratio
@@ -328,9 +328,9 @@ void ScrollingTextBox::calculateScrollBarLocation()
 	//we need to calculate what percentage of the way we are through the text. This is done by comparing the location
 	//of the bottom of the text box when the text is all the way down, vs. the current location of the bottom of 
 	//the text box.
-	float textLayoutFloor = m_elementText[0].renderHeightDPI + m_backgroundShapes[1].m_rectangle.top;
+	float textLayoutFloor = m_elementText[0].renderDPI.y + m_backgroundShapes[1].m_rectangle.top;
 	float textLayoutCeiling = m_backgroundShapes[1].m_rectangle.bottom;
-	float textLayoutCurrentLocation = m_elementText[0].renderHeightDPI + m_elementText[0].startLocation.y;
+	float textLayoutCurrentLocation = m_elementText[0].renderDPI.y + m_elementText[0].startLocation.y;
 
 	float currentPercentage = (textLayoutFloor - textLayoutCurrentLocation) / (textLayoutFloor - textLayoutCeiling);
 

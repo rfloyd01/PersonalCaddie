@@ -119,7 +119,7 @@ void UIElementRenderer::createTextFormats()
     }
 }
 
-void UIElementRenderer::setTextLayoutHeight(UIText* text)
+void UIElementRenderer::setTextLayoutPixels(UIText* text)
 {
     //The passed in text element needs to know the full size of it's text layout. To figure this
     //out simply create the text layout and call the GetMetrics() method on it.
@@ -146,7 +146,8 @@ void UIElementRenderer::setTextLayoutHeight(UIText* text)
     m_textLayout->GetMetrics(&metrics);
     //m_textLayout->GetOverhangMetrics(&oMetrics);
 
-    text->renderHeightDPI = metrics.height;
+    text->renderDPI.x = metrics.width;
+    text->renderDPI.y = metrics.height;
 }
 
 void UIElementRenderer::render(std::vector<std::shared_ptr<UIElement> > const& uiElements)

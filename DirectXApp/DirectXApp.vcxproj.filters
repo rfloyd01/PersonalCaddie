@@ -91,6 +91,9 @@
     <ClCompile Include="Graphics\Objects\2D\TextBoxes\HighlightableTextOverlay.cpp">
       <Filter>Graphics\Objects\2D\TextBoxes</Filter>
     </ClCompile>
+    <ClCompile Include="Graphics\Objects\2D\TextBoxes\OptionsBox.cpp">
+      <Filter>Graphics\Objects\2D\TextBoxes</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -206,6 +209,9 @@
       <Filter>Graphics\Objects\2D\TextBoxes</Filter>
     </ClInclude>
     <ClInclude Include="Graphics\Objects\2D\TextBoxes\HighlightableTextOverlay.h">
+      <Filter>Graphics\Objects\2D\TextBoxes</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Objects\2D\TextBoxes\OptionsBox.h">
       <Filter>Graphics\Objects\2D\TextBoxes</Filter>
     </ClInclude>
   </ItemGroup>

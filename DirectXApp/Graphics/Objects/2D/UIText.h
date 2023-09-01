@@ -63,6 +63,6 @@ struct UIText
 	//we've reached the bottom of the text. By daefulat the needDPIHeight bool is set to false. Setting it to
 	//true will cause the modeScreen class to get the text layout height from the master renderer and store it
 	//int the renderingHeightDPI float. 
-	bool needDPIHeight = false;
-	float renderHeightDPI = 0;
+	bool needDPI = false;
+	DirectX::XMFLOAT2A renderDPI = { 0, 0 };
 };

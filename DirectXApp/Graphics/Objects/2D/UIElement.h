@@ -14,7 +14,7 @@ enum class UIElementState
 	Idle,
 	Clicked,
 	Scrolled,
-	Visible,
+	Invisible,
 	Hovered
 };
 
@@ -56,6 +56,7 @@ public:
 
 	bool isAlert();
 	bool needTextRenderHeight() { return m_needTextRenderHeight; }
+	void setNeedTextRenderHeight(bool need) { m_needTextRenderHeight = need; }
 
 protected:
 	DirectX::XMFLOAT2                        m_location; //location of the center of the element

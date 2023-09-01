@@ -45,7 +45,7 @@ public:
     void ReleaseDeviceDependentResources();
     void Render();
 
-    void setTextLayoutHeight(UIText* text);
+    void setTextLayoutPixels(UIText* text);
 
     winrt::Windows::Foundation::Size getCurrentScreenSize();
 

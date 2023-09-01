@@ -9,6 +9,7 @@
 class ScrollingTextBox : public UIElement, ITextBoxUI, IScrollableUI
 {
 public:
+	ScrollingTextBox() {} //default constructor for sub-classes to use
 	ScrollingTextBox(DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, std::wstring text, UIColor backgroundColor, winrt::Windows::Foundation::Size windowSize);
 
 	//Depending on the type of text box being created text will be
@@ -22,7 +23,7 @@ protected:
 	virtual void resize(winrt::Windows::Foundation::Size windowSize) override;
 	void repositionElementText(winrt::Windows::Foundation::Size windowSize);
 
-	void initializeScrollProgressRectangle();
+	virtual void initializeScrollProgressRectangle();
 	void calculateScrollBarLocation();
 
 	bool checkHover(DirectX::XMFLOAT2 mousePosition);

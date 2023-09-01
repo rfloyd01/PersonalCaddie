@@ -74,7 +74,7 @@ void ModeScreen::update()
 		//some text in a ui element was changed so we need to recalculate the render height
 		//for the text (hits happens in elements like scroll boxes where the height can
 		//only be calculated in the renderer classes).
-		getTextRenderHeights(getCurrentModeUIElements());
+		getTextRenderPixels(getCurrentModeUIElements());
 		m_modeState ^= ModeState::NeedTextUpdate; //remove the text update flag
 	}
 
@@ -289,12 +289,12 @@ void ModeScreen::changeCurrentMode(ModeType mt)
 	if (m_modeState & ModeState::NeedTextUpdate)
 	{
 		//See if the new mode has any complex UI text elements that need help from the master renderer to initialize.
-		getTextRenderHeights(getCurrentModeUIElements());
+		getTextRenderPixels(getCurrentModeUIElements());
 		m_modeState ^= ModeState::NeedTextUpdate; //remove the text update flag
 	}
 }
 
-void ModeScreen::getTextRenderHeights(std::vector<std::shared_ptr<UIElement>> const& uiElements)
+void ModeScreen::getTextRenderPixels(std::vector<std::shared_ptr<UIElement>> const& uiElements)
 {
 	//iterate through all of the UI elements in the mode to see if any of them need the
 	//height in pixels for text layouts (this will happen for elements like scroll boxes).
@@ -308,11 +308,18 @@ void ModeScreen::getTextRenderHeights(std::vector<std::shared_ptr<UIElement>> co
 			for (int j = 0; j < elementTextComponents; j++)
 			{
 				UIText* renderText = (UIText*)uiElements[i]->getRenderItem(RenderOrder::ElementText, j);
-				if (renderText->needDPIHeight) m_renderer->setTextLayoutHeight(renderText);
+				if (renderText->needDPI) m_renderer->setTextLayoutPixels(renderText);
+			}
+
+			int overlayTextComponents = uiElements[i]->getRenderVectorSize(RenderOrder::TextOverlay);
+			for (int j = 0; j < overlayTextComponents; j++)
+			{
+				UIText* renderText = (UIText*)uiElements[i]->getRenderItem(RenderOrder::TextOverlay, j);
+				if (renderText->needDPI) m_renderer->setTextLayoutPixels(renderText);
 			}
 
 			//Check any children UIElements as well, this is done recursively
-			getTextRenderHeights(uiElements[i]->getChildrenUIElements());
+			getTextRenderPixels(uiElements[i]->getChildrenUIElements());
 		}
 	}
 }
@@ -327,7 +334,7 @@ void ModeScreen::resizeCurrentModeUIElements(winrt::Windows::Foundation::Size wi
 {
 	auto uiElements = getCurrentModeUIElements();
 	for (int i = 0; i < uiElements.size(); i++) uiElements[i]->resize(windowSize);
-	getTextRenderHeights(uiElements);
+	getTextRenderPixels(uiElements);
 }
 
 const UIColor ModeScreen::getBackgroundColor()

@@ -91,9 +91,9 @@ void MasterRenderer::ReleaseDeviceDependentResources()
     //m_2DRenderer.ReleaseDeviceDependentResources();
 }
 
-void MasterRenderer::setTextLayoutHeight(UIText* text)
+void MasterRenderer::setTextLayoutPixels(UIText* text)
 {
-    m_uiElementRenderer.setTextLayoutHeight(text);
+    m_uiElementRenderer.setTextLayoutPixels(text);
 }
 
 void MasterRenderer::Render()

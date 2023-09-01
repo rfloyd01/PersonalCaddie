@@ -53,7 +53,7 @@ private:
 
 	void changeCurrentMode(ModeType mt);
 
-	void getTextRenderHeights(std::vector<std::shared_ptr<UIElement>> const& uiElements);
+	void getTextRenderPixels(std::vector<std::shared_ptr<UIElement>> const& uiElements);
 
 	void enterActiveState(); //depending on the current mode, something different will happen here
 	void leaveActiveState();
