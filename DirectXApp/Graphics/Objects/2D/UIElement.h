@@ -14,7 +14,8 @@ enum class UIElementState
 	Idle,
 	Clicked,
 	Scrolled,
-	Visible
+	Visible,
+	Hovered
 };
 
 //used to make sure all parts of the UI element are rendered

@@ -4,5 +4,6 @@
 
 #include "TextBoxes/StaticTextBox.h"
 #include "TextBoxes/TextOverlay.h"
+#include "TextBoxes/HighlightableTextOverlay.h"
 #include "TextBoxes/ScrollingTextBox.h"
 #include "UIButton.h"

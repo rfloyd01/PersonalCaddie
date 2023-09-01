@@ -42,8 +42,9 @@ void UITestMode::initializeTextOverlay(winrt::Windows::Foundation::Size windowSi
 {
 	//Title information
 	std::wstring message = L"UI Testing";
-	TextOverlay title(message, { UIColor::White }, { 0,  (unsigned int)message.length() }, UITextType::TITLE, windowSize);
-	m_uiElements.push_back(std::make_shared<TextOverlay>(title));
+	HighlightableTextOverlay title(message, { UIColor::White }, { 0,  (unsigned int)message.length() }, UITextType::TITLE, windowSize);
+	title.updateSecondaryColor(UIColor::Red);
+	m_uiElements.push_back(std::make_shared<HighlightableTextOverlay>(title));
 
 	//Sub-Title information
 	std::wstring subtitle_message = L"A place to develop custom UI Elements";

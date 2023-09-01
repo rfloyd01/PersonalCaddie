@@ -144,6 +144,7 @@
     <ClInclude Include="Graphics\Objects\2D\Interfaces\IHoverableUI.h" />
     <ClInclude Include="Graphics\Objects\2D\Interfaces\IScrollableUI.h" />
     <ClInclude Include="Graphics\Objects\2D\Interfaces\ITextBoxUI.h" />
+    <ClInclude Include="Graphics\Objects\2D\TextBoxes\HighlightableTextOverlay.h" />
     <ClInclude Include="Graphics\Objects\2D\TextBoxes\ScrollingTextBox.h" />
     <ClInclude Include="Graphics\Objects\2D\TextBoxes\StaticTextBox.h" />
     <ClInclude Include="Graphics\Objects\2D\TextBoxes\TextOverlay.h" />
@@ -204,6 +205,7 @@
     <ClCompile Include="Devices\Sensors\Gyroscope.cpp" />
     <ClCompile Include="Devices\Sensors\Magnetometer.cpp" />
     <ClCompile Include="Devices\Sensors\Sensor.cpp" />
+    <ClCompile Include="Graphics\Objects\2D\TextBoxes\HighlightableTextOverlay.cpp" />
     <ClCompile Include="Graphics\Objects\2D\TextBoxes\ScrollingTextBox.cpp" />
     <ClCompile Include="Graphics\Objects\2D\TextBoxes\StaticTextBox.cpp" />
     <ClCompile Include="Graphics\Objects\2D\TextBoxes\TextOverlay.cpp" />

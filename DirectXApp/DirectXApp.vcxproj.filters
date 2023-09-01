@@ -88,6 +88,9 @@
     <ClCompile Include="Graphics\Objects\2D\TextBoxes\ScrollingTextBox.cpp">
       <Filter>Graphics\Objects\2D\TextBoxes</Filter>
     </ClCompile>
+    <ClCompile Include="Graphics\Objects\2D\TextBoxes\HighlightableTextOverlay.cpp">
+      <Filter>Graphics\Objects\2D\TextBoxes</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -200,6 +203,9 @@
       <Filter>Modes</Filter>
     </ClInclude>
     <ClInclude Include="Graphics\Objects\2D\TextBoxes\ScrollingTextBox.h">
+      <Filter>Graphics\Objects\2D\TextBoxes</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Objects\2D\TextBoxes\HighlightableTextOverlay.h">
       <Filter>Graphics\Objects\2D\TextBoxes</Filter>
     </ClInclude>
   </ItemGroup>

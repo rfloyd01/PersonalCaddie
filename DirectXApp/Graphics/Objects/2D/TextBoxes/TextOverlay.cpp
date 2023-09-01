@@ -70,7 +70,8 @@ TextOverlay::TextOverlay(std::wstring const& text, std::vector<UIColor> const& c
 	DirectX::XMFLOAT2 start, DirectX::XMFLOAT2 size, float fontSize, UITextType type, UITextJustification justification)
 {
 	//This constructor is used when creating a new text overlay out of an existing one. In this case, the dimensions are already known
-	//so we don't need to look at the size of the current window.
+	//so we don't need to look at the size of the current window. This constructor can also be used for creating text overlay for compound UI Elements.
+	//This is seen on objects like drop down menus.
 	m_location = start;
 	m_size = size;
 	m_fontSize = fontSize;
