@@ -249,7 +249,8 @@ void ModeScreen::processTimers()
 			button_pressed = false;
 
 			//then change the color of all pressed buttons
-			for (int i = 0; i < m_modes[static_cast<int>(m_currentMode)]->getUIElements().size(); i++)
+			auto uiElements = m_modes[static_cast<int>(m_currentMode)]->getUIElements();
+			for (int i = 0; i < uiElements.size(); i++)
 			{
 				if (m_modes[static_cast<int>(m_currentMode)]->getUIElements()[i]->getState() == UIElementState::Clicked)
 				{

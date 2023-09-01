@@ -188,7 +188,24 @@ UIElementState ScrollingTextBox::update(InputState* inputState)
 		if (inputState->scrollWheelDirection < 0) onScrollDown();
 		else onScrollUp();
 	}
-	return m_state;
+
+	//After checking for a scroll event, see if either of the buttons are being clicked. Clicking one
+	//of the buttons has the effect of scrolling the box twice in the appropriate direction.
+	if (p_children[0]->update(inputState) == UIElementState::Clicked)
+	{
+		onScrollUp();
+		onScrollUp();
+		m_state = UIElementState::Clicked;
+		return UIElementState::Clicked;
+	}
+	else if (p_children[1]->update(inputState) == UIElementState::Clicked)
+	{
+		onScrollDown();
+		onScrollDown();
+		m_state = UIElementState::Clicked;
+		return UIElementState::Clicked;
+	}
+	return UIElementState::Idle; //if nothing happened this update then return the idle state
 }
 
 void ScrollingTextBox::initializeScrollProgressRectangle()
@@ -330,4 +347,13 @@ void ScrollingTextBox::calculateScrollBarLocation()
 	m_backgroundShapes[5].m_rectangle.bottom += pixels_moved;
 	m_backgroundShapes[6].m_rectangle.top += pixels_moved;
 	m_backgroundShapes[6].m_rectangle.bottom += pixels_moved;
+}
+
+void ScrollingTextBox::setState(UIElementState state)
+{
+	//The only state that the scroll box currently enters is clicked when one of it's buttons gets clicked.
+	//When this method is changed we update the scroll box's state as well as the buttons.
+	m_state = state;
+	p_children[0]->setState(state);
+	p_children[1]->setState(state);
 }

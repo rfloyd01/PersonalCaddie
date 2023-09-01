@@ -16,6 +16,8 @@ public:
 	virtual uint32_t addText(std::wstring text) override;
 	virtual UIElementState update(InputState* inputState) override;
 
+	virtual void setState(UIElementState state) override;
+
 protected:
 	virtual void resize(winrt::Windows::Foundation::Size windowSize) override;
 	void repositionElementText(winrt::Windows::Foundation::Size windowSize);
