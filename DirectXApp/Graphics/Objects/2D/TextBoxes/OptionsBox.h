@@ -39,8 +39,8 @@ protected:
 	//bool checkHover(DirectX::XMFLOAT2 mousePosition);
 	//virtual void onHover();
 
-	//virtual void onScrollUp();
-	//virtual void onScrollDown();
+	virtual void onScrollUp();
+	virtual void onScrollDown();
 
 	//float m_fontSize;
 	//float m_scrollIntensity, textPixelsPerScroll, rectanglePixelsPerScroll; //how far will the text move with each scroll

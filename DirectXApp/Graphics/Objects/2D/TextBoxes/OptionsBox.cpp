@@ -78,7 +78,6 @@ uint32_t OptionsBox::addText(std::wstring text, winrt::Windows::Foundation::Size
 		HighlightableTextOverlay childElement(option, { UIColor::Black }, { 0, (unsigned int)option.length() }, { 0, 0 }, { windowSize.Width, windowSize.Height }, m_fontSize * windowSize.Height, UITextType::ELEMENT_TEXT, UITextJustification::CenterLeft);
 		((UIText*)childElement.getRenderItem(RenderOrder::TextOverlay, 0))->needDPI = true;
 		childElement.setNeedTextRenderHeight(true);
-		childElement.setState(UIElementState::Invisible); //we start off not showing any of the text overlay
 		childElement.updateSecondaryColor(UIColor::Gray);
 		p_children.push_back(std::make_shared<HighlightableTextOverlay>(childElement));
 
@@ -172,7 +171,11 @@ void OptionsBox::initializeScrollProgressRectangle()
 
 	topOption = 2; //Since the buttons are now the first two child elements, the first option has moved to element 2
 	
+	//Set the actual pixel sizes for everything based on the current window size
 	resize(windowSize);
+
+	//Once the text options have been creted we need to make sure that only the first few are visible.
+	for (int i = topOption + optionsDisplayed; i < p_children.size(); i++) p_children[i]->setState(UIElementState::Invisible);
 }
 
 void OptionsBox::setOptionText(winrt::Windows::Foundation::Size windowSize)
@@ -180,26 +183,16 @@ void OptionsBox::setOptionText(winrt::Windows::Foundation::Size windowSize)
 	//Based on the current size of the text box and the current top option,
 	//set the render locations for all visible options.
 
-	//First make everything before the top option invisible
-	for (int i = 2; i < topOption; i++) p_children[i]->setState(UIElementState::Invisible); //start at element 2 because elements 0 and 1 are buttons
-
-	int stop = (topOption + optionsDisplayed - 2) < m_options.size() ? topOption + optionsDisplayed : p_children.size(); //TODO: in the onScroll methods, make it so that topOption + optionsDisplayed can't exceed the existing options
 	float fontHeight = ((UIText*)p_children[topOption]->getRenderItem(RenderOrder::TextOverlay, 0))->renderDPI.y;
-	for (int i = topOption; i < stop; i++)
+	for (int i = 2; i < p_children.size(); i++)
 	{
-		//first make sure the UI Element is visible
-		p_children[i]->setState(UIElementState::Idle);
-
 		//Then update the window screen dependent variables
-		((HighlightableTextOverlay*)p_children[i].get())->updateLocation({m_location.x - m_size.x / (float) 2.0, m_location.y - m_size.y / (float)2.0 + (i - topOption) * fontHeight / windowSize.Height }); //The location for a text overlay is the top left pixel
+		((HighlightableTextOverlay*)p_children[i].get())->updateLocation({ m_location.x - m_size.x / (float)2.0, m_location.y - m_size.y / (float)2.0 + (i - topOption) * fontHeight / windowSize.Height }); //The location for a text overlay is the top left pixel
 		((HighlightableTextOverlay*)p_children[i].get())->updateSize({ m_size.x - (float)0.01, fontHeight / windowSize.Height }); //add a little padding so words aren't right up against the border
 		((HighlightableTextOverlay*)p_children[i].get())->updateFontSize(m_fontSize);
 
 		p_children[i]->resize(windowSize);
 	}
-
-	//Lastly, set everything after the displayed options to invisible
-	for (int i = stop; i < p_children.size(); i++) p_children[i]->setState(UIElementState::Invisible);
 }
 
 UIElementState OptionsBox::update(InputState* inputState)
@@ -237,11 +230,78 @@ UIElementState OptionsBox::update(InputState* inputState)
 		return UIElementState::Clicked;
 	}
 
-	//Check to see if any of the text is being hovered over
+	//Check the visible options to see if any of the text is being hovered over
 	int stop = (topOption + optionsDisplayed - 2) < m_options.size() ? topOption + optionsDisplayed : p_children.size(); //TODO: in the onScroll methods, make it so that topOption + optionsDisplayed can't exceed the existing options
 	for (int i = topOption; i < stop; i++) p_children[i]->update(inputState);
 
 	return UIElementState::Idle; //if nothing happened this update then return the idle state
+}
+
+void OptionsBox::onScrollUp()
+{
+	//When Scrolling up, we first check to see if there are any option in the child array that are less than the current top option.
+	//If there aren't then it means we're already at the top of the scroll box so we do nothing. Since the first two children of 
+	//the options box ui element are buttons, the highest up option will always appear at index 2 of the child array.
+	if (topOption > 2)
+	{
+		//simply loop through all of the options currently displayed and have each display option "steal"
+		//the coordinates of the one in front of it. This will effectively scroll every option up by 1. We
+		//should never get an index out of bounds here because if all options are displayed in the box then 
+		//the current topOption will have a value of 2 and this if block won't execute.
+
+		p_children[topOption + optionsDisplayed - 1]->setState(UIElementState::Invisible); //The current bottom option will no longer be visible
+		topOption--; //decrement the top option by one
+		p_children[topOption]->setState(UIElementState::Idle); //The new top option is now visible
+
+		//To actually move the options we'll need to know the current size of the screen. This can be calculated
+		//by comparing the absolute size of the scroll box to its current size in pixels.
+		winrt::Windows::Foundation::Size currentWindowSize;
+		currentWindowSize.Height = (m_backgroundShapes[1].m_rectangle.bottom - m_backgroundShapes[1].m_rectangle.top) / m_size.y;
+		currentWindowSize.Width = (m_backgroundShapes[1].m_rectangle.right - m_backgroundShapes[1].m_rectangle.left) / m_size.x;
+
+		for (int i = topOption; i < topOption + optionsDisplayed; i++)
+		{
+			((HighlightableTextOverlay*)p_children[i].get())->updateLocation(p_children[i + 1]->getLocation()); //update the absolute coordinates of the option
+
+			//After moving the absolute position of the option, we need to move its pixles to match the new location.
+			p_children[i]->resize(currentWindowSize);
+		}
+
+		//After shifting all of the options move the scroll bar accordingly
+		//calculateScrollBarLocation();
+	}
+}
+
+void OptionsBox::onScrollDown()
+{
+	//When Scrolling down, we first compare the current option at the top of the box vs. the number of options below it. If all of the options
+	//below the current top option fit in the box then there's no reason to move the text upwards and we do nothing.
+	if (topOption + optionsDisplayed < p_children.size())
+	{
+		//simply loop through all of the options currently displayed and have each display option "steal"
+		//the coordinates of the one behind it. This will effectively scroll every option down by 1.
+
+		p_children[topOption]->setState(UIElementState::Invisible); //The current top option will no longer be visible
+		topOption++; //increment the top option by one
+		p_children[topOption + optionsDisplayed - 1]->setState(UIElementState::Idle); //The current bottom option will now be visible
+
+		//To actually move the options we'll need to know the current size of the screen. This can be calculated
+		//by comparing the absolute size of the scroll box to its current size in pixels.
+		winrt::Windows::Foundation::Size currentWindowSize;
+		currentWindowSize.Height = (m_backgroundShapes[1].m_rectangle.bottom - m_backgroundShapes[1].m_rectangle.top) / m_size.y;
+		currentWindowSize.Width = (m_backgroundShapes[1].m_rectangle.right - m_backgroundShapes[1].m_rectangle.left) / m_size.x;
+		
+		for (int i = topOption + optionsDisplayed - 1; i >= topOption; i--)
+		{
+			((HighlightableTextOverlay*)p_children[i].get())->updateLocation(p_children[i - 1]->getLocation());  //update the absolute coordinates of the option
+
+			//After moving the absolute position of the option, we need to move its pixles to match the new location.
+			p_children[i]->resize(currentWindowSize);
+		}
+
+		//After shifting all of the options move the scroll bar accordingly
+		//calculateScrollBarLocation();
+	}
 }
 
 uint32_t OptionsBox::addText(std::wstring text)

@@ -160,6 +160,8 @@ void UIElementRenderer::render(std::vector<std::shared_ptr<UIElement> > const& u
 
     for (int i = 0; i < uiElements.size(); i++)
     {
+        if (uiElements[i]->getState() == UIElementState::Invisible) continue; //invisible elements don't get rendered
+
         for (int j = 0; j < static_cast<int>(RenderOrder::End); j++)
         {
             RenderOrder renderOrder = static_cast<RenderOrder>(j);
@@ -185,6 +187,8 @@ void UIElementRenderer::render(std::vector<std::shared_ptr<UIElement> > const& u
     //reserved for things like the title of a page.
     for (int i = 0; i < uiElements.size(); i++)
     {
+        if (uiElements[i]->getState() == UIElementState::Invisible) continue; //invisible elements don't get rendered
+
         int renderLength = uiElements[i]->getRenderVectorSize(RenderOrder::TextOverlay);
         for (int j = 0; j < renderLength; j++) renderText((UIText*)uiElements[i]->getRenderItem(RenderOrder::TextOverlay, j));
     }
