@@ -43,7 +43,6 @@ OptionsBox::OptionsBox(DirectX::XMFLOAT2 location, float height, std::wstring te
 	scrollRectangleInitialized = false;
 
 	addText(text, windowSize);
-	//resize(windowSize); //sets the appropriate sizes for both the rectangle and text
 
 	//In order to lock the bottom of the scrolling text to the bottome of the text box, we need to know
 	//the height of the text layout. Set the appropriate booleans to true in both this class and
@@ -84,7 +83,7 @@ uint32_t OptionsBox::addText(std::wstring text, winrt::Windows::Foundation::Size
 		i = j + 1;
 	}
 
-	needTextResize = true; //alerts the update function that we need to potentially resize our box width because of the new text
+	scrollRectangleInitialized = false; //alerts the update function that we need to potentially resize our box width because of the new text
 	return ModeState::NeedTextUpdate; //alert whoever added the text that the current mode needs to get new text height from the renderer class
 }
 
@@ -155,27 +154,59 @@ void OptionsBox::initializeScrollProgressRectangle()
 
 	//Now that we know that maximum width, we can safely start creating the rest of the box. First, we need
 	//to create the scroll box buttons and insert them into the child array before the TextOverlay objects.
-	float button_height = 0.1 * m_size.y;
-	float button_width = button_height * windowSize.Height / windowSize.Width; //to make button square we need to factor in difference in window height and width
+	//It's possible that this isn't the first time this method is getting called, so see if any buttons exist
+	//already before creating them.
+	if (m_options.size() == p_children.size())
+	{
+		float button_height = 0.1 * m_size.y;
+		float button_width = button_height * windowSize.Height / windowSize.Width; //to make button square we need to factor in difference in window height and width
 
-	float buttonX = (m_location.x + m_size.x / (float)2.0 + button_width / (float)2.0); //the butt
+		float buttonX = (m_location.x + m_size.x / (float)2.0 + button_width / (float)2.0); //the butt
 
-	UIButton    top_button({ buttonX, m_location.y - m_size.y / (float)2.0 + button_height / (float)2.0 }, { button_width, button_height }, windowSize);
-	UIButton bottom_button({ buttonX, m_location.y + m_size.y / (float)2.0 - button_height / (float)2.0 }, { button_width, button_height }, windowSize);
+		UIButton    top_button({ buttonX, m_location.y - m_size.y / (float)2.0 + button_height / (float)2.0 }, { button_width, button_height }, windowSize);
+		UIButton bottom_button({ buttonX, m_location.y + m_size.y / (float)2.0 - button_height / (float)2.0 }, { button_width, button_height }, windowSize);
 
-	top_button.setParent(this);
-	bottom_button.setParent(this);
+		top_button.setParent(this);
+		bottom_button.setParent(this);
 
-	p_children.insert(p_children.begin(), std::make_shared<UIButton>(bottom_button));
-	p_children.insert(p_children.begin(), std::make_shared<UIButton>(top_button));
+		p_children.insert(p_children.begin(), std::make_shared<UIButton>(bottom_button));
+		p_children.insert(p_children.begin(), std::make_shared<UIButton>(top_button));
 
-	topOption = 2; //Since the buttons are now the first two child elements, the first option has moved to element 2
-	
+		topOption = 2; //Since the buttons are now the first two child elements, the first option has moved to element 2
+	}
+
 	//Set the actual pixel sizes for everything based on the current window size
 	resize(windowSize);
 
 	//Once the text options have been creted we need to make sure that only the first few are visible.
 	for (int i = topOption + optionsDisplayed; i < p_children.size(); i++) p_children[i]->setState(UIElementState::Invisible);
+
+	//With the buttons and text created we can now create the variables necessary for the scrolling rectangle element
+	float scrollBarBacgkroundAbsoluteHeight = (m_backgroundShapes[4].m_rectangle.bottom - m_backgroundShapes[4].m_rectangle.top) / windowSize.Height;
+
+	//If the text doesn't take up the full text box then make the rectangle 95% of the full height of the background rectangle.
+	//Otherwise, the height should be the same as the ratio of the text box height to the total text height
+	if (optionsDisplayed >= p_children.size() - 2) scrollRectangleAbsoluteHeight = 0.98 * scrollBarBacgkroundAbsoluteHeight;
+	else scrollRectangleAbsoluteHeight = ((float)optionsDisplayed / (float)(p_children.size() - 2)) * scrollBarBacgkroundAbsoluteHeight;
+
+	//Create the shadow first
+	m_backgroundShapes[5].m_rectangle = { m_backgroundShapes[1].m_rectangle.right + 1, m_backgroundShapes[4].m_rectangle.top + 2, m_backgroundShapes[4].m_rectangle.right, 0 };
+	m_backgroundShapes[5].m_rectangle.bottom = (m_backgroundShapes[4].m_rectangle.bottom - m_backgroundShapes[4].m_rectangle.top) * scrollRectangleAbsoluteHeight / scrollBarBacgkroundAbsoluteHeight + m_backgroundShapes[5].m_rectangle.top;
+
+	//then the fill
+	m_backgroundShapes[6].m_rectangle = { m_backgroundShapes[5].m_rectangle.left + 1, m_backgroundShapes[5].m_rectangle.top + 1, m_backgroundShapes[5].m_rectangle.right - 2, m_backgroundShapes[5].m_rectangle.bottom - 2 };
+
+	//set the scroll rectangle absolute location, this is necessary for when the window changes sizes. The absolute size is just the y-coordinate of the top
+	//of the rectangle compared to the height of the window.
+	scrollRectangleAbsoluteCeiling = m_location.y - (scrollBarBacgkroundAbsoluteHeight - scrollRectangleAbsoluteHeight) / (float)2.0;
+	scrollRectangleAbsoluteLocation = scrollRectangleAbsoluteCeiling; //the scroll bar starts all the way at the top
+
+	//the lowest location that the scroll rectangle can go is the same as the starting position, just flipped around the y-axis,
+	//relative to the center of the text box
+	scrollRectangleAbsoluteFloor = m_location.y + (scrollBarBacgkroundAbsoluteHeight - scrollRectangleAbsoluteHeight) / (float)2.0;
+
+	//lastly calculate the percentage move distance of the scroll bar each time we scroll.
+	m_scrollBarAbsoluteMovement = (scrollRectangleAbsoluteFloor - scrollRectangleAbsoluteCeiling) / (p_children.size() - 2 - optionsDisplayed);
 }
 
 void OptionsBox::setOptionText(winrt::Windows::Foundation::Size windowSize)
@@ -268,7 +299,7 @@ void OptionsBox::onScrollUp()
 		}
 
 		//After shifting all of the options move the scroll bar accordingly
-		//calculateScrollBarLocation();
+		calculateScrollBarLocation(-1, currentWindowSize.Height);
 	}
 }
 
@@ -300,8 +331,23 @@ void OptionsBox::onScrollDown()
 		}
 
 		//After shifting all of the options move the scroll bar accordingly
-		//calculateScrollBarLocation();
+		calculateScrollBarLocation(1, currentWindowSize.Height);
 	}
+}
+
+void OptionsBox::calculateScrollBarLocation(int direction, float windowHeight)
+{
+	//Since the scroll box can only move by a set amount we precalculate the distance of a scroll and just apply that here.
+	if (direction < 0) scrollRectangleAbsoluteLocation -= m_scrollBarAbsoluteMovement;
+	else scrollRectangleAbsoluteLocation += m_scrollBarAbsoluteMovement;
+
+	//After changing the absolute position of the scroll bar, resize it's pixels per the current screen size.
+	//After the buttons are resized, start resizing the rectangular scroll bar
+	auto topButtonPixels = p_children[0]->getPixels(RenderOrder::Background, 0);
+	auto bottomButtonPixels = p_children[1]->getPixels(RenderOrder::Background, 0);
+
+	m_backgroundShapes[5].m_rectangle = { m_backgroundShapes[1].m_rectangle.right + 1, windowHeight * (scrollRectangleAbsoluteLocation - scrollRectangleAbsoluteHeight / (float)2.0) + 2, m_backgroundShapes[4].m_rectangle.right, windowHeight * (scrollRectangleAbsoluteLocation + scrollRectangleAbsoluteHeight / (float)2.0) };
+	m_backgroundShapes[6].m_rectangle = { m_backgroundShapes[5].m_rectangle.left + 1, m_backgroundShapes[5].m_rectangle.top + 1, m_backgroundShapes[5].m_rectangle.right - 2, m_backgroundShapes[5].m_rectangle.bottom - 2 };
 }
 
 uint32_t OptionsBox::addText(std::wstring text)

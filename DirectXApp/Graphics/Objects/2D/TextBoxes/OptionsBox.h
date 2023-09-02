@@ -34,7 +34,7 @@ protected:
 
 	virtual void initializeScrollProgressRectangle() override;
 	void setOptionText(winrt::Windows::Foundation::Size windowSize);
-	//void calculateScrollBarLocation();
+	void calculateScrollBarLocation(int direction, float windowHeight);
 
 	//bool checkHover(DirectX::XMFLOAT2 mousePosition);
 	//virtual void onHover();
@@ -46,9 +46,7 @@ protected:
 	//float m_scrollIntensity, textPixelsPerScroll, rectanglePixelsPerScroll; //how far will the text move with each scroll
 	//DirectX::XMFLOAT2 m_textStart; //the absolute starting position for text. This value will change as we scroll up or down in the box
 
-	//bool scrollRectangleInitialized;
-	//float scrollRectangleAbsoluteHeight, scrollRectangleAbsoluteLocation, scrollRectangleAbsoluteCeiling, scrollRectangleAbsoluteFloor;
-	bool needTextResize;
+	float m_scrollBarAbsoluteMovement;
 	int topOption = 0, optionsDisplayed = 0; //keeps track of which option is currently at the top of the text box, and how many total options to display
 	std::vector<std::wstring> m_options; //holds all of the options for the box in order, not just the options currently being displayed
 };
