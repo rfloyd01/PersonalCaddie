@@ -32,6 +32,8 @@ struct UIShape
 
 	}
 
+	UIShape() { m_shapeType = UIShapeType::END; }; //this tells other parts of the program that this UIShape hasn't been initialized yet
+
 	D2D1_RECT_F m_rectangle;          //for now, all UIShapes are simply rectangles
 	UIColor m_color; //holds the different colors of the text (in order)
 	UIShapeFillType m_fillType; //holds the index of all characters where the text color switches. This vector must be 1 element longer than the colors vector

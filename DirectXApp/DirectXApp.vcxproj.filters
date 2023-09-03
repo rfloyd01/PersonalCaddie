@@ -94,6 +94,18 @@
     <ClCompile Include="Graphics\Objects\2D\TextBoxes\OptionsBox.cpp">
       <Filter>Graphics\Objects\2D\TextBoxes</Filter>
     </ClCompile>
+    <ClCompile Include="Graphics\Objects\2D\UIElementBasic.cpp">
+      <Filter>Graphics\Objects\2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\Objects\2D\BasicElements\Box.cpp">
+      <Filter>Graphics\Objects\2D\BasicElements</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\Objects\2D\BasicElements\TextOverlayBasic.cpp">
+      <Filter>Graphics\Objects\2D\BasicElements</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\Objects\2D\Buttons\Button.cpp">
+      <Filter>Graphics\Objects\2D\Buttons</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -214,6 +226,24 @@
     <ClInclude Include="Graphics\Objects\2D\TextBoxes\OptionsBox.h">
       <Filter>Graphics\Objects\2D\TextBoxes</Filter>
     </ClInclude>
+    <ClInclude Include="Graphics\Objects\2D\UIElementBasic.h">
+      <Filter>Graphics\Objects\2D</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Objects\2D\BasicElements\Box.h">
+      <Filter>Graphics\Objects\2D\BasicElements</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Objects\2D\BasicElements\OutlinedBox.h">
+      <Filter>Graphics\Objects\2D\BasicElements</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Objects\2D\BasicElements\ShadowedBox.h">
+      <Filter>Graphics\Objects\2D\BasicElements</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Objects\2D\BasicElements\TextOverlayBasic.h">
+      <Filter>Graphics\Objects\2D\BasicElements</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Objects\2D\Buttons\Button.h">
+      <Filter>Graphics\Objects\2D\Buttons</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Assets\Wide310x150Logo.scale-200.png">
@@ -283,6 +313,12 @@
     </Filter>
     <Filter Include="Graphics\Objects\2D\TextBoxes">
       <UniqueIdentifier>{a73bc7c2-c197-40c5-ae17-5056fe2aa12c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Graphics\Objects\2D\BasicElements">
+      <UniqueIdentifier>{b06126c3-fb20-43c5-9f36-be91221a418f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Graphics\Objects\2D\Buttons">
+      <UniqueIdentifier>{4ed0a644-0e7d-47ec-9cf7-300c6aab2c9b}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

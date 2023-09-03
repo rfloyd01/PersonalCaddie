@@ -50,6 +50,8 @@ struct UIText
 
 	}
 
+	UIText() { textType = UITextType::END; }; //this tells other parts of the program that this UIText hasn't been initialized yet
+
 	std::wstring message;
 	DirectX::XMFLOAT2 startLocation; //the top left corner of the rendering box for the text (the size of the render box is calculated elsewhere)
 	DirectX::XMFLOAT2 renderArea; //the size of the rendering area for the text

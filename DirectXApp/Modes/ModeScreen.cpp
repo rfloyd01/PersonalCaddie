@@ -330,11 +330,23 @@ std::vector<std::shared_ptr<UIElement> > const& ModeScreen::getCurrentModeUIElem
 	return m_modes[static_cast<int>(m_currentMode)]->getUIElements();
 }
 
+std::vector<std::shared_ptr<UIElementBasic> > const& ModeScreen::getCurrentModeUIElementsBasic()
+{
+	//returns a reference to all UI elements to be rendered on screen
+	return m_modes[static_cast<int>(m_currentMode)]->getUIElementsBasic();
+}
+
 void ModeScreen::resizeCurrentModeUIElements(winrt::Windows::Foundation::Size windowSize)
 {
 	auto uiElements = getCurrentModeUIElements();
 	for (int i = 0; i < uiElements.size(); i++) uiElements[i]->resize(windowSize);
 	getTextRenderPixels(uiElements);
+}
+
+void ModeScreen::resizeCurrentModeUIElementsBasic(winrt::Windows::Foundation::Size windowSize)
+{
+	auto uiElements = getCurrentModeUIElementsBasic();
+	for (int i = 0; i < uiElements.size(); i++) uiElements[i]->resize(windowSize);
 }
 
 const UIColor ModeScreen::getBackgroundColor()

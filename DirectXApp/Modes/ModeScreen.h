@@ -42,7 +42,11 @@ public:
 	void PersonalCaddieHandler(PersonalCaddieEventType pcEvent, void* eventArgs);
 
 	std::vector<std::shared_ptr<UIElement> > const& getCurrentModeUIElements();
+	std::vector<std::shared_ptr<UIElementBasic> > const& getCurrentModeUIElementsBasic();
+
 	void resizeCurrentModeUIElements(winrt::Windows::Foundation::Size windowSize);
+	void resizeCurrentModeUIElementsBasic(winrt::Windows::Foundation::Size windowSize);
+
 	void createAlert(std::wstring message, UIColor color);
 
 private:

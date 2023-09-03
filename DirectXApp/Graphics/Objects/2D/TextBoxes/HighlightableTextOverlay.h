@@ -21,7 +21,8 @@ public:
 	void updateFontSize(float font_size) { m_fontSize = font_size; }
 
 protected:
-	virtual bool checkHover(DirectX::XMFLOAT2 mousePosition) override; //checks to see if the element is being hovered over
+	//virtual bool checkHover(DirectX::XMFLOAT2 mousePosition) override; //checks to see if the element is being hovered over
+	bool checkHover(DirectX::XMFLOAT2 mousePosition); //checks to see if the element is being hovered over
 	virtual void onHover() override;
 	void removeHover();
 

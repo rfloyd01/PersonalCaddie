@@ -8,3 +8,8 @@
 #include "TextBoxes/ScrollingTextBox.h"
 #include "TextBoxes/OptionsBox.h"
 #include "UIButton.h"
+
+#include "BasicElements/Box.h"
+#include "BasicElements/OutlinedBox.h"
+#include "BasicElements/ShadowedBox.h"
+#include "Buttons/Button.h"

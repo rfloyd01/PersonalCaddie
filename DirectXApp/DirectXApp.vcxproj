@@ -140,6 +140,11 @@
     <ClInclude Include="Devices\Sensors\Gyroscope.h" />
     <ClInclude Include="Devices\Sensors\Magnetometer.h" />
     <ClInclude Include="Devices\Sensors\Sensor.h" />
+    <ClInclude Include="Graphics\Objects\2D\BasicElements\Box.h" />
+    <ClInclude Include="Graphics\Objects\2D\BasicElements\OutlinedBox.h" />
+    <ClInclude Include="Graphics\Objects\2D\BasicElements\ShadowedBox.h" />
+    <ClInclude Include="Graphics\Objects\2D\BasicElements\TextOverlayBasic.h" />
+    <ClInclude Include="Graphics\Objects\2D\Buttons\Button.h" />
     <ClInclude Include="Graphics\Objects\2D\Interfaces\IClickableUI.h" />
     <ClInclude Include="Graphics\Objects\2D\Interfaces\IHoverableUI.h" />
     <ClInclude Include="Graphics\Objects\2D\Interfaces\IScrollableUI.h" />
@@ -151,6 +156,7 @@
     <ClInclude Include="Graphics\Objects\2D\TextBoxes\TextOverlay.h" />
     <ClInclude Include="Graphics\Objects\2D\UIButton.h" />
     <ClInclude Include="Graphics\Objects\2D\UIElement.h" />
+    <ClInclude Include="Graphics\Objects\2D\UIElementBasic.h" />
     <ClInclude Include="Graphics\Objects\2D\UIElements.h" />
     <ClInclude Include="Graphics\Objects\2D\UIShape.h" />
     <ClInclude Include="Graphics\Objects\2D\UIText.h" />
@@ -206,6 +212,9 @@
     <ClCompile Include="Devices\Sensors\Gyroscope.cpp" />
     <ClCompile Include="Devices\Sensors\Magnetometer.cpp" />
     <ClCompile Include="Devices\Sensors\Sensor.cpp" />
+    <ClCompile Include="Graphics\Objects\2D\BasicElements\Box.cpp" />
+    <ClCompile Include="Graphics\Objects\2D\BasicElements\TextOverlayBasic.cpp" />
+    <ClCompile Include="Graphics\Objects\2D\Buttons\Button.cpp" />
     <ClCompile Include="Graphics\Objects\2D\TextBoxes\HighlightableTextOverlay.cpp" />
     <ClCompile Include="Graphics\Objects\2D\TextBoxes\OptionsBox.cpp" />
     <ClCompile Include="Graphics\Objects\2D\TextBoxes\ScrollingTextBox.cpp" />
@@ -213,6 +222,7 @@
     <ClCompile Include="Graphics\Objects\2D\TextBoxes\TextOverlay.cpp" />
     <ClCompile Include="Graphics\Objects\2D\UIButton.cpp" />
     <ClCompile Include="Graphics\Objects\2D\UIElement.cpp" />
+    <ClCompile Include="Graphics\Objects\2D\UIElementBasic.cpp" />
     <ClCompile Include="Graphics\Objects\2D\UIShape.cpp" />
     <ClCompile Include="Graphics\Objects\2D\UIText.cpp" />
     <ClCompile Include="Graphics\Rendering\MasterRenderer.cpp" />

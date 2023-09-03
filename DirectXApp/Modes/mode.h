@@ -45,6 +45,7 @@ public:
 	const UIColor getBackgroundColor();
 
 	std::vector<std::shared_ptr<UIElement> > const& getUIElements() { return m_uiElements; }
+	std::vector<std::shared_ptr<UIElementBasic> > const& getUIElementsBasic() { return m_uiElementsBasic; }
 
 	template <typename T>
 	void addUIElement(T const& element) { m_uiElements.push_back(std::make_shared<T>(element)); }
@@ -59,5 +60,6 @@ protected:
 	//float m_backgroundColor[4]; 
 	UIColor m_backgroundColor; //represents the background color when this mode is being rendered
 
-	std::vector<std::shared_ptr<UIElement> >    m_uiElements; //2d objects like Drop downs, combo boxes, buttons and text
+	std::vector<std::shared_ptr<UIElement> >       m_uiElements; //2d objects like Drop downs, combo boxes, buttons and text
+	std::vector<std::shared_ptr<UIElementBasic> >  m_uiElementsBasic; //Test, new basic element class
 };
