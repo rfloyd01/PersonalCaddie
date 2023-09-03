@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "UIElementBasic.h"
+#include "Buttons/Button.h"
 
 void UIElementBasic::resize(winrt::Windows::Foundation::Size windowSize)
 {
@@ -33,10 +34,10 @@ uint32_t UIElementBasic::update(InputState* inputState)
 	//call this method on each of it's children to give us a snap shot of the state for
 	//each element on the page.
 
-	if (m_state | UIElementStateBasic::Invisible) return 0; //Invisible elements don't get updated
+	if (m_state & UIElementStateBasic::Invisible) return 0; //Invisible elements don't get updated
 
 	//If the element can't be interacted with in any way then simple return the idle state.
-	if (!m_isClickable || !m_isHoverable || !m_isScrollable) return UIElementStateBasic::Idlee;
+	if (!m_isClickable && !m_isHoverable && !m_isScrollable) return UIElementStateBasic::Idlee;
 
 	uint32_t currentState = 0;
 	bool mouseHovered = isMouseHovered(inputState->mousePosition);
@@ -46,7 +47,7 @@ uint32_t UIElementBasic::update(InputState* inputState)
 	{
 		//cast the current object into an IHoverableUI so we can call it's onHover()
 		//method.
-		((IHoverableUI*)this)->onHover();
+		onHover();
 		currentState |= UIElementStateBasic::Hovered;
 	}
 
@@ -55,9 +56,7 @@ uint32_t UIElementBasic::update(InputState* inputState)
 		//if the UI Element is clickable, check to see if we're currently clicking it.
 		if (inputState->mouseClick)
 		{
-			//cast the current object into an IClickableUI so we can call it's onClick()
-		    //method.
-			((IClickableUI*)this)->onClick();
+			onClick();
 			currentState |= UIElementStateBasic::Clicked;
 		}
 	}
@@ -69,8 +68,8 @@ uint32_t UIElementBasic::update(InputState* inputState)
 		{
 			//cast the current object into an IScrollableUI so we can call it's onScrollUp()
 			//or onScrollDown() method.
-			if (inputState->scrollWheelDirection > 0) ((IScrollableUI*)this)->onScrollUp();
-			else ((IScrollableUI*)this)->onScrollDown();
+			if (inputState->scrollWheelDirection > 0) onScrollUp();
+			else onScrollDown();
 			currentState |= UIElementStateBasic::Scrolled;
 		}
 	}

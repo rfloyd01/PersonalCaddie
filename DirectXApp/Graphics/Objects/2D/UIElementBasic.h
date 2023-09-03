@@ -1,5 +1,7 @@
 #pragma once
 
+#include "pch.h"
+
 #include "UIText.h"
 #include "UIShape.h"
 
@@ -53,6 +55,11 @@ public:
 protected:
 	winrt::Windows::Foundation::Size getCurrentWindowSize();
 	virtual bool isMouseHovered(DirectX::XMFLOAT2 mousePosition);
+
+	virtual void onClick() {} //empty onClick method can be overriden by IClickable element users
+	virtual void onScrollUp() {} //empty onClick method can be overriden by IClickable element users
+	virtual void onScrollDown() {} //empty onClick method can be overriden by IClickable element users
+	virtual void onHover() {} //empty onClick method can be overriden by IClickable element users
 
 	//Screen size dependent variables
 	DirectX::XMFLOAT2                             m_location; //location of the center of the element  as a ratio of the current screen size

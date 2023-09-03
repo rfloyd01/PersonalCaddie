@@ -141,10 +141,13 @@
     <ClInclude Include="Devices\Sensors\Magnetometer.h" />
     <ClInclude Include="Devices\Sensors\Sensor.h" />
     <ClInclude Include="Graphics\Objects\2D\BasicElements\Box.h" />
+    <ClInclude Include="Graphics\Objects\2D\BasicElements\Line.h" />
     <ClInclude Include="Graphics\Objects\2D\BasicElements\OutlinedBox.h" />
     <ClInclude Include="Graphics\Objects\2D\BasicElements\ShadowedBox.h" />
     <ClInclude Include="Graphics\Objects\2D\BasicElements\TextOverlayBasic.h" />
+    <ClInclude Include="Graphics\Objects\2D\Buttons\ArrowButton.h" />
     <ClInclude Include="Graphics\Objects\2D\Buttons\Button.h" />
+    <ClInclude Include="Graphics\Objects\2D\Buttons\TextButton.h" />
     <ClInclude Include="Graphics\Objects\2D\Interfaces\IClickableUI.h" />
     <ClInclude Include="Graphics\Objects\2D\Interfaces\IHoverableUI.h" />
     <ClInclude Include="Graphics\Objects\2D\Interfaces\IScrollableUI.h" />
@@ -213,6 +216,7 @@
     <ClCompile Include="Devices\Sensors\Magnetometer.cpp" />
     <ClCompile Include="Devices\Sensors\Sensor.cpp" />
     <ClCompile Include="Graphics\Objects\2D\BasicElements\Box.cpp" />
+    <ClCompile Include="Graphics\Objects\2D\BasicElements\Line.cpp" />
     <ClCompile Include="Graphics\Objects\2D\BasicElements\TextOverlayBasic.cpp" />
     <ClCompile Include="Graphics\Objects\2D\Buttons\Button.cpp" />
     <ClCompile Include="Graphics\Objects\2D\TextBoxes\HighlightableTextOverlay.cpp" />

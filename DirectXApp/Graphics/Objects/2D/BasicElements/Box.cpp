@@ -32,7 +32,7 @@ void Box::resize(winrt::Windows::Foundation::Size windowSize)
 
 		if (m_text.textType != UITextType::END)
 		{
-			m_text.startLocation = { windowSize.Height * (m_location.x - m_size.x / (float)2.0), windowSize.Height * (m_location.y - m_size.y / (float)2.0) }; //text always starts at the top left of the UI Element
+			m_text.startLocation = { windowSize.Width * m_location.x - windowSize.Height * m_size.x / (float)2.0, windowSize.Height * (m_location.y - m_size.y / (float)2.0) }; //text always starts at the top left of the UI Element
 			m_text.renderArea = { windowSize.Height * m_size.x, windowSize.Height * m_size.y };
 			m_text.fontSize = windowSize.Height * m_fontSize;
 		}

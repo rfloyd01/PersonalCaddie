@@ -14,7 +14,8 @@ enum class UIShapeType
 	RECTANGLE = 0,
 	ELLIPSE = 1,
 	TRIANGLE = 2,
-	END = 3
+	LINE = 3,
+	END = 4
 };
 
 enum class UIColor;

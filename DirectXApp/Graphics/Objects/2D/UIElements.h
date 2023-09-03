@@ -13,3 +13,5 @@
 #include "BasicElements/OutlinedBox.h"
 #include "BasicElements/ShadowedBox.h"
 #include "Buttons/Button.h"
+#include "Buttons/TextButton.h"
+#include "Buttons/ArrowButton.h"

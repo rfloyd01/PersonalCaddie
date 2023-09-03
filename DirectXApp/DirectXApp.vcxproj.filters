@@ -106,6 +106,9 @@
     <ClCompile Include="Graphics\Objects\2D\Buttons\Button.cpp">
       <Filter>Graphics\Objects\2D\Buttons</Filter>
     </ClCompile>
+    <ClCompile Include="Graphics\Objects\2D\BasicElements\Line.cpp">
+      <Filter>Graphics\Objects\2D\BasicElements</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -243,6 +246,15 @@
     </ClInclude>
     <ClInclude Include="Graphics\Objects\2D\Buttons\Button.h">
       <Filter>Graphics\Objects\2D\Buttons</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Objects\2D\Buttons\TextButton.h">
+      <Filter>Graphics\Objects\2D\Buttons</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Objects\2D\Buttons\ArrowButton.h">
+      <Filter>Graphics\Objects\2D\Buttons</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Objects\2D\BasicElements\Line.h">
+      <Filter>Graphics\Objects\2D\BasicElements</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

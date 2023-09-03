@@ -219,14 +219,14 @@ void UIElementRenderer::renderShape(const UIShape* shape)
     //this method
     auto d2dContext = m_deviceResources->GetD2DDeviceContext();
 
-    switch (shape->m_fillType)
+    switch (shape->m_shapeType)
     {
-    case UIShapeFillType::NoFill:
-        d2dContext->DrawRectangle(shape->m_rectangle, m_solidColorBrushes[static_cast<int>(shape->m_color)].get(), 1.0f);
+    case UIShapeType::RECTANGLE:
+        if (shape->m_fillType == UIShapeFillType::NoFill) d2dContext->DrawRectangle(shape->m_rectangle, m_solidColorBrushes[static_cast<int>(shape->m_color)].get(), 1.0f);
+        else d2dContext->FillRectangle(shape->m_rectangle, m_solidColorBrushes[static_cast<int>(shape->m_color)].get());
         break;
-    case UIShapeFillType::Fill:
-        d2dContext->FillRectangle(shape->m_rectangle, m_solidColorBrushes[static_cast<int>(shape->m_color)].get());
-        break;
+    case UIShapeType::LINE:
+        d2dContext->DrawLine({ shape->m_rectangle.left, shape->m_rectangle.top }, { shape->m_rectangle.right, shape->m_rectangle.bottom }, m_solidColorBrushes[static_cast<int>(shape->m_color)].get());
     }
 }
 

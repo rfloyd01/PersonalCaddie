@@ -168,7 +168,7 @@ void ModeScreen::processMouseInput(InputState* inputState)
 {
 	//need to poll all of the 2D elements in the current mode to see if the mouse is
 	//over any of them
-	for (int i = 0; i < m_modes[static_cast<int>(m_currentMode)]->getUIElements().size(); i++)
+	/*for (int i = 0; i < m_modes[static_cast<int>(m_currentMode)]->getUIElements().size(); i++)
 	{
 		UIElementState objectState = m_modes[static_cast<int>(m_currentMode)]->getUIElements()[i]->update(inputState);
 		switch (objectState)
@@ -195,6 +195,11 @@ void ModeScreen::processMouseInput(InputState* inputState)
 			break;
 		}
 		}
+	}*/
+
+	for (int i = 0; i < m_modes[static_cast<int>(m_currentMode)]->getUIElementsBasic().size(); i++)
+	{
+		uint32_t objectState = m_modes[static_cast<int>(m_currentMode)]->getUIElementsBasic()[i]->update(inputState);
 	}
 
 	//reset input states if necessary
