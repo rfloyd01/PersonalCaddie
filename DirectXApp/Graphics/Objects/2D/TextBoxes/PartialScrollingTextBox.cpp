@@ -117,21 +117,17 @@ void PartialScrollingTextBox::repositionText()
 		}
 	}
 
-	//Highjacking this method to use the chance to reposition the arrow buttons as well. Since the arrow buttons
-	//are squares their x dimension isn't tied to the width of the screen. This means that resizing the screen in
-	//the x direction can cause the buttons to drift away from or into the text area. Use this method (which get's
-	//called on a screen resize) to make sure the buttons are where they should be.
+	//Although it isn't related to the text in the scroll box at all, this method is a good place to reposition 
+	//the arrow buttons on the side of the scroll box. Since the buttons are square then their x-location will
+	//drift slightly as the screen gets resized.
 	auto upButtonLocation = p_children[2]->getAbsoluteLocation();
 	auto downButtonLocation = p_children[3]->getAbsoluteLocation();
 
-	//Calculate (in pixels) the difference between the current button length, and the length it would be
-	//if it wasn't forced to be a square. Then translate this pixel amount into relative units based on
-	//the current screen width
-	float buttonWidthDifferential = m_buttonSize * (currentWindowSize.Width - currentWindowSize.Height) / currentWindowSize.Width;
+	float buttonWidthDifferential = ((ShadowedBox*)p_children[2]->getChildren()[0].get())->fixSquareBoxDrift(currentWindowSize);
+	float shadowPixels = ((ShadowedBox*)p_children[2]->getChildren()[0].get())->getShadowWidth() / currentWindowSize.Width; //get the relative width of the shadow box shadow
 
-	//Move the button over by a number of pixels equal to that of the shadow of the text box
-	float shadowPixels = ((ShadowedBox*)p_children[2]->getChildren()[0].get())->getShadowWidth();
-	float buttonRelativeXLocation = m_location.x + (m_size.x + m_buttonSize - buttonWidthDifferential) / 2.0f + shadowPixels / currentWindowSize.Width;
+	float buttonRelativeXLocation = m_location.x + (m_size.x + m_buttonSize) / 2.0f + shadowPixels - buttonWidthDifferential;
+
 	p_children[2]->setAbsoluteLocation({ buttonRelativeXLocation, upButtonLocation.y });
 	p_children[3]->setAbsoluteLocation({ buttonRelativeXLocation, downButtonLocation.y });
 }
