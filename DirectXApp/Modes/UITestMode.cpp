@@ -24,10 +24,10 @@ uint32_t UITestMode::initializeMode(winrt::Windows::Foundation::Size windowSize)
 	//m_uiElements.push_back(std::make_shared<OptionsBox>(optionBox));
 	//m_uiElements.push_back(std::make_shared<ScrollingTextBox>(scTB));
 
-	ArrowButton arrow(windowSize, { 0.5, 0.5 }, { 0.15, 0.15 }, true);
-	TextButton box(windowSize, { 0.25, 0.5 }, { 0.15, 0.15 }, L"Text Button", false);
+	ArrowButton arrow(windowSize, { 0.5, 0.5 }, { 0.15, 0.15 }, false, true);
+	PartialScrollingTextBox scroll(windowSize, { 0.25, 0.5 }, { 0.25, 0.25 }, m_backgroundColor, longerText, 0.02);
 	m_uiElementsBasic.push_back(std::make_shared<ArrowButton>(arrow));
-	m_uiElementsBasic.push_back(std::make_shared<TextButton>(box));
+	m_uiElementsBasic.push_back(std::make_shared<PartialScrollingTextBox>(scroll));
 
 	//When this mode is initialzed we go into a state of CanTransfer and Active.
 	//Can Transfer allows us to use the esc. key to go back to the settings menu

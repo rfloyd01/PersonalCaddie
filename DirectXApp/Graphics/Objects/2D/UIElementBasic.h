@@ -13,6 +13,7 @@
 #include "Interfaces/IClickableUI.h"
 #include "Interfaces/IHoverableUI.h"
 #include "Interfaces/IScrollableUI.h"
+#include "Interfaces/ITextDimensionsUI.h"
 
 enum UIElementStateBasic
 {
@@ -20,7 +21,8 @@ enum UIElementStateBasic
 	Clicked = 2,
 	Scrolled = 4,
 	Invisible = 8,
-	Hovered = 16
+	Hovered = 16,
+	NeedTextPixels = 32
 };
 
 //used to make sure all parts of the UI element are rendered
@@ -42,15 +44,21 @@ public:
 	virtual uint32_t update(InputState* inputState);
 
 	//Getters and Setters
-	UIElementStateBasic getState() { return m_state; }
-	void setState(UIElementStateBasic state) { m_state = state; }
+	uint32_t getState() { return m_state; }
+	void setState(uint32_t state) { m_state = state; }
 
-	const UIShape* getShape() { return &m_shape; }
-	const UIText* getText() { return &m_text; }
+	UIShape* getShape() { return &m_shape; }
+	UIText* getText() { return &m_text; }
+
+	DirectX::XMFLOAT2 getAbsoluteSize() { return m_size; }
+	void setAbsoluteSize(DirectX::XMFLOAT2 size) { m_size = size; }
+
+	DirectX::XMFLOAT2 getAbsoluteLocation() { return m_location; }
+	void setAbsoluteLocation(DirectX::XMFLOAT2 location) { m_location = location; }
 
 	std::vector<std::shared_ptr<UIElementBasic> > const& getChildren() { return p_children; }
 
-	
+	virtual UIText* setTextDimension() { return nullptr; }; //empty getTextDimension method can be overriden by ITextDimension element users
 
 protected:
 	winrt::Windows::Foundation::Size getCurrentWindowSize();
@@ -60,6 +68,7 @@ protected:
 	virtual void onScrollUp() {} //empty onClick method can be overriden by IClickable element users
 	virtual void onScrollDown() {} //empty onClick method can be overriden by IClickable element users
 	virtual void onHover() {} //empty onClick method can be overriden by IClickable element users
+	
 
 	//Screen size dependent variables
 	DirectX::XMFLOAT2                             m_location; //location of the center of the element  as a ratio of the current screen size
@@ -67,7 +76,7 @@ protected:
 	float                                         m_fontSize; //The desired font size for text as a ratio of the current screen size
 
 	//State variables
-	UIElementStateBasic                              m_state;
+	uint32_t                          m_state;
 	
 	std::shared_ptr<UIElementBasic>               p_parent; //a pointer to the parent UI element, nullptr if there is no parent
 	std::vector<std::shared_ptr<UIElementBasic> > p_children; //pointers to any children UI elements
@@ -75,9 +84,10 @@ protected:
 	UIShape                                       m_shape; //A shape specific to this UI Element
 	UIText                                        m_text;  //Any text that's specific to this UI Element
 	
-
-	bool                                          m_needTextRenderHeight = false; //lets the current mode know if we need the full height for any elementText items in pixels
 	bool                                          m_isClickable = false;
 	bool                                          m_isScrollable = false;
 	bool                                          m_isHoverable = false;
+
+	bool                                          m_needTextRenderDimensions = false; //lets the current mode know if we need the full height for any elementText items in pixels
+	//bool                                          m_gotTextRenderDimensions = false; //lets the current mode know when elementText pixels have been received
 };

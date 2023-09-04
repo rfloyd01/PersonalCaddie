@@ -197,9 +197,16 @@ void ModeScreen::processMouseInput(InputState* inputState)
 		}
 	}*/
 
-	for (int i = 0; i < m_modes[static_cast<int>(m_currentMode)]->getUIElementsBasic().size(); i++)
+	auto uiElements = m_modes[static_cast<int>(m_currentMode)]->getUIElementsBasic();
+	for (int i = 0; i < uiElements.size(); i++)
 	{
-		uint32_t objectState = m_modes[static_cast<int>(m_currentMode)]->getUIElementsBasic()[i]->update(inputState);
+		uint32_t uiElementState = uiElements[i]->update(inputState);
+
+		if (uiElementState & UIElementStateBasic::NeedTextPixels)
+		{
+			getTextRenderPixelsBasic(uiElements[i]->setTextDimension()); //get the necessary pixels
+			uiElements[i]->resize(m_renderer->getCurrentScreenSize()); //and then resize the ui element
+		}
 	}
 
 	//reset input states if necessary
@@ -327,6 +334,12 @@ void ModeScreen::getTextRenderPixels(std::vector<std::shared_ptr<UIElement>> con
 			getTextRenderPixels(uiElements[i]->getChildrenUIElements());
 		}
 	}
+}
+
+void ModeScreen::getTextRenderPixelsBasic(UIText* text)
+{
+	//Sets the size for the text overlay render box of the given text element
+	m_renderer->setTextLayoutPixels(text);
 }
 
 std::vector<std::shared_ptr<UIElement> > const& ModeScreen::getCurrentModeUIElements()

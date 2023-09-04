@@ -109,6 +109,12 @@
     <ClCompile Include="Graphics\Objects\2D\BasicElements\Line.cpp">
       <Filter>Graphics\Objects\2D\BasicElements</Filter>
     </ClCompile>
+    <ClCompile Include="Graphics\Objects\2D\TextBoxes\PartialScrollingTextBox.cpp">
+      <Filter>Graphics\Objects\2D\TextBoxes</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\Objects\2D\TextBoxes\TextBoxBasic.cpp">
+      <Filter>Graphics\Objects\2D\TextBoxes</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -255,6 +261,15 @@
     </ClInclude>
     <ClInclude Include="Graphics\Objects\2D\BasicElements\Line.h">
       <Filter>Graphics\Objects\2D\BasicElements</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Objects\2D\TextBoxes\PartialScrollingTextBox.h">
+      <Filter>Graphics\Objects\2D\TextBoxes</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Objects\2D\TextBoxes\TextBoxBasic.h">
+      <Filter>Graphics\Objects\2D\TextBoxes</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Objects\2D\Interfaces\ITextDimensionsUI.h">
+      <Filter>Graphics\Objects\2D\Interfaces</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

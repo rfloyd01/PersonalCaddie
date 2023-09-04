@@ -15,3 +15,5 @@
 #include "Buttons/Button.h"
 #include "Buttons/TextButton.h"
 #include "Buttons/ArrowButton.h"
+#include "TextBoxes/TextBoxBasic.h"
+#include "TextBoxes/PartialScrollingTextBox.h"

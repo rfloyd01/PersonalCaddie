@@ -9,6 +9,16 @@ void UIElementBasic::resize(winrt::Windows::Foundation::Size windowSize)
 	//and m_size) of the UI Element. Then resize and child UI Elements
 	//owned by this one.
 
+	if (m_needTextRenderDimensions && !(m_state & UIElementStateBasic::NeedTextPixels))
+	{
+		//This if block will only execute from a window resize and this UI Element
+		//needs pixel height from the renderer (which can only happen in the main
+		//thread). Update the state of the UI Element and leave this function. The
+		//method will need to be called again manually from somewhere else.
+		m_state |= UIElementStateBasic::NeedTextPixels;
+		return; //if we need text pixel height, don't resize until we get it
+	}
+
 	if (m_shape.m_shapeType != UIShapeType::END)
 	{
 		m_shape.m_rectangle.left   = windowSize.Width * (m_location.x - m_size.x / (float)2.0);
@@ -25,6 +35,14 @@ void UIElementBasic::resize(winrt::Windows::Foundation::Size windowSize)
 	}
 
 	for (int i = 0; i < p_children.size(); i++) p_children[i]->resize(windowSize);
+
+	if (m_needTextRenderDimensions)
+	{
+		//If we're at this part of the resize method and this element has a dependency on 
+		//text pixel dimentions it means that the update has occured and we can remove the
+		//need for pixels from the current state
+		m_state ^= UIElementStateBasic::NeedTextPixels;
+	}
 }
 
 uint32_t UIElementBasic::update(InputState* inputState)
@@ -45,8 +63,6 @@ uint32_t UIElementBasic::update(InputState* inputState)
 
 	if (m_isHoverable)
 	{
-		//cast the current object into an IHoverableUI so we can call it's onHover()
-		//method.
 		onHover();
 		currentState |= UIElementStateBasic::Hovered;
 	}
@@ -74,6 +90,11 @@ uint32_t UIElementBasic::update(InputState* inputState)
 		}
 	}
 
+	if (m_state & UIElementStateBasic::NeedTextPixels)
+	{
+		currentState |= UIElementStateBasic::NeedTextPixels;
+	}
+
 	return currentState;
 }
 
@@ -85,7 +106,7 @@ winrt::Windows::Foundation::Size UIElementBasic::getCurrentWindowSize()
 	//UI Element doesn't have its own shape or text, then a child's will be used.
 	if (m_shape.m_shapeType != UIShapeType::END)
 	{
-		return { (m_shape.m_rectangle.right - m_shape.m_rectangle.left) / m_size.x, (m_shape.m_rectangle.bottom - m_shape.m_rectangle.bottom) / m_size.y };
+		return { (m_shape.m_rectangle.right - m_shape.m_rectangle.left) / m_size.x, (m_shape.m_rectangle.bottom - m_shape.m_rectangle.top) / m_size.y };
 	}
 	else if (m_text.textType != UITextType::END)
 	{
