@@ -18,6 +18,8 @@ public:
 		p_children.push_back(std::make_shared<Box>(outline));
 	}
 
+	float getShadowWidth() { return m_shadowSizePixels; }
+
 protected:
 	const float m_shadowSizePixels = 3.0; //The size of the shadow in pixels. At some point a may want to make this a changeable value but for now keep it const
 

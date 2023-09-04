@@ -51,14 +51,15 @@ public:
 	UIText* getText() { return &m_text; }
 
 	DirectX::XMFLOAT2 getAbsoluteSize() { return m_size; }
-	void setAbsoluteSize(DirectX::XMFLOAT2 size) { m_size = size; }
+	void setAbsoluteSize(DirectX::XMFLOAT2 size);
 
 	DirectX::XMFLOAT2 getAbsoluteLocation() { return m_location; }
-	void setAbsoluteLocation(DirectX::XMFLOAT2 location) { m_location = location; }
+	void setAbsoluteLocation(DirectX::XMFLOAT2 location);
 
 	std::vector<std::shared_ptr<UIElementBasic> > const& getChildren() { return p_children; }
 
 	virtual UIText* setTextDimension() { return nullptr; }; //empty getTextDimension method can be overriden by ITextDimension element users
+	virtual void repositionText() {}; //empty repositionText method can be overriden by ITextDimension element users
 
 protected:
 	winrt::Windows::Foundation::Size getCurrentWindowSize();

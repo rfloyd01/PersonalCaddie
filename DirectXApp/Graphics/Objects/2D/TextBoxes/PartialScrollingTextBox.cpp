@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "PartialScrollingTextBox.h"
+#include "Graphics/Objects/2D/Buttons/ArrowButton.h"
 
 PartialScrollingTextBox::PartialScrollingTextBox(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, UIColor backgroundColor, std::wstring message,
 	float fontSize, std::vector<UIColor> textColor, std::vector<unsigned long long> textColorLocations, UITextJustification justification, UIColor textFillColor, bool isSquare, UIColor outlineColor, UIColor shadowColor)
@@ -19,16 +20,28 @@ PartialScrollingTextBox::PartialScrollingTextBox(winrt::Windows::Foundation::Siz
 	//all the way to the top of the window.
 	Box textCoveringBox(windowSize, { location.x, location.y / (float)2.0 - size.y / (float)4.0 }, { location.x, location.y - size.y / (float)2.0 }, backgroundColor, UIShapeFillType::Fill, isSquare);
 
+	//A scrolling text box also features two arrow buttons, one up and one down.
+	//Both of these buttons are squares
+	m_buttonSize = 0.1 * size.y; //for now make both buttons 1/10th the height of the box
+	ArrowButton upButton(windowSize, { location.x + (size.x + m_buttonSize) / (float)2.0, location.y - (size.y - m_buttonSize) / (float)2.0 }, { m_buttonSize, m_buttonSize }, false, true);
+	ArrowButton downButton(windowSize, { location.x + (size.x + m_buttonSize) / (float)2.0, location.y + (size.y - m_buttonSize) / (float)2.0 }, { m_buttonSize, m_buttonSize }, true, true);
+
 	//The order of the child elements is important here. The text background must be first, then the text,
 	//and then finally the hiding box to go on top of it.
 	p_children.push_back(std::make_shared<TextBoxBasic>(textBox));
 	p_children.push_back(std::make_shared<Box>(textCoveringBox));
+	p_children.push_back(std::make_shared<ArrowButton>(upButton));
+	p_children.push_back(std::make_shared<ArrowButton>(downButton));
 
 	m_isScrollable = true; //this enables scrolling detection in the main rendering loop
 	m_needTextRenderDimensions = true; //alerts the current mode that this element will need text pixels from the renderer at some point
 	m_scrollIntensity = 0.005; //set the scroll intensity
 
 	m_state = UIElementStateBasic::NeedTextPixels; //Let's the render know that we currently need the pixel size of text
+
+	//set screen size dependent variables
+	m_location = location;
+	m_size = size;
 }
 
 void PartialScrollingTextBox::onScrollUp()
@@ -71,6 +84,56 @@ void PartialScrollingTextBox::onScrollDown()
 		p_children[0]->getChildren()[1]->setAbsoluteSize({ currentTextAbsoluteSize.x, currentTextAbsoluteSize.y + m_scrollIntensity });
 		p_children[0]->getChildren()[1]->resize(currentWindowSize); //use the new absolute coordinates to update the pixels for the text
 	}
+}
+
+void PartialScrollingTextBox::repositionText()
+{
+	//It's possible that at one point the screen was small enough that not all text could fit in the text box,
+	//but we've since made the screen larger and now all the text can fit, but it's no longer all in the box.
+	//Perform a quick check to make sure that the text is all in the correct place.
+	auto currentWindowSize = getCurrentWindowSize();
+	float totalTextHeight = p_children[0]->getChildren()[1]->getText()->renderDPI.y; //the total height of the text layout, including text that's clipped by the bottom of the box
+
+	//Check to see if the bottom of the text is higher than the bottom of the text box
+	float textBoxBottomPixelLocation = currentWindowSize.Height * (m_location.y + m_size.y / (float)2.0);
+	if (getCurrentTextStartingHeight() + totalTextHeight < textBoxBottomPixelLocation)
+	{
+		//Check to see if the top of the text is higher than the top of the text box
+		float textBoxTopPixelLocation = currentWindowSize.Height * (m_location.y - m_size.y / (float)2.0);
+		if (getCurrentTextStartingHeight() < textBoxTopPixelLocation)
+		{
+			//We need to scootch the text downwards until the bottom of the text is as low as it can go.
+			//Whichever distance is less, either the bottom of the render rectangle to the bottom of the text
+			//box, or the top of the render rectangle to the top of the text box, move the render rectangle
+			//downwards by that amount.
+			float lesserDistance = (textBoxTopPixelLocation - getCurrentTextStartingHeight()) < (textBoxBottomPixelLocation - (getCurrentTextStartingHeight() + totalTextHeight)) ?
+				textBoxTopPixelLocation - getCurrentTextStartingHeight() : textBoxBottomPixelLocation - (getCurrentTextStartingHeight() + totalTextHeight);
+
+			//Update the absolute location for the text
+			auto currentTextAbsoluteLocation = p_children[0]->getChildren()[1]->getAbsoluteLocation();
+			auto currentTextAbsoluteSize = p_children[0]->getChildren()[1]->getAbsoluteSize();
+			p_children[0]->getChildren()[1]->setAbsoluteLocation({ currentTextAbsoluteLocation.x, currentTextAbsoluteLocation.y + lesserDistance / ((float) 2.0 * currentWindowSize.Height) });
+			p_children[0]->getChildren()[1]->setAbsoluteSize({ currentTextAbsoluteSize.x, currentTextAbsoluteSize.y - lesserDistance / currentWindowSize.Height });
+		}
+	}
+
+	//Highjacking this method to use the chance to reposition the arrow buttons as well. Since the arrow buttons
+	//are squares their x dimension isn't tied to the width of the screen. This means that resizing the screen in
+	//the x direction can cause the buttons to drift away from or into the text area. Use this method (which get's
+	//called on a screen resize) to make sure the buttons are where they should be.
+	auto upButtonLocation = p_children[2]->getAbsoluteLocation();
+	auto downButtonLocation = p_children[3]->getAbsoluteLocation();
+
+	//Calculate (in pixels) the difference between the current button length, and the length it would be
+	//if it wasn't forced to be a square. Then translate this pixel amount into relative units based on
+	//the current screen width
+	float buttonWidthDifferential = m_buttonSize * (currentWindowSize.Width - currentWindowSize.Height) / currentWindowSize.Width;
+
+	//Move the button over by a number of pixels equal to that of the shadow of the text box
+	float shadowPixels = ((ShadowedBox*)p_children[2]->getChildren()[0].get())->getShadowWidth();
+	float buttonRelativeXLocation = m_location.x + (m_size.x + m_buttonSize - buttonWidthDifferential) / 2.0f + shadowPixels / currentWindowSize.Width;
+	p_children[2]->setAbsoluteLocation({ buttonRelativeXLocation, upButtonLocation.y });
+	p_children[3]->setAbsoluteLocation({ buttonRelativeXLocation, downButtonLocation.y });
 }
 
 UIText* PartialScrollingTextBox::setTextDimension()

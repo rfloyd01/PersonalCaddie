@@ -58,41 +58,45 @@ uint32_t UIElementBasic::update(InputState* inputState)
 	if (!m_isClickable && !m_isHoverable && !m_isScrollable) return UIElementStateBasic::Idlee;
 
 	uint32_t currentState = 0;
-	bool mouseHovered = isMouseHovered(inputState->mousePosition);
-	if (!mouseHovered) return UIElementStateBasic::Idlee; //If the mouse isn't over the element then nothing changes
-
-	if (m_isHoverable)
-	{
-		onHover();
-		currentState |= UIElementStateBasic::Hovered;
-	}
-
-	if (m_isClickable)
-	{
-		//if the UI Element is clickable, check to see if we're currently clicking it.
-		if (inputState->mouseClick)
-		{
-			onClick();
-			currentState |= UIElementStateBasic::Clicked;
-		}
-	}
-
-	if (m_isScrollable)
-	{
-		//if the UI Element is scrollable, check to see if the mouse wheel is currently moving.
-		if (inputState->scrollWheelDirection != 0)
-		{
-			//cast the current object into an IScrollableUI so we can call it's onScrollUp()
-			//or onScrollDown() method.
-			if (inputState->scrollWheelDirection > 0) onScrollUp();
-			else onScrollDown();
-			currentState |= UIElementStateBasic::Scrolled;
-		}
-	}
 
 	if (m_state & UIElementStateBasic::NeedTextPixels)
 	{
 		currentState |= UIElementStateBasic::NeedTextPixels;
+	}
+
+	//Only check for hover, click and scroll events if the mouse is
+	//actually over the element
+	bool mouseHovered = isMouseHovered(inputState->mousePosition);
+	if (mouseHovered)
+	{
+		if (m_isHoverable)
+		{
+			onHover();
+			currentState |= UIElementStateBasic::Hovered;
+		}
+
+		if (m_isClickable)
+		{
+			//if the UI Element is clickable, check to see if we're currently clicking it.
+			if (inputState->mouseClick)
+			{
+				onClick();
+				currentState |= UIElementStateBasic::Clicked;
+			}
+		}
+
+		if (m_isScrollable)
+		{
+			//if the UI Element is scrollable, check to see if the mouse wheel is currently moving.
+			if (inputState->scrollWheelDirection != 0)
+			{
+				//cast the current object into an IScrollableUI so we can call it's onScrollUp()
+				//or onScrollDown() method.
+				if (inputState->scrollWheelDirection > 0) onScrollUp();
+				else onScrollDown();
+				currentState |= UIElementStateBasic::Scrolled;
+			}
+		}
 	}
 
 	return currentState;
@@ -151,4 +155,38 @@ bool UIElementBasic::isMouseHovered(DirectX::XMFLOAT2 mousePosition)
 		else return false;
 	}
 	return p_children[0]->isMouseHovered(mousePosition);
+}
+
+void UIElementBasic::setAbsoluteSize(DirectX::XMFLOAT2 size)
+{
+	//Changing the absolute size for an element needs to change the absolute size of
+	//itself, and, all of its children. We don't apply the same size parameter to the
+	//children though. Instead we compare the old size of the current element to the 
+	//new size to get a ratio. We increase the absolute size of the children by the
+	//same ratio.
+	DirectX::XMFLOAT2 sizeRatio = { size.x / m_size.x, size.y / m_size.y };
+	m_size = size;
+
+	for (int i = 0; i < p_children.size(); i++)
+	{
+		auto childAbsoluteSize = p_children[i]->getAbsoluteSize();
+		p_children[i]->setAbsoluteSize({ childAbsoluteSize.x * sizeRatio.x, childAbsoluteSize.y * sizeRatio.y});
+	}
+}
+
+void UIElementBasic::setAbsoluteLocation(DirectX::XMFLOAT2 location)
+{
+	//In the same vein as the setAbsoluteSize() method, this method must
+	//also set the location of all child elements. We don't apply the same
+	//location to each child (as some children have locations offset from their
+	//parents). Instead we compare the current location and the new location
+	//to get a difference. This same difference is then applied to the children.
+	DirectX::XMFLOAT2 locationDifference = { location.x - m_location.x, location.y - m_location.y };
+	m_location = location;
+
+	for (int i = 0; i < p_children.size(); i++)
+	{
+		auto childAbsoluteLocation = p_children[i]->getAbsoluteLocation();
+		p_children[i]->setAbsoluteLocation({ childAbsoluteLocation.x + locationDifference.x, childAbsoluteLocation.y + locationDifference.y });
+	}
 }

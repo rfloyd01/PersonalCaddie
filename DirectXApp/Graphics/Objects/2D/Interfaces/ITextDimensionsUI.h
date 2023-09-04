@@ -12,4 +12,5 @@
 struct ITextDimensionsUI
 {
 	virtual UIText* setTextDimension() = 0;
+	virtual void repositionText() = 0;
 };

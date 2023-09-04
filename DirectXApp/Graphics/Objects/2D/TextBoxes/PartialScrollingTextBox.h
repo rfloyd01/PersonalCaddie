@@ -25,7 +25,10 @@ protected:
 
 	virtual void onScrollUp() override;
 	virtual void onScrollDown() override;
+
 	virtual UIText* setTextDimension() override;
+	virtual void repositionText() override;
 
 	float m_scrollIntensity; //the distance scrolling makes the text move relative to the current size of the window
+	float m_buttonSize; //the size of the scroll buttons relative to the height of the text box
 };

@@ -205,6 +205,7 @@ void ModeScreen::processMouseInput(InputState* inputState)
 		if (uiElementState & UIElementStateBasic::NeedTextPixels)
 		{
 			getTextRenderPixelsBasic(uiElements[i]->setTextDimension()); //get the necessary pixels
+			uiElements[i]->repositionText(); //see if any text needs to be repositioned after getting new dimensions
 			uiElements[i]->resize(m_renderer->getCurrentScreenSize()); //and then resize the ui element
 		}
 	}
