@@ -17,3 +17,4 @@
 #include "Buttons/ArrowButton.h"
 #include "TextBoxes/TextBoxBasic.h"
 #include "TextBoxes/PartialScrollingTextBox.h"
+#include "TextBoxes/FullScrollingTextBox.h"

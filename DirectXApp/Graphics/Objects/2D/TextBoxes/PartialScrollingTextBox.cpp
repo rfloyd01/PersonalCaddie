@@ -201,10 +201,10 @@ uint32_t PartialScrollingTextBox::update(InputState* inputState)
 	return currentState;
 }
 
-UIText* PartialScrollingTextBox::setTextDimension()
+std::vector<UIText*> PartialScrollingTextBox::setTextDimension()
 {
 	//Return a reference to the text element inside of the text box
-	return p_children[0]->getChildren()[1]->getText();
+	return { p_children[0]->getChildren()[1]->getText() };
 }
 
 float PartialScrollingTextBox::getCurrentTextStartingHeight()

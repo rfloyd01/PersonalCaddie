@@ -59,7 +59,7 @@ public:
 
 	std::vector<std::shared_ptr<UIElementBasic> > const& getChildren() { return p_children; }
 
-	virtual UIText* setTextDimension() { return nullptr; }; //empty getTextDimension method can be overriden by ITextDimension element users
+	virtual std::vector<UIText*> setTextDimension() { return {}; }; //empty getTextDimension method can be overriden by ITextDimension element users
 	virtual void repositionText() {}; //empty repositionText method can be overriden by ITextDimension element users
 
 protected:
@@ -72,7 +72,6 @@ protected:
 	virtual void onScrollUp() {} //empty onClick method can be overriden by IClickable element users
 	virtual void onScrollDown() {} //empty onClick method can be overriden by IClickable element users
 	virtual void onHover() {} //empty onClick method can be overriden by IClickable element users
-	
 
 	//Screen size dependent variables
 	DirectX::XMFLOAT2                             m_location; //location of the center of the element  as a ratio of the current screen size

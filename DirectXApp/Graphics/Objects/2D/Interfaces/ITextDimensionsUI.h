@@ -11,6 +11,6 @@
 
 struct ITextDimensionsUI
 {
-	virtual UIText* setTextDimension() = 0;
+	virtual std::vector<UIText*> setTextDimension() = 0;
 	virtual void repositionText() = 0;
 };

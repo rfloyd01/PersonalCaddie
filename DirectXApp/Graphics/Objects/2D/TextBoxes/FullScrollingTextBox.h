@@ -2,23 +2,30 @@
 
 #include "Graphics/Objects/2D/TextBoxes/TextBoxBasic.h"
 
-//The partial scrolling text box is a text box that only has a single text
-//element, and can scroll in such a way that the text can be partially
-//clipped (i.e. half a line of text can be showing). This element is useful 
-//when there's a lot to say and not a large area to display it in.
+//The full scrolling text works a little bit differently from the partial
+//scrolling text box. Every time you scroll up or down the text will move
+//by an amount equal to the height of one line of text. Since there's no 
+//need to show any partial line, every line of text becomes its own UI
+//Element. As we scroll, lines that are no longer in the box become invisible.
+//With this approach there's no need for a box at the top of the scroll box
+//to hide any text.
 
-//This element has two children, a shadowed box which is used as a background
-//for text and a standard box which is the same color as the background of
-//the current page and is used to hide any text that appears above the
-//scroll box. Since the background color is dependent on the current mode,
-//it has to be passed in as a variable in the constructor.
+//There are two options that can be selected for the FullScrollingTextBox.
+//The first option lets you select highlightable text for the box, which is
+//good for something like a drop down box. The second option mandates whether
+//the size of the box is determined by the user, or by the longest line of text.
+//The longest line of text option is also good for something like a drop down
+//menu
 
-class PartialScrollingTextBox : public UIElementBasic, IScrollableUI, ITextDimensionsUI
+class FullScrollingTextBox : public UIElementBasic, IScrollableUI, ITextDimensionsUI
 {
 public:
-	PartialScrollingTextBox(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, UIColor backgroundColor, std::wstring message, float fontSize,
-		std::vector<UIColor> textColor = { UIColor::Black }, std::vector<unsigned long long> textColorLocations = {}, UITextJustification justification = UITextJustification::UpperLeft, 
-		UIColor textFillColor = UIColor::White, bool isSquare = false,  UIColor outlineColor = UIColor::Black, UIColor shadowColor = UIColor::DarkGray);
+	FullScrollingTextBox(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, std::wstring message, float fontSize,
+		bool highlightableText = true, bool dynamicSize = true,
+		UITextJustification justification = UITextJustification::UpperLeft, UIColor textFillColor = UIColor::White, bool isSquare = false,  UIColor outlineColor = UIColor::Black, UIColor shadowColor = UIColor::DarkGray);
+
+	virtual uint32_t update(InputState* inputState) override;
+	virtual std::vector<UIText*> setTextDimension() override;
 
 protected:
 	float getCurrentTextStartingHeight();
@@ -27,9 +34,12 @@ protected:
 	virtual void onScrollDown() override;
 	void calcualteScrollBarLocation(winrt::Windows::Foundation::Size windowSize);
 
-	virtual UIText* setTextDimension() override;
 	virtual void repositionText() override;
 
-	float m_scrollIntensity; //the distance scrolling makes the text move relative to the current size of the window
 	float m_buttonSize; //the size of the scroll buttons relative to the height of the text box
+	bool m_highlightableText;
+	bool m_dynamicSize;
+
+	int m_topText; //Represent which line of text is currently at the top of the scroll box
+	int m_displayedText; //Represents how many lines of text are currently displayed in the scroll box
 };

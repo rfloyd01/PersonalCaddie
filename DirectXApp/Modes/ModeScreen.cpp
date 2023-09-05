@@ -69,14 +69,14 @@ void ModeScreen::update()
 
 	//See if any of the above input, timers or events have caused the need to update
 	//any UI elements
-	if (m_modeState & ModeState::NeedTextUpdate)
-	{
-		//some text in a ui element was changed so we need to recalculate the render height
-		//for the text (hits happens in elements like scroll boxes where the height can
-		//only be calculated in the renderer classes).
-		getTextRenderPixels(getCurrentModeUIElements());
-		m_modeState ^= ModeState::NeedTextUpdate; //remove the text update flag
-	}
+	//if (m_modeState & ModeState::NeedTextUpdate)
+	//{
+	//	//some text in a ui element was changed so we need to recalculate the render height
+	//	//for the text (hits happens in elements like scroll boxes where the height can
+	//	//only be calculated in the renderer classes).
+	//	getTextRenderPixels(getCurrentModeUIElements());
+	//	m_modeState ^= ModeState::NeedTextUpdate; //remove the text update flag
+	//}
 
 	//after all input, events and timers have been handled defer to the current mode
 	//to update its state if necessary. This only occurs when in the Active ModeState
@@ -331,10 +331,10 @@ void ModeScreen::getTextRenderPixels(std::vector<std::shared_ptr<UIElement>> con
 	}
 }
 
-void ModeScreen::getTextRenderPixelsBasic(UIText* text)
+void ModeScreen::getTextRenderPixelsBasic(std::vector<UIText*> const& text)
 {
 	//Sets the size for the text overlay render box of the given text element
-	m_renderer->setTextLayoutPixels(text);
+	for (int i = 0; i < text.size(); i++) m_renderer->setTextLayoutPixels(text[i]);
 }
 
 std::vector<std::shared_ptr<UIElement> > const& ModeScreen::getCurrentModeUIElements()

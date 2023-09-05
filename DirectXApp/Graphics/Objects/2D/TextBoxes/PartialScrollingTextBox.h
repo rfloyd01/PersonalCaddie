@@ -29,7 +29,7 @@ protected:
 	virtual void onScrollDown() override;
 	void calcualteScrollBarLocation(winrt::Windows::Foundation::Size windowSize);
 
-	virtual UIText* setTextDimension() override;
+	virtual std::vector<UIText*> setTextDimension() override;
 	virtual void repositionText() override;
 
 	float m_scrollIntensity; //the distance scrolling makes the text move relative to the current size of the window
