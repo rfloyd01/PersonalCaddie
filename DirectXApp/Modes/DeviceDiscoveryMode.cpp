@@ -36,6 +36,9 @@ void DeviceDiscoveryMode::uninitializeMode()
 	//out all text in the text map and color map
 	for (int i = 0; i < m_uiElements.size(); i++) m_uiElements[i] = nullptr;
 	m_uiElements.clear();
+
+	for (int i = 0; i < m_uiElementsBasic.size(); i++) m_uiElementsBasic[i] = nullptr;
+	m_uiElementsBasic.clear();
 }
 
 void DeviceDiscoveryMode::initializeTextOverlay(winrt::Windows::Foundation::Size windowSize)

@@ -62,6 +62,8 @@ public:
 	virtual void repositionText() {}; //empty repositionText method can be overriden by ITextDimension element users
 
 protected:
+	int pixelCompare(float pixelOne, float pixelTwo);
+
 	winrt::Windows::Foundation::Size getCurrentWindowSize();
 	virtual bool isMouseHovered(DirectX::XMFLOAT2 mousePosition);
 

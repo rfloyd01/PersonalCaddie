@@ -181,26 +181,6 @@ void PartialScrollingTextBox::repositionText()
 	p_children[5]->setAbsoluteLocation({ buttonRelativeXLocation, scrollBarProgressLocation.y });
 }
 
-uint32_t PartialScrollingTextBox::update(InputState* inputState)
-{
-	//At the end of the standard update, we check to see if either of the buttons are currently being pressed.
-	//If so, it has the effect of scrolling the text twice.
-	uint32_t currentState = UIElementBasic::update(inputState);
-
-	if ((p_children[2]->getState() & UIElementStateBasic::Clicked) && inputState->mouseClick)
-	{
-		onScrollUp();
-		onScrollUp();
-	}
-	else if ((p_children[3]->getState() & UIElementStateBasic::Clicked) && inputState->mouseClick)
-	{
-		onScrollDown();
-		onScrollDown();
-	}
-
-	return currentState;
-}
-
 UIText* PartialScrollingTextBox::setTextDimension()
 {
 	//Return a reference to the text element inside of the text box

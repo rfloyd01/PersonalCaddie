@@ -7,7 +7,7 @@ Box::Box(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 location
 	m_size = size;
 	m_isSquare = isSquare;
 
-	if (m_isSquare) m_size.x = m_size.y; //If the box is a square, set the width to be equal to the height
+	//if (m_isSquare) m_size.x = m_size.y; //If the box is a square, set the width to be equal to the height
 
 	//simply create a ui rectangle with no fill using the given color and then resize it based on the size
 	//of the current window.
