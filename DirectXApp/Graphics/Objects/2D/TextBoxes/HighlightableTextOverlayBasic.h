@@ -18,5 +18,5 @@ protected:
 	//virtual bool checkHover(DirectX::XMFLOAT2 mousePosition) override; //checks to see if the element is being hovered over
 	virtual void onHover() override;
 
-	UIColor m_secondaryColor = UIColor::White; //Default to a white secondary color
+	UIColor m_secondaryColor = UIColor::Blue; //Default to a white secondary color
 };

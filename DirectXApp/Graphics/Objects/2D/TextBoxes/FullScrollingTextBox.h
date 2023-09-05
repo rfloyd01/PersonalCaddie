@@ -42,4 +42,5 @@ protected:
 
 	int m_topText; //Represent which line of text is currently at the top of the scroll box
 	int m_displayedText; //Represents how many lines of text are currently displayed in the scroll box
+	std::wstring m_lastSelectedText;
 };

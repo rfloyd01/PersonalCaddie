@@ -2,6 +2,7 @@
 #include "FullScrollingTextBox.h"
 #include "HighlightableTextOverlayBasic.h"
 #include "Graphics/Objects/2D/Buttons/ArrowButton.h"
+#include <cmath>
 
 FullScrollingTextBox::FullScrollingTextBox(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, std::wstring message, float fontSize,
 	bool highlightableText, bool dynamicSize, UITextJustification justification, UIColor textFillColor, bool isSquare, UIColor outlineColor, UIColor shadowColor)
@@ -43,7 +44,14 @@ FullScrollingTextBox::FullScrollingTextBox(winrt::Windows::Foundation::Size wind
 	//Unlike the partial scrolling text box, the full scrolling text box features multiple
 	//different text elements. this constructor expects a single input string that's delimited with '\n' characters.
 	//Split the string by the newline charcter and create a new textOverlay object from each one
+	DirectX::XMFLOAT2 textLocation = location, textSize = size;
+	if (m_dynamicSize)
+	{
+		textLocation = { 0.5, 0.5 };
+		textSize = { 1.0, 1.0 };
+	}
 	int i = 0, j = 0;
+	
 	while (j != std::string::npos)
 	{
 		j = message.find(L'\n', i);
@@ -53,14 +61,15 @@ FullScrollingTextBox::FullScrollingTextBox(winrt::Windows::Foundation::Size wind
 		//Text defaults to a single black color that's left justified. When first creating the text, set the location to the center
 		//of the screen and the size to be the same as the screen size. This will get overriden but it helps to determine the
 		//correct text height.
+		
 		if (m_highlightableText)
 		{
-			HighlightableTextOverlayBasic newText(windowSize, { 0.5, 0.5 }, { 1, 1 }, textLine, fontSize, { UIColor::Black }, { 0, (unsigned int)textLine.length() }, UITextJustification::CenterLeft);
+			HighlightableTextOverlayBasic newText(windowSize, textLocation, textSize, textLine, fontSize, { UIColor::Black }, { 0, (unsigned int)textLine.length() }, UITextJustification::CenterLeft);
 			p_children.push_back(std::make_shared<HighlightableTextOverlayBasic>(newText));
 		}
 		else 
 		{
-			TextOverlayBasic newText(windowSize, { 0.5, 0.5 }, { 1, 1 }, textLine, fontSize, { UIColor::Black }, { 0, (unsigned int)textLine.length() }, UITextJustification::CenterLeft);
+			TextOverlayBasic newText(windowSize, textLocation, textSize, textLine, fontSize, { UIColor::Black }, { 0, (unsigned int)textLine.length() }, UITextJustification::CenterLeft);
 			p_children.push_back(std::make_shared<TextOverlayBasic>(newText));
 		}
 
@@ -89,8 +98,29 @@ void FullScrollingTextBox::repositionText()
 	if (m_dynamicSize)
 	{
 		//The width of the text box is set to the width of the widest line of text
-		//See which line of text has the widest width in pixels.
+		//See which line of text has the widest width in pixels. Also, it's possible
+		//that resizing the box has caused the current longest text to wrap down to a
+		//second line, we need to make sure that all render heights are the same 
 		currentTextBoxAbsoluteSize.x = 0;
+
+		//first scan and make sure all text has the same height
+		for (int i = 6; i < p_children.size(); i++)
+		{
+			
+			int difference = pixelCompare(p_children[i - 1]->getText()->renderDPI.y, p_children[i]->getText()->renderDPI.y);
+			if (difference != 0)
+			{
+				auto a = p_children[i - 1]->getText();
+				auto b = p_children[i]->getText();
+				//overflow has occured. Increase the length by a factor of 1.5
+				int widerWord = i;
+				if (difference > 0) widerWord--;
+
+				p_children[widerWord]->getText()->renderDPI.x *= 1.5;
+				break; //only one line of text should cause overflow so break after finding it
+			}
+		}
+
 		for (int i = 5; i < p_children.size(); i++)
 		{
 			float currentWidth = p_children[i]->getText()->renderDPI.x;
@@ -102,14 +132,15 @@ void FullScrollingTextBox::repositionText()
 
 		//After calculating the widest bit of text, change the absolute size of each text object to match,
 		//when calculating text dimensions these are set to match the window so need to be reduced
-		for (int i = 5; i < p_children.size(); i++) p_children[i]->setAbsoluteSize({ currentTextBoxAbsoluteSize.x, p_children[i]->getText()->renderDPI.y / currentWindowSize.Height });
+		//for (int i = 5; i < p_children.size(); i++) p_children[i]->setAbsoluteSize({ currentTextBoxAbsoluteSize.x, p_children[i]->getText()->renderDPI.y / currentWindowSize.Height });
 	}
 
 	//In order to make everything look clean, set the absolute height of the scroll box to 
 	//be a multiple of the text height of the options. Round down when doing this. We also
 	//change the absolute font size
 	m_fontSize /= currentTextBoxAbsoluteSize.y; //get the font size as a percentage of the text box height
-	m_displayedText = currentTextBoxAbsoluteSize.y * currentWindowSize.Height / p_children[5]->getText()->renderDPI.y; //the division gets floored automatically here by converting to an int
+	m_displayedText = round(currentTextBoxAbsoluteSize.y * currentWindowSize.Height / p_children[5]->getText()->renderDPI.y); //round to the nearest integer
+	if (m_displayedText < 2) m_displayedText = 2;
 	currentTextBoxAbsoluteSize.y = (float)m_displayedText * p_children[5]->getText()->renderDPI.y / currentWindowSize.Height; //no floor division happens because we're using floats
 	m_fontSize *= currentTextBoxAbsoluteSize.y; //change font back into a percentage of the over window height
 
@@ -124,10 +155,15 @@ void FullScrollingTextBox::repositionText()
 	DirectX::XMFLOAT2 topTextAbsoluteLocation = {m_location.x, m_location.y - m_size.y / 2.0f + (p_children[5]->getText()->renderDPI.y / currentWindowSize.Height) / 2.0f};
 	for (int i = 5; i < p_children.size(); i++)
 	{
+		p_children[i]->setAbsoluteSize({ currentTextBoxAbsoluteSize.x, p_children[i]->getText()->renderDPI.y / currentWindowSize.Height });
 		p_children[i]->setAbsoluteLocation({ topTextAbsoluteLocation.x + 0.001f, topTextAbsoluteLocation.y + (i - m_topText) * p_children[5]->getText()->renderDPI.y / currentWindowSize.Height });
 
 		//if the current child is outside of the rendering area, set its state to invisible
-		if (i < m_topText || i >= (m_topText + m_displayedText)) p_children[i]->setState(UIElementStateBasic::Invisible);
+		if (i < m_topText || i >= (m_topText + m_displayedText))
+		{
+			if (p_children[i]->getState() & UIElementStateBasic::Hovered) p_children[i]->removeState(UIElementStateBasic::Hovered); //this makes sure anything that was hovered at creation gets its colors reset
+			p_children[i]->setState(UIElementStateBasic::Invisible);
+		}
 	}
 
 	//Since the height of the text box can change depending on the size of the text we need to
@@ -165,6 +201,7 @@ void FullScrollingTextBox::onScrollUp()
 	//the text go any lower
 	if (m_topText < p_children.size() - m_displayedText)
 	{
+		if (p_children[m_topText]->getState() & UIElementStateBasic::Hovered) p_children[m_topText]->removeState(UIElementStateBasic::Hovered); //anything that's being hovered while disappearing needs its state reset
 		p_children[m_topText++]->setState(UIElementStateBasic::Invisible); //the current top line will get scroll upwards so it becomes invisible
 		p_children[m_topText + m_displayedText - 1]->removeState(UIElementStateBasic::Invisible); //the new bottom is no longer invisible
 
@@ -193,6 +230,7 @@ void FullScrollingTextBox::onScrollDown()
 	//the text go any higher
 	if (m_topText > 5)
 	{
+		if (p_children[m_topText + m_displayedText - 1]->getState() & UIElementStateBasic::Hovered) p_children[m_topText + m_displayedText - 1]->removeState(UIElementStateBasic::Hovered); //anything that's being hovered while disappearing needs its state reset
 		p_children[m_topText + m_displayedText - 1]->setState(UIElementStateBasic::Invisible);  //the curent bottom is no longer invisible
 		p_children[--m_topText]->removeState(UIElementStateBasic::Invisible); //the new top line is now visible
 
@@ -245,6 +283,19 @@ uint32_t FullScrollingTextBox::update(InputState* inputState)
 	{
 		onScrollDown();
 		onScrollDown();
+	}
+	else if (inputState->mouseClick && isMouseHovered(inputState->mousePosition))
+	{
+		//if a mouse click occurs while over the text bos (the m_size and m_location variables
+		//are tied to the text box) see which over the options the mouse is currently
+		//over and set the m_selectedText variable
+		for (int i = m_topText; i < m_topText + m_displayedText; i++)
+		{
+			if (p_children[i]->getState() & UIElementStateBasic::Hovered)
+			{
+				m_lastSelectedText = p_children[i]->getText()->message;
+			}
+		}
 	}
 
 	return currentState;

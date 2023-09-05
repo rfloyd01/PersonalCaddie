@@ -25,7 +25,7 @@ uint32_t UITestMode::initializeMode(winrt::Windows::Foundation::Size windowSize)
 	//m_uiElements.push_back(std::make_shared<ScrollingTextBox>(scTB));
 
 	ArrowButton arrow(windowSize, { 0.5, 0.5 }, { 0.15, 0.15 }, false, true);
-	FullScrollingTextBox scroll(windowSize, { 0.25, 0.5 }, { 0.25, 0.25 }, options, 0.025);
+	FullScrollingTextBox scroll(windowSize, { 0.5, 0.5 }, { 0.5, 0.25 }, options, 0.025, true, false);
 	//m_uiElementsBasic.push_back(std::make_shared<ArrowButton>(arrow));
 	m_uiElementsBasic.push_back(std::make_shared<FullScrollingTextBox>(scroll));
 

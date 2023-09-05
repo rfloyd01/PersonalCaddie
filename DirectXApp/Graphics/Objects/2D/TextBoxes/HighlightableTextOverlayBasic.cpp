@@ -9,6 +9,7 @@ HighlightableTextOverlayBasic::HighlightableTextOverlayBasic(winrt::Windows::Fou
 	m_size = size;
 	m_location = location;
 	m_fontSize = fontSize;
+	m_isHoverable = true;
 }
 
 void HighlightableTextOverlayBasic::onHover()

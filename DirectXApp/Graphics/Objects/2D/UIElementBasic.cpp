@@ -69,7 +69,7 @@ uint32_t UIElementBasic::update(InputState* inputState)
 	bool mouseHovered = isMouseHovered(inputState->mousePosition);
 	if (mouseHovered)
 	{
-		if (m_isHoverable)
+		if (m_isHoverable && !(m_state & UIElementStateBasic::Hovered))
 		{
 			onHover();
 			m_state |= UIElementStateBasic::Hovered;
@@ -96,6 +96,13 @@ uint32_t UIElementBasic::update(InputState* inputState)
 				else onScrollDown();
 				m_state |= UIElementStateBasic::Scrolled;
 			}
+		}
+	}
+	else
+	{
+		if (m_isHoverable && (m_state & UIElementStateBasic::Hovered))
+		{
+			removeState(UIElementStateBasic::Hovered);
 		}
 	}
 
