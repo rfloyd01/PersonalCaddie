@@ -18,6 +18,16 @@ void Button::onClick()
 	//we change its background color. This alerts the main part of the program
 	//to start a timer. When that timer goes off both the state and color will
 	//revert.
-	setState(UIElementStateBasic::Clicked);
+	//setState(UIElementStateBasic::Clicked);
 	((Box*)p_children[0].get())->setBackgrounColor(UIColor::ButtonPressed);
+}
+
+void Button::removeState(uint32_t state)
+{
+	//When the clicked state is removed from the button we change its color back
+	if (state == UIElementStateBasic::Clicked)
+	{
+		m_state ^= UIElementStateBasic::Clicked;
+		((Box*)p_children[0].get())->setBackgrounColor(UIColor::ButtonNotPressed);
+	}
 }

@@ -168,35 +168,6 @@ void ModeScreen::processMouseInput(InputState* inputState)
 {
 	//need to poll all of the 2D elements in the current mode to see if the mouse is
 	//over any of them
-	/*for (int i = 0; i < m_modes[static_cast<int>(m_currentMode)]->getUIElements().size(); i++)
-	{
-		UIElementState objectState = m_modes[static_cast<int>(m_currentMode)]->getUIElements()[i]->update(inputState);
-		switch (objectState)
-		{
-		case UIElementState::Clicked:
-		{
-			//The current UI Element has been clicked
-			uint32_t new_state = m_modes[static_cast<int>(m_currentMode)]->handleUIElementStateChange(i);
-
-			//start a short timer that will change the color of the button from PRESSED to NOT_PRESSED
-			button_pressed = true;
-			button_pressed_timer = std::chrono::steady_clock::now();
-
-			//See if the button press forced into or out of active mode
-			if (m_modeState & ModeState::Active)
-			{
-				if (new_state & ModeState::Idle) leaveActiveState();
-			}
-			else if (m_modeState & ModeState::Idle)
-			{
-				if (new_state & ModeState::Active) enterActiveState();
-			}
-
-			break;
-		}
-		}
-	}*/
-
 	auto uiElements = m_modes[static_cast<int>(m_currentMode)]->getUIElementsBasic();
 	for (int i = 0; i < uiElements.size(); i++)
 	{
@@ -207,6 +178,29 @@ void ModeScreen::processMouseInput(InputState* inputState)
 			getTextRenderPixelsBasic(uiElements[i]->setTextDimension()); //get the necessary pixels
 			uiElements[i]->repositionText(); //see if any text needs to be repositioned after getting new dimensions
 			uiElements[i]->resize(m_renderer->getCurrentScreenSize()); //and then resize the ui element
+		}
+		else if ((uiElementState & UIElementStateBasic::Clicked) && inputState->mouseClick)
+		{
+			//The current UI Element has been clicked, see if clicking the button has
+			//any effect outside of the UI Element (like clicking the device watcher
+			//button in device discovery mode).
+			uint32_t new_state = m_modes[static_cast<int>(m_currentMode)]->handleUIElementStateChange(i);
+
+			//start a short timer that will change the color of the button from PRESSED to NOT_PRESSED
+			button_pressed = true;
+			button_pressed_timer = std::chrono::steady_clock::now();
+
+			//See if the button press forced us into or out of active mode
+			if (m_modeState & ModeState::Active)
+			{
+				if (new_state & ModeState::Idle) leaveActiveState();
+			}
+			else if (m_modeState & ModeState::Idle)
+			{
+				if (new_state & ModeState::Active) enterActiveState();
+			}
+
+			break;
 		}
 	}
 
@@ -262,14 +256,14 @@ void ModeScreen::processTimers()
 			button_pressed = false;
 
 			//then change the color of all pressed buttons
-			auto uiElements = m_modes[static_cast<int>(m_currentMode)]->getUIElements();
+			auto uiElements = m_modes[static_cast<int>(m_currentMode)]->getUIElementsBasic();
 			for (int i = 0; i < uiElements.size(); i++)
 			{
-				if (m_modes[static_cast<int>(m_currentMode)]->getUIElements()[i]->getState() == UIElementState::Clicked)
+				if (uiElements[i]->getState() & UIElementStateBasic::Clicked)
 				{
 					//The ui button class overrides the ui element setState() method so case to a UI button
 					//before setting the state to idle
-					((UIButton*)m_modes[static_cast<int>(m_currentMode)]->getUIElements()[i].get())->setState(UIElementState::Idle);
+					uiElements[i]->removeState(UIElementStateBasic::Clicked);
 				}
 			}
 		}

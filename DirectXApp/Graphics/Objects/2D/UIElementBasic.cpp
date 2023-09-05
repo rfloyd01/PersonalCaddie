@@ -57,11 +57,11 @@ uint32_t UIElementBasic::update(InputState* inputState)
 	//If the element can't be interacted with in any way then simple return the idle state.
 	if (!m_isClickable && !m_isHoverable && !m_isScrollable) return UIElementStateBasic::Idlee;
 
-	uint32_t currentState = 0;
+	//uint32_t currentState = 0;
 
 	if (m_state & UIElementStateBasic::NeedTextPixels)
 	{
-		currentState |= UIElementStateBasic::NeedTextPixels;
+		m_state |= UIElementStateBasic::NeedTextPixels;
 	}
 
 	//Only check for hover, click and scroll events if the mouse is
@@ -72,7 +72,7 @@ uint32_t UIElementBasic::update(InputState* inputState)
 		if (m_isHoverable)
 		{
 			onHover();
-			currentState |= UIElementStateBasic::Hovered;
+			m_state |= UIElementStateBasic::Hovered;
 		}
 
 		if (m_isClickable)
@@ -81,7 +81,7 @@ uint32_t UIElementBasic::update(InputState* inputState)
 			if (inputState->mouseClick)
 			{
 				onClick();
-				currentState |= UIElementStateBasic::Clicked;
+				m_state |= UIElementStateBasic::Clicked;
 			}
 		}
 
@@ -94,15 +94,15 @@ uint32_t UIElementBasic::update(InputState* inputState)
 				//or onScrollDown() method.
 				if (inputState->scrollWheelDirection > 0) onScrollUp();
 				else onScrollDown();
-				currentState |= UIElementStateBasic::Scrolled;
+				m_state |= UIElementStateBasic::Scrolled;
 			}
 		}
 	}
 
 	//After checking the current element for update, check all of it's children
-	for (int i = 0; i < p_children.size(); i++) currentState |= p_children[i]->update(inputState);
+	for (int i = 0; i < p_children.size(); i++) m_state |= p_children[i]->update(inputState);
 
-	return currentState;
+	return m_state;
 }
 
 winrt::Windows::Foundation::Size UIElementBasic::getCurrentWindowSize()
@@ -209,4 +209,15 @@ int UIElementBasic::pixelCompare(float pixelOne, float pixelTwo)
 	float difference = pixelOne - pixelTwo;
 	if (difference <= 0.1 && difference >= -0.1) return 0;
 	return difference;
+}
+
+void UIElementBasic::removeState(uint32_t state)
+{
+	//removes the given state from UI Elements and any children that have the state as well
+	m_state ^= state;
+
+	for (int i = 0; i < p_children.size(); i++)
+	{
+		if (p_children[i]->getState() & state) p_children[i]->removeState(state);
+	}
 }

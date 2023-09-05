@@ -46,6 +46,7 @@ public:
 	//Getters and Setters
 	uint32_t getState() { return m_state; }
 	void setState(uint32_t state) { m_state = state; }
+	virtual void removeState(uint32_t state);
 
 	UIShape* getShape() { return &m_shape; }
 	UIText* getText() { return &m_text; }
