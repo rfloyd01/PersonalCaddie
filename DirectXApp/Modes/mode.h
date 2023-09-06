@@ -25,11 +25,10 @@ enum class ModeType
 //enums act as binary flags that go into a larger number
 enum ModeState
 {
-	Idle = 1,
-	Active = 2,
-	Recording = 4,
-	CanTransfer = 8,
-	NeedTextUpdate = 16
+	Active = 1,
+	Recording = 2,
+	CanTransfer = 4,
+	NeedTextUpdate = 8
 };
 
 //Class definition
@@ -37,7 +36,7 @@ class Mode
 {
 public:
 	//PUBLIC FUNCTIONS
-	virtual uint32_t initializeMode(winrt::Windows::Foundation::Size windowSize) = 0;
+	virtual uint32_t initializeMode(winrt::Windows::Foundation::Size windowSize, uint32_t initialState = 0) = 0;
 	virtual void uninitializeMode() = 0;
 
 	virtual void update() {}; //not a pure virtual method as not all modes require this method
@@ -46,6 +45,8 @@ public:
 
 	std::vector<std::shared_ptr<UIElement> > const& getUIElements() { return m_uiElements; }
 	std::vector<std::shared_ptr<UIElementBasic> > const& getUIElementsBasic() { return m_uiElementsBasic; }
+
+	uint32_t getModeState() { return m_state; }
 
 	template <typename T>
 	void addUIElement(T const& element) { m_uiElements.push_back(std::make_shared<T>(element)); }
@@ -62,4 +63,6 @@ protected:
 
 	std::vector<std::shared_ptr<UIElement> >       m_uiElements; //2d objects like Drop downs, combo boxes, buttons and text
 	std::vector<std::shared_ptr<UIElementBasic> >  m_uiElementsBasic; //Test, new basic element class
+
+	uint32_t m_state; //the state of the current mode
 };

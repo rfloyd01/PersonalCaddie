@@ -7,7 +7,7 @@ MainMenuMode::MainMenuMode()
 	m_backgroundColor = UIColor::Black;
 }
 
-uint32_t MainMenuMode::initializeMode(winrt::Windows::Foundation::Size windowSize)
+uint32_t MainMenuMode::initializeMode(winrt::Windows::Foundation::Size windowSize, uint32_t initialState)
 {
 	initializeTextOverlay(windowSize);
 
@@ -63,5 +63,5 @@ void MainMenuMode::initializeTextOverlay(winrt::Windows::Foundation::Size window
 
 uint32_t MainMenuMode::handleUIElementStateChange(int i)
 {
-	return ModeState::Idle;
+	return 0;
 }

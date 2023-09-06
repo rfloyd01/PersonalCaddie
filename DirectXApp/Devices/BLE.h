@@ -36,6 +36,7 @@ public:
 	//Device Connection and Discovery Methods
 	//void startBLEScan();
 	IAsyncOperation<BluetoothLEDevice> connectToExistingDevice();
+	IAsyncOperation<BluetoothLEDevice> connectToDevice(uint64_t deviceAddress);
 	
 	void addScannedDevice(DeviceInfoDisplay device);
 

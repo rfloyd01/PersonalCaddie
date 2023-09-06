@@ -193,11 +193,13 @@ void ModeScreen::processMouseInput(InputState* inputState)
 			//See if the button press forced us into or out of active mode
 			if (m_modeState & ModeState::Active)
 			{
-				if (new_state & ModeState::Idle) leaveActiveState();
+				if (!(new_state & ModeState::Active)) leaveActiveState();
+				else stateUpdate();
 			}
-			else if (m_modeState & ModeState::Idle)
+			else if (!(m_modeState & ModeState::Active))
 			{
 				if (new_state & ModeState::Active) enterActiveState();
+				else stateUpdate();
 			}
 
 			break;
@@ -283,7 +285,21 @@ void ModeScreen::changeCurrentMode(ModeType mt)
 
 	//Switch to the new mode and initialize it
 	m_currentMode = mt;
-	m_modeState = m_modes[static_cast<int>(m_currentMode)]->initializeMode(m_renderer->getCurrentScreenSize());
+	uint32_t startingModeState = 0;
+
+	//Some modes can be initialized with starting states, check to see if the new
+	//mode applies
+	switch (mt)
+	{
+	case ModeType::DEVICE_DISCOVERY:
+	{
+		//The device discovery mode state depends on whether or not we're currently
+		//connected to a BLE device
+		if (m_personalCaddie->ble_device_connected) startingModeState |= DeviceDiscoveryState::CONNECTED;
+	}
+	}
+
+	m_modeState = m_modes[static_cast<int>(m_currentMode)]->initializeMode(m_renderer->getCurrentScreenSize(), startingModeState);
 	
 	//See if any UI elements in the mode need to know their full render height (needed for items
 	//like scroll boxes).
@@ -407,7 +423,7 @@ void ModeScreen::PersonalCaddieHandler(PersonalCaddieEventType pcEvent, void* ev
 		for (auto it = foundDevices->begin(); it != foundDevices->end(); it++)
 		{
 			devices += L"Name: " + it->device_name;
-			devices += L", Address: " + it->device_address.second + L"\n";
+			devices += L", Address: " + std::to_wstring(it->device_address.first) + L"\n";
 		}
 
 		//Update the text in the device discovery text box
@@ -425,7 +441,7 @@ void ModeScreen::PersonalCaddieHandler(PersonalCaddieEventType pcEvent, void* ev
 
 void ModeScreen::enterActiveState()
 {
-	m_modeState ^= (ModeState::Active | ModeState::Idle); //swap the active and idle states
+	m_modeState ^= ModeState::Active; //turn on the active state
 
 	switch (m_currentMode)
 	{
@@ -438,9 +454,33 @@ void ModeScreen::enterActiveState()
 	}
 }
 
+void ModeScreen::stateUpdate()
+{
+	switch (m_currentMode)
+	{
+	case ModeType::DEVICE_DISCOVERY:
+	{
+		//The connect/disconnect button was clicked. Attempt to connect
+		//to the specified device, or disconnect from the current one.
+		if (m_modes[static_cast<int>(m_currentMode)]->getModeState() & DeviceDiscoveryState::DISCONNECT)
+		{
+			//disconnect from the current device
+			int x = 7;
+		}
+		else if (m_modes[static_cast<int>(m_currentMode)]->getModeState() & DeviceDiscoveryState::ATTEMPT_CONNECT)
+		{
+			//attempt to connect to the device currently selected
+			wchar_t* endString;
+			uint64_t deviceAddress = std::wcstoull(&((DeviceDiscoveryMode*)m_modes[static_cast<int>(m_currentMode)].get())->getCurrentlySelectedDevice()[0], &endString, 10);
+			m_personalCaddie->connectToDevice(deviceAddress);
+		}
+	}
+	}
+}
+
 void ModeScreen::leaveActiveState()
 {
-	m_modeState ^= (ModeState::Active | ModeState::Idle); //swap the active and idle states
+	m_modeState ^= ModeState::Active; //turn off the active state
 
 	switch (m_currentMode)
 	{

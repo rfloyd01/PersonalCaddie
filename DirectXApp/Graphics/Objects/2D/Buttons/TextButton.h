@@ -28,7 +28,7 @@ public:
 	{
 		m_state = state;
 
-		if (state == UIElementStateBasic::Disabled)
+		if (state & UIElementStateBasic::Disabled)
 		{
 			//turn the button text gray when it's disabled
 			m_text.colors[0] = UIColor::Gray;

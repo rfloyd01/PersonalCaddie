@@ -43,16 +43,12 @@ BLE::BLE(std::function<void(BLEState)> function)
 
 }
 
-IAsyncOperation<BluetoothLEDevice> BLE::connectToExistingDevice()
+IAsyncOperation<BluetoothLEDevice> BLE::connectToDevice(uint64_t deviceAddress)
 {
-    //This method attempts to connect to the most recently paired Personal Caddie device. If no device exists, or this method
-    //is unsuccessful then the device watcher will be called
-
-    uint64_t personal_caddie_address = 274381568618262;  //TODO: This should be saved in an external file
-    IAsyncOperation<BluetoothLEDevice> FindBLEAsync = Bluetooth::BluetoothLEDevice::FromBluetoothAddressAsync(personal_caddie_address);
+    IAsyncOperation<BluetoothLEDevice> FindBLEAsync = Bluetooth::BluetoothLEDevice::FromBluetoothAddressAsync(deviceAddress);
 
     //create a handler that will get called when the BLEDevice is created
-    FindBLEAsync.Completed([this, personal_caddie_address](
+    FindBLEAsync.Completed([this, deviceAddress](
         IAsyncOperation<BluetoothLEDevice> const& sender,
         AsyncStatus const asyncStatus)
         {
@@ -60,6 +56,15 @@ IAsyncOperation<BluetoothLEDevice> BLE::connectToExistingDevice()
         });
 
     return FindBLEAsync;
+}
+
+IAsyncOperation<BluetoothLEDevice> BLE::connectToExistingDevice()
+{
+    //This method attempts to connect to the most recently paired Personal Caddie device. If no device exists, or this method
+    //is unsuccessful then the device watcher will be called
+
+    uint64_t personal_caddie_address = 274381568618262;  //TODO: This should be saved in an external file
+    return connectToDevice(personal_caddie_address);
 }
 
 void BLE::startBLEAdvertisementWatcher()

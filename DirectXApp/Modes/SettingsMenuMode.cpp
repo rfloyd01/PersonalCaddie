@@ -7,7 +7,7 @@ SettingsMenuMode::SettingsMenuMode()
 	m_backgroundColor = UIColor::Gray;
 }
 
-uint32_t SettingsMenuMode::initializeMode(winrt::Windows::Foundation::Size windowSize)
+uint32_t SettingsMenuMode::initializeMode(winrt::Windows::Foundation::Size windowSize, uint32_t initialState)
 {
 	//Initialize all overlay text
 	initializeTextOverlay(windowSize);
@@ -57,5 +57,5 @@ void SettingsMenuMode::initializeTextOverlay(winrt::Windows::Foundation::Size wi
 
 uint32_t SettingsMenuMode::handleUIElementStateChange(int i)
 {
-	return ModeState::Idle;
+	return 0;
 }

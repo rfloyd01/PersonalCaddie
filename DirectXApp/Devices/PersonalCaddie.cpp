@@ -55,6 +55,17 @@ PersonalCaddie::PersonalCaddie(std::function<void(PersonalCaddieEventType, void*
 
 }
 
+void PersonalCaddie::connectToDevice(uint64_t deviceAddress)
+{
+    //This method gets called when we attempt to connect to a device found with the device watcher.
+    p_ble->connectToDevice(deviceAddress);
+}
+
+void PersonalCaddie::disconnectFromDevice()
+{
+    //disconnect from the currently connected BLE device
+}
+
 void PersonalCaddie::BLEDeviceHandler(BLEState state)
 {
     //This is my take on creating a handler function. A reference to this method gets passed to the BLE class via its cunstructor.

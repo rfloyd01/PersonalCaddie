@@ -7,7 +7,7 @@ class SettingsMenuMode : public Mode
 public:
 	SettingsMenuMode();
 
-	virtual uint32_t initializeMode(winrt::Windows::Foundation::Size windowSize) override;
+	virtual uint32_t initializeMode(winrt::Windows::Foundation::Size windowSize, uint32_t initialState = 0) override;
 	virtual void uninitializeMode() override;
 
 	virtual uint32_t handleUIElementStateChange(int i) override;

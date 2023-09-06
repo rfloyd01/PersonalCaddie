@@ -7,7 +7,7 @@ UITestMode::UITestMode()
 	m_backgroundColor = UIColor::LightBlue;
 }
 
-uint32_t UITestMode::initializeMode(winrt::Windows::Foundation::Size windowSize)
+uint32_t UITestMode::initializeMode(winrt::Windows::Foundation::Size windowSize, uint32_t initialState)
 {
 	//Create UI Elements on the page
 	initializeTextOverlay(windowSize);
@@ -31,7 +31,7 @@ uint32_t UITestMode::initializeMode(winrt::Windows::Foundation::Size windowSize)
 	//When this mode is initialzed we go into a state of CanTransfer and Active.
 	//Can Transfer allows us to use the esc. key to go back to the settings menu
 	//while active diverts state control to this mode
-	return (ModeState::CanTransfer | ModeState::Idle | ModeState::NeedTextUpdate);
+	return (ModeState::CanTransfer | ModeState::NeedTextUpdate);
 }
 
 void UITestMode::uninitializeMode()

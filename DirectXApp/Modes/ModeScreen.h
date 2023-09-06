@@ -61,6 +61,7 @@ private:
 	void getTextRenderPixelsBasic(std::vector<UIText*> const& text);
 
 	void enterActiveState(); //depending on the current mode, something different will happen here
+	void stateUpdate();
 	void leaveActiveState();
 
 	uint32_t                            m_modeState; //holds info on the current mode state
