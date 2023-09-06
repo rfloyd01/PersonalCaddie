@@ -1,7 +1,6 @@
 #include "pch.h"
 #include "UITestMode.h"
 
-
 UITestMode::UITestMode()
 {
 	//set a very light gray background color for the mode
@@ -25,7 +24,7 @@ uint32_t UITestMode::initializeMode(winrt::Windows::Foundation::Size windowSize)
 	//m_uiElements.push_back(std::make_shared<ScrollingTextBox>(scTB));
 
 	ArrowButton arrow(windowSize, { 0.5, 0.5 }, { 0.15, 0.15 }, false, true);
-	FullScrollingTextBox scroll(windowSize, { 0.5, 0.5 }, { 0.5, 0.25 }, options, 0.025, true, false);
+	FullScrollingTextBox scroll(windowSize, { 0.5, 0.5 }, { 0.5, 0.25 }, options, 0.025, true, true);
 	//m_uiElementsBasic.push_back(std::make_shared<ArrowButton>(arrow));
 	m_uiElementsBasic.push_back(std::make_shared<FullScrollingTextBox>(scroll));
 
@@ -49,20 +48,23 @@ void UITestMode::uninitializeMode()
 void UITestMode::initializeTextOverlay(winrt::Windows::Foundation::Size windowSize)
 {
 	//Title information
-	std::wstring message = L"UI Testing";
-	HighlightableTextOverlay title(message, { UIColor::White }, { 0,  (unsigned int)message.length() }, UITextType::TITLE, windowSize);
+	std::wstring title_message = L"UI Testing";
+	HighlightableTextOverlayBasic title(windowSize, { UIConstants::TitleTextLocationX, UIConstants::TitleTextLocationY }, { UIConstants::TitleTextSizeX, UIConstants::TitleTextSizeY },
+		title_message, UIConstants::TitleTextPointSize, { UIColor::White }, { 0,  (unsigned int)title_message.length() }, UITextJustification::CenterCenter);
 	title.updateSecondaryColor(UIColor::Red);
-	m_uiElements.push_back(std::make_shared<HighlightableTextOverlay>(title));
+	m_uiElementsBasic.push_back(std::make_shared<HighlightableTextOverlayBasic>(title));
 
 	//Sub-Title information
 	std::wstring subtitle_message = L"A place to develop custom UI Elements (hover over the title to see some stuff in action!)";
-	TextOverlay subtitle(subtitle_message, { UIColor::White }, { 0,  (unsigned int)subtitle_message.length() }, UITextType::SUB_TITLE, windowSize);
-	m_uiElements.push_back(std::make_shared<TextOverlay>(subtitle));
+	TextOverlayBasic subtitle(windowSize, { UIConstants::SubTitleTextLocationX, UIConstants::SubTitleTextLocationY }, { UIConstants::SubTitleTextSizeX, UIConstants::SubTitleTextSizeY },
+		subtitle_message, UIConstants::SubTitleTextPointSize, { UIColor::White }, { 0,  (unsigned int)subtitle_message.length() }, UITextJustification::CenterCenter);
+	m_uiElementsBasic.push_back(std::make_shared<TextOverlayBasic>(subtitle));
 
 	//Footnote information
-	message = L"Press Esc. to return to settings menu.";
-	TextOverlay footNote(message, { UIColor::White }, { 0,  (unsigned int)message.length() }, UITextType::FOOT_NOTE, windowSize);
-	m_uiElements.push_back(std::make_shared<TextOverlay>(footNote));
+	std::wstring footnote_message = L"Press Esc. to return to settings menu";
+	TextOverlayBasic footnote(windowSize, { UIConstants::FootNoteTextLocationX, UIConstants::FootNoteTextLocationY }, { UIConstants::FootNoteTextSizeX, UIConstants::FootNoteTextSizeY },
+		footnote_message, UIConstants::FootNoteTextPointSize, { UIColor::White }, { 0,  (unsigned int)footnote_message.length() }, UITextJustification::LowerRight);
+	m_uiElementsBasic.push_back(std::make_shared<TextOverlayBasic>(footnote));
 }
 
 uint32_t UITestMode::handleUIElementStateChange(int i)

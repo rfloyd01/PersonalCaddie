@@ -22,7 +22,9 @@ enum UIElementStateBasic
 	Scrolled = 4,
 	Invisible = 8,
 	Hovered = 16,
-	NeedTextPixels = 32
+	NeedTextPixels = 32,
+	Selected = 64,
+	Disabled = 128
 };
 
 //used to make sure all parts of the UI element are rendered
@@ -45,8 +47,10 @@ public:
 
 	//Getters and Setters
 	uint32_t getState() { return m_state; }
-	void setState(uint32_t state) { m_state = state; }
+	virtual void setState(uint32_t state);
 	virtual void removeState(uint32_t state);
+
+	void setFontSize(float size) { m_fontSize = size; }
 
 	UIShape* getShape() { return &m_shape; }
 	UIText* getText() { return &m_text; }

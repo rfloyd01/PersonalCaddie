@@ -13,10 +13,15 @@ public:
 		float fontSize, std::vector<UIColor> colors, std::vector<unsigned long long> colorLocations, UITextJustification justification);
 
 	virtual void removeState(uint32_t state) override;
+	void updateSecondaryColor(UIColor color) { m_secondaryColor = color; }
+
+	void select();
 
 protected:
 	//virtual bool checkHover(DirectX::XMFLOAT2 mousePosition) override; //checks to see if the element is being hovered over
 	virtual void onHover() override;
 
-	UIColor m_secondaryColor = UIColor::Blue; //Default to a white secondary color
+	UIColor m_primaryColor = UIColor::Black; //This is the default text color
+	UIColor m_secondaryColor = UIColor::Blue; //This is the text color when the Text overlay is being hovered over by the mouse
+	UIColor m_tertiaryColor = UIColor::Yellow; //Some UI Elements (but not all) allow for the selection of text. This is the selected text color
 };

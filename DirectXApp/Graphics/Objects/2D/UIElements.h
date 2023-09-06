@@ -18,3 +18,4 @@
 #include "TextBoxes/TextBoxBasic.h"
 #include "TextBoxes/PartialScrollingTextBox.h"
 #include "TextBoxes/FullScrollingTextBox.h"
+#include "TextBoxes/HighlightableTextOverlayBasic.h"

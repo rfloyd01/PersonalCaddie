@@ -148,6 +148,7 @@ void UIElementRenderer::setTextLayoutPixels(UIText* text)
 
     text->renderDPI.x = metrics.width;
     text->renderDPI.y = metrics.height;
+    text->renderLines = metrics.lineCount;
 }
 
 void UIElementRenderer::render(std::vector<std::shared_ptr<UIElement> > const& uiElements)

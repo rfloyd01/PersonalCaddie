@@ -30,13 +30,15 @@ void MainMenuMode::initializeTextOverlay(winrt::Windows::Foundation::Size window
 {
 	//Title information
 	std::wstring title_message = L"Personal Caddie v1.0";
-	TextOverlay title(title_message, { UIColor::White }, { 0,  (unsigned int)title_message.length() }, UITextType::TITLE, windowSize);
-	m_uiElements.push_back(std::make_shared<TextOverlay>(title));
+	TextOverlayBasic title(windowSize, { UIConstants::TitleTextLocationX, UIConstants::TitleTextLocationY }, { UIConstants::TitleTextSizeX, UIConstants::TitleTextSizeY },
+		title_message, UIConstants::TitleTextPointSize, { UIColor::White }, { 0,  (unsigned int)title_message.length() }, UITextJustification::CenterCenter);
+	m_uiElementsBasic.push_back(std::make_shared<TextOverlayBasic>(title));
 
 	//Sub-Title information
 	std::wstring subtitle_message = L"(Press one of the keys listed below to select a mode)";
-	TextOverlay subtitle(subtitle_message, { UIColor::White }, { 0,  (unsigned int)subtitle_message.length() }, UITextType::SUB_TITLE, windowSize);
-	m_uiElements.push_back(std::make_shared<TextOverlay>(subtitle));
+	TextOverlayBasic subtitle(windowSize, { UIConstants::SubTitleTextLocationX, UIConstants::SubTitleTextLocationY }, { UIConstants::SubTitleTextSizeX, UIConstants::SubTitleTextSizeY },
+		subtitle_message, UIConstants::SubTitleTextPointSize, { UIColor::White }, { 0,  (unsigned int)subtitle_message.length() }, UITextJustification::CenterCenter);
+	m_uiElementsBasic.push_back(std::make_shared<TextOverlayBasic>(subtitle));
 
 	//Body information
 	std::wstring body_message_1 = L"1. Free Swing Mode \n";
@@ -45,18 +47,18 @@ void MainMenuMode::initializeTextOverlay(winrt::Windows::Foundation::Size window
 	std::wstring body_message_4 = L"4. Calibration Mode \n";
 	std::wstring body_message_5 = L"5. Sensor Settings \n";
 	std::wstring body_message_6 = L"6. UI Element Testing \n";
-	
-	TextOverlay body(body_message_1 + body_message_2 + body_message_3 + body_message_4 + body_message_5 + body_message_6,
+	TextOverlayBasic body(windowSize, { UIConstants::BodyTextLocationX, UIConstants::BodyTextLocationY }, { UIConstants::BodyTextSizeX, UIConstants::BodyTextSizeY },
+		body_message_1 + body_message_2 + body_message_3 + body_message_4 + body_message_5 + body_message_6, UIConstants::BodyTextPointSize,
 		{ UIColor::FreeSwingMode, UIColor::SwingAnalysisMode, UIColor::TrainingMode, UIColor::CalibrationMode, UIColor::PaleGray, UIColor::White },
 		{ 0,  (unsigned int)body_message_1.length(),  (unsigned int)body_message_2.length(),  (unsigned int)body_message_3.length(), (unsigned int)body_message_4.length(), (unsigned int)body_message_5.length(), (unsigned int)body_message_6.length() },
-		UITextType::BODY, windowSize);
-
-	m_uiElements.push_back(std::make_shared<TextOverlay>(body));
+		UITextJustification::UpperLeft);
+	m_uiElementsBasic.push_back(std::make_shared<TextOverlayBasic>(body));
 
 	//Footnote information
 	std::wstring footnote_message = L"Press Esc. to exit the program.";
-	TextOverlay footNote(footnote_message, { UIColor::White }, { 0,  (unsigned int)footnote_message.length() }, UITextType::FOOT_NOTE, windowSize);
-	m_uiElements.push_back(std::make_shared<TextOverlay>(footNote));
+	TextOverlayBasic footnote(windowSize, { UIConstants::FootNoteTextLocationX, UIConstants::FootNoteTextLocationY }, { UIConstants::FootNoteTextSizeX, UIConstants::FootNoteTextSizeY },
+		footnote_message, UIConstants::FootNoteTextPointSize, { UIColor::White }, { 0,  (unsigned int)footnote_message.length() }, UITextJustification::LowerRight);
+	m_uiElementsBasic.push_back(std::make_shared<TextOverlayBasic>(footnote));
 }
 
 uint32_t MainMenuMode::handleUIElementStateChange(int i)

@@ -67,4 +67,5 @@ struct UIText
 	//int the renderingHeightDPI float. 
 	bool needDPI = false;
 	DirectX::XMFLOAT2A renderDPI = { 0, 0 };
+	int renderLines = 0; //The number of lines the text takes up in the DirectWrite text layout
 };

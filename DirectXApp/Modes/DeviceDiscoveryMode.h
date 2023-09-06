@@ -17,10 +17,13 @@ public:
 	virtual uint32_t initializeMode(winrt::Windows::Foundation::Size windowSize) override;
 	virtual void uninitializeMode() override;
 
+	virtual void update() override;
+
 	virtual uint32_t handleUIElementStateChange(int i) override;
 
 private:
 	void initializeTextOverlay(winrt::Windows::Foundation::Size windowSize);
 	DeviceDiscoveryState m_state;
 
+	std::wstring m_currentlySelectedDevice = L"";
 };

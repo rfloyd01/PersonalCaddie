@@ -413,8 +413,9 @@ void ModeScreen::PersonalCaddieHandler(PersonalCaddieEventType pcEvent, void* ev
 		//Update the text in the device discovery text box
 		if (m_currentMode == ModeType::DEVICE_DISCOVERY)
 		{
-			auto textBox = (ScrollingTextBox*)(getCurrentModeUIElements()[0].get());
-			m_modeState |= textBox->addText(devices); //this new text will get resized in the main update loop
+			auto textBox = (FullScrollingTextBox*)(getCurrentModeUIElementsBasic()[0].get());
+			textBox->clearText(); //clear the text each time to prevent adding duplicates
+			textBox->addText(devices, m_renderer->getCurrentScreenSize(), true); //this new text will get resized in the main update loop
 		}
 		break;
 	}

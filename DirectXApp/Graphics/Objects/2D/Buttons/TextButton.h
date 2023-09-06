@@ -23,4 +23,27 @@ public:
 
 		resize(windowSize); //Force a resize so the text is created properly
 	}
+
+	virtual void setState(uint32_t state) override
+	{
+		m_state = state;
+
+		if (state == UIElementStateBasic::Disabled)
+		{
+			//turn the button text gray when it's disabled
+			m_text.colors[0] = UIColor::Gray;
+		}
+	}
+
+	void removeState(uint32_t state)
+	{
+		Button::removeState(state);
+
+		//When enabling a button we change its text color to black
+		if (state & UIElementStateBasic::Disabled)
+		{
+			m_state ^= UIElementStateBasic::Disabled;
+			m_text.colors[0] = UIColor::Black;
+		}
+	}
 };

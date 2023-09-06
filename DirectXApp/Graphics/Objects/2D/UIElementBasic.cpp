@@ -52,7 +52,7 @@ uint32_t UIElementBasic::update(InputState* inputState)
 	//call this method on each of it's children to give us a snap shot of the state for
 	//each element on the page.
 
-	if (m_state & UIElementStateBasic::Invisible) return 0; //Invisible elements don't get updated
+	if ((m_state & UIElementStateBasic::Invisible) || (m_state & UIElementStateBasic::Disabled)) return 0; //Invisible and disabled elements don't get updated
 
 	//If the element can't be interacted with in any way then simple return the idle state.
 	if (!m_isClickable && !m_isHoverable && !m_isScrollable) return UIElementStateBasic::Idlee;
@@ -227,4 +227,13 @@ void UIElementBasic::removeState(uint32_t state)
 	{
 		if (p_children[i]->getState() & state) p_children[i]->removeState(state);
 	}
+}
+
+void UIElementBasic::setState(uint32_t state)
+{ 
+	//A pretty standard set function, however, some child elements need
+	//the ability to make changes when their state is changed (for example,
+	//setting a button into the disabled state will change its text color)
+	//so this is a virtual method that can be overriden.
+	m_state = state;
 }

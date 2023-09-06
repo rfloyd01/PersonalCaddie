@@ -10,22 +10,43 @@ HighlightableTextOverlayBasic::HighlightableTextOverlayBasic(winrt::Windows::Fou
 	m_location = location;
 	m_fontSize = fontSize;
 	m_isHoverable = true;
+	m_primaryColor = colors[0];
+}
+
+void HighlightableTextOverlayBasic::select()
+{
+	m_state |= UIElementStateBasic::Selected;
+	m_text.colors[0] = m_tertiaryColor;
 }
 
 void HighlightableTextOverlayBasic::onHover()
 {
 	//when hovering over the text, we swap the current color to the secondary color
-	UIColor temp = m_text.colors[0];
-	m_text.colors[0] = m_secondaryColor;
-	m_secondaryColor = temp;
+	//unless the text is currently selected (in which case it stays the same).
+	if (!(m_state & UIElementStateBasic::Selected))
+	{
+		m_text.colors[0] = m_secondaryColor;
+	}
 }
 
 void HighlightableTextOverlayBasic::removeState(uint32_t state)
 {
-	//When the hover state is removed fwe change its color back
 	if (state == UIElementStateBasic::Hovered)
 	{
-		onHover();
+		//When the hover state is removed we change back to the primary
+		//color (unless the text is currently in the selected state)
+		if (!(m_state & UIElementStateBasic::Selected))
+		{
+			m_text.colors[0] = m_primaryColor;
+		}
 	}
+	else if (state == UIElementStateBasic::Selected)
+	{
+		//Switch back to either the primary or secondary color 
+		//depending on whether or not the text is currently being hovered.
+		if (m_state & UIElementStateBasic::Hovered) m_text.colors[0] = m_secondaryColor;
+		else m_text.colors[0] = m_primaryColor;
+	}
+
 	m_state ^= state;
 }

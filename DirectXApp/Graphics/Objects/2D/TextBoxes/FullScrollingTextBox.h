@@ -24,8 +24,13 @@ public:
 		bool highlightableText = true, bool dynamicSize = true,
 		UITextJustification justification = UITextJustification::UpperLeft, UIColor textFillColor = UIColor::White, bool isSquare = false,  UIColor outlineColor = UIColor::Black, UIColor shadowColor = UIColor::DarkGray);
 
+	void addText(std::wstring text, winrt::Windows::Foundation::Size windowSize = { 0, 0 }, bool highlightable = false, bool existingText = true);
+	void clearText();
+
 	virtual uint32_t update(InputState* inputState) override;
 	virtual std::vector<UIText*> setTextDimension() override;
+
+	std::wstring getLastSelectedText() { return m_lastSelectedText; }
 
 protected:
 	float getCurrentTextStartingHeight();
