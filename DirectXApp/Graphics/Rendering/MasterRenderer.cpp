@@ -196,8 +196,6 @@ void MasterRenderer::Render()
     d2dContext->SetTransform(m_deviceResources->GetOrientationTransform2D());
 
     //Render any UI elements or text on screen text
-    //m_2DRenderer.Render(m_mode);
-    m_uiElementRenderer.render(m_mode->getCurrentModeUIElements());
     m_uiElementRenderer.renderBasic(m_mode->getCurrentModeUIElementsBasic());
 
     //Render 2D UI elements like drop down boxes and buttons

@@ -43,7 +43,6 @@ public:
 
 	const UIColor getBackgroundColor();
 
-	std::vector<std::shared_ptr<UIElement> > const& getUIElements() { return m_uiElements; }
 	std::vector<std::shared_ptr<UIElementBasic> > const& getUIElementsBasic() { return m_uiElementsBasic; }
 
 	uint32_t getModeState() { return m_state; }
@@ -53,16 +52,15 @@ public:
 
 	//Alert Methods
 	void createAlert(std::wstring message, UIColor color, winrt::Windows::Foundation::Size windowSize);
-	TextOverlay removeAlerts();
+	void createAlert(TextOverlayBasic& alert);
+	TextOverlayBasic removeAlerts();
 
 	virtual uint32_t handleUIElementStateChange(int i) = 0;
 
 protected:
-	//float m_backgroundColor[4]; 
 	UIColor m_backgroundColor; //represents the background color when this mode is being rendered
 
-	std::vector<std::shared_ptr<UIElement> >       m_uiElements; //2d objects like Drop downs, combo boxes, buttons and text
-	std::vector<std::shared_ptr<UIElementBasic> >  m_uiElementsBasic; //Test, new basic element class
+	std::vector<std::shared_ptr<UIElementBasic> >  m_uiElementsBasic; //2d objects like Drop downs, combo boxes, buttons and text
 
 	uint32_t m_state; //the state of the current mode
 };

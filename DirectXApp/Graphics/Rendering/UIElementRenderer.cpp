@@ -151,50 +151,6 @@ void UIElementRenderer::setTextLayoutPixels(UIText* text)
     text->renderLines = metrics.lineCount;
 }
 
-void UIElementRenderer::render(std::vector<std::shared_ptr<UIElement> > const& uiElements)
-{
-    //The input vector contains all of the UI Elements to be rendered from the current mode. The order in which 
-    //the elements get rendered is important. Some elements (like scroll boxes) need to have shapes rendered over
-    //their text to give the illusion that all text is contained inside the box.
-    UIShape* shape = nullptr;
-    UIText* text = nullptr;
-
-    for (int i = 0; i < uiElements.size(); i++)
-    {
-        if (uiElements[i]->getState() == UIElementState::Invisible) continue; //invisible elements don't get rendered
-
-        for (int j = 0; j < static_cast<int>(RenderOrder::End); j++)
-        {
-            RenderOrder renderOrder = static_cast<RenderOrder>(j);
-            int renderLength = uiElements[i]->getRenderVectorSize(renderOrder);
-            if (renderOrder == RenderOrder::ElementText)
-            {
-                //This is one of the text sections so render text
-                for (int k = 0; k < renderLength; k++) renderText((UIText*)uiElements[i]->getRenderItem(renderOrder, k));
-            }
-            else if (renderOrder == RenderOrder::TextOverlay) continue; //the text overlay for all objects is rendered at the end
-            else
-            {
-                for (int k = 0; k < renderLength; k++) renderShape((UIShape*)uiElements[i]->getRenderItem(renderOrder, k));
-            }
-        }
-
-        //Parent UI Elements are responsible for making sure their children get rendered. After rendering all aspects
-        //of the current element, loop through all of its children and render them as well.
-        render(uiElements[i]->getChildrenUIElements());
-    }
-
-    //After all shapes and element text has been rendered, render any overlay text. This is typically
-    //reserved for things like the title of a page.
-    for (int i = 0; i < uiElements.size(); i++)
-    {
-        if (uiElements[i]->getState() == UIElementState::Invisible) continue; //invisible elements don't get rendered
-
-        int renderLength = uiElements[i]->getRenderVectorSize(RenderOrder::TextOverlay);
-        for (int j = 0; j < renderLength; j++) renderText((UIText*)uiElements[i]->getRenderItem(RenderOrder::TextOverlay, j));
-    }
-}
-
 void UIElementRenderer::renderBasic(std::vector<std::shared_ptr<UIElementBasic> > const& uiElements)
 {
     //Renders all UI Elements in the given vector

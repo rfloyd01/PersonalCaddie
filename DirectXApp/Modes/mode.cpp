@@ -12,31 +12,43 @@ void Mode::createAlert(std::wstring message, UIColor color, winrt::Windows::Foun
 	//add it onto the back. The TextOverylay class doesn't allow for updating
 	//text so we must delete the current alert (if it exists) and create
 	//a new one from scratch
-	auto existingAlert = removeAlerts().getText(); //This removes any existing alerts and saves the text
+	auto existingAlert = removeAlerts(); //This removes any existing alerts and saves the text
 
-	if (existingAlert.message != L"")
+	if (existingAlert.getText()->message != L"")
 	{
 		//There was already an alert in place so add the new one on top of this one
-		std::vector<UIColor> colors = existingAlert.colors;
-		std::vector<unsigned long long> colorLocations = existingAlert.colorLocations;
+		std::vector<UIColor> colors = existingAlert.getText()->colors;
+		std::vector<unsigned long long> colorLocations = existingAlert.getText()->colorLocations;
 
-		colors.push_back(color);
-		colorLocations.push_back(message.length());
+		//if the new message is empty don't add any more colors, just copy the old colors
+		if (message != L"") colors.push_back(color);
+		if (message != L"") colorLocations.push_back(message.length());
 
-		TextOverlay newAlert(existingAlert.message + message, colors, colorLocations, existingAlert.startLocation, existingAlert.renderArea,
-			existingAlert.fontSize, existingAlert.textType, existingAlert.justification);
+		TextOverlayBasic newAlert(windowSize, { UIConstants::AlertTextLocationX, UIConstants::AlertTextLocationY }, { UIConstants::AlertTextSizeX, UIConstants::AlertTextSizeY },
+			existingAlert.getText()->message + message, UIConstants::AlertTextPointSize, colors, colorLocations, UITextJustification::UpperCenter);
+		newAlert.setAlert(); //make the alert active
 
-		addUIElement(newAlert);
+		m_uiElementsBasic.push_back(std::make_shared<TextOverlayBasic>(newAlert));
 	}
 	else
 	{
 		//There were no existing alerts so we create a new one
-		TextOverlay newAlert(message, { color }, { 0, (unsigned long long)message.length() }, UITextType::ALERT, windowSize);
-		addUIElement(newAlert);
+		TextOverlayBasic newAlert(windowSize, { UIConstants::AlertTextLocationX, UIConstants::AlertTextLocationY }, { UIConstants::AlertTextSizeX, UIConstants::AlertTextSizeY },
+			message, UIConstants::AlertTextPointSize, { color }, { 0, (unsigned int)message.length() }, UITextJustification::UpperCenter);
+		newAlert.setAlert(); //make the alert active
+
+		m_uiElementsBasic.push_back(std::make_shared<TextOverlayBasic>(newAlert));
 	}
 }
 
-TextOverlay Mode::removeAlerts()
+void Mode::createAlert(TextOverlayBasic& alert)
+{
+	//creates a new alert from an existing one
+	alert.setAlert(); //make the alert active
+	m_uiElementsBasic.push_back(std::make_shared<TextOverlayBasic>(alert));
+}
+
+TextOverlayBasic Mode::removeAlerts()
 {
 	//Since alerts can be embedded anywhere inside the ui element vector, this method
 	//searches for them, deletes the alert ui element, resizes the vector, and returns
@@ -45,14 +57,14 @@ TextOverlay Mode::removeAlerts()
 	//Iterate backwards through the vector as alerts are more likely to be at the
 	//back. There should only ever be one alert textOverlay at a time so after removing
 	//it break off the search
-	TextOverlay alert(L"", {}, {}, UITextType::ALERT, { 0, 0 }); //create an empty alert
-	for (int i = m_uiElements.size() - 1; i >= 0; i--)
+	TextOverlayBasic alert({ 0, 0 }, { 0, 0 }, { 0, 0 }, L"", 0, { UIColor::Black }, { 0, 0 }, UITextJustification::CenterCenter);
+	for (int i = m_uiElementsBasic.size() - 1; i >= 0; i--)
 	{
-		if (m_uiElements[i]->isAlert())
+		if (m_uiElementsBasic[i]->isAlert())
 		{
-			alert = *((TextOverlay*)(m_uiElements[i].get()));
-			m_uiElements[i] = nullptr;
-			m_uiElements.erase(m_uiElements.begin() + i);
+			alert = *((TextOverlayBasic*)m_uiElementsBasic[i].get());
+			m_uiElementsBasic[i] = nullptr;
+			m_uiElementsBasic.erase(m_uiElementsBasic.begin() + i);
 			break;
 		}
 	}

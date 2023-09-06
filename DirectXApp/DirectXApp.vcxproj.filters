@@ -58,12 +58,6 @@
     <ClCompile Include="Modes\DeviceDiscoveryMode.cpp">
       <Filter>Modes</Filter>
     </ClCompile>
-    <ClCompile Include="Graphics\Objects\2D\UIElement.cpp">
-      <Filter>Graphics\Objects\2D</Filter>
-    </ClCompile>
-    <ClCompile Include="Graphics\Objects\2D\TextBoxes\StaticTextBox.cpp">
-      <Filter>Graphics\Objects\2D\TextBoxes</Filter>
-    </ClCompile>
     <ClCompile Include="Graphics\Objects\2D\UIText.cpp">
       <Filter>Graphics\Objects\2D</Filter>
     </ClCompile>
@@ -73,26 +67,11 @@
     <ClCompile Include="Graphics\Rendering\UIElementRenderer.cpp">
       <Filter>Graphics\Rendering</Filter>
     </ClCompile>
-    <ClCompile Include="Graphics\Objects\2D\TextBoxes\TextOverlay.cpp">
-      <Filter>Graphics\Objects\2D\TextBoxes</Filter>
-    </ClCompile>
-    <ClCompile Include="Graphics\Objects\2D\UIButton.cpp">
-      <Filter>Graphics\Objects\2D</Filter>
-    </ClCompile>
     <ClCompile Include="Graphics\Utilities\UIElementColors.cpp">
       <Filter>Graphics\Utilities</Filter>
     </ClCompile>
     <ClCompile Include="Modes\UITestMode.cpp">
       <Filter>Modes</Filter>
-    </ClCompile>
-    <ClCompile Include="Graphics\Objects\2D\TextBoxes\ScrollingTextBox.cpp">
-      <Filter>Graphics\Objects\2D\TextBoxes</Filter>
-    </ClCompile>
-    <ClCompile Include="Graphics\Objects\2D\TextBoxes\HighlightableTextOverlay.cpp">
-      <Filter>Graphics\Objects\2D\TextBoxes</Filter>
-    </ClCompile>
-    <ClCompile Include="Graphics\Objects\2D\TextBoxes\OptionsBox.cpp">
-      <Filter>Graphics\Objects\2D\TextBoxes</Filter>
     </ClCompile>
     <ClCompile Include="Graphics\Objects\2D\UIElementBasic.cpp">
       <Filter>Graphics\Objects\2D</Filter>
@@ -193,15 +172,6 @@
     <ClInclude Include="Graphics\Objects\2D\Interfaces\IScrollableUI.h">
       <Filter>Graphics\Objects\2D\Interfaces</Filter>
     </ClInclude>
-    <ClInclude Include="Graphics\Objects\2D\UIElement.h">
-      <Filter>Graphics\Objects\2D</Filter>
-    </ClInclude>
-    <ClInclude Include="Graphics\Objects\2D\TextBoxes\StaticTextBox.h">
-      <Filter>Graphics\Objects\2D\TextBoxes</Filter>
-    </ClInclude>
-    <ClInclude Include="Graphics\Objects\2D\Interfaces\ITextBoxUI.h">
-      <Filter>Graphics\Objects\2D\Interfaces</Filter>
-    </ClInclude>
     <ClInclude Include="Graphics\Objects\2D\UIText.h">
       <Filter>Graphics\Objects\2D</Filter>
     </ClInclude>
@@ -211,17 +181,11 @@
     <ClInclude Include="Graphics\Rendering\UIElementRenderer.h">
       <Filter>Graphics\Rendering</Filter>
     </ClInclude>
-    <ClInclude Include="Graphics\Objects\2D\TextBoxes\TextOverlay.h">
-      <Filter>Graphics\Objects\2D\TextBoxes</Filter>
-    </ClInclude>
     <ClInclude Include="Graphics\Objects\2D\Interfaces\IClickableUI.h">
       <Filter>Graphics\Objects\2D\Interfaces</Filter>
     </ClInclude>
     <ClInclude Include="Graphics\Objects\2D\Interfaces\IHoverableUI.h">
       <Filter>Graphics\Objects\2D\Interfaces</Filter>
-    </ClInclude>
-    <ClInclude Include="Graphics\Objects\2D\UIButton.h">
-      <Filter>Graphics\Objects\2D</Filter>
     </ClInclude>
     <ClInclude Include="Graphics\Objects\2D\UIElements.h">
       <Filter>Graphics\Objects\2D</Filter>
@@ -231,15 +195,6 @@
     </ClInclude>
     <ClInclude Include="Modes\UITestMode.h">
       <Filter>Modes</Filter>
-    </ClInclude>
-    <ClInclude Include="Graphics\Objects\2D\TextBoxes\ScrollingTextBox.h">
-      <Filter>Graphics\Objects\2D\TextBoxes</Filter>
-    </ClInclude>
-    <ClInclude Include="Graphics\Objects\2D\TextBoxes\HighlightableTextOverlay.h">
-      <Filter>Graphics\Objects\2D\TextBoxes</Filter>
-    </ClInclude>
-    <ClInclude Include="Graphics\Objects\2D\TextBoxes\OptionsBox.h">
-      <Filter>Graphics\Objects\2D\TextBoxes</Filter>
     </ClInclude>
     <ClInclude Include="Graphics\Objects\2D\UIElementBasic.h">
       <Filter>Graphics\Objects\2D</Filter>

@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Graphics/Utilities/DeviceResources.h"
-#include "Graphics/Objects/2D/UIElement.h"
 #include "Graphics/Objects/2D/UIElementBasic.h"
 #include "Modes/ModeScreen.h"
 
@@ -13,8 +12,6 @@ public:
     UIElementRenderer(_In_ std::shared_ptr<DX::DeviceResources> const& deviceResources);
     UIElementRenderer(UIElementRenderer const&) = delete;
 	void operator=(UIElementRenderer const&) = delete;
-
-    void render(std::vector<std::shared_ptr<UIElement> > const& uiElements);
 
     void renderBasic(std::vector<std::shared_ptr<UIElementBasic> > const& uiElements);
 

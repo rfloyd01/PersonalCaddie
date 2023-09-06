@@ -4,6 +4,7 @@
 
 #include "UIText.h"
 #include "UIShape.h"
+#include "UIConstants.h"
 
 #include "Input/InputProcessor.h"
 
@@ -66,6 +67,9 @@ public:
 	virtual std::vector<UIText*> setTextDimension() { return {}; }; //empty getTextDimension method can be overriden by ITextDimension element users
 	virtual void repositionText() {}; //empty repositionText method can be overriden by ITextDimension element users
 
+	bool isAlert() { return m_isAlert; }
+	void setAlert() { m_isAlert = true; }
+
 protected:
 	int pixelCompare(float pixelOne, float pixelTwo);
 
@@ -94,6 +98,7 @@ protected:
 	bool                                          m_isClickable = false;
 	bool                                          m_isScrollable = false;
 	bool                                          m_isHoverable = false;
+	bool                                          m_isAlert = false;
 
 	bool                                          m_needTextRenderDimensions = false; //lets the current mode know if we need the full height for any elementText items in pixels
 	//bool                                          m_gotTextRenderDimensions = false; //lets the current mode know when elementText pixels have been received

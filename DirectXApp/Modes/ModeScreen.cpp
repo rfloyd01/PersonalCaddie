@@ -7,8 +7,6 @@
 #include "UITestMode.h"
 
 #include "Graphics/Rendering/MasterRenderer.h"
-#include "Graphics/Objects/2D/TextBoxes/StaticTextBox.h"
-#include "Graphics/Objects/2D/UIButton.h"
 
 ModeScreen::ModeScreen() :
 	m_currentMode(ModeType::MAIN_MENU),
@@ -280,7 +278,7 @@ void ModeScreen::changeCurrentMode(ModeType mt)
 
 	//First, get any active alerts before deleting the text and color map of the 
 	//current mode
-	auto currentAlerts = m_modes[static_cast<int>(m_currentMode)]->removeAlerts().getText();
+	auto currentAlerts = m_modes[static_cast<int>(m_currentMode)]->removeAlerts();// .getText();
 	m_modes[static_cast<int>(m_currentMode)]->uninitializeMode();
 
 	//Switch to the new mode and initialize it
@@ -301,50 +299,16 @@ void ModeScreen::changeCurrentMode(ModeType mt)
 
 	m_modeState = m_modes[static_cast<int>(m_currentMode)]->initializeMode(m_renderer->getCurrentScreenSize(), startingModeState);
 	
-	//See if any UI elements in the mode need to know their full render height (needed for items
-	//like scroll boxes).
-	//getTextRenderHeights(getCurrentModeUIElements());
-
 	//After initializing, add any alerts that were copied over to the text and
 	//color maps and then create text and color resources in the renderer
-	if (currentAlerts.message != L"") createAlert(currentAlerts.message, currentAlerts.colors[0]); //TODO: this will make all alerts the same color, come back to this
+	if (currentAlerts.getText()->message != L"") m_modes[static_cast<int>(m_currentMode)]->createAlert(currentAlerts);
 
-	if (m_modeState & ModeState::NeedTextUpdate)
-	{
-		//See if the new mode has any complex UI text elements that need help from the master renderer to initialize.
-		getTextRenderPixels(getCurrentModeUIElements());
-		m_modeState ^= ModeState::NeedTextUpdate; //remove the text update flag
-	}
-}
-
-void ModeScreen::getTextRenderPixels(std::vector<std::shared_ptr<UIElement>> const& uiElements)
-{
-	//iterate through all of the UI elements in the mode to see if any of them need the
-	//height in pixels for text layouts (this will happen for elements like scroll boxes).
-	for (int i = 0; i < uiElements.size(); i++)
-	{
-		if (uiElements[i]->needTextRenderHeight())
-		{
-			//This UI Element needs the height of a text layout. Get the text layout height for it,
-			//and any of its children. Of all the UI Element components, only elementText has this feature.
-			int elementTextComponents = uiElements[i]->getRenderVectorSize(RenderOrder::ElementText);
-			for (int j = 0; j < elementTextComponents; j++)
-			{
-				UIText* renderText = (UIText*)uiElements[i]->getRenderItem(RenderOrder::ElementText, j);
-				if (renderText->needDPI) m_renderer->setTextLayoutPixels(renderText);
-			}
-
-			int overlayTextComponents = uiElements[i]->getRenderVectorSize(RenderOrder::TextOverlay);
-			for (int j = 0; j < overlayTextComponents; j++)
-			{
-				UIText* renderText = (UIText*)uiElements[i]->getRenderItem(RenderOrder::TextOverlay, j);
-				if (renderText->needDPI) m_renderer->setTextLayoutPixels(renderText);
-			}
-
-			//Check any children UIElements as well, this is done recursively
-			getTextRenderPixels(uiElements[i]->getChildrenUIElements());
-		}
-	}
+	//if (m_modeState & ModeState::NeedTextUpdate)
+	//{
+	//	//See if the new mode has any complex UI text elements that need help from the master renderer to initialize.
+	//	getTextRenderPixels(getCurrentModeUIElements());
+	//	m_modeState ^= ModeState::NeedTextUpdate; //remove the text update flag
+	//}
 }
 
 void ModeScreen::getTextRenderPixelsBasic(std::vector<UIText*> const& text)
@@ -353,23 +317,10 @@ void ModeScreen::getTextRenderPixelsBasic(std::vector<UIText*> const& text)
 	for (int i = 0; i < text.size(); i++) m_renderer->setTextLayoutPixels(text[i]);
 }
 
-std::vector<std::shared_ptr<UIElement> > const& ModeScreen::getCurrentModeUIElements()
-{
-	//returns a reference to all UI elements to be rendered on screen
-	return m_modes[static_cast<int>(m_currentMode)]->getUIElements();
-}
-
 std::vector<std::shared_ptr<UIElementBasic> > const& ModeScreen::getCurrentModeUIElementsBasic()
 {
 	//returns a reference to all UI elements to be rendered on screen
 	return m_modes[static_cast<int>(m_currentMode)]->getUIElementsBasic();
-}
-
-void ModeScreen::resizeCurrentModeUIElements(winrt::Windows::Foundation::Size windowSize)
-{
-	auto uiElements = getCurrentModeUIElements();
-	for (int i = 0; i < uiElements.size(); i++) uiElements[i]->resize(windowSize);
-	getTextRenderPixels(uiElements);
 }
 
 void ModeScreen::resizeCurrentModeUIElementsBasic(winrt::Windows::Foundation::Size windowSize)
