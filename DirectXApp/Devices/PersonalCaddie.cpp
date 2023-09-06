@@ -5,6 +5,8 @@
 #include "../Math/quaternion_functions.h"
 #include "../Math/sensor_fusion.h"
 
+#include <iostream>
+#include <fstream>
 #include <functional>
 
 using namespace winrt;
@@ -21,9 +23,21 @@ PersonalCaddie::PersonalCaddie(std::function<void(PersonalCaddieEventType, void*
     this->ble_device_connected = false;
     this->p_ble = std::make_unique<BLE>(std::bind(&PersonalCaddie::BLEDeviceHandler, this, std::placeholders::_1));
 
-    //After creating the BLE device, attempt to connect to the most recently paire
-    //device
-    p_ble->connectToExistingDevice();
+    //After creating the BLE device, attempt to connect to the most recently paired
+    //device. The 64-bit address of the most recently paired device is saved to a 
+    //text file in the resources folder
+    std::ifstream addressFile("../last_connected_device.txt");
+    std::string addressString;
+    uint64_t deviceAddress = 0;
+    if (!addressFile.is_open())
+    {
+        std::getline(addressFile, addressString);
+        if (addressString != "") deviceAddress = std::stoull(addressString);
+        addressFile.close();
+    }
+    else OutputDebugString(L"Couldn't open file with previously connected Personal Caddie address.\n");
+
+    automaticallyConnect(); //attempt to connect to the most recently connected device
 
     //Set the IMU and characteristic pointers to null, we need to connect to a physical 
     //device before these can be populated
@@ -53,6 +67,70 @@ PersonalCaddie::PersonalCaddie(std::function<void(PersonalCaddieEventType, void*
         orientation_quaternions.push_back(q);
     }
 
+}
+
+void PersonalCaddie::automaticallyConnect()
+{
+    //We attempt to automatically connect to the last device that was connected to.
+    //The address of this device is saved in a file in the local app folder. If the file
+    //doesn't exist, or doesn't have a value it means that we haven't actually connected
+    //to a device before.
+    winrt::Windows::Storage::StorageFolder localFolder = winrt::Windows::Storage::ApplicationData::Current().LocalCacheFolder();
+    auto getAddressFile = localFolder.GetFileAsync(L"PersonalCaddieAddress.txt");
+
+    getAddressFile.Completed([this, localFolder](
+        IAsyncOperation<winrt::Windows::Storage::StorageFile> const& sender,
+        AsyncStatus const asyncStatus)
+        {
+            if (asyncStatus == AsyncStatus::Error)
+            {
+                //this means that the file doesn't exist yet so we need to create it first.
+                localFolder.CreateFileAsync(L"PersonalCaddieAddress.txt");
+                p_ble->connectToDevice(0); //trying to connect with an address of 0 will cause a failure, making us connect to a device manually
+            }
+            else if (asyncStatus == AsyncStatus::Completed)
+            {
+                //read the address from the file
+                auto readAddress = winrt::Windows::Storage::FileIO::ReadTextAsync(sender.get());
+                readAddress.Completed([this](
+                    IAsyncOperation<winrt::hstring> const& sender,
+                    AsyncStatus const asyncStatus)
+                    {
+                        winrt::hstring addressString = sender.get();
+                        uint64_t address = 0;
+                        if (addressString != L"") address = std::stoull(addressString.c_str());
+                        p_ble->connectToDevice(address); //try to connect with the read address. If there's no address then a value of 0 is passed in
+                    });
+            }
+        });
+}
+
+void PersonalCaddie::updateMostRecentDeviceAddress(uint64_t address)
+{
+    //updates the address of the most recently connected to Personal Caddie device in the
+    //local app folder
+    winrt::Windows::Storage::StorageFolder localFolder = winrt::Windows::Storage::ApplicationData::Current().LocalCacheFolder();
+    auto getAddressFile = localFolder.GetFileAsync(L"PersonalCaddieAddress.txt");
+
+    getAddressFile.Completed([address, localFolder](
+        IAsyncOperation<winrt::Windows::Storage::StorageFile> const& sender,
+        AsyncStatus const asyncStatus)
+        {
+            if (asyncStatus != AsyncStatus::Error)
+            {
+                //write the new address to the file
+                winrt::Windows::Storage::FileIO::WriteTextAsync(sender.get(), std::to_wstring(address));
+                //writeAddress.Completed([this](
+                //    IAsyncOperation<winrt::hstring> const& sender,
+                //    AsyncStatus const asyncStatus)
+                //    {
+                //        winrt::hstring addressString = sender.get();
+                //        uint64_t address = 0;
+                //        if (addressString != L"") address = std::stoull(addressString.c_str());
+                //        p_ble->connectToDevice(address); //try to connect with the read address. If there's no address then a value of 0 is passed in
+                //    });
+            }
+        });
 }
 
 void PersonalCaddie::connectToDevice(uint64_t deviceAddress)
@@ -116,6 +194,13 @@ void PersonalCaddie::BLEDeviceHandler(BLEState state)
         //Successfully reading the Gatt services initiates a connection with the ble device so we set the 
         //ble_device_connected variable to true
         this->ble_device_connected = true;
+
+        //Check to see if this device is currently paired with the computer. If it isn't, pair it for quicker
+        //connection times in the future. Also, update the address of the last connect device in the file inside
+        //the resources folder.
+        auto pairingInformation = p_ble->getBLEDevice()->DeviceInformation().Pairing();
+        if (pairingInformation.IsPaired() == false && pairingInformation.CanPair() == true) pairingInformation.PairAsync(); //asynchronously attempt to pair to the device
+        updateMostRecentDeviceAddress(p_ble->getBLEDevice()->BluetoothAddress());
 
         //Read the sensor settings characteristic to get some basic information about the sensors attached to
         //the Personal Caddie

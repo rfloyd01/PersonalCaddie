@@ -113,9 +113,11 @@ private:
 	//BLE Functionality
 	void getDataCharacteristics(Bluetooth::GenericAttributeProfile::GattDeviceService& data_service);
 	void dataCharacteristicEventHandler(Bluetooth::GenericAttributeProfile::GattCharacteristic& car, Bluetooth::GenericAttributeProfile::GattValueChangedEventArgs& args);
+	void automaticallyConnect();
 
 	//Data Gathering/Manipulation
 	void updateRawDataWithCalibrationNumbers(DataType rdt, DataType dt, sensor_type_t sensor_type, const float* offset_cal, const float** gain_cal);
+	void updateMostRecentDeviceAddress(uint64_t address);
 	
 	PersonalCaddiePowerMode current_power_mode;
 	bool dataNotificationsOn;

@@ -34,7 +34,6 @@ public:
 	BLE(std::function<void(BLEState)> function);
 
 	//Device Connection and Discovery Methods
-	//void startBLEScan();
 	IAsyncOperation<BluetoothLEDevice> connectToExistingDevice();
 	IAsyncOperation<BluetoothLEDevice> connectToDevice(uint64_t deviceAddress);
 	
@@ -42,7 +41,7 @@ public:
 
 	bool isConnected();
 	bool bleDeviceInitialized();
-	void connect();
+
 	volatile bool ble_device_created = false;
 
 	std::set<DeviceInfoDisplay>* getScannedDevices() { return &m_scannedDevices; }
