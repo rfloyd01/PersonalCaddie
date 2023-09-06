@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Graphics/Utilities/DeviceResources.h"
-#include "Graphics/Objects/2D/UIElementBasic.h"
+#include "Graphics/Objects/2D/UIElement.h"
 #include "Modes/ModeScreen.h"
 
 #include <string>
@@ -13,7 +13,7 @@ public:
     UIElementRenderer(UIElementRenderer const&) = delete;
 	void operator=(UIElementRenderer const&) = delete;
 
-    void renderBasic(std::vector<std::shared_ptr<UIElementBasic> > const& uiElements);
+    void render(std::vector<std::shared_ptr<UIElement> > const& uiElements);
 
     void setTextLayoutPixels(UIText* text);
 

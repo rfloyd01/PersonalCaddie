@@ -1,21 +1,20 @@
 #include "pch.h"
-#include "UIElementBasic.h"
-#include "Buttons/Button.h"
+#include "UIElement.h"
 
-void UIElementBasic::resize(winrt::Windows::Foundation::Size windowSize)
+void UIElement::resize(winrt::Windows::Foundation::Size windowSize)
 {
 	//Recalculate the DPI coordinates for m_shape and m_text based on 
 	//the current size of the screen and the absolute dimensions (m_location
 	//and m_size) of the UI Element. Then resize and child UI Elements
 	//owned by this one.
 
-	if (m_needTextRenderDimensions && !(m_state & UIElementStateBasic::NeedTextPixels))
+	if (m_needTextRenderDimensions && !(m_state & UIElementState::NeedTextPixels))
 	{
 		//This if block will only execute from a window resize and this UI Element
 		//needs pixel height from the renderer (which can only happen in the main
 		//thread). Update the state of the UI Element and leave this function. The
 		//method will need to be called again manually from somewhere else.
-		m_state |= UIElementStateBasic::NeedTextPixels;
+		m_state |= UIElementState::NeedTextPixels;
 		return; //if we need text pixel height, don't resize until we get it
 	}
 
@@ -41,27 +40,27 @@ void UIElementBasic::resize(winrt::Windows::Foundation::Size windowSize)
 		//If we're at this part of the resize method and this element has a dependency on 
 		//text pixel dimentions it means that the update has occured and we can remove the
 		//need for pixels from the current state
-		m_state ^= UIElementStateBasic::NeedTextPixels;
+		m_state ^= UIElementState::NeedTextPixels;
 	}
 }
 
-uint32_t UIElementBasic::update(InputState* inputState)
+uint32_t UIElement::update(InputState* inputState)
 {
 	//This method get's called on all the top level UI Elements for a given page in every
 	//iteration of the main render loop. Each of these top level UI Elements will in turn
 	//call this method on each of it's children to give us a snap shot of the state for
 	//each element on the page.
 
-	if ((m_state & UIElementStateBasic::Invisible) || (m_state & UIElementStateBasic::Disabled)) return 0; //Invisible and disabled elements don't get updated
+	if ((m_state & UIElementState::Invisible) || (m_state & UIElementState::Disabled)) return 0; //Invisible and disabled elements don't get updated
 
 	//If the element can't be interacted with in any way then simple return the idle state.
-	if (!m_isClickable && !m_isHoverable && !m_isScrollable) return UIElementStateBasic::Idlee;
+	if (!m_isClickable && !m_isHoverable && !m_isScrollable) return UIElementState::Idlee;
 
 	//uint32_t currentState = 0;
 
-	if (m_state & UIElementStateBasic::NeedTextPixels)
+	if (m_state & UIElementState::NeedTextPixels)
 	{
-		m_state |= UIElementStateBasic::NeedTextPixels;
+		m_state |= UIElementState::NeedTextPixels;
 	}
 
 	//Only check for hover, click and scroll events if the mouse is
@@ -69,10 +68,10 @@ uint32_t UIElementBasic::update(InputState* inputState)
 	bool mouseHovered = isMouseHovered(inputState->mousePosition);
 	if (mouseHovered)
 	{
-		if (m_isHoverable && !(m_state & UIElementStateBasic::Hovered))
+		if (m_isHoverable && !(m_state & UIElementState::Hovered))
 		{
 			onHover();
-			m_state |= UIElementStateBasic::Hovered;
+			m_state |= UIElementState::Hovered;
 		}
 
 		if (m_isClickable)
@@ -81,7 +80,7 @@ uint32_t UIElementBasic::update(InputState* inputState)
 			if (inputState->mouseClick)
 			{
 				onClick();
-				m_state |= UIElementStateBasic::Clicked;
+				m_state |= UIElementState::Clicked;
 			}
 		}
 
@@ -94,15 +93,15 @@ uint32_t UIElementBasic::update(InputState* inputState)
 				//or onScrollDown() method.
 				if (inputState->scrollWheelDirection > 0) onScrollUp();
 				else onScrollDown();
-				m_state |= UIElementStateBasic::Scrolled;
+				m_state |= UIElementState::Scrolled;
 			}
 		}
 	}
 	else
 	{
-		if (m_isHoverable && (m_state & UIElementStateBasic::Hovered))
+		if (m_isHoverable && (m_state & UIElementState::Hovered))
 		{
-			removeState(UIElementStateBasic::Hovered);
+			removeState(UIElementState::Hovered);
 		}
 	}
 
@@ -112,7 +111,7 @@ uint32_t UIElementBasic::update(InputState* inputState)
 	return m_state;
 }
 
-winrt::Windows::Foundation::Size UIElementBasic::getCurrentWindowSize()
+winrt::Windows::Foundation::Size UIElement::getCurrentWindowSize()
 {
 	//All UI Elements need the capability of figuring out the current window size without help
 	//from the master renderer. This is done by comparing the absoulte size variable (m_size)
@@ -139,7 +138,7 @@ winrt::Windows::Foundation::Size UIElementBasic::getCurrentWindowSize()
 	}
 }
 
-bool UIElementBasic::isMouseHovered(DirectX::XMFLOAT2 mousePosition)
+bool UIElement::isMouseHovered(DirectX::XMFLOAT2 mousePosition)
 {
 	//All UI Elements come with the capability of figuring out whether or not the user's mouse is hovered 
 	//over them. Not all Elements care if they're being hovered over though so this method doesn't always
@@ -167,7 +166,7 @@ bool UIElementBasic::isMouseHovered(DirectX::XMFLOAT2 mousePosition)
 	return p_children[0]->isMouseHovered(mousePosition);
 }
 
-void UIElementBasic::setAbsoluteSize(DirectX::XMFLOAT2 size)
+void UIElement::setAbsoluteSize(DirectX::XMFLOAT2 size)
 {
 	//Changing the absolute size for an element needs to change the absolute size of
 	//itself, and, all of its children. We don't apply the same size parameter to the
@@ -184,7 +183,7 @@ void UIElementBasic::setAbsoluteSize(DirectX::XMFLOAT2 size)
 	}
 }
 
-void UIElementBasic::setAbsoluteLocation(DirectX::XMFLOAT2 location)
+void UIElement::setAbsoluteLocation(DirectX::XMFLOAT2 location)
 {
 	//In the same vein as the setAbsoluteSize() method, this method must
 	//also set the location of all child elements. We don't apply the same
@@ -201,7 +200,7 @@ void UIElementBasic::setAbsoluteLocation(DirectX::XMFLOAT2 location)
 	}
 }
 
-int UIElementBasic::pixelCompare(float pixelOne, float pixelTwo)
+int UIElement::pixelCompare(float pixelOne, float pixelTwo)
 {
 	//Since floating point numbers are used for all pixel related math then it's possible that
 	//two pixels will occupy the same space, but have slightly different values (for example
@@ -218,7 +217,7 @@ int UIElementBasic::pixelCompare(float pixelOne, float pixelTwo)
 	return difference;
 }
 
-void UIElementBasic::removeState(uint32_t state)
+void UIElement::removeState(uint32_t state)
 {
 	//removes the given state from UI Elements and any children that have the state as well
 	m_state ^= state;
@@ -229,7 +228,7 @@ void UIElementBasic::removeState(uint32_t state)
 	}
 }
 
-void UIElementBasic::setState(uint32_t state)
+void UIElement::setState(uint32_t state)
 { 
 	//A pretty standard set function, however, some child elements need
 	//the ability to make changes when their state is changed (for example,

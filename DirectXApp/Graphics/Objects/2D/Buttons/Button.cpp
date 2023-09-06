@@ -25,9 +25,9 @@ void Button::onClick()
 void Button::removeState(uint32_t state)
 {
 	//When the clicked state is removed from the button we change its color back
-	if (state == UIElementStateBasic::Clicked)
+	if (state == UIElementState::Clicked)
 	{
-		m_state ^= UIElementStateBasic::Clicked;
+		m_state ^= UIElementState::Clicked;
 		((Box*)p_children[0].get())->setBackgrounColor(UIColor::ButtonNotPressed);
 	}
 }

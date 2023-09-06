@@ -6,7 +6,7 @@
 //There are more complex button types out there, but this one is just a simple,
 //empty box. Clicking it will temporarily change its color. The shadowed box is the
 //first and only child element for the button.
-class Button : public UIElementBasic, IClickableUI
+class Button : public UIElement, IClickableUI
 {
 public:
 	Button(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size,

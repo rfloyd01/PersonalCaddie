@@ -13,7 +13,7 @@ PartialScrollingTextBox::PartialScrollingTextBox(winrt::Windows::Foundation::Siz
 		textColorLocations.push_back(message.length());
 	}
 
-	TextBoxBasic textBox(windowSize, location, size, message, fontSize, textColor, textColorLocations, justification, textFillColor, isSquare, outlineColor, shadowColor);
+	TextBox textBox(windowSize, location, size, message, fontSize, textColor, textColorLocations, justification, textFillColor, isSquare, outlineColor, shadowColor);
 
 	//The text covering box is the same width as the text box, and extends from the top of the text box
 	//all the way to the top of the window.
@@ -35,7 +35,7 @@ PartialScrollingTextBox::PartialScrollingTextBox(winrt::Windows::Foundation::Siz
 
 	//The order of the child elements is important here. The text background must be first, then the text,
 	//and then finally the hiding box to go on top of it.
-	p_children.push_back(std::make_shared<TextBoxBasic>(textBox));
+	p_children.push_back(std::make_shared<TextBox>(textBox));
 	p_children.push_back(std::make_shared<Box>(textCoveringBox));
 	p_children.push_back(std::make_shared<ArrowButton>(upButton));
 	p_children.push_back(std::make_shared<ArrowButton>(downButton));
@@ -46,7 +46,7 @@ PartialScrollingTextBox::PartialScrollingTextBox(winrt::Windows::Foundation::Siz
 	m_needTextRenderDimensions = true; //alerts the current mode that this element will need text pixels from the renderer at some point
 	m_scrollIntensity = 0.01; //set the scroll intensity
 
-	m_state = UIElementStateBasic::NeedTextPixels; //Let's the render know that we currently need the pixel size of text
+	m_state = UIElementState::NeedTextPixels; //Let's the render know that we currently need the pixel size of text
 
 	//set screen size dependent variables
 	m_location = location;
@@ -185,14 +185,14 @@ uint32_t PartialScrollingTextBox::update(InputState* inputState)
 {
 	//At the end of the standard update, we check to see if either of the buttons are currently being pressed.
 	//If so, it has the effect of scrolling the text twice.
-	uint32_t currentState = UIElementBasic::update(inputState);
+	uint32_t currentState = UIElement::update(inputState);
 
-	if ((p_children[2]->getState() & UIElementStateBasic::Clicked) && inputState->mouseClick)
+	if ((p_children[2]->getState() & UIElementState::Clicked) && inputState->mouseClick)
 	{
 		onScrollUp();
 		onScrollUp();
 	}
-	else if ((p_children[3]->getState() & UIElementStateBasic::Clicked) && inputState->mouseClick)
+	else if ((p_children[3]->getState() & UIElementState::Clicked) && inputState->mouseClick)
 	{
 		onScrollDown();
 		onScrollDown();

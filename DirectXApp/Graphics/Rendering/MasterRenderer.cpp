@@ -35,36 +35,6 @@ void MasterRenderer::CreateWindowSizeDependentResources()
 
     auto d3dContext = m_deviceResources->GetD3DDeviceContext();
     auto renderTargetSize = m_deviceResources->GetRenderTargetSize();
-
-    //if (m_game != nullptr)
-    //{
-    //    // Update the Projection Matrix and the associated Constant Buffer.
-    //    m_game->GameCamera().SetProjParams(
-    //        XM_PI / 2, renderTargetSize.Width / renderTargetSize.Height,
-    //        0.01f,
-    //        100.0f
-    //    );
-
-    //    XMFLOAT4X4 orientation = m_deviceResources->GetOrientationTransform3D();
-
-    //    ConstantBufferChangeOnResize changesOnResize;
-    //    XMStoreFloat4x4(
-    //        &changesOnResize.projection,
-    //        XMMatrixMultiply(
-    //            XMMatrixTranspose(m_game->GameCamera().Projection()),
-    //            XMMatrixTranspose(XMLoadFloat4x4(&orientation))
-    //        )
-    //    );
-
-    //    d3dContext->UpdateSubresource(
-    //        m_constantBufferChangeOnResize.get(),
-    //        0,
-    //        nullptr,
-    //        &changesOnResize,
-    //        0,
-    //        0
-    //    );
-    //}
 }
 
 void MasterRenderer::CreateModeResources()
@@ -196,7 +166,7 @@ void MasterRenderer::Render()
     d2dContext->SetTransform(m_deviceResources->GetOrientationTransform2D());
 
     //Render any UI elements or text on screen text
-    m_uiElementRenderer.renderBasic(m_mode->getCurrentModeUIElementsBasic());
+    m_uiElementRenderer.render(m_mode->getCurrentModeUIElements());
 
     //Render 2D UI elements like drop down boxes and buttons
     //for (int i = 0; i < m_mode->getCurrentModeMenuObjects().size(); i++) m_mode->getCurrentModeMenuObjects()[i]->Render(d2dContext);

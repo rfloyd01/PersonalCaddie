@@ -166,18 +166,18 @@ void ModeScreen::processMouseInput(InputState* inputState)
 {
 	//need to poll all of the 2D elements in the current mode to see if the mouse is
 	//over any of them
-	auto uiElements = m_modes[static_cast<int>(m_currentMode)]->getUIElementsBasic();
+	auto uiElements = m_modes[static_cast<int>(m_currentMode)]->getUIElements();
 	for (int i = 0; i < uiElements.size(); i++)
 	{
 		uint32_t uiElementState = uiElements[i]->update(inputState);
 
-		if (uiElementState & UIElementStateBasic::NeedTextPixels)
+		if (uiElementState & UIElementState::NeedTextPixels)
 		{
-			getTextRenderPixelsBasic(uiElements[i]->setTextDimension()); //get the necessary pixels
+			getTextRenderPixels(uiElements[i]->setTextDimension()); //get the necessary pixels
 			uiElements[i]->repositionText(); //see if any text needs to be repositioned after getting new dimensions
 			uiElements[i]->resize(m_renderer->getCurrentScreenSize()); //and then resize the ui element
 		}
-		else if ((uiElementState & UIElementStateBasic::Clicked) && inputState->mouseClick)
+		else if ((uiElementState & UIElementState::Clicked) && inputState->mouseClick)
 		{
 			//The current UI Element has been clicked, see if clicking the button has
 			//any effect outside of the UI Element (like clicking the device watcher
@@ -256,14 +256,14 @@ void ModeScreen::processTimers()
 			button_pressed = false;
 
 			//then change the color of all pressed buttons
-			auto uiElements = m_modes[static_cast<int>(m_currentMode)]->getUIElementsBasic();
+			auto uiElements = m_modes[static_cast<int>(m_currentMode)]->getUIElements();
 			for (int i = 0; i < uiElements.size(); i++)
 			{
-				if (uiElements[i]->getState() & UIElementStateBasic::Clicked)
+				if (uiElements[i]->getState() & UIElementState::Clicked)
 				{
 					//The ui button class overrides the ui element setState() method so case to a UI button
 					//before setting the state to idle
-					uiElements[i]->removeState(UIElementStateBasic::Clicked);
+					uiElements[i]->removeState(UIElementState::Clicked);
 				}
 			}
 		}
@@ -311,21 +311,21 @@ void ModeScreen::changeCurrentMode(ModeType mt)
 	//}
 }
 
-void ModeScreen::getTextRenderPixelsBasic(std::vector<UIText*> const& text)
+void ModeScreen::getTextRenderPixels(std::vector<UIText*> const& text)
 {
 	//Sets the size for the text overlay render box of the given text element
 	for (int i = 0; i < text.size(); i++) m_renderer->setTextLayoutPixels(text[i]);
 }
 
-std::vector<std::shared_ptr<UIElementBasic> > const& ModeScreen::getCurrentModeUIElementsBasic()
+std::vector<std::shared_ptr<UIElement> > const& ModeScreen::getCurrentModeUIElements()
 {
 	//returns a reference to all UI elements to be rendered on screen
-	return m_modes[static_cast<int>(m_currentMode)]->getUIElementsBasic();
+	return m_modes[static_cast<int>(m_currentMode)]->getUIElements();
 }
 
-void ModeScreen::resizeCurrentModeUIElementsBasic(winrt::Windows::Foundation::Size windowSize)
+void ModeScreen::resizeCurrentModeUIElements(winrt::Windows::Foundation::Size windowSize)
 {
-	auto uiElements = getCurrentModeUIElementsBasic();
+	auto uiElements = getCurrentModeUIElements();
 	for (int i = 0; i < uiElements.size(); i++) uiElements[i]->resize(windowSize);
 }
 
@@ -380,7 +380,7 @@ void ModeScreen::PersonalCaddieHandler(PersonalCaddieEventType pcEvent, void* ev
 		//Update the text in the device discovery text box
 		if (m_currentMode == ModeType::DEVICE_DISCOVERY)
 		{
-			auto textBox = (FullScrollingTextBox*)(getCurrentModeUIElementsBasic()[0].get());
+			auto textBox = (FullScrollingTextBox*)(getCurrentModeUIElements()[0].get());
 			textBox->clearText(); //clear the text each time to prevent adding duplicates
 			textBox->addText(devices, m_renderer->getCurrentScreenSize(), true); //this new text will get resized in the main update loop
 		}

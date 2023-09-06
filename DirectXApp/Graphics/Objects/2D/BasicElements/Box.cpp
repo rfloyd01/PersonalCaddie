@@ -39,7 +39,7 @@ void Box::resize(winrt::Windows::Foundation::Size windowSize)
 
 		for (int i = 0; i < p_children.size(); i++) p_children[i]->resize(windowSize);
 	}
-	else UIElementBasic::resize(windowSize);
+	else UIElement::resize(windowSize);
 }
 
 float Box::fixSquareBoxDrift(winrt::Windows::Foundation::Size const& currentWindowSize)

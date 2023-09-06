@@ -41,8 +41,8 @@ public:
 	//Handler Methods
 	void PersonalCaddieHandler(PersonalCaddieEventType pcEvent, void* eventArgs);
 
-	std::vector<std::shared_ptr<UIElementBasic> > const& getCurrentModeUIElementsBasic();
-	void resizeCurrentModeUIElementsBasic(winrt::Windows::Foundation::Size windowSize);
+	std::vector<std::shared_ptr<UIElement> > const& getCurrentModeUIElements();
+	void resizeCurrentModeUIElements(winrt::Windows::Foundation::Size windowSize);
 
 	void createAlert(std::wstring message, UIColor color);
 
@@ -54,7 +54,7 @@ private:
 
 	void changeCurrentMode(ModeType mt);
 
-	void getTextRenderPixelsBasic(std::vector<UIText*> const& text);
+	void getTextRenderPixels(std::vector<UIText*> const& text);
 
 	void enterActiveState(); //depending on the current mode, something different will happen here
 	void stateUpdate();

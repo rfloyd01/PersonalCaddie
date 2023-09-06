@@ -1,7 +1,7 @@
 #include "pch.h"
-#include "TextOverlayBasic.h"
+#include "TextOverlay.h"
 
-TextOverlayBasic::TextOverlayBasic(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, std::wstring message,
+TextOverlay::TextOverlay(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, std::wstring message,
 	float fontSize, std::vector<UIColor> colors, std::vector<unsigned long long> colorLocations, UITextJustification justification)
 {
 	//Set the screen size dependent variables

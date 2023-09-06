@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Graphics/Objects/2D/TextBoxes/TextBoxBasic.h"
+#include "Graphics/Objects/2D/TextBoxes/TextBox.h"
 
 //The partial scrolling text box is a text box that only has a single text
 //element, and can scroll in such a way that the text can be partially
@@ -13,7 +13,7 @@
 //scroll box. Since the background color is dependent on the current mode,
 //it has to be passed in as a variable in the constructor.
 
-class PartialScrollingTextBox : public UIElementBasic, IScrollableUI, ITextDimensionsUI
+class PartialScrollingTextBox : public UIElement, IScrollableUI, ITextDimensionsUI
 {
 public:
 	PartialScrollingTextBox(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, UIColor backgroundColor, std::wstring message, float fontSize,

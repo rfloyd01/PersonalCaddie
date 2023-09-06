@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "FullScrollingTextBox.h"
-#include "HighlightableTextOverlayBasic.h"
+#include "HighlightableTextOverlay.h"
 #include "Graphics/Objects/2D/Buttons/ArrowButton.h"
 #include <cmath>
 
@@ -112,14 +112,14 @@ void FullScrollingTextBox::addText(std::wstring message, winrt::Windows::Foundat
 
 		if (highlightable)
 		{
-			HighlightableTextOverlayBasic newText(windowSize, { textLocation.x, textLocation.y + currentLine * existingTextHeight}, textSize, textLine, m_fontSize,
+			HighlightableTextOverlay newText(windowSize, { textLocation.x, textLocation.y + currentLine * existingTextHeight}, textSize, textLine, m_fontSize,
 				{ UIColor::Black }, { 0, (unsigned int)textLine.length() }, UITextJustification::CenterLeft);
-			p_children.push_back(std::make_shared<HighlightableTextOverlayBasic>(newText));
+			p_children.push_back(std::make_shared<HighlightableTextOverlay>(newText));
 		}
 		else
 		{
-			TextOverlayBasic newText(windowSize, { textLocation.x, textLocation.y + currentLine * existingTextHeight }, textSize, textLine, m_fontSize, { UIColor::Black }, { 0, (unsigned int)textLine.length() }, UITextJustification::CenterLeft);
-			p_children.push_back(std::make_shared<TextOverlayBasic>(newText));
+			TextOverlay newText(windowSize, { textLocation.x, textLocation.y + currentLine * existingTextHeight }, textSize, textLine, m_fontSize, { UIColor::Black }, { 0, (unsigned int)textLine.length() }, UITextJustification::CenterLeft);
+			p_children.push_back(std::make_shared<TextOverlay>(newText));
 		}
 
 		i = j + 1;
@@ -127,7 +127,7 @@ void FullScrollingTextBox::addText(std::wstring message, winrt::Windows::Foundat
 	}
 
 	//if (existingText && !m_dynamicSize) return;
-	m_state = UIElementStateBasic::NeedTextPixels; //Let's the renderer know that we currently need the pixel size of text
+	m_state = UIElementState::NeedTextPixels; //Let's the renderer know that we currently need the pixel size of text
 }
 
 void FullScrollingTextBox::clearText()
@@ -218,8 +218,8 @@ void FullScrollingTextBox::repositionText()
 		p_children[i]->setAbsoluteLocation({ nextTextAbsoluteLocation.x, nextTextAbsoluteLocation.y - (nextTextAbsoluteSize.y + p_children[i]->getAbsoluteSize().y) / 2.0f });
 
 		//Since all text in this loop comes before the top option, they should all be made invisible
-		if (p_children[i]->getState() & UIElementStateBasic::Hovered) p_children[i]->removeState(UIElementStateBasic::Hovered); //this makes sure anything that was hovered at creation gets its colors reset
-		p_children[i]->setState(UIElementStateBasic::Invisible);
+		if (p_children[i]->getState() & UIElementState::Hovered) p_children[i]->removeState(UIElementState::Hovered); //this makes sure anything that was hovered at creation gets its colors reset
+		p_children[i]->setState(UIElementState::Invisible);
 	}
 
 	//Now do the same thing for all text after the top text
@@ -242,8 +242,8 @@ void FullScrollingTextBox::repositionText()
 		//if (i >= (m_topText + m_displayedText))
 		if (linesRendered > m_displayedText)
 		{
-			if (p_children[i]->getState() & UIElementStateBasic::Hovered) p_children[i]->removeState(UIElementStateBasic::Hovered); //this makes sure anything that was hovered at creation gets its colors reset
-			p_children[i]->setState(UIElementStateBasic::Invisible);
+			if (p_children[i]->getState() & UIElementState::Hovered) p_children[i]->removeState(UIElementState::Hovered); //this makes sure anything that was hovered at creation gets its colors reset
+			p_children[i]->setState(UIElementState::Invisible);
 		}
 	}
 
@@ -292,9 +292,9 @@ void FullScrollingTextBox::onScrollUp()
 	int b = p_children.size() - m_displayedText;
 	if (m_topText < (int)(p_children.size() - m_displayedText))
 	{
-		if (p_children[m_topText]->getState() & UIElementStateBasic::Hovered) p_children[m_topText]->removeState(UIElementStateBasic::Hovered); //anything that's being hovered while disappearing needs its state reset
-		p_children[m_topText++]->setState(UIElementStateBasic::Invisible); //the current top line will get scroll upwards so it becomes invisible
-		p_children[m_topText + m_displayedText - 1]->removeState(UIElementStateBasic::Invisible); //the new bottom is no longer invisible
+		if (p_children[m_topText]->getState() & UIElementState::Hovered) p_children[m_topText]->removeState(UIElementState::Hovered); //anything that's being hovered while disappearing needs its state reset
+		p_children[m_topText++]->setState(UIElementState::Invisible); //the current top line will get scroll upwards so it becomes invisible
+		p_children[m_topText + m_displayedText - 1]->removeState(UIElementState::Invisible); //the new bottom is no longer invisible
 
 		//Now shift the absolute locations for each text element upwards
 		float absoluteTextHeight = p_children[5]->getText()->renderDPI.y / currentWindowSize.Height;
@@ -321,9 +321,9 @@ void FullScrollingTextBox::onScrollDown()
 	//the text go any higher
 	if (m_topText > 5)
 	{
-		if (p_children[m_topText + m_displayedText - 1]->getState() & UIElementStateBasic::Hovered) p_children[m_topText + m_displayedText - 1]->removeState(UIElementStateBasic::Hovered); //anything that's being hovered while disappearing needs its state reset
-		p_children[m_topText + m_displayedText - 1]->setState(UIElementStateBasic::Invisible);  //the curent bottom is no longer invisible
-		p_children[--m_topText]->removeState(UIElementStateBasic::Invisible); //the new top line is now visible
+		if (p_children[m_topText + m_displayedText - 1]->getState() & UIElementState::Hovered) p_children[m_topText + m_displayedText - 1]->removeState(UIElementState::Hovered); //anything that's being hovered while disappearing needs its state reset
+		p_children[m_topText + m_displayedText - 1]->setState(UIElementState::Invisible);  //the curent bottom is no longer invisible
+		p_children[--m_topText]->removeState(UIElementState::Invisible); //the new top line is now visible
 
 		//Now shift the absolute locations for each text element downwards
 		float absoluteTextHeight = p_children[5]->getText()->renderDPI.y / currentWindowSize.Height;
@@ -363,14 +363,14 @@ uint32_t FullScrollingTextBox::update(InputState* inputState)
 {
 	//At the end of the standard update, we check to see if either of the buttons are currently being pressed.
 	//If so, it has the effect of scrolling the text twice.
-	uint32_t currentState = UIElementBasic::update(inputState);
+	uint32_t currentState = UIElement::update(inputState);
 
-	if ((p_children[2]->getState() & UIElementStateBasic::Clicked) && inputState->mouseClick)
+	if ((p_children[2]->getState() & UIElementState::Clicked) && inputState->mouseClick)
 	{
 		onScrollUp();
 		onScrollUp();
 	}
-	else if ((p_children[1]->getState() & UIElementStateBasic::Clicked) && inputState->mouseClick)
+	else if ((p_children[1]->getState() & UIElementState::Clicked) && inputState->mouseClick)
 	{
 		onScrollDown();
 		onScrollDown();
@@ -383,27 +383,27 @@ uint32_t FullScrollingTextBox::update(InputState* inputState)
 		for (int i = m_topText; i < m_topText + m_displayedText; i++)
 		{
 			if (i >= p_children.size()) break; //it's possible that we can display more text than is currently in the box
-			if (p_children[i]->getState() & UIElementStateBasic::Hovered)
+			if (p_children[i]->getState() & UIElementState::Hovered)
 			{
 				//We've selected the current line of text, see if any other lines are currently selected
 				//and reset their state, then select the current line
 				for (int j = m_topText; j < m_topText + m_displayedText; j++)
 				{
 					if (j >= p_children.size()) break; //again, make sure we don't go outside of the vector
-					if (p_children[j]->getState() & UIElementStateBasic::Selected)
+					if (p_children[j]->getState() & UIElementState::Selected)
 					{
-						p_children[j]->removeState(UIElementStateBasic::Selected);
+						p_children[j]->removeState(UIElementState::Selected);
 					}
 				}
 
-				((HighlightableTextOverlayBasic*)p_children[i].get())->select(); //select the current option
+				((HighlightableTextOverlay*)p_children[i].get())->select(); //select the current option
 				m_lastSelectedText = p_children[i]->getText()->message;
 				break;
 			}
 		}
 
 		//add a click to the current state to let the current mode know the box was clicked
-		currentState |= UIElementStateBasic::Clicked;
+		currentState |= UIElementState::Clicked;
 	}
 
 	return currentState;

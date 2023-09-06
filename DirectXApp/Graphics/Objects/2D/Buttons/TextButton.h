@@ -28,7 +28,7 @@ public:
 	{
 		m_state = state;
 
-		if (state & UIElementStateBasic::Disabled)
+		if (state & UIElementState::Disabled)
 		{
 			//turn the button text gray when it's disabled
 			m_text.colors[0] = UIColor::Gray;
@@ -40,9 +40,9 @@ public:
 		Button::removeState(state);
 
 		//When enabling a button we change its text color to black
-		if (state & UIElementStateBasic::Disabled)
+		if (state & UIElementState::Disabled)
 		{
-			m_state ^= UIElementStateBasic::Disabled;
+			m_state ^= UIElementState::Disabled;
 			m_text.colors[0] = UIColor::Black;
 		}
 	}

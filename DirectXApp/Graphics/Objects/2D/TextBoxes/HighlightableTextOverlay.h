@@ -1,15 +1,15 @@
 #pragma once
 
-#include "Graphics/Objects/2D/BasicElements/TextOverlayBasic.h"
+#include "Graphics/Objects/2D/BasicElements/TextOverlay.h"
 
 //This is the same as the text overlay class, however, it has the capability
 //to change text when it's hovered over. This class is meant for small uniform
 //text, not large groups with potentially different fonts, colros, etc.
 
-class HighlightableTextOverlayBasic : public TextOverlayBasic, IHoverableUI
+class HighlightableTextOverlay : public TextOverlay, IHoverableUI
 {
 public:
-	HighlightableTextOverlayBasic(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, std::wstring message,
+	HighlightableTextOverlay(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, std::wstring message,
 		float fontSize, std::vector<UIColor> colors, std::vector<unsigned long long> colorLocations, UITextJustification justification);
 
 	virtual void removeState(uint32_t state) override;

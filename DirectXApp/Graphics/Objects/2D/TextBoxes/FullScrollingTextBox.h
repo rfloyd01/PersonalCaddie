@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Graphics/Objects/2D/TextBoxes/TextBoxBasic.h"
+#include "Graphics/Objects/2D/TextBoxes/TextBox.h"
 
 //The full scrolling text works a little bit differently from the partial
 //scrolling text box. Every time you scroll up or down the text will move
@@ -17,7 +17,7 @@
 //The longest line of text option is also good for something like a drop down
 //menu
 
-class FullScrollingTextBox : public UIElementBasic, IScrollableUI, ITextDimensionsUI
+class FullScrollingTextBox : public UIElement, IScrollableUI, ITextDimensionsUI
 {
 public:
 	FullScrollingTextBox(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, std::wstring message, float fontSize,

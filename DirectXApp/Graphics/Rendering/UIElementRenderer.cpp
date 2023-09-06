@@ -151,16 +151,16 @@ void UIElementRenderer::setTextLayoutPixels(UIText* text)
     text->renderLines = metrics.lineCount;
 }
 
-void UIElementRenderer::renderBasic(std::vector<std::shared_ptr<UIElementBasic> > const& uiElements)
+void UIElementRenderer::render(std::vector<std::shared_ptr<UIElement> > const& uiElements)
 {
     //Renders all UI Elements in the given vector
     for (int i = 0; i < uiElements.size(); i++)
     {
-        if (uiElements[i]->getState() == UIElementStateBasic::Invisible) continue; //invisible elements don't get rendered
+        if (uiElements[i]->getState() == UIElementState::Invisible) continue; //invisible elements don't get rendered
 
         //First, recursively, render all children elements first
         auto children = uiElements[i]->getChildren();
-        if (children.size() > 0) renderBasic(children);
+        if (children.size() > 0) render(children);
     
         if (uiElements[i]->getShape()->m_shapeType != UIShapeType::END) renderShape(uiElements[i]->getShape());
         if (uiElements[i]->getText()->textType != UITextType::END) renderText(uiElements[i]->getText());

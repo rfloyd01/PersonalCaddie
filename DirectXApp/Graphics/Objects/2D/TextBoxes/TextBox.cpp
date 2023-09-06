@@ -1,7 +1,7 @@
 #include "pch.h"
-#include "TextBoxBasic.h"
+#include "TextBox.h"
 
-TextBoxBasic::TextBoxBasic(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, std::wstring message,
+TextBox::TextBox(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, std::wstring message,
 	float fontSize, std::vector<UIColor> textColor, std::vector<unsigned long long> textColorLocations, UITextJustification justification, UIColor textFillColor, bool isSquare, UIColor outlineColor, UIColor shadowColor)
 {
 	//First create the background of the text box. Normally the background for this box is white, although it
@@ -17,11 +17,11 @@ TextBoxBasic::TextBoxBasic(winrt::Windows::Foundation::Size windowSize, DirectX:
 		textColorLocations.push_back(message.length());
 	}
 
-	TextOverlayBasic text(windowSize, location, size, message, fontSize, textColor, textColorLocations, justification);
+	TextOverlay text(windowSize, location, size, message, fontSize, textColor, textColorLocations, justification);
 
 	//The order of the child elements is important here. The text background must be first, then the text.
 	p_children.push_back(std::make_shared<ShadowedBox>(textBackground));
-	p_children.push_back(std::make_shared<TextOverlayBasic>(text));
+	p_children.push_back(std::make_shared<TextOverlay>(text));
 
 	//Set the screen size dependent information for the TextBox
 	m_size = size;

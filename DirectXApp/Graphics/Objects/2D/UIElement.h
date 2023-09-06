@@ -16,7 +16,7 @@
 #include "Interfaces/IScrollableUI.h"
 #include "Interfaces/ITextDimensionsUI.h"
 
-enum UIElementStateBasic
+enum UIElementState
 {
 	Idlee = 1,
 	Clicked = 2,
@@ -31,11 +31,11 @@ enum UIElementStateBasic
 //used to make sure all parts of the UI element are rendered
 //in the proper order
 
-class UIElementBasic
+class UIElement
 {
 public:
-	UIElementBasic() { } //empty default initializer
-	~UIElementBasic()
+	UIElement() { } //empty default initializer
+	~UIElement()
 	{
 		//Deleting a UI Element should also delete any children that it has.
 		for (int i = 0; i < p_children.size(); i++) p_children[i] = nullptr;
@@ -62,7 +62,7 @@ public:
 	DirectX::XMFLOAT2 getAbsoluteLocation() { return m_location; }
 	void setAbsoluteLocation(DirectX::XMFLOAT2 location);
 
-	std::vector<std::shared_ptr<UIElementBasic> > const& getChildren() { return p_children; }
+	std::vector<std::shared_ptr<UIElement> > const& getChildren() { return p_children; }
 
 	virtual std::vector<UIText*> setTextDimension() { return {}; }; //empty getTextDimension method can be overriden by ITextDimension element users
 	virtual void repositionText() {}; //empty repositionText method can be overriden by ITextDimension element users
@@ -89,8 +89,7 @@ protected:
 	//State variables
 	uint32_t                          m_state;
 	
-	std::shared_ptr<UIElementBasic>               p_parent; //a pointer to the parent UI element, nullptr if there is no parent
-	std::vector<std::shared_ptr<UIElementBasic> > p_children; //pointers to any children UI elements
+	std::vector<std::shared_ptr<UIElement> > p_children; //pointers to any children UI elements
 	
 	UIShape                                       m_shape; //A shape specific to this UI Element
 	UIText                                        m_text;  //Any text that's specific to this UI Element

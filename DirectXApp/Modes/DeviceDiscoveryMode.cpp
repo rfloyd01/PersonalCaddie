@@ -24,12 +24,12 @@ uint32_t DeviceDiscoveryMode::initializeMode(winrt::Windows::Foundation::Size wi
 	TextButton deviceWatcherButton(windowSize, { 0.4, 0.25 }, { 0.12, 0.1 }, L"Start Device Watcher");
 	TextButton connectButton(windowSize, { 0.6, 0.25 }, { 0.12, 0.1 }, buttonText);
 
-	if (!(initialState & DeviceDiscoveryState::CONNECTED)) connectButton.setState(UIElementStateBasic::Disabled); //The button is disabled until an actual device is selected
-	else deviceWatcherButton.setState(UIElementStateBasic::Disabled); //disable until we disconnect from the current device
+	if (!(initialState & DeviceDiscoveryState::CONNECTED)) connectButton.setState(UIElementState::Disabled); //The button is disabled until an actual device is selected
+	else deviceWatcherButton.setState(UIElementState::Disabled); //disable until we disconnect from the current device
 
-	m_uiElementsBasic.push_back(std::make_shared<FullScrollingTextBox>(deviceWatcherResults));
-	m_uiElementsBasic.push_back(std::make_shared<TextButton>(deviceWatcherButton));
-	m_uiElementsBasic.push_back(std::make_shared<TextButton>(connectButton));
+	m_uiElements.push_back(std::make_shared<FullScrollingTextBox>(deviceWatcherResults));
+	m_uiElements.push_back(std::make_shared<TextButton>(deviceWatcherButton));
+	m_uiElements.push_back(std::make_shared<TextButton>(connectButton));
 
 	initializeTextOverlay(windowSize);
 
@@ -45,23 +45,23 @@ void DeviceDiscoveryMode::uninitializeMode()
 {
 	//The only thing to do when leaving the main menu mode is to clear
 	//out all text in the text map and color map
-	for (int i = 0; i < m_uiElementsBasic.size(); i++) m_uiElementsBasic[i] = nullptr;
-	m_uiElementsBasic.clear();
+	for (int i = 0; i < m_uiElements.size(); i++) m_uiElements[i] = nullptr;
+	m_uiElements.clear();
 }
 
 void DeviceDiscoveryMode::initializeTextOverlay(winrt::Windows::Foundation::Size windowSize)
 {
 	//Title information
 	std::wstring title_message = L"Device Discovery";
-	TextOverlayBasic title(windowSize, { UIConstants::TitleTextLocationX, UIConstants::TitleTextLocationY }, { UIConstants::TitleTextSizeX, UIConstants::TitleTextSizeY },
+	TextOverlay title(windowSize, { UIConstants::TitleTextLocationX, UIConstants::TitleTextLocationY }, { UIConstants::TitleTextSizeX, UIConstants::TitleTextSizeY },
 		title_message, UIConstants::TitleTextPointSize, { UIColor::White }, { 0,  (unsigned int)title_message.length() }, UITextJustification::CenterCenter);
-	m_uiElementsBasic.push_back(std::make_shared<TextOverlayBasic>(title));
+	m_uiElements.push_back(std::make_shared<TextOverlay>(title));
 
 	//Footnote information
 	std::wstring footnote_message = L"Press Esc. to return to settings menu.";
-	TextOverlayBasic footnote(windowSize, { UIConstants::FootNoteTextLocationX, UIConstants::FootNoteTextLocationY }, { UIConstants::FootNoteTextSizeX, UIConstants::FootNoteTextSizeY },
+	TextOverlay footnote(windowSize, { UIConstants::FootNoteTextLocationX, UIConstants::FootNoteTextLocationY }, { UIConstants::FootNoteTextSizeX, UIConstants::FootNoteTextSizeY },
 		footnote_message, UIConstants::FootNoteTextPointSize, { UIColor::White }, { 0,  (unsigned int)footnote_message.length() }, UITextJustification::LowerRight);
-	m_uiElementsBasic.push_back(std::make_shared<TextOverlayBasic>(footnote));
+	m_uiElements.push_back(std::make_shared<TextOverlay>(footnote));
 }
 
 uint32_t DeviceDiscoveryMode::handleUIElementStateChange(int i)
@@ -70,21 +70,21 @@ uint32_t DeviceDiscoveryMode::handleUIElementStateChange(int i)
 	{
 		//This represent the large scrolling text box on the page. When clicking
 		//this we're interested in whether or not any device has been selected.
-		m_currentlySelectedDeviceAddress = ((FullScrollingTextBox*)m_uiElementsBasic[0].get())->getLastSelectedText();
+		m_currentlySelectedDeviceAddress = ((FullScrollingTextBox*)m_uiElements[0].get())->getLastSelectedText();
 
 		//extract the 64-bit address from the selected string
 		std::wstring trimText = L"Address: ";
 		int addressStartIndex = m_currentlySelectedDeviceAddress.find(trimText) + trimText.length();
 		m_currentlySelectedDeviceAddress = m_currentlySelectedDeviceAddress.substr(addressStartIndex);
 
-		m_uiElementsBasic[0]->removeState(UIElementStateBasic::Clicked); //remove the clicked state from the scroll box
+		m_uiElements[0]->removeState(UIElementState::Clicked); //remove the clicked state from the scroll box
 
 		if (m_currentlySelectedDeviceAddress != L"")
 		{
 			//enable the connect button if it isn't already
-			if (m_uiElementsBasic[2]->getState() & UIElementStateBasic::Disabled)
+			if (m_uiElements[2]->getState() & UIElementState::Disabled)
 			{
-				m_uiElementsBasic[2]->removeState(UIElementStateBasic::Disabled);
+				m_uiElements[2]->removeState(UIElementState::Disabled);
 			}
 		}
 	}
@@ -93,17 +93,17 @@ uint32_t DeviceDiscoveryMode::handleUIElementStateChange(int i)
 		//UI Element 1 is the device watcher button
 		if (!(m_state & DeviceDiscoveryState::DISCOVERY))
 		{
-			m_uiElementsBasic[1]->getText()->message = L"Stop Device Watcher";
-			((FullScrollingTextBox*)m_uiElementsBasic[0].get())->clearText();
+			m_uiElements[1]->getText()->message = L"Stop Device Watcher";
+			((FullScrollingTextBox*)m_uiElements[0].get())->clearText();
 
 			//since we're clearing the text, nothing is selected so disable the connect button
-			m_uiElementsBasic[2]->setState(m_uiElementsBasic[2]->getState() | UIElementStateBasic::Disabled);
+			m_uiElements[2]->setState(m_uiElements[2]->getState() | UIElementState::Disabled);
 			//return ModeState::Active;
 		}
 		else if (m_state & DeviceDiscoveryState::DISCOVERY)
 		{
 			//m_state ^= (DeviceDiscoveryState::DISCOVERY | DeviceDiscoveryState::IDLE); //switch the discovery and idle states
-			m_uiElementsBasic[1]->getText()->message = L"Start Device Watcher";
+			m_uiElements[1]->getText()->message = L"Start Device Watcher";
 			//return ModeState::Idle;
 		}
 		m_state ^= DeviceDiscoveryState::DISCOVERY; //switch the discovery and idle states
