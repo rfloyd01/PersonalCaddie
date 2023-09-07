@@ -40,9 +40,6 @@ BLE::BLE(std::function<void(BLEState)> function)
 
     //Set the onConnected() event handler from the Personal Caddie class
     this->state_change_handler = function;
-
-    this->m_bleAdvertisementsWatcher.Start();
-
 }
 
 IAsyncOperation<BluetoothLEDevice> BLE::connectToDevice(uint64_t deviceAddress)
@@ -131,5 +128,17 @@ void BLE::deviceFoundHandler(IAsyncOperation<BluetoothLEDevice> const& sender, A
     else
     {
         state_change_handler(BLEState::DeviceFound);
+    }
+}
+
+void BLE::terminateConnection()
+{
+    //If there's currently a BLE device connected, terminate the connection
+    //by changing the MaintainConnection property of the GATT session and then
+    //seting the m_bleDevice to nullptr.
+    if (m_bleDevice.as<winrt::Windows::Foundation::IUnknown>() != NULL)
+    {
+        m_bleDevice.Close();
+        m_bleDevice = nullptr;
     }
 }

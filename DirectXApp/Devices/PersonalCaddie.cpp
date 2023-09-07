@@ -120,15 +120,6 @@ void PersonalCaddie::updateMostRecentDeviceAddress(uint64_t address)
             {
                 //write the new address to the file
                 winrt::Windows::Storage::FileIO::WriteTextAsync(sender.get(), std::to_wstring(address));
-                //writeAddress.Completed([this](
-                //    IAsyncOperation<winrt::hstring> const& sender,
-                //    AsyncStatus const asyncStatus)
-                //    {
-                //        winrt::hstring addressString = sender.get();
-                //        uint64_t address = 0;
-                //        if (addressString != L"") address = std::stoull(addressString.c_str());
-                //        p_ble->connectToDevice(address); //try to connect with the read address. If there's no address then a value of 0 is passed in
-                //    });
             }
         });
 }
@@ -141,7 +132,25 @@ void PersonalCaddie::connectToDevice(uint64_t deviceAddress)
 
 void PersonalCaddie::disconnectFromDevice()
 {
-    //disconnect from the currently connected BLE device
+    //Close the connection to the data service and then clear
+    //the resources for each characteristic. We can then 
+    //call the BLE class to do the same for the Bluetooth device
+    //to close the connection.
+    if (m_settings_characteristic.as<winrt::Windows::Foundation::IUnknown>() != NULL)
+    {
+        //TODO: Should put in a line here to make sure that none of the charcteristics
+        //are currently set to notify
+
+        auto dataService = m_settings_characteristic.Service();
+        dataService.Close();
+
+        m_settings_characteristic = nullptr;
+        m_accelerometer_data_characteristic = nullptr;
+        m_gyroscope_data_characteristic = nullptr;
+        m_magnetometer_data_characteristic = nullptr;
+
+        p_ble->terminateConnection();
+    }
 }
 
 void PersonalCaddie::BLEDeviceHandler(BLEState state)

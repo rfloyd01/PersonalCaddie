@@ -51,6 +51,8 @@ public:
 	void startBLEAdvertisementWatcher();
 	void stopBLEAdvertisementWatcher();
 
+	void terminateConnection();
+
 private:
 
 	//Handler Methods
@@ -64,7 +66,7 @@ private:
 	winrt::event_token connected_event_token;
 
 	BluetoothLEDevice m_bleDevice{ nullptr }; //an instance of a Windows BLE Device
-	GenericAttributeProfile::GattSession m_gattSession{ nullptr }; //a pointer to a Gatt Session with a BLE Device
+	//GenericAttributeProfile::GattSession m_gattSession{ nullptr }; //a pointer to a Gatt Session with a BLE Device
 	Advertisement::BluetoothLEAdvertisementWatcher m_bleAdvertisementsWatcher;
 	std::set<DeviceInfoDisplay> m_scannedDevices; //a set for storing devices found by the device watcher
 

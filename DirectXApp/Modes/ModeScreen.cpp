@@ -416,7 +416,7 @@ void ModeScreen::stateUpdate()
 		if (m_modes[static_cast<int>(m_currentMode)]->getModeState() & DeviceDiscoveryState::DISCONNECT)
 		{
 			//disconnect from the current device
-			int x = 7;
+			m_personalCaddie->disconnectFromDevice();
 		}
 		else if (m_modes[static_cast<int>(m_currentMode)]->getModeState() & DeviceDiscoveryState::ATTEMPT_CONNECT)
 		{

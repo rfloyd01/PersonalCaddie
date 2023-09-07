@@ -122,8 +122,6 @@ private:
 	PersonalCaddiePowerMode current_power_mode;
 	bool dataNotificationsOn;
 
-	
-
 	volatile bool sensor_data_updated[3] = { false, false, false };
 	volatile bool data_available = false;
 
