@@ -3,8 +3,10 @@
 #include "ModeScreen.h"
 #include "MainMenuMode.h"
 #include "SettingsMenuMode.h"
+#include "DevelopmentMenuMode.h"
 #include "DeviceDiscoveryMode.h"
 #include "UITestMode.h"
+#include "GraphMode.h"
 
 #include "Graphics/Rendering/MasterRenderer.h"
 
@@ -14,13 +16,16 @@ ModeScreen::ModeScreen() :
 	button_pressed(false),
 	personal_caddy_event(PersonalCaddieEventType::NONE)
 {
-	//Create instances for all different modes.
+	//Create instances of all the different modes.
 	for (int i = 0; i < static_cast<int>(ModeType::END); i++) m_modes.push_back(nullptr);
 
 	m_modes[static_cast<int>(ModeType::MAIN_MENU)] = std::make_shared<MainMenuMode>();
 	m_modes[static_cast<int>(ModeType::SETTINGS_MENU)] = std::make_shared<SettingsMenuMode>();
 	m_modes[static_cast<int>(ModeType::DEVICE_DISCOVERY)] = std::make_shared<DeviceDiscoveryMode>();
+	m_modes[static_cast<int>(ModeType::DEVELOPER_TOOLS)] = std::make_shared<DevelopmentMenuMode>();
 	m_modes[static_cast<int>(ModeType::UI_TEST_MODE)] = std::make_shared<UITestMode>();
+	m_modes[static_cast<int>(ModeType::GRAPH_MODE)] = std::make_shared<GraphMode>();
+
 	//Set default times for various timers (in milliseconds)
 	alert_timer_duration = 5000;
 	button_pressed_duration = 100;
@@ -65,17 +70,6 @@ void ModeScreen::update()
 	//finally, check to see if there are any timers that are going on or expired
 	processTimers();
 
-	//See if any of the above input, timers or events have caused the need to update
-	//any UI elements
-	//if (m_modeState & ModeState::NeedTextUpdate)
-	//{
-	//	//some text in a ui element was changed so we need to recalculate the render height
-	//	//for the text (hits happens in elements like scroll boxes where the height can
-	//	//only be calculated in the renderer classes).
-	//	getTextRenderPixels(getCurrentModeUIElements());
-	//	m_modeState ^= ModeState::NeedTextUpdate; //remove the text update flag
-	//}
-
 	//after all input, events and timers have been handled defer to the current mode
 	//to update its state if necessary. This only occurs when in the Active ModeState
 	if (m_modeState & ModeState::Active) m_modes[static_cast<int>(m_currentMode)]->update();
@@ -100,16 +94,20 @@ void ModeScreen::processKeyboardInput(winrt::Windows::System::VirtualKey pressed
 			if (m_currentMode == ModeType::MAIN_MENU)
 			{
 				OutputDebugString(L"Quitting the program.\n");
-				//TODO: disconnect from the Personal Caddie of connected and release
+				//TODO: disconnect from the Personal Caddie if connected and release
 				//any resources
 			}
-			else if (m_currentMode == ModeType::SETTINGS_MENU || m_currentMode == ModeType::UI_TEST_MODE)
+			else if (m_currentMode == ModeType::SETTINGS_MENU || m_currentMode == ModeType::DEVELOPER_TOOLS)
 			{
 				changeCurrentMode(ModeType::MAIN_MENU);
 			}
 			else if (m_currentMode == ModeType::DEVICE_DISCOVERY)
 			{
 				changeCurrentMode(ModeType::SETTINGS_MENU);
+			}
+			else if (m_currentMode == ModeType::UI_TEST_MODE || m_currentMode == ModeType::GRAPH_MODE)
+			{
+				changeCurrentMode(ModeType::DEVELOPER_TOOLS);
 			}
 		}
 		else if (m_modeState & ModeState::Active)
@@ -134,6 +132,20 @@ void ModeScreen::processKeyboardInput(winrt::Windows::System::VirtualKey pressed
 			{
 				changeCurrentMode(ModeType::DEVICE_DISCOVERY);
 			}
+			else if (m_currentMode == ModeType::DEVELOPER_TOOLS)
+			{
+				changeCurrentMode(ModeType::UI_TEST_MODE);
+			}
+		}
+
+		break;
+	case winrt::Windows::System::VirtualKey::Number2:
+		if (m_modeState & ModeState::CanTransfer)
+		{
+			if (m_currentMode == ModeType::DEVELOPER_TOOLS)
+			{
+				changeCurrentMode(ModeType::GRAPH_MODE);
+			}
 		}
 
 		break;
@@ -155,7 +167,7 @@ void ModeScreen::processKeyboardInput(winrt::Windows::System::VirtualKey pressed
 			{
 				//If we're on the Main Menu screen then pressing the 5 key will take us to the
 				//sensor settings page
-				changeCurrentMode(ModeType::UI_TEST_MODE);
+				changeCurrentMode(ModeType::DEVELOPER_TOOLS);
 			}
 		}
 		break;
@@ -279,6 +291,11 @@ void ModeScreen::changeCurrentMode(ModeType mt)
 	//First, get any active alerts before deleting the text and color map of the 
 	//current mode
 	auto currentAlerts = m_modes[static_cast<int>(m_currentMode)]->removeAlerts();// .getText();
+
+	//Check to see if the current mode is in the active state, if so then take it out
+	//of that state. Then uninitialize the mode.
+	if (m_modeState & ModeState::Active) leaveActiveState();
+	m_modeState = 0;
 	m_modes[static_cast<int>(m_currentMode)]->uninitializeMode();
 
 	//Switch to the new mode and initialize it
@@ -302,13 +319,6 @@ void ModeScreen::changeCurrentMode(ModeType mt)
 	//After initializing, add any alerts that were copied over to the text and
 	//color maps and then create text and color resources in the renderer
 	if (currentAlerts.getText()->message != L"") m_modes[static_cast<int>(m_currentMode)]->createAlert(currentAlerts);
-
-	//if (m_modeState & ModeState::NeedTextUpdate)
-	//{
-	//	//See if the new mode has any complex UI text elements that need help from the master renderer to initialize.
-	//	getTextRenderPixels(getCurrentModeUIElements());
-	//	m_modeState ^= ModeState::NeedTextUpdate; //remove the text update flag
-	//}
 }
 
 void ModeScreen::getTextRenderPixels(std::vector<UIText*> const& text)

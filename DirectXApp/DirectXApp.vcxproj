@@ -170,7 +170,9 @@
     <ClInclude Include="Math\glm.h" />
     <ClInclude Include="Math\quaternion_functions.h" />
     <ClInclude Include="Math\sensor_fusion.h" />
+    <ClInclude Include="Modes\DevelopmentMenuMode.h" />
     <ClInclude Include="Modes\DeviceDiscoveryMode.h" />
+    <ClInclude Include="Modes\GraphMode.h" />
     <ClInclude Include="Modes\MainMenuMode.h" />
     <ClInclude Include="Modes\Mode.h" />
     <ClInclude Include="Modes\ModeScreen.h" />
@@ -231,7 +233,9 @@
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Math\quaternion_functions.cpp" />
     <ClCompile Include="Math\sensor_fusion.cpp" />
+    <ClCompile Include="Modes\DevelopmentMenuMode.cpp" />
     <ClCompile Include="Modes\DeviceDiscoveryMode.cpp" />
+    <ClCompile Include="Modes\GraphMode.cpp" />
     <ClCompile Include="Modes\MainMenuMode.cpp" />
     <ClCompile Include="Modes\Mode.cpp" />
     <ClCompile Include="Modes\ModeScreen.cpp" />

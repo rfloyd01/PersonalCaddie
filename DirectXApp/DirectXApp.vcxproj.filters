@@ -100,6 +100,12 @@
     <ClCompile Include="Graphics\Objects\2D\TextBoxes\TextBox.cpp">
       <Filter>Graphics\Objects\2D\TextBoxes</Filter>
     </ClCompile>
+    <ClCompile Include="Modes\DevelopmentMenuMode.cpp">
+      <Filter>Modes</Filter>
+    </ClCompile>
+    <ClCompile Include="Modes\GraphMode.cpp">
+      <Filter>Modes</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -237,6 +243,12 @@
     </ClInclude>
     <ClInclude Include="Graphics\Objects\2D\TextBoxes\TextBox.h">
       <Filter>Graphics\Objects\2D\TextBoxes</Filter>
+    </ClInclude>
+    <ClInclude Include="Modes\DevelopmentMenuMode.h">
+      <Filter>Modes</Filter>
+    </ClInclude>
+    <ClInclude Include="Modes\GraphMode.h">
+      <Filter>Modes</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
