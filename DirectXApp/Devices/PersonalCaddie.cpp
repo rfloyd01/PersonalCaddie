@@ -141,9 +141,12 @@ void PersonalCaddie::disconnectFromDevice()
         //TODO: Should put in a line here to make sure that none of the charcteristics
         //are currently set to notify
 
-        auto dataService = m_settings_characteristic.Service();
-        dataService.Close();
-
+        //sever the connection to all services and set the m_services field
+        //to null
+        for (int i = 0; i < m_services.Size(); i++) m_services.GetAt(i).Close();
+        m_services = nullptr;
+        
+        //set all the characteristics to null as well
         m_settings_characteristic = nullptr;
         m_accelerometer_data_characteristic = nullptr;
         m_gyroscope_data_characteristic = nullptr;
@@ -174,17 +177,48 @@ void PersonalCaddie::BLEDeviceHandler(BLEState state)
         std::wstring message = L"Found a Personal Caddie device, attempting to connect...\n";
         event_handler(PersonalCaddieEventType::BLE_ALERT, (void*)&message);
 
-        auto gattServices = this->p_ble->getBLEDevice()->GetGattServicesAsync(BluetoothCacheMode::Uncached).get().Services();
-        if (gattServices.Size() == 0)
+        m_services = this->p_ble->getBLEDevice()->GetGattServicesAsync(BluetoothCacheMode::Uncached).get().Services();
+        if (m_services.Size() == 0)
         {
             message = L"Couldn't connect to the Personal Caddie. Go to the settings menu to manually connect.\n";
             event_handler(PersonalCaddieEventType::BLE_ALERT, (void*)&message);
             return;
         }
 
-        for (int i = 0; i < gattServices.Size(); i++)
+        //Successfully reading the Gatt services should initiate a connection with the ble device. If it does then 
+        //the connectec block of this handler will execute.
+        break;
+    }
+    case BLEState::DeviceNotFound:
+    {
+        std::wstring message = L"Couldn't find an existing Personal Caddie. Go to the settings menu to connect to one.";
+        event_handler(PersonalCaddieEventType::PC_ALERT, (void*)&message);
+        break;
+    }
+    case BLEState::NewAdvertisement:
+    {
+        //A new device was found by the advertisement watcher, send the updated device list to the mode screen class
+        auto foundDevices = p_ble->getScannedDevices();
+        event_handler(PersonalCaddieEventType::DEVICE_WATCHER_UPDATE, (void*)foundDevices);
+        break;
+    }
+    case BLEState::Connected:
+    {
+        //We've initiated a connection to a new Personal Caddie device. Read the device to get some settings
+        //off of it and use these to create an instance of th IMU class.
+        this->ble_device_connected = true;
+        std::wstring message;
+
+        if (m_services.Size() == 0)
         {
-            auto gattService = gattServices.GetAt(i);
+            message = L"Couldn't connect to the Personal Caddie. Go to the settings menu to manually connect.\n";
+            event_handler(PersonalCaddieEventType::BLE_ALERT, (void*)&message);
+            return;
+        }
+
+        for (int i = 0; i < m_services.Size(); i++)
+        {
+            auto gattService = m_services.GetAt(i);
             uint16_t short_uuid = (gattService.Uuid().Data1 & 0xFFFF);
 
             switch (short_uuid)
@@ -199,10 +233,6 @@ void PersonalCaddie::BLEDeviceHandler(BLEState state)
                 break;
             }
         }
-
-        //Successfully reading the Gatt services initiates a connection with the ble device so we set the 
-        //ble_device_connected variable to true
-        this->ble_device_connected = true;
 
         //Check to see if this device is currently paired with the computer. If it isn't, pair it for quicker
         //connection times in the future. Also, update the address of the last connect device in the file inside
@@ -235,24 +265,19 @@ void PersonalCaddie::BLEDeviceHandler(BLEState state)
 
         sampleFreq = this->p_imu->getMaxODR(); //Set the sample frequency to be equal to the largest of the sensor ODRs
 
-        //update calibration numbers
-
+        //TODO: update calibration numbers here
 
         message = L"Successfully connected to the Personal Caddie\n";
-        event_handler(PersonalCaddieEventType::BLE_ALERT, (void*)&message);
+        event_handler(PersonalCaddieEventType::CONNECTION_EVENT, (void*)&message);
         break;
     }
-    case BLEState::DeviceNotFound:
+    case BLEState::Disconnected:
     {
-        std::wstring message = L"Couldn't find an existing Personal Caddie. Go to the settings menu to connect to one.";
-        event_handler(PersonalCaddieEventType::PC_ALERT, (void*)&message);
-        break;
-    }
-    case BLEState::NewAdvertisement:
-    {
-        //A new device was found by the advertisement watcher, send the updated device list to the mode screen class
-        auto foundDevices = p_ble->getScannedDevices();
-        event_handler(PersonalCaddieEventType::DEVICE_WATCHER_UPDATE, (void*)foundDevices);
+        //The connection to the Personal Caddie has been lost, either purposely or by accident. We need
+        //to alert the ModeScreen class about this disconnection so it can disable/enable certain features.
+        this->ble_device_connected = false;
+        std::wstring message = L"Disconnected from the Personal Caddie\n";
+        event_handler(PersonalCaddieEventType::CONNECTION_EVENT, (void*)&message);
         break;
     }
     }

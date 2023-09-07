@@ -24,7 +24,9 @@ enum class BLEState
 	DeviceFound,
 	DeviceNotFound,
 	Connected,
-	NewAdvertisement
+	NewAdvertisement,
+	Disconnected,
+	Reconnect
 };
 
 class BLE
@@ -58,10 +60,12 @@ private:
 	//Handler Methods
 	std::function<void(BLEState)> state_change_handler; //pointer to an event handler in the Personal Caddie class
 	void deviceFoundHandler(IAsyncOperation<BluetoothLEDevice> const& sender, AsyncStatus const asyncStatus);
+	void connectionChangedHandler();
 	
 	std::wstring formatBluetoothAddress(unsigned long long BluetoothAddress);
 
 	bool auto_connect;
+	bool maintain_connection;
 	
 	winrt::event_token connected_event_token;
 

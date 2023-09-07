@@ -41,6 +41,8 @@ public:
 
 	virtual void update() {}; //not a pure virtual method as not all modes require this method
 
+	virtual void handlePersonalCaddieConnectionEvent(bool connectionStatus) {}; //Some modes need the ability to enable or disable features if the Personal Caddie gets disconnected
+
 	const UIColor getBackgroundColor();
 
 	std::vector<std::shared_ptr<UIElement> > const& getUIElements() { return m_uiElements; }

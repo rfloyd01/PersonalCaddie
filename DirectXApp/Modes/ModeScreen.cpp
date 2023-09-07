@@ -355,10 +355,23 @@ void ModeScreen::PersonalCaddieHandler(PersonalCaddieEventType pcEvent, void* ev
 	personal_caddy_event = pcEvent;
 	switch (pcEvent)
 	{
+	case PersonalCaddieEventType::CONNECTION_EVENT:
+	{
+		//This is a special type of BLE event. We've either connected to a new device
+		//or disconnected from the current one. This may potentially enable or disable
+		//some features depending on the current mode.
+		
+		m_modes[static_cast<int>(m_currentMode)]->handlePersonalCaddieConnectionEvent(m_personalCaddie->ble_device_connected);
+		std::wstring alertText = *((std::wstring*)eventArgs); //cast the eventArgs into a wide string
+		createAlert(alertText, UIColor::Blue);
+
+		break;
+	}
 	case PersonalCaddieEventType::BLE_ALERT:
 	{
 		std::wstring alertText = *((std::wstring*)eventArgs); //cast the eventArgs into a wide string
 		createAlert(alertText, UIColor::Blue);
+		
 		break;
 	}
 	case PersonalCaddieEventType::PC_ALERT:
@@ -399,7 +412,20 @@ void ModeScreen::enterActiveState()
 	case ModeType::DEVICE_DISCOVERY:
 	{
 		//Going into active mode while in device discovery means that we need to start the BLEAdvertisement watcher of 
-		//the Personal Caddie
+		//the Personal Caddie. The device watcher will only alert us when a new device is found. If it has been turned
+		//on previously and already found all devices in the area, then we won't actually get any updates. Because of this
+		//we grab the current list and send it to the device discovery page before turning on the watcher.
+		auto foundDevices = m_personalCaddie->getScannedDevices();
+		std::wstring devices;
+		for (auto it = foundDevices->begin(); it != foundDevices->end(); it++)
+		{
+			devices += L"Name: " + it->device_name;
+			devices += L", Address: " + std::to_wstring(it->device_address.first) + L"\n";
+		}
+		auto textBox = (FullScrollingTextBox*)(getCurrentModeUIElements()[0].get());
+		textBox->clearText(); //clear the text each time to prevent adding duplicates
+		textBox->addText(devices, m_renderer->getCurrentScreenSize(), true); //this new text will get resized in the main update loop
+
 		m_personalCaddie->startBLEAdvertisementWatcher();
 	}
 	}

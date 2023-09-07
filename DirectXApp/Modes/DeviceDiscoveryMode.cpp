@@ -11,7 +11,7 @@ uint32_t DeviceDiscoveryMode::initializeMode(winrt::Windows::Foundation::Size wi
 {
 	//Create UI Elements on the page
 	std::wstring buttonText = L"Connect to Device";
-	std::wstring scrollText = L"Start the device watcher to being enumerating nearby BluetoothLE devices...";
+	std::wstring scrollText = L"Start the device watcher to begin enumerating nearby BluetoothLE devices...";
 	if (initialState & DeviceDiscoveryState::CONNECTED)
 	{
 		//We're already connected to a device so the connect button should have it's text 
@@ -123,4 +123,52 @@ uint32_t DeviceDiscoveryMode::handleUIElementStateChange(int i)
 void DeviceDiscoveryMode::update()
 {
 	//when in active mode it means that the device watcher is running
+}
+
+void DeviceDiscoveryMode::handlePersonalCaddieConnectionEvent(bool connectionStatus)
+{
+	m_state ^= DeviceDiscoveryState::CONNECTED; //inverte the current connected state
+
+	if (!connectionStatus)
+	{
+		//if we lose the connection to the personal caddie while on the device discovery page it
+	    //disables the Disconnect button and enables the Start device watcher button
+		m_uiElements[1]->removeState(UIElementState::Disabled); //enable the device watcher button
+
+		//update the connect button
+		std::wstring buttonMessage = L"Connect to Device";
+		m_uiElements[2]->setState(m_uiElements[2]->getState() | UIElementState::Disabled);
+		m_uiElements[2]->getText()->message = L"Connect to Device";
+		m_uiElements[2]->getText()->colorLocations = { 0, (unsigned int) buttonMessage.length() };
+
+		//update the scroll box text
+		std::wstring scrollText = L"Start the device watcher to begin enumerating nearby BluetoothLE devices...";
+		((FullScrollingTextBox*)m_uiElements[0].get())->clearText();
+		((FullScrollingTextBox*)m_uiElements[0].get())->addText(scrollText, { 0, 0 }, false, false);
+		
+		//If the disconnect was initiated from the device discovery page then we can remove the
+		//disconnect flag from the current state
+		if (m_state & DeviceDiscoveryState::DISCONNECT) m_state ^= DeviceDiscoveryState::DISCONNECT;
+	}
+	else
+	{
+		//If we successfully connect to a device while on this page then it should
+		//disable the device watcher button and enable the connect button.
+		if (m_uiElements[2]->getState() & UIElementState::Disabled) m_uiElements[2]->removeState(UIElementState::Disabled);
+		m_uiElements[1]->setState(m_uiElements[2]->getState() | UIElementState::Disabled);
+
+		//update the disconnect button
+		std::wstring buttonMessage = L"Disconnect from Device";
+		m_uiElements[2]->getText()->message = buttonMessage;
+		m_uiElements[2]->getText()->colorLocations = { 0, (unsigned int)buttonMessage.length() };
+
+		//update the scroll box text
+		std::wstring scrollText = L"Disconnect from the current device to use the device watcher...";
+		((FullScrollingTextBox*)m_uiElements[0].get())->clearText();
+		((FullScrollingTextBox*)m_uiElements[0].get())->addText(scrollText, { 0, 0 }, false, false);
+
+		//If the connection was initiated from the device discovery page then we can remove the
+		//attempt_connect flag from the current state
+		if (m_state & DeviceDiscoveryState::ATTEMPT_CONNECT) m_state ^= DeviceDiscoveryState::ATTEMPT_CONNECT;
+	}
 }

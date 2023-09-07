@@ -40,6 +40,7 @@ BLE::BLE(std::function<void(BLEState)> function)
 
     //Set the onConnected() event handler from the Personal Caddie class
     this->state_change_handler = function;
+    maintain_connection = false; //This gets set to true when we actually connect to a device
 }
 
 IAsyncOperation<BluetoothLEDevice> BLE::connectToDevice(uint64_t deviceAddress)
@@ -127,6 +128,31 @@ void BLE::deviceFoundHandler(IAsyncOperation<BluetoothLEDevice> const& sender, A
     }
     else
     {
+        //set a handler for when the connection status of the device changes.
+        m_bleDevice.ConnectionStatusChanged(winrt::Windows::Foundation::TypedEventHandler<BluetoothLEDevice, winrt::Windows::Foundation::IInspectable>(
+            [this](BluetoothLEDevice device, winrt::Windows::Foundation::IInspectable eventArgs)
+            {
+                //We need to alert the Personal Caddie class whenever a new device is connected
+                //or the current one is disconnected.
+                if (device.ConnectionStatus() == Bluetooth::BluetoothConnectionStatus::Connected)
+                {
+                    maintain_connection = true; //this will change to false when we manually disconnect from the device
+                    state_change_handler(BLEState::Connected);
+                }
+                else
+                {
+                    if (maintain_connection)
+                    {
+                        //If the maintain_connection boolean is set to true,
+                        //then it means this disconnect happened be accident.
+                        //Attempt to reconnect to the device.
+                        state_change_handler(BLEState::Reconnect);
+                    }
+                }
+            }));
+
+        //Call the state change handler with the device found state
+        //to attempt to connect to the found device
         state_change_handler(BLEState::DeviceFound);
     }
 }
@@ -138,7 +164,9 @@ void BLE::terminateConnection()
     //seting the m_bleDevice to nullptr.
     if (m_bleDevice.as<winrt::Windows::Foundation::IUnknown>() != NULL)
     {
+        maintain_connection = false; //let the BLE connection handler know that this disonnect was on purpose
         m_bleDevice.Close();
         m_bleDevice = nullptr;
+        state_change_handler(BLEState::Disconnected);
     }
 }

@@ -47,7 +47,8 @@ enum class PersonalCaddieEventType
 	PC_ALERT = 1,
 	BLE_ALERT = 2,
 	IMU_ALERT = 3,
-	DEVICE_WATCHER_UPDATE = 4
+	DEVICE_WATCHER_UPDATE = 4,
+	CONNECTION_EVENT = 5
 };
 
 enum class TextType;
@@ -125,7 +126,8 @@ private:
 	volatile bool sensor_data_updated[3] = { false, false, false };
 	volatile bool data_available = false;
 
-	//Characteristics obtained from m_ble
+	//Gatt Settings and Characteristics obtained from m_ble
+	winrt::Windows::Foundation::Collections::IVectorView<Bluetooth::GenericAttributeProfile::GattDeviceService>  m_services{ nullptr };
 	Bluetooth::GenericAttributeProfile::GattCharacteristic m_settings_characteristic{ nullptr };
 	Bluetooth::GenericAttributeProfile::GattCharacteristic m_accelerometer_data_characteristic{ nullptr };
 	Bluetooth::GenericAttributeProfile::GattCharacteristic m_gyroscope_data_characteristic{ nullptr };
