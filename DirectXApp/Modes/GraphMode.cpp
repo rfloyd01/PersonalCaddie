@@ -9,6 +9,13 @@ GraphMode::GraphMode()
 
 uint32_t GraphMode::initializeMode(winrt::Windows::Foundation::Size windowSize, uint32_t initialState)
 {
+	//Create a button that will generate a sin graph
+	TextButton graphButton(windowSize, { 0.1, 0.2 }, { 0.12, 0.1 }, L"Create a graph!");
+	Graph graph(windowSize, { 0.5, 0.65 }, { 0.9, 0.6 });
+
+	m_uiElements.push_back(std::make_shared<TextButton>(graphButton));
+	m_uiElements.push_back(std::make_shared<Graph>(graph));
+
 	//Initialize all overlay text
 	initializeTextOverlay(windowSize);
 	
@@ -47,5 +54,20 @@ void GraphMode::initializeTextOverlay(winrt::Windows::Foundation::Size windowSiz
 
 uint32_t GraphMode::handleUIElementStateChange(int i)
 {
+	if (i == 0)
+	{
+		std::vector<DirectX::XMFLOAT2> data;
+		float end = 2 * 3.14159 * m_sinePeaks, increment = end / m_dataPoints;
+		for (float i = 0; i <= end; i += increment)
+		{
+			DirectX::XMFLOAT2 point = { i, sinf(i) };
+			data.push_back(point);
+		}
+
+		((Graph*)m_uiElements[1].get())->addNewDataPoints(data);
+
+		m_sinePeaks++;
+		OutputDebugString(L"Clicked the graph button.\n");
+	}
 	return 0;
 }

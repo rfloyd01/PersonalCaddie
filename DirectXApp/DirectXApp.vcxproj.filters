@@ -106,6 +106,9 @@
     <ClCompile Include="Modes\GraphMode.cpp">
       <Filter>Modes</Filter>
     </ClCompile>
+    <ClCompile Include="Graphics\Objects\2D\Graph\Graph.cpp">
+      <Filter>Graphics\Objects\2D\Graph</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -250,6 +253,9 @@
     <ClInclude Include="Modes\GraphMode.h">
       <Filter>Modes</Filter>
     </ClInclude>
+    <ClInclude Include="Graphics\Objects\2D\Graph\Graph.h">
+      <Filter>Graphics\Objects\2D\Graph</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Assets\Wide310x150Logo.scale-200.png">
@@ -325,6 +331,9 @@
     </Filter>
     <Filter Include="Graphics\Objects\2D\Buttons">
       <UniqueIdentifier>{4ed0a644-0e7d-47ec-9cf7-300c6aab2c9b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Graphics\Objects\2D\Graph">
+      <UniqueIdentifier>{af01e006-597f-4807-81a5-62be057f2d89}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

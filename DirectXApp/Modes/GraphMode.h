@@ -14,4 +14,7 @@ public:
 
 private:
 	void initializeTextOverlay(winrt::Windows::Foundation::Size windowSize);
+
+	int m_dataPoints = 100;
+	int m_sinePeaks = 1;
 };
