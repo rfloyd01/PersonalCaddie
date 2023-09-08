@@ -66,8 +66,9 @@ public:
 	PersonalCaddie(std::function<void(PersonalCaddieEventType, void*)> function);
 
 	//BLE Related Functions
-	//void turnOnDataNotifications();
 	void changePowerMode(PersonalCaddiePowerMode mode);
+
+	void startDataTransfer();
 
 	volatile bool ble_device_connected;
 
@@ -110,6 +111,7 @@ private:
 	//Handler Methods
 	std::function<void(PersonalCaddieEventType, void*)> event_handler; //sends events to the ModeScreen class for rendering on screen
 	void BLEDeviceHandler(BLEState state);
+	bool cccdWriteHandler(IAsyncOperation<Bluetooth::GenericAttributeProfile::GattCommunicationStatus> const& sender, AsyncStatus const status);
 
 	//BLE Functionality
 	void getDataCharacteristics(Bluetooth::GenericAttributeProfile::GattDeviceService& data_service);

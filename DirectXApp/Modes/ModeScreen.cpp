@@ -315,6 +315,8 @@ void ModeScreen::changeCurrentMode(ModeType mt)
 	}
 
 	m_modeState = m_modes[static_cast<int>(m_currentMode)]->initializeMode(m_renderer->getCurrentScreenSize(), startingModeState);
+	if (m_modeState & ModeState::PersonalCaddieSensorIdleMode) m_personalCaddie->changePowerMode(PersonalCaddiePowerMode::SENSOR_IDLE_MODE);
+	else if (m_modeState & ModeState::PersonalCaddieSensorActiveMode) m_personalCaddie->changePowerMode(PersonalCaddiePowerMode::SENSOR_ACTIVE_MODE);
 	
 	//After initializing, add any alerts that were copied over to the text and
 	//color maps and then create text and color resources in the renderer
@@ -415,7 +417,7 @@ void ModeScreen::PersonalCaddieHandler(PersonalCaddieEventType pcEvent, void* ev
 
 void ModeScreen::enterActiveState()
 {
-	m_modeState ^= ModeState::Active; //turn on the active state
+	m_modeState ^= (ModeState::Active | ModeState::CanTransfer); //toggle the active and can transfer states
 
 	switch (m_currentMode)
 	{
@@ -437,6 +439,15 @@ void ModeScreen::enterActiveState()
 		textBox->addText(devices, m_renderer->getCurrentScreenSize(), true); //this new text will get resized in the main update loop
 
 		m_personalCaddie->startBLEAdvertisementWatcher();
+	}
+	case ModeType::GRAPH_MODE:
+	{
+		//When we first enter graph mode the personal caddie is automatically put into the sensor idle
+		//power mode. Entering the active state switches the personal caddie power mode to sensor active
+		//and also enables data notifications.
+		m_modeState ^= (ModeState::PersonalCaddieSensorActiveMode | ModeState::PersonalCaddieSensorIdleMode); //swap the idle and active mode flags. We also can't transfer modes in the active state
+		m_personalCaddie->changePowerMode(PersonalCaddiePowerMode::SENSOR_ACTIVE_MODE);
+		m_personalCaddie->enableDataNotifications();
 	}
 	}
 }
@@ -476,6 +487,13 @@ void ModeScreen::leaveActiveState()
 		//Leaving active mode while in device discovery means that we need to stop the BLEAdvertisement watcher of 
 		//the Personal Caddie
 		m_personalCaddie->stopBLEAdvertisementWatcher();
+	}
+	case ModeType::GRAPH_MODE:
+	{
+		//Leaving the active state while in graph mode causes the personal caddie to enter the sensor idle 
+		//power mode and turns off data notifications.
+		m_personalCaddie->disableDataNotifications();
+		m_personalCaddie->changePowerMode(PersonalCaddiePowerMode::SENSOR_IDLE_MODE);
 	}
 	}
 }

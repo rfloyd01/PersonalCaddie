@@ -207,6 +207,8 @@ void PersonalCaddie::BLEDeviceHandler(BLEState state)
         //We've initiated a connection to a new Personal Caddie device. Read the device to get some settings
         //off of it and use these to create an instance of th IMU class.
         this->ble_device_connected = true;
+        current_power_mode = PersonalCaddiePowerMode::CONNECTED_MODE;
+
         std::wstring message;
 
         if (m_services.Size() == 0)
@@ -276,6 +278,8 @@ void PersonalCaddie::BLEDeviceHandler(BLEState state)
         //The connection to the Personal Caddie has been lost, either purposely or by accident. We need
         //to alert the ModeScreen class about this disconnection so it can disable/enable certain features.
         this->ble_device_connected = false;
+        current_power_mode = PersonalCaddiePowerMode::ADVERTISING_MODE;
+
         std::wstring message = L"Disconnected from the Personal Caddie\n";
         event_handler(PersonalCaddieEventType::CONNECTION_EVENT, (void*)&message);
         break;
@@ -409,74 +413,161 @@ std::pair<const float*, const float**> PersonalCaddie::getSensorCalibrationNumbe
     else return { nullptr, nullptr };
 }
 
+void PersonalCaddie::startDataTransfer()
+{
+    //Calling this method will put the Personal Caddie into the appropriate power mode
+    //and then turn on the data characteristic notifications to begin the transfer of
+    //data from the IMU.
+    switch (current_power_mode)
+    {
+    case PersonalCaddiePowerMode::ADVERTISING_MODE:
+        return; //we aren't even connected to a device so no reason to attempt anything
+        break;
+    case PersonalCaddiePowerMode::CONNECTED_MODE:
+        break;
+    }
+}
+
 void PersonalCaddie::enableDataNotifications()
 {
     //If the sensor data characteristics aren't currently notifying, then their CCCD descriptors will be written
     //so that they are.
-    bool success = true;
-    auto cccd_value = m_accelerometer_data_characteristic.ReadClientCharacteristicConfigurationDescriptorAsync().get().ClientCharacteristicConfigurationDescriptor();
-    
-    if (cccd_value != Bluetooth::GenericAttributeProfile::GattClientCharacteristicConfigurationDescriptorValue::Notify)
-    {
-        //the data characteristics are currently set to notify so turn off notifications
-        auto notifications_on = m_accelerometer_data_characteristic.WriteClientCharacteristicConfigurationDescriptorAsync(GattClientCharacteristicConfigurationDescriptorValue::Notify).get();
-        if (notifications_on != GattCommunicationStatus::Success)
-        {
-            OutputDebugString(L"something when wrong trying to turn off accelerometer data notifications.\n");
-            success = false;
-        }
+    auto cccdRead = m_accelerometer_data_characteristic.ReadClientCharacteristicConfigurationDescriptorAsync();
 
-        notifications_on = m_gyroscope_data_characteristic.WriteClientCharacteristicConfigurationDescriptorAsync(GattClientCharacteristicConfigurationDescriptorValue::Notify).get();
-        if (notifications_on != GattCommunicationStatus::Success)
+    cccdRead.Completed([this](
+        IAsyncOperation<GattReadClientCharacteristicConfigurationDescriptorResult> const& sender,
+        AsyncStatus const status)
         {
-            OutputDebugString(L"something when wrong trying to turn off gyroscope data notifications.\n");
-            success = false;
-        }
+            auto cccd_value = sender.get().ClientCharacteristicConfigurationDescriptor();
+            if (cccd_value == Bluetooth::GenericAttributeProfile::GattClientCharacteristicConfigurationDescriptorValue::None)
+            {
+                //the data characteristics are currently set to notify so turn off notifications. There are three characteristic descriptors to write
+                //so nest the asynchronous calls to make sure all calls actually get processed.
+                auto cccdAccWriteOff = m_accelerometer_data_characteristic.WriteClientCharacteristicConfigurationDescriptorAsync(GattClientCharacteristicConfigurationDescriptorValue::Notify);
+                cccdAccWriteOff.Completed([this](IAsyncOperation<GattCommunicationStatus> const& sender, AsyncStatus const status)
+                    {
+                        bool accSuccess = cccdWriteHandler(sender, status);
+                        if (!accSuccess)
+                        {
+                            std::wstring message = L"An error occured when trying to enable ACC data notifications.\n";
+                            event_handler(PersonalCaddieEventType::BLE_ALERT, (void*)&message);
+                            return;
+                        }
 
-        notifications_on = m_magnetometer_data_characteristic.WriteClientCharacteristicConfigurationDescriptorAsync(GattClientCharacteristicConfigurationDescriptorValue::Notify).get();
-        if (notifications_on != GattCommunicationStatus::Success)
-        {
-            OutputDebugString(L"something when wrong trying to turn off magnetometer data notifications.\n");
-            success = false;
-        }
-    }
+                        //initiaite the second asynchronous call after the first one completes.
+                        auto cccdGyrWriteOff = m_gyroscope_data_characteristic.WriteClientCharacteristicConfigurationDescriptorAsync(GattClientCharacteristicConfigurationDescriptorValue::Notify);
+                        cccdGyrWriteOff.Completed([this](IAsyncOperation<GattCommunicationStatus> const& sender, AsyncStatus const status)
+                            {
+                                bool gyrSuccess = cccdWriteHandler(sender, status);
+                                if (!gyrSuccess)
+                                {
+                                    std::wstring message = L"An error occured when trying to enable GYR data notifications.\n";
+                                    event_handler(PersonalCaddieEventType::BLE_ALERT, (void*)&message);
+                                    return;
+                                }
 
-    if (success) OutputDebugString(L"Successfully turned on data characteristic notifications.\n");
+                                //initiaite the third asynchronous call after the second one completes.
+                                auto cccdMagWriteOff = m_magnetometer_data_characteristic.WriteClientCharacteristicConfigurationDescriptorAsync(GattClientCharacteristicConfigurationDescriptorValue::Notify);
+                                cccdMagWriteOff.Completed([this](IAsyncOperation<GattCommunicationStatus> const& sender, AsyncStatus const status)
+                                    {
+                                        bool magSuccess = cccdWriteHandler(sender, status);
+                                        if (!magSuccess)
+                                        {
+                                            std::wstring message = L"An error occured when trying to enable MAG data notifications.\n";
+                                            event_handler(PersonalCaddieEventType::BLE_ALERT, (void*)&message);
+                                            return;
+                                        }
+                                        else
+                                        {
+                                            std::wstring message = L"Successfully enabled data characteristic notifications.\n";
+                                            event_handler(PersonalCaddieEventType::BLE_ALERT, (void*)&message);
+                                            return;
+                                        }
+                                    });
+                            });
+                    });
+            }
+        });
 }
 
 void PersonalCaddie::disableDataNotifications()
 {
     //If the sensor data characteristics aren currently notifying, then their CCCD descriptors will be written
     //so that they aren't notifying any longer
-    bool success = true;
-    auto cccd_value = m_accelerometer_data_characteristic.ReadClientCharacteristicConfigurationDescriptorAsync().get().ClientCharacteristicConfigurationDescriptor();
-    
-    if (cccd_value == Bluetooth::GenericAttributeProfile::GattClientCharacteristicConfigurationDescriptorValue::Notify)
+    auto cccdRead = m_accelerometer_data_characteristic.ReadClientCharacteristicConfigurationDescriptorAsync();// .get().ClientCharacteristicConfigurationDescriptor();
+    cccdRead.Completed([this](
+        IAsyncOperation<GattReadClientCharacteristicConfigurationDescriptorResult> const& sender,
+        AsyncStatus const status)
+        {
+            auto cccd_value = sender.get().ClientCharacteristicConfigurationDescriptor();
+            if (cccd_value == Bluetooth::GenericAttributeProfile::GattClientCharacteristicConfigurationDescriptorValue::Notify)
+            {
+                //the data characteristics are currently set to notify so turn off notifications. There are three characteristic descriptors to write
+                //so nest the asynchronous calls to make sure all calls actually get processed.
+                auto cccdAccWriteOff = m_accelerometer_data_characteristic.WriteClientCharacteristicConfigurationDescriptorAsync(GattClientCharacteristicConfigurationDescriptorValue::None);
+                cccdAccWriteOff.Completed([this](IAsyncOperation<GattCommunicationStatus> const& sender, AsyncStatus const status)
+                    {
+                        bool accSuccess = cccdWriteHandler(sender, status);
+                        if (!accSuccess)
+                        {
+                            std::wstring message = L"An error occured when trying to disable ACC data notifications.\n";
+                            event_handler(PersonalCaddieEventType::BLE_ALERT, (void*)&message);
+                            return;
+                        }
+
+                        //initiaite the second asynchronous call after the first one completes.
+                        auto cccdGyrWriteOff = m_gyroscope_data_characteristic.WriteClientCharacteristicConfigurationDescriptorAsync(GattClientCharacteristicConfigurationDescriptorValue::None);
+                        cccdGyrWriteOff.Completed([this](IAsyncOperation<GattCommunicationStatus> const& sender, AsyncStatus const status)
+                            {
+                                bool gyrSuccess = cccdWriteHandler(sender, status);
+                                if (!gyrSuccess)
+                                {
+                                    std::wstring message = L"An error occured when trying to disable GYR data notifications.\n";
+                                    event_handler(PersonalCaddieEventType::BLE_ALERT, (void*)&message);
+                                    return;
+                                }
+
+                                //initiaite the third asynchronous call after the second one completes.
+                                auto cccdMagWriteOff = m_magnetometer_data_characteristic.WriteClientCharacteristicConfigurationDescriptorAsync(GattClientCharacteristicConfigurationDescriptorValue::None);
+                                cccdMagWriteOff.Completed([this](IAsyncOperation<GattCommunicationStatus> const& sender, AsyncStatus const status)
+                                    {
+                                        bool magSuccess = cccdWriteHandler(sender, status);
+                                        if (!magSuccess)
+                                        {
+                                            std::wstring message = L"An error occured when trying to disable MAG data notifications.\n";
+                                            event_handler(PersonalCaddieEventType::BLE_ALERT, (void*)&message);
+                                            return;
+                                        }
+                                        else
+                                        {
+                                            std::wstring message = L"Successfully disabled data characteristic notifications.\n";
+                                            event_handler(PersonalCaddieEventType::BLE_ALERT, (void*)&message);
+                                            return;
+                                        }
+                                    });
+                            });
+                    });
+            }
+        });
+}
+
+bool PersonalCaddie::cccdWriteHandler(IAsyncOperation<GattCommunicationStatus> const& sender, AsyncStatus const status)
+{
+    //A method for handling asynchronous writes to Client Characteristic Configuration Descriptor
+    if (status != AsyncStatus::Completed)
     {
-        //the data characteristics are currently set to notify so turn off notifications
-        auto notifications_off = m_accelerometer_data_characteristic.WriteClientCharacteristicConfigurationDescriptorAsync(GattClientCharacteristicConfigurationDescriptorValue::None).get();
-        if (notifications_off != GattCommunicationStatus::Success)
-        {
-            OutputDebugString(L"something when wrong trying to turn off accelerometer data notifications.\n");
-            success = false;
-        }
-
-        notifications_off = m_gyroscope_data_characteristic.WriteClientCharacteristicConfigurationDescriptorAsync(GattClientCharacteristicConfigurationDescriptorValue::None).get();
-        if (notifications_off != GattCommunicationStatus::Success)
-        {
-            OutputDebugString(L"something when wrong trying to turn off gyroscope data notifications.\n");
-            success = false;
-        }
-
-        notifications_off = m_magnetometer_data_characteristic.WriteClientCharacteristicConfigurationDescriptorAsync(GattClientCharacteristicConfigurationDescriptorValue::None).get();
-        if (notifications_off != GattCommunicationStatus::Success)
-        {
-            OutputDebugString(L"something when wrong trying to turn off magnetometer data notifications.\n");
-            success = false;
-        }
+        OutputDebugString(L"Couldn't write the Client Characteristic Configuration Descriptor.\n"); //TODO: should create a UI alert
+        return false;
     }
 
-    if (success) OutputDebugString(L"Successfully toggled data characteristic notifications.\n");
+    auto writeEvent = sender.get();
+    if (writeEvent != GattCommunicationStatus::Success)
+    {
+        OutputDebugString(L"Something when wrong trying to turn off accelerometer data notifications.\n"); //TODO: should create a UI alert
+        return false;
+    }
+
+    return true; //if we make it here the write was a success
 }
 
 PersonalCaddiePowerMode PersonalCaddie::getCurrentPowerMode()
@@ -504,20 +595,39 @@ void PersonalCaddie::changePowerMode(PersonalCaddiePowerMode mode)
     writer.ByteOrder(winrt::Windows::Storage::Streams::ByteOrder::LittleEndian);
     writer.WriteByte(static_cast<uint8_t>(mode));
 
-    auto err_code = this->m_settings_characteristic.WriteValueAsync(writer.DetachBuffer()).get();
+    auto writeOperation = this->m_settings_characteristic.WriteValueAsync(writer.DetachBuffer());
 
-    //TODO: When going into sensor active mode we need to write the notify flag of the data characteristics to actually get data
+    writeOperation.Completed([this, mode](IAsyncOperation<GattCommunicationStatus> const& sender, AsyncStatus const asyncStatus)
+        {
+            if (asyncStatus != AsyncStatus::Completed) OutputDebugString(L"Something went wrong trying to write the Personal Caddie settings characteristic.\n");
 
-    if (err_code != Bluetooth::GenericAttributeProfile::GattCommunicationStatus::Success)
-    {
-        OutputDebugString(L"Something went wrong, characteristic write returned with error code: " + static_cast<int>(err_code));
-        OutputDebugString(L"\n");
-    }
-    else
-    {
-        OutputDebugString(L"The write operation was successful.\n");
-        this->current_power_mode = mode; //update the current power mode
-    }
+            if (sender.get() != Bluetooth::GenericAttributeProfile::GattCommunicationStatus::Success)
+            {
+                OutputDebugString(L"Error writing Personal Caddie settings characteristic, write returned with error code: " + static_cast<int>(sender.get()));
+                OutputDebugString(L"\n");
+            }
+            else
+            {
+                this->current_power_mode = mode; //update the current power mode
+                std::wstring message = L"The Personal Caddie has been placed into ";
+                switch (mode)
+                {
+                case PersonalCaddiePowerMode::CONNECTED_MODE:
+                    message += L"Connected Mode";
+                    break;
+                case PersonalCaddiePowerMode::SENSOR_IDLE_MODE:
+                    message += L"Sensor Idle Mode";
+                    break;
+                case PersonalCaddiePowerMode::SENSOR_ACTIVE_MODE:
+                    message += L"Sensor Active Mode ";
+                    break;
+                }
+
+                //Alert the mode screen class that the mode change has taken effect
+                event_handler(PersonalCaddieEventType::PC_ALERT, (void*)&message);
+            }
+        }
+    );
 }
 
 //Methods and fields from original BluetoothLE Class

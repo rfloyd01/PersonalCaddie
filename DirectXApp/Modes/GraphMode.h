@@ -2,6 +2,11 @@
 
 #include "Mode.h"
 
+enum GraphModeState
+{
+	RECORDING = 1, //overwrites the active Mode State, turns the Personal Caddie into Sensor Active Mode and enables data notifications
+};
+
 class GraphMode : public Mode
 {
 public:
@@ -15,6 +20,7 @@ public:
 private:
 	void initializeTextOverlay(winrt::Windows::Foundation::Size windowSize);
 
-	int m_dataPoints = 100;
+	std::vector<DirectX::XMFLOAT2> m_graphData;
+	int m_dataPoints = 1000;
 	int m_sinePeaks = 1;
 };

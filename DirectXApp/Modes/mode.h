@@ -30,7 +30,9 @@ enum ModeState
 	Active = 1,
 	Recording = 2,
 	CanTransfer = 4,
-	NeedTextUpdate = 8
+	NeedTextUpdate = 8,
+	PersonalCaddieSensorIdleMode = 16,
+	PersonalCaddieSensorActiveMode = 32
 };
 
 //Class definition
