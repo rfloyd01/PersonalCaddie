@@ -21,8 +21,11 @@ public:
 	virtual uint32_t update(InputState* inputState) override;
 	virtual std::vector<UIText*> setTextDimension() override;
 
+	std::wstring getSelectedOption() { return m_currentlySelectedOption; }
+
 protected:
 	virtual void repositionText() override;
 	int m_optionsDisplayed;
 	bool m_inverted;
+	std::wstring m_currentlySelectedOption;
 };

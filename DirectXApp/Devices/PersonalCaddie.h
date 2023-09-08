@@ -48,7 +48,8 @@ enum class PersonalCaddieEventType
 	BLE_ALERT = 2,
 	IMU_ALERT = 3,
 	DEVICE_WATCHER_UPDATE = 4,
-	CONNECTION_EVENT = 5
+	CONNECTION_EVENT = 5,
+	DATA_READY = 6
 };
 
 enum class TextType;
@@ -102,6 +103,7 @@ public:
 	void stopBLEAdvertisementWatcher() { return p_ble->stopBLEAdvertisementWatcher(); }
 
 	std::set<DeviceInfoDisplay>* getScannedDevices() { return p_ble->getScannedDevices(); }
+	std::vector<std::vector<std::vector<float> > > const& getSensorData() { return sensor_data; }
 
 private:
 

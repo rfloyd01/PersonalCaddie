@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Mode.h"
+#include "Devices/PersonalCaddie.h"
 
 enum GraphModeState
 {
@@ -17,10 +18,14 @@ public:
 
 	virtual uint32_t handleUIElementStateChange(int i) override;
 
+	void addData(std::vector<std::vector<std::vector<float> > > const& sensorData, float sensorODR);
+
 private:
 	void initializeTextOverlay(winrt::Windows::Foundation::Size windowSize);
+	DataType getCurrentlySelectedDataType(std::wstring dropDownSelection);
 
-	std::vector<DirectX::XMFLOAT2> m_graphData;
+	std::vector<DirectX::XMFLOAT2> m_graphDataX, m_graphDataY, m_graphDataZ;
+	DirectX::XMFLOAT2 m_minimalPoint, m_maximalPoint; //used for scaling of the graph
 	int m_dataPoints = 1000;
 	int m_sinePeaks = 1;
 };

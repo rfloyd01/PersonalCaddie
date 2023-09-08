@@ -25,6 +25,7 @@ DropDownMenu::DropDownMenu(winrt::Windows::Foundation::Size windowSize, DirectX:
 	m_needTextRenderDimensions = true;
 	m_optionsDisplayed = optionsDisplayed;
 	m_inverted = isInverted;
+	m_currentlySelectedOption = scrollBox.getChildren()[5]->getText()->message; //default selection is the first option
 
 	m_state = UIElementState::NeedTextPixels; //Let's the renderer know that we currently need the pixel size of text
 }
@@ -81,6 +82,8 @@ uint32_t DropDownMenu::update(InputState* inputState)
 		p_children[0]->getChildren()[1]->getText()->message = ((FullScrollingTextBox*)p_children[2].get())->getLastSelectedText();
 		p_children[0]->getChildren()[1]->getText()->colorLocations.back() = p_children[0]->getChildren()[1]->getText()->message.length();
 		p_children[2]->setState(p_children[2]->getState() ^ UIElementState::Invisible);
+
+		m_currentlySelectedOption = p_children[0]->getChildren()[1]->getText()->message; //update the currentlySelectedOption variable
 	}
 
 	return currentState;

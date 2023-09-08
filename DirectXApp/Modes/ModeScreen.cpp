@@ -144,7 +144,8 @@ void ModeScreen::processKeyboardInput(winrt::Windows::System::VirtualKey pressed
 		{
 			if (m_currentMode == ModeType::DEVELOPER_TOOLS)
 			{
-				changeCurrentMode(ModeType::GRAPH_MODE);
+				if (!m_personalCaddie->ble_device_connected) createAlert(L"Must be connected to a Personal Caddie to access this mode", UIColor::Red);
+				else changeCurrentMode(ModeType::GRAPH_MODE);
 			}
 		}
 
@@ -411,6 +412,16 @@ void ModeScreen::PersonalCaddieHandler(PersonalCaddieEventType pcEvent, void* ev
 		}
 		break;
 	}
+	case PersonalCaddieEventType::DATA_READY:
+	{
+		//The imu on the personal caddie has finished taking readings and has sent the data over.
+		//Send the data to the current mode if it needs it.
+		if (m_currentMode == ModeType::GRAPH_MODE)
+		{
+			((GraphMode*)m_modes[static_cast<int>(ModeType::GRAPH_MODE)].get())->addData(m_personalCaddie->getSensorData(), m_personalCaddie->getMaxODR());
+		}
+		break;
+	}
 	}
 
 }
@@ -439,6 +450,7 @@ void ModeScreen::enterActiveState()
 		textBox->addText(devices, m_renderer->getCurrentScreenSize(), true); //this new text will get resized in the main update loop
 
 		m_personalCaddie->startBLEAdvertisementWatcher();
+		break;
 	}
 	case ModeType::GRAPH_MODE:
 	{
@@ -448,6 +460,7 @@ void ModeScreen::enterActiveState()
 		m_modeState ^= (ModeState::PersonalCaddieSensorActiveMode | ModeState::PersonalCaddieSensorIdleMode); //swap the idle and active mode flags. We also can't transfer modes in the active state
 		m_personalCaddie->changePowerMode(PersonalCaddiePowerMode::SENSOR_ACTIVE_MODE);
 		m_personalCaddie->enableDataNotifications();
+		break;
 	}
 	}
 }

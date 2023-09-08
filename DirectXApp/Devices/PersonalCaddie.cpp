@@ -211,6 +211,19 @@ void PersonalCaddie::BLEDeviceHandler(BLEState state)
 
         std::wstring message;
 
+        //The Windows Bluetooth API is a little weird in that there's not set way of knowing when the actual
+        //connection to a device will happen. It can either be the moment the BLEDevice is created, it can be
+        //after doing a complete read of the GATT table, or it could be neither of these and a manually connection
+        //must be forced with a different method. We need to anticipate connections from any of these possibilities
+        //to make sure there are no errors.
+
+        if (m_services.as<winrt::Windows::Foundation::IUnknown>() == NULL)
+        {
+            //If we make it here it means we connected before reading the GATT table so the m_services
+            //object is null. The services are normally populated in another thread so just re-read 
+            //them in this thread
+            m_services = this->p_ble->getBLEDevice()->GetGattServicesAsync(BluetoothCacheMode::Uncached).get().Services();
+        }
         if (m_services.Size() == 0)
         {
             message = L"Couldn't connect to the Personal Caddie. Go to the settings menu to manually connect.\n";
@@ -394,15 +407,13 @@ void PersonalCaddie::updateRawDataWithCalibrationNumbers(DataType rdt, DataType 
         setDataPoint(dt, X, i, (gain_cal[0][0] * (r_x - offset_cal[0])) + (gain_cal[0][1] * (r_y - offset_cal[1])) + (gain_cal[0][2] * (r_z - offset_cal[2])));
         setDataPoint(dt, Y, i, (gain_cal[1][0] * (r_x - offset_cal[0])) + (gain_cal[1][1] * (r_y - offset_cal[1])) + (gain_cal[1][2] * (r_z - offset_cal[2])));
         setDataPoint(dt, Z, i, (gain_cal[2][0] * (r_x - offset_cal[0])) + (gain_cal[2][1] * (r_y - offset_cal[1])) + (gain_cal[2][2] * (r_z - offset_cal[2])));
-
-        //if (dt == DataType::MAGNETIC)
-        //{
-        //    std::cout << getDataPoint(DataType::MAGNETIC, X, i) << ", " << getDataPoint(DataType::MAGNETIC, Y, i) << ", " << getDataPoint(DataType::MAGNETIC, Z, i) << std::endl;
-        //}
     }
 
     //since data is read separately we need to set the data updated variable to true for the current sensor
     sensor_data_updated[sensor_type] = true;
+
+    //See if all three basic data types (acc, gyr and mag) have been updated. If so, update the rest of the data types
+    if (sensor_data_updated[0] && sensor_data_updated[1] && sensor_data_updated[2]) dataUpdate();
 }
 
 std::pair<const float*, const float**> PersonalCaddie::getSensorCalibrationNumbers(sensor_type_t sensor)
@@ -730,6 +741,9 @@ void PersonalCaddie::dataUpdate()
         sensor_data_updated[ACC_SENSOR] = false;
         sensor_data_updated[GYR_SENSOR] = false;
         sensor_data_updated[MAG_SENSOR] = false;
+
+        //Let the ModeScreen class know that the next batch of data is ready for use.
+        event_handler(PersonalCaddieEventType::DATA_READY, nullptr);
     }
     else
     {

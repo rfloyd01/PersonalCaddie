@@ -15,11 +15,15 @@ class Graph : public UIElement
 public:
 	Graph(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, UIColor fillColor = UIColor::White, UIColor outlineColor = UIColor::Black);
 
-	void addNewDataPoints(std::vector<DirectX::XMFLOAT2> const& dataPoints);
+	void addDataSet(std::vector<DirectX::XMFLOAT2> const& dataPoints, UIColor lineColor);
 
+	void setAxisMaxAndMins(DirectX::XMFLOAT2 axis_minimums, DirectX::XMFLOAT2 axis_maximums);
 	void addLine(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 point1, DirectX::XMFLOAT2 point2);
 	void removeAllLines();
 
+	void addAxisLine(int axis, float location);
+
 protected:
-	DirectX::XMFLOAT2 m_minmalPoint, m_maximalPoint; //these variables hold the absolute locations for the x and y min/maxes in the graph
+	DirectX::XMFLOAT2 m_minimalAbsolutePoint, m_maximalAbsolutePoint; //these variables hold the absolute locations for the x and y min/maxes in the graph
+	DirectX::XMFLOAT2 m_minimalDataPoint, m_maximalDataPoint; //these variables hold the actual data locations for the x and y min/maxes in the graph
 };
