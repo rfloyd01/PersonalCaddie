@@ -13,7 +13,7 @@ DropDownMenu::DropDownMenu(winrt::Windows::Foundation::Size windowSize, DirectX:
 	TextBox textBox(windowSize, location, size, scrollBox.getChildren()[5]->getText()->message, fontSize); //use the first option in the scroll box to populate the text box
 	ArrowButton button(windowSize, location, size, isInverted, true);
 
-	scrollBox.setState(UIElementState::Invisible); //the scroll box is invisible to start off. Clicking the button makes it appear
+	scrollBox.setState(scrollBox.getState() | UIElementState::Invisible); //the scroll box is invisible to start off. Clicking the button makes it appear
 
 	p_children.push_back(std::make_shared<TextBox>(textBox));
 	p_children.push_back(std::make_shared<ArrowButton>(button));
@@ -44,11 +44,44 @@ void DropDownMenu::repositionText()
 	//by the m_optionsDisplayed field will perfectly fit in the box. Then resize the drop down text box
 	//accordingly and place the scroll box directly on top of or below the text box (depending on the value
 	//of the m_inverted field).
-	float textHeight = p_children[2]->getChildren()[5]->getText()->renderDPI.y;
-	p_children[2]->setAbsoluteSize({ 0, textHeight * m_optionsDisplayed }); //the x-dimension will get resized by the scroll box class
+	auto currentWindowSize = getCurrentWindowSize();
+	float absoluteTextHeight = p_children[2]->getChildren()[5]->getText()->renderDPI.y / currentWindowSize.Height;
+	//p_children[2]->setAbsoluteSize({ p_children[2]->getAbsoluteSize().x, textHeight * m_optionsDisplayed }); //the x-dimension will get resized by the scroll box class
 	p_children[2]->repositionText(); //resize the scroll box
 
-	//TODO: resize/move the button and move the scroll box accordingly
-	m_size = { p_children[2]->getAbsoluteSize().x, textHeight };
-	p_children[2]->setAbsoluteLocation({ m_location.x, m_location.y - (m_size.y + p_children[2]->getAbsoluteSize().y) / 2.0f }); //TODO: need to take inversion into account
+	int invert = 1;
+	if (m_inverted) invert *= -1;
+
+	m_size = { p_children[2]->getAbsoluteSize().x, absoluteTextHeight }; //don't use setAbsoluteSize() as it will resize the scroll box
+	p_children[0]->setAbsoluteSize(m_size); //change the text box size to reflect m_size
+	p_children[2]->setAbsoluteLocation({ m_location.x, m_location.y - invert * (m_size.y + p_children[2]->getAbsoluteSize().y) / 2.0f });
+
+	//resize the button to match the height of the drop down text box and move
+	//it to the right side of the text box (making sure to compensate for square
+	//element drift)
+	p_children[1]->setAbsoluteSize({ absoluteTextHeight, absoluteTextHeight });
+	float driftCorrectedButtonLocation = m_location.x + (m_size.x + absoluteTextHeight) / 2.0f - ((ShadowedBox*)p_children[1]->getChildren()[0].get())->fixSquareBoxDrift(currentWindowSize);
+	p_children[1]->setAbsoluteLocation({driftCorrectedButtonLocation, m_location.y});
+}
+
+uint32_t DropDownMenu::update(InputState* inputState)
+{
+	//At the end of the standard update, we check to see if the arrow button has been
+	//clicked. If so we toggle the visibility of the scroll box. If the scroll box
+	//is visible and one of its options is selected, we update the text in the text
+	//box and make the scroll box invisible.
+	uint32_t currentState = UIElement::update(inputState);
+
+	if ((p_children[1]->getState() & UIElementState::Clicked) && inputState->mouseClick)
+	{
+		p_children[2]->setState(p_children[2]->getState() ^ UIElementState::Invisible);
+	}
+	else if (inputState->mouseClick && !(p_children[2]->getState() & UIElementState::Invisible) && (p_children[2]->getState() & UIElementState::Hovered))
+	{
+		p_children[0]->getChildren()[1]->getText()->message = ((FullScrollingTextBox*)p_children[2].get())->getLastSelectedText();
+		p_children[0]->getChildren()[1]->getText()->colorLocations.back() = p_children[0]->getChildren()[1]->getText()->message.length();
+		p_children[2]->setState(p_children[2]->getState() ^ UIElementState::Invisible);
+	}
+
+	return currentState;
 }

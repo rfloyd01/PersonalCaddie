@@ -57,7 +57,7 @@ public:
 	UIText* getText() { return &m_text; }
 
 	DirectX::XMFLOAT2 getAbsoluteSize() { return m_size; }
-	void setAbsoluteSize(DirectX::XMFLOAT2 size);
+	virtual void setAbsoluteSize(DirectX::XMFLOAT2 size); //some elements that are tied to specific locations of other elements need to override this method
 
 	DirectX::XMFLOAT2 getAbsoluteLocation() { return m_location; }
 	void setAbsoluteLocation(DirectX::XMFLOAT2 location);

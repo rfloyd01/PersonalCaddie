@@ -18,6 +18,7 @@ public:
 		int optionsDisplayed = 5, bool isInverted = false, std::vector<UIColor> textColor = { UIColor::Black }, std::vector<unsigned long long> textColorLocations = {}, UITextJustification justification = UITextJustification::UpperLeft, 
 		UIColor textFillColor = UIColor::White, bool isSquare = false,  UIColor outlineColor = UIColor::Black, UIColor shadowColor = UIColor::DarkGray);
 
+	virtual uint32_t update(InputState* inputState) override;
 	virtual std::vector<UIText*> setTextDimension() override;
 
 protected:

@@ -17,10 +17,11 @@ uint32_t UITestMode::initializeMode(winrt::Windows::Foundation::Size windowSize,
 	std::wstring longerText = L"At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum deleniti atque corrupti quos dolores et quas molestias excepturi sint occaecati cupiditate non provident, similique sunt in culpa qui officia deserunt mollitia animi, id est laborum et dolorum fuga. Et harum quidem rerum facilis est et expedita distinctio. Nam libero tempore, cum soluta nobis est eligendi optio cumque nihil impedit quo minus id quod maxime placeat facere possimus, omnis voluptas assumenda est, omnis dolor repellendus. Temporibus autem quibusdam et aut officiis debitis aut rerum necessitatibus saepe eveniet ut et voluptates repudiandae sint et molestiae non recusandae. Itaque earum rerum hic tenetur a sapiente delectus, ut aut reiciendis voluptatibus maiores alias consequatur aut perferendis doloribus asperiores repellat.";
 	std::wstring options = L"Option 1\nOption 2\nOption Three is Long\nOption 4\nOption 5\nOption 4b.\nOption 6\nOption 4\nOption 5\nOption 4b.\nOption 6";
 
-	ArrowButton arrow(windowSize, { 0.5, 0.5 }, { 0.15, 0.15 }, false, true);
-	FullScrollingTextBox scroll(windowSize, { 0.5, 0.5 }, { 0.5, 0.25 }, options, 0.025, true, true);
-	//m_uiElementsBasic.push_back(std::make_shared<ArrowButton>(arrow));
+	FullScrollingTextBox scroll(windowSize, { 0.25, 0.5 }, { 0.5, 0.25 }, options, 0.025, true, true);
+	DropDownMenu drop(windowSize, { 0.75, 0.5 }, { 0.2, 0.1 }, options, 0.025, 5, false);
+
 	m_uiElements.push_back(std::make_shared<FullScrollingTextBox>(scroll));
+	m_uiElements.push_back(std::make_shared<DropDownMenu>(drop));
 
 	//When this mode is initialzed we go into a state of CanTransfer and Active.
 	//Can Transfer allows us to use the esc. key to go back to the settings menu

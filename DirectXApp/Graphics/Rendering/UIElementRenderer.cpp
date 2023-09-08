@@ -156,7 +156,7 @@ void UIElementRenderer::render(std::vector<std::shared_ptr<UIElement> > const& u
     //Renders all UI Elements in the given vector
     for (int i = 0; i < uiElements.size(); i++)
     {
-        if (uiElements[i]->getState() == UIElementState::Invisible) continue; //invisible elements don't get rendered
+        if (uiElements[i]->getState() & UIElementState::Invisible) continue; //invisible elements don't get rendered
 
         //First, recursively, render all children elements first
         auto children = uiElements[i]->getChildren();

@@ -109,6 +109,9 @@
     <ClCompile Include="Graphics\Objects\2D\Graph\Graph.cpp">
       <Filter>Graphics\Objects\2D\Graph</Filter>
     </ClCompile>
+    <ClCompile Include="Graphics\Objects\2D\TextBoxes\DropDownMenu.cpp">
+      <Filter>Graphics\Objects\2D\TextBoxes</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -255,6 +258,9 @@
     </ClInclude>
     <ClInclude Include="Graphics\Objects\2D\Graph\Graph.h">
       <Filter>Graphics\Objects\2D\Graph</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Objects\2D\TextBoxes\DropDownMenu.h">
+      <Filter>Graphics\Objects\2D\TextBoxes</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

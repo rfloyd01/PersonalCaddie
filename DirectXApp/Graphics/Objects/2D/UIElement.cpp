@@ -53,15 +53,15 @@ uint32_t UIElement::update(InputState* inputState)
 
 	if ((m_state & UIElementState::Invisible) || (m_state & UIElementState::Disabled)) return 0; //Invisible and disabled elements don't get updated
 
-	//If the element can't be interacted with in any way then simple return the idle state.
-	if (!m_isClickable && !m_isHoverable && !m_isScrollable) return UIElementState::Idlee;
-
-	//uint32_t currentState = 0;
+	
 
 	if (m_state & UIElementState::NeedTextPixels)
 	{
 		m_state |= UIElementState::NeedTextPixels;
 	}
+
+	//If the element can't be interacted with in any way then simple return the idle state.
+	if (!m_isClickable && !m_isHoverable && !m_isScrollable) m_state |= UIElementState::Idlee;
 
 	//Only check for hover, click and scroll events if the mouse is
 	//actually over the element
