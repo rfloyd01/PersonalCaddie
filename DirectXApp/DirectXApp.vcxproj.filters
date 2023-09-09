@@ -112,6 +112,9 @@
     <ClCompile Include="Graphics\Objects\2D\TextBoxes\DropDownMenu.cpp">
       <Filter>Graphics\Objects\2D\TextBoxes</Filter>
     </ClCompile>
+    <ClCompile Include="Modes\IMUSettingsMode.cpp">
+      <Filter>Modes</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -261,6 +264,9 @@
     </ClInclude>
     <ClInclude Include="Graphics\Objects\2D\TextBoxes\DropDownMenu.h">
       <Filter>Graphics\Objects\2D\TextBoxes</Filter>
+    </ClInclude>
+    <ClInclude Include="Modes\IMUSettingsMode.h">
+      <Filter>Modes</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -86,6 +86,8 @@ public:
 	void connectToDevice(uint64_t deviceAddress);
 	void disconnectFromDevice();
 
+	std::vector<uint8_t*> getIMUSettings() { return p_imu->getSensorSettings(); };
+
 	//Methods and fields from original BluetoothLE Class
 	void dataUpdate(); //master update function
 	float getDataPoint(DataType dt, Axis a, int sample_number);

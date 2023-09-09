@@ -211,9 +211,9 @@ void PersonalCaddie::BLEDeviceHandler(BLEState state)
 
         std::wstring message;
 
-        //The Windows Bluetooth API is a little weird in that there's not set way of knowing when the actual
+        //The Windows Bluetooth API is a little weird in that there's not a set way of knowing when the actual
         //connection to a device will happen. It can either be the moment the BLEDevice is created, it can be
-        //after doing a complete read of the GATT table, or it could be neither of these and a manually connection
+        //after doing a complete read of the GATT table, or it could be neither of these and a manual connection
         //must be forced with a different method. We need to anticipate connections from any of these possibilities
         //to make sure there are no errors.
 

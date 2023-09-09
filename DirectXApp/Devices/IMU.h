@@ -59,6 +59,8 @@ public:
 	//Constructors
 	IMU(uint8_t* imu_settings);
 
+	std::vector<uint8_t*> getSensorSettings();
+
 	float* getSensorODRs();
 	float* getSensorConversionRates();
 

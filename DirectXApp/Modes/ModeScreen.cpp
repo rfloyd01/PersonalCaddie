@@ -7,6 +7,7 @@
 #include "DeviceDiscoveryMode.h"
 #include "UITestMode.h"
 #include "GraphMode.h"
+#include "IMUSettingsMode.h"
 
 #include "Graphics/Rendering/MasterRenderer.h"
 
@@ -25,6 +26,7 @@ ModeScreen::ModeScreen() :
 	m_modes[static_cast<int>(ModeType::DEVELOPER_TOOLS)] = std::make_shared<DevelopmentMenuMode>();
 	m_modes[static_cast<int>(ModeType::UI_TEST_MODE)] = std::make_shared<UITestMode>();
 	m_modes[static_cast<int>(ModeType::GRAPH_MODE)] = std::make_shared<GraphMode>();
+	m_modes[static_cast<int>(ModeType::IMU_SETTINGS)] = std::make_shared<IMUSettingsMode>();
 
 	//Set default times for various timers (in milliseconds)
 	alert_timer_duration = 5000;
@@ -101,7 +103,7 @@ void ModeScreen::processKeyboardInput(winrt::Windows::System::VirtualKey pressed
 			{
 				changeCurrentMode(ModeType::MAIN_MENU);
 			}
-			else if (m_currentMode == ModeType::DEVICE_DISCOVERY)
+			else if (m_currentMode == ModeType::DEVICE_DISCOVERY || m_currentMode == ModeType::IMU_SETTINGS)
 			{
 				changeCurrentMode(ModeType::SETTINGS_MENU);
 			}
@@ -147,6 +149,14 @@ void ModeScreen::processKeyboardInput(winrt::Windows::System::VirtualKey pressed
 				if (!m_personalCaddie->ble_device_connected) createAlert(L"Must be connected to a Personal Caddie to access this mode", UIColor::Red);
 				else changeCurrentMode(ModeType::GRAPH_MODE);
 			}
+			else if (m_currentMode == ModeType::SETTINGS_MENU)
+			{
+				//TODO: After completing design work on IMU settings page,
+				//make it so you must be connected before going there
+				//if (!m_personalCaddie->ble_device_connected) createAlert(L"Must be connected to a Personal Caddie to access this mode", UIColor::Red);
+				//else changeCurrentMode(ModeType::GRAPH_MODE);
+				changeCurrentMode(ModeType::IMU_SETTINGS);
+			}
 		}
 
 		break;
@@ -190,7 +200,8 @@ void ModeScreen::processMouseInput(InputState* inputState)
 			uiElements[i]->repositionText(); //see if any text needs to be repositioned after getting new dimensions
 			uiElements[i]->resize(m_renderer->getCurrentScreenSize()); //and then resize the ui element
 		}
-		else if ((uiElementState & UIElementState::Clicked) && inputState->mouseClick)
+		
+		if ((uiElementState & UIElementState::Clicked) && inputState->mouseClick)
 		{
 			//The current UI Element has been clicked, see if clicking the button has
 			//any effect outside of the UI Element (like clicking the device watcher
@@ -311,6 +322,13 @@ void ModeScreen::changeCurrentMode(ModeType mt)
 	{
 		//The device discovery mode state depends on whether or not we're currently
 		//connected to a BLE device
+		if (m_personalCaddie->ble_device_connected) startingModeState |= DeviceDiscoveryState::CONNECTED;
+	}
+	case ModeType::IMU_SETTINGS:
+	{
+		//When going to the IMU settings mode, we need to pass in a reference
+		//to the current sensor settings. This will allow the mode to populate
+		//all of the drop down menus.
 		if (m_personalCaddie->ble_device_connected) startingModeState |= DeviceDiscoveryState::CONNECTED;
 	}
 	}
@@ -460,6 +478,14 @@ void ModeScreen::enterActiveState()
 		m_modeState ^= (ModeState::PersonalCaddieSensorActiveMode | ModeState::PersonalCaddieSensorIdleMode); //swap the idle and active mode flags. We also can't transfer modes in the active state
 		m_personalCaddie->changePowerMode(PersonalCaddiePowerMode::SENSOR_ACTIVE_MODE);
 		m_personalCaddie->enableDataNotifications();
+		break;
+	}
+	case ModeType::IMU_SETTINGS:
+	{
+		//When we enter the active state on the IMU Settings page, we make a request to the
+		//Personal Caddie for the current IMU sensor settings. These are used to populate
+		//the text for individual drop down menus
+		((IMUSettingsMode*)m_modes[static_cast<int>(m_currentMode)].get())->getCurrentSettings(m_personalCaddie->getIMUSettings());
 		break;
 	}
 	}

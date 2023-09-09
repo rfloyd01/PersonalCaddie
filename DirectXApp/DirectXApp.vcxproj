@@ -175,6 +175,7 @@
     <ClInclude Include="Modes\DevelopmentMenuMode.h" />
     <ClInclude Include="Modes\DeviceDiscoveryMode.h" />
     <ClInclude Include="Modes\GraphMode.h" />
+    <ClInclude Include="Modes\IMUSettingsMode.h" />
     <ClInclude Include="Modes\MainMenuMode.h" />
     <ClInclude Include="Modes\Mode.h" />
     <ClInclude Include="Modes\ModeScreen.h" />
@@ -240,6 +241,7 @@
     <ClCompile Include="Modes\DevelopmentMenuMode.cpp" />
     <ClCompile Include="Modes\DeviceDiscoveryMode.cpp" />
     <ClCompile Include="Modes\GraphMode.cpp" />
+    <ClCompile Include="Modes\IMUSettingsMode.cpp" />
     <ClCompile Include="Modes\MainMenuMode.cpp" />
     <ClCompile Include="Modes\Mode.cpp" />
     <ClCompile Include="Modes\ModeScreen.cpp" />

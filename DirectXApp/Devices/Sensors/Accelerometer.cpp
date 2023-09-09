@@ -11,7 +11,7 @@ Accelerometer::Accelerometer(uint8_t* current_settings)
 	//as their current settings (things like ODR, full-scale range, etc.)
 	this->acc_model = static_cast<accelerometer_model_t>(current_settings[SENSOR_MODEL]);
 
-	populateSensorSettingsArray(current_settings);
+	setCurrentSettings(current_settings);
 	setConversionRateFromSettings();
 	setCurrentODRFromSettings();
 	
@@ -20,12 +20,6 @@ Accelerometer::Accelerometer(uint8_t* current_settings)
 	this->cal_gains_number = 9; //accelerometers need 9 cross-axis gain values
 	this->calibrationFile = "Resources/Calibration_Files/accelerometer_calibration.txt";
 	getCalibrationNumbersFromTextFile();
-}
-
-void Accelerometer::populateSensorSettingsArray(uint8_t* current_settings)
-{
-	//Just copy the relevant info over
-	for (int setting = SENSOR_MODEL; setting <= EXTRA_2; setting++) this->settings[setting] = current_settings[setting];
 }
 
 void Accelerometer::setConversionRateFromSettings()

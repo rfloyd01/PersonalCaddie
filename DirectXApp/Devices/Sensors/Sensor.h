@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../Firmware/MEMs_Drivers/sensor_settings.h"
 
 //Class Definition
 class Sensor
@@ -11,10 +12,30 @@ public:
 	float getConversionRate();
 	float getCurrentODR();
 
+	uint8_t* getCurrentSettings() { return settings; }
+	void setCurrentSettings(uint8_t* new_settings)
+	{
+		//Just copy the relevant info over
+		for (int setting = SENSOR_MODEL; setting <= EXTRA_2; setting++) settings[setting] = new_settings[setting];
+	}
+
 	std::pair<const float*, const float**> getCalibrationNumbers();
 	void setCalibrationNumbers(float* offset, float** gain);
 
 protected:
+	//An array that holds the relevant settings for the sensor. The indices of the array hold settings for the following:
+	//0x00 = sensor model
+	//0x01 = full scale range
+	//0x02 = ODR
+	//0x03 = power level
+	//0x04 = filter selection
+	//0x05 = low pass filter
+	//0x06 = high pass filter
+	//0x07 = other filter(s)
+	//0x08 = extra info 1
+	//0x09 = extra info 2
+	uint8_t settings[10]; //an array holding the current settings for the sensor
+
 	float conversion_rate;
 	float current_odr;
 

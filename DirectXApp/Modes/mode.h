@@ -20,7 +20,8 @@ enum class ModeType
 	DEVELOPER_TOOLS = 6,
 	UI_TEST_MODE = 7,
 	GRAPH_MODE = 8,
-	END = 9 //allows for looping through of ModeType enum class. This number should be one more than previous value
+	IMU_SETTINGS = 9,
+	END = 10 //allows for looping through of ModeType enum class. This number should be one more than previous value
 };
 
 //The ModeState enum keeps track of what the current state of the app is. Each of these

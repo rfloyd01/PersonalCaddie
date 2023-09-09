@@ -16,6 +16,23 @@ IMU::IMU(uint8_t* imu_settings)
     getConversionRateFromSensors();
 }
 
+std::vector<uint8_t*> IMU::getSensorSettings()
+{
+    //The IMU class doesn't actually hold any of the settings, each individual
+    //sensor class holds its own settings. Collect the settings from all three,
+    //put pointers to them in a vector and then send the vector off
+    std::vector<uint8_t*> settings;
+
+    //The order is important here, it must go acc, gyr, then mag.
+    settings.push_back(p_acc->getCurrentSettings());
+    settings.push_back(p_gyr->getCurrentSettings());
+    settings.push_back(p_mag->getCurrentSettings());
+
+    //Since the array is created here, we send a copy of it and 
+    //not a reference to it. It's only three poitners so this is fine.
+    return settings;
+}
+
 float* IMU::getSensorODRs() { return this->IMU_sample_frequencies; }
 float* IMU::getSensorConversionRates() { return this->IMU_data_sensitivity; }
 
