@@ -46,6 +46,8 @@ public:
 
 	virtual uint32_t update(InputState* inputState);
 
+	winrt::Windows::Foundation::Size getCurrentWindowSize();
+
 	//Getters and Setters
 	uint32_t getState() { return m_state; }
 	virtual void setState(uint32_t state);
@@ -73,7 +75,6 @@ public:
 protected:
 	int pixelCompare(float pixelOne, float pixelTwo);
 
-	winrt::Windows::Foundation::Size getCurrentWindowSize();
 	virtual bool isMouseHovered(DirectX::XMFLOAT2 mousePosition);
 
 	virtual void onClick() {} //empty onClick method can be overriden by IClickable element users

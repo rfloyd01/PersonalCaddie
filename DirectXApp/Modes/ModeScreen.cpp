@@ -485,7 +485,11 @@ void ModeScreen::enterActiveState()
 		//When we enter the active state on the IMU Settings page, we make a request to the
 		//Personal Caddie for the current IMU sensor settings. These are used to populate
 		//the text for individual drop down menus
-		((IMUSettingsMode*)m_modes[static_cast<int>(m_currentMode)].get())->getCurrentSettings(m_personalCaddie->getIMUSettings());
+
+		 //TODO: uncomment when ready to get live settings and delete the uncommented lines (but not the break)
+		((IMUSettingsMode*)m_modes[static_cast<int>(m_currentMode)].get())->getCurrentSettings(m_renderer->getCurrentScreenSize(), m_personalCaddie->getIMUSettings());
+		//std::vector<uint8_t*> test = { nullptr, nullptr, nullptr };
+		//((IMUSettingsMode*)m_modes[static_cast<int>(m_currentMode)].get())->getCurrentSettings(m_renderer->getCurrentScreenSize(), test);
 		break;
 	}
 	}
@@ -510,6 +514,13 @@ void ModeScreen::stateUpdate()
 			wchar_t* endString;
 			uint64_t deviceAddress = std::wcstoull(&((DeviceDiscoveryMode*)m_modes[static_cast<int>(m_currentMode)].get())->getCurrentlySelectedDevice()[0], &endString, 10);
 			m_personalCaddie->connectToDevice(deviceAddress);
+		}
+	}
+	case ModeType::IMU_SETTINGS:
+	{
+		if (!((IMUSettingsMode*)m_modes[static_cast<int>(m_currentMode)].get())->dropDownsSet)
+		{
+			//
 		}
 	}
 	}

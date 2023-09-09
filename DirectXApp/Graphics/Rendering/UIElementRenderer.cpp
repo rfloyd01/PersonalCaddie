@@ -183,7 +183,7 @@ void UIElementRenderer::renderShape(const UIShape* shape)
         else d2dContext->FillRectangle(shape->m_rectangle, m_solidColorBrushes[static_cast<int>(shape->m_color)].get());
         break;
     case UIShapeType::LINE:
-        d2dContext->DrawLine({ shape->m_rectangle.left, shape->m_rectangle.top }, { shape->m_rectangle.right, shape->m_rectangle.bottom }, m_solidColorBrushes[static_cast<int>(shape->m_color)].get());
+        d2dContext->DrawLine({ shape->m_rectangle.left, shape->m_rectangle.top }, { shape->m_rectangle.right, shape->m_rectangle.bottom }, m_solidColorBrushes[static_cast<int>(shape->m_color)].get(), shape->m_lineWidth);
     }
 }
 

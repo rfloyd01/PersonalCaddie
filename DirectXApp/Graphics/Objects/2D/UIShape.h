@@ -24,11 +24,12 @@ enum class UIColor;
 struct UIShape
 {
 	//constructor defaults to a rectangle shape
-	UIShape(D2D1_RECT_F const& rectangle, UIColor color, UIShapeFillType fillType, UIShapeType shapeType = UIShapeType::RECTANGLE) :
+	UIShape(D2D1_RECT_F const& rectangle, UIColor color, UIShapeFillType fillType, UIShapeType shapeType = UIShapeType::RECTANGLE, float lineWidth = 1.0f) :
 		m_rectangle(rectangle),
 		m_color(color),
 		m_fillType(fillType),
-		m_shapeType(shapeType)
+		m_shapeType(shapeType),
+		m_lineWidth(lineWidth)
 	{
 
 	}
@@ -39,4 +40,5 @@ struct UIShape
 	UIColor m_color; //holds the different colors of the text (in order)
 	UIShapeFillType m_fillType; //holds the index of all characters where the text color switches. This vector must be 1 element longer than the colors vector
 	UIShapeType m_shapeType;
+	float m_lineWidth; //the width of the lines making up the shape
 };

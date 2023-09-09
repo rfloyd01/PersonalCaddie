@@ -47,7 +47,8 @@ void DropDownMenu::repositionText()
 	//of the m_inverted field).
 	auto currentWindowSize = getCurrentWindowSize();
 	float absoluteTextHeight = p_children[2]->getChildren()[5]->getText()->renderDPI.y / currentWindowSize.Height;
-	//p_children[2]->setAbsoluteSize({ p_children[2]->getAbsoluteSize().x, textHeight * m_optionsDisplayed }); //the x-dimension will get resized by the scroll box class
+	//p_children[2]->setAbsoluteSize({ p_children[2]->getAbsoluteSize().x, absoluteTextHeight * m_optionsDisplayed }); //the x-dimension will get resized by the scroll box class
+	//p_children[2]->resize(currentWindowSize);
 	p_children[2]->repositionText(); //resize the scroll box
 
 	int invert = 1;

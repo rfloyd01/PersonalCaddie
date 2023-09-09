@@ -10,6 +10,7 @@
 class Line : public UIElement
 {
 public:
-	Line(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 firstPointLlocation, DirectX::XMFLOAT2 secondPointLlocation, UIColor color = UIColor::Black);
+	Line(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 firstPointLlocation, DirectX::XMFLOAT2 secondPointLlocation,
+		UIColor color = UIColor::Black, float width = 1.0f);
 
 };

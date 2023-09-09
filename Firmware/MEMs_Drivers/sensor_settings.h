@@ -42,42 +42,6 @@ typedef enum
     LSM9DS1_MAG = 0x00,
 } magnetometer_model_t;
 
-//Settings categories for the LSM9DS1
-//typedef enum
-//{
-//    ACC_MODEL = 0x01,
-//    GYR_MODEL = 0x02,
-//    MAG_MODEL = 0x03,
-//    ACC_FS_RANGE = 0x04,
-//    GYR_FS_RANGE = 0x05,
-//    MAG_FS_RANGE = 0x06,
-//    ACC_ODR = 0x07,
-//    GYR_ODR = 0x08,
-//    MAG_ODR = 0x09,
-//    ACC_POWER = 0x0a,
-//    GYR_POWER = 0x0b,
-//    MAG_POWER = 0x0c,
-//    ACC_FILTER_SELECTION = 0x0d,
-//    ACC_LOW_PASS_FILTER = 0x0e,
-//    ACC_HIGH_PASS_FILTER = 0x0f,
-//    ACC_EXTRA_FILTER = 0x10,
-//    GYR_FILTER_SELECTION = 0x11,
-//    GYR_LOW_PASS_FILTER = 0x12,
-//    GYR_HIGH_PASS_FILTER = 0x13,
-//    GYR_EXTRA_FILTER = 0x14,
-//    MAG_FILTER_SELECTION = 0x15,
-//    MAG_LOW_PASS_FILTER = 0x16,
-//    MAG_HIGH_PASS_FILTER = 0x17,
-//    MAG_EXTRA_FILTER = 0x18,
-//    FIFO = 0x19,
-//    ACC_EXTRA_1 = 0x1a,
-//    ACC_EXTRA_2 = 0x1b,
-//    GYR_EXTRA_1 = 0x1c,
-//    GYR_EXTRA_2 = 0x1d,
-//    MAG_EXTRA_1 = 0x1e,
-//    MAG_EXTRA_2 = 0x1f,
-//} sensor_settings_t;
-
 typedef enum
 {
     SENSOR_MODEL = 0x00,
@@ -97,6 +61,9 @@ void update_sensor_setting(uint8_t* settings_array, sensor_settings_t setting, u
 //LSM9DS1 conversions
 float lsm9ds1_odr_calculate(uint8_t imu_odr_setting, uint8_t mag_odr_setting);
 float lsm9ds1_fsr_conversion(sensor_type_t sensor, uint8_t fsr_setting);
+
+const char* lsm9ds1_get_settings_string(sensor_type_t sensor_type, sensor_settings_t setting_type, uint8_t setting);
+const char* lsm9ds1_get_complete_settings_string(sensor_type_t sensor_type, sensor_settings_t setting_type);
 
 #ifdef __cplusplus
 }
