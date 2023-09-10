@@ -36,4 +36,5 @@ private:
 
 	std::vector<std::vector<std::wstring> > m_dropDownText;
 	int m_accFirstDropDown, m_gyrFirstDropDown, m_magFirstDropDown;
+	std::vector<int> m_dropDownCategories; //Not all sensors feature all setting types, this array matches each drop down to its setting type
 };

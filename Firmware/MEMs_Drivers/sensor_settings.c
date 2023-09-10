@@ -173,7 +173,7 @@ const wchar_t* lsm9ds1_get_complete_settings_string(sensor_type_t sensor_type, s
         switch (setting_type)
         {
         case SENSOR_MODEL: return L"LSM9DS1 Accelerometer";
-        case FS_RANGE: return L"+/- 2 g\n+/- 4 g\n+/- 8 g\n+/- 16 g";
+        case FS_RANGE: return L"+/- 2 g 0x00\n+/- 4 g 0x01\n+/- 8 g 0x02\n+/- 16 g 0x03";
         case ODR: return L"0 Hz\n10 Hz\n14.9 Hz\n50 Hz\n59.5 Hz\n119 Hz\n238 Hz\n476 Hz\n952 Hz";
         case POWER: return L"Off\nOn";
         case FILTER_SELECTION: return L"LPF Enabled\nHPF Enabled";

@@ -110,6 +110,18 @@ void IMUSettingsMode::createDropDownMenus(winrt::Windows::Foundation::Size windo
 	sub_title = L"Magnetometer Settings";
 	TextOverlay mag(windowSize, { 0.85, 0.35 }, { 0.33, 0.1 },
 		sub_title, UIConstants::SubTitleTextPointSize, { UIColor::White }, { 0,  (unsigned int)sub_title.length() }, UITextJustification::UpperCenter);
+
+	std::wstring sensor_name = lsm9ds1_get_settings_string(ACC_SENSOR, SENSOR_MODEL, 0);
+	TextOverlay acc_name(windowSize, { 0.15, 0.425 }, { 0.33, 0.1 },
+		sensor_name, UIConstants::SubTitleTextPointSize * 0.8f, { UIColor::White }, { 0,  (unsigned int)sensor_name.length() }, UITextJustification::UpperCenter);
+
+	sensor_name = lsm9ds1_get_settings_string(GYR_SENSOR, SENSOR_MODEL, 0);
+	TextOverlay gyr_name(windowSize, { 0.5, 0.425 }, { 0.33, 0.1 },
+		sensor_name, UIConstants::SubTitleTextPointSize * 0.8f, { UIColor::White }, { 0,  (unsigned int)sensor_name.length() }, UITextJustification::UpperCenter);
+
+	sensor_name = lsm9ds1_get_settings_string(MAG_SENSOR, SENSOR_MODEL, 0);
+	TextOverlay mag_name(windowSize, { 0.85, 0.425 }, { 0.33, 0.1 },
+		sensor_name, UIConstants::SubTitleTextPointSize * 0.8f, { UIColor::White }, { 0,  (unsigned int)sensor_name.length() }, UITextJustification::UpperCenter);
 	
 	Line line1(windowSize, { 0.33, 0.3 }, { 0.33, 0.92 }, UIColor::White, 2.0f);
 	Line line2(windowSize, { 0.67, 0.3 }, { 0.67, 0.92 }, UIColor::White, 2.0f);
@@ -117,6 +129,9 @@ void IMUSettingsMode::createDropDownMenus(winrt::Windows::Foundation::Size windo
 	m_uiElements.push_back(std::make_shared<TextOverlay>(acc));
 	m_uiElements.push_back(std::make_shared<TextOverlay>(gyr));
 	m_uiElements.push_back(std::make_shared<TextOverlay>(mag));
+	m_uiElements.push_back(std::make_shared<TextOverlay>(acc_name));
+	m_uiElements.push_back(std::make_shared<TextOverlay>(gyr_name));
+	m_uiElements.push_back(std::make_shared<TextOverlay>(mag_name));
 	m_uiElements.push_back(std::make_shared<Line>(line1));
 	m_uiElements.push_back(std::make_shared<Line>(line2));
 
@@ -241,8 +256,10 @@ void IMUSettingsMode::update()
 			else
 			{
 				//First, choose the correct setting for this drop down menu
-				auto a = lsm9ds1_get_settings_string(static_cast<sensor_type_t>(sensor), static_cast<sensor_settings_t>(type), m_currentSettings[sensor_start_locations[sensor] + type]);
-				m_uiElements[i]->getChildren()[0]->getChildren()[1]->getText()->message = a;
+				std::wstring initialText = lsm9ds1_get_settings_string(static_cast<sensor_type_t>(sensor), static_cast<sensor_settings_t>(type), m_currentSettings[sensor_start_locations[sensor] + type]);
+				m_uiElements[i]->getChildren()[0]->getChildren()[1]->getText()->message = initialText;
+				m_uiElements[i]->getChildren()[0]->getChildren()[1]->getText()->colorLocations.back() = initialText.length();
+				m_dropDownCategories.push_back(type);
 
 				//Then work on placing it
 				if (index == 0)
@@ -255,8 +272,8 @@ void IMUSettingsMode::update()
 					indices.second = i;
 					//This is the second option for this row. Since we now have
 					//the lengths of both boxes we can set their locations
-					m_uiElements[indices.first]->setAbsoluteLocation({ location - marginWidth - m_uiElements[indices.first]->getAbsoluteSize().x / 2.0f, 0.15f * (row + 3.0f) - 0.05f });
-					m_uiElements[indices.second]->setAbsoluteLocation({ (1.0f / 6.0f + location) - marginWidth - m_uiElements[indices.second]->getAbsoluteSize().x / 2.0f, 0.15f * (row + 3.0f) - 0.05f });
+					m_uiElements[indices.first]->setAbsoluteLocation({ location - marginWidth - m_uiElements[indices.first]->getAbsoluteSize().x / 2.0f, 0.1f * (row + 3.0f) + 0.2f });
+					m_uiElements[indices.second]->setAbsoluteLocation({ (1.0f / 6.0f + location) - marginWidth - m_uiElements[indices.second]->getAbsoluteSize().x / 2.0f, 0.1f * (row + 3.0f) + 0.2f });
 
 					//after setting the location for each drop down it can be resized
 					m_uiElements[indices.first]->resize(m_uiElements[indices.first]->getCurrentWindowSize()); //since only the location has changed, not the size, this is ok
@@ -275,7 +292,7 @@ void IMUSettingsMode::update()
 				if (index == 1)
 				{
 					//we ended a row with only a single drop down so put it in the middle of the column
-					m_uiElements[indices.first]->setAbsoluteLocation({ location, 0.15f * (row + 3.0f) - 0.05f });
+					m_uiElements[indices.first]->setAbsoluteLocation({ location, 0.10f * (row + 3.0f) + 0.2f });
 					m_uiElements[indices.first]->resize(m_uiElements[indices.first]->getCurrentWindowSize()); //since only the location has changed, not the size, this is ok
 					index = 0;
 				}
@@ -285,6 +302,57 @@ void IMUSettingsMode::update()
 				type = 0;
 				location += 1.0f / 3.0f;
 			}
+		}
+
+		//Once all of the drop down menus have been placed, we put labels over each of them
+		for (int i = 0; i < m_dropDownCategories.size(); i++)
+		{
+			std::wstring category;
+			switch (m_dropDownCategories[i])
+			{
+			case FS_RANGE:
+				category = L"Full Scale Range";
+				break;
+			case ODR:
+				category = L"Octal Data Rate";
+				break;
+			case POWER:
+				category = L"Power Level";
+				break;
+			case FILTER_SELECTION:
+				category = L"Filter Selection";
+				break;
+			case LOW_PASS_FILTER:
+				category = L"Low Pass Filter";
+				break;
+			case HIGH_PASS_FILTER:
+				category = L"High Pass Filter";
+				break;
+			case EXTRA_FILTER:
+				category = L"Extra Filter";
+				break;
+			case EXTRA_1:
+				category = L"Extra Settings";
+				break;
+			case EXTRA_2:
+				category = L"Extra Settings";
+				break;
+			}
+
+			auto dropDown = m_uiElements[i + m_accFirstDropDown].get();
+			auto dropDownLocation = dropDown->getAbsoluteLocation();
+			auto dropDownSize = dropDown->getAbsoluteSize();
+			auto currentWindowSize = dropDown->getCurrentWindowSize();
+			TextOverlay dropDownTitle(currentWindowSize, { dropDownLocation.x, dropDownLocation.y - dropDownSize.y }, { 0.25f, dropDownSize.y * 2.0f }, category, 0.025,
+				{ UIColor::White }, { 0, (unsigned int)category.length() }, UITextJustification::UpperCenter); //any width will be ok as the title is centered over its respective drop down
+
+			//Insert the titles before the actual drop down menus so that when the drop down scroll box pops out they
+			//will cover the titles. The first drop down variables need to be increased accordingly
+			m_uiElements.insert(m_uiElements.begin() + m_accFirstDropDown, std::make_shared<TextOverlay>(dropDownTitle));
+
+			m_accFirstDropDown++;
+			m_gyrFirstDropDown++;
+			m_magFirstDropDown++;
 		}
 
 		dropDownsSet = true;
