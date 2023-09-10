@@ -126,61 +126,21 @@ void IMUSettingsMode::createDropDownMenus(winrt::Windows::Foundation::Size windo
 
 	//the text for each drop down menu is specific to the sensors on the chip so we call a separate method to get the strings
 	populateDropDownText();
+
 	m_accFirstDropDown = m_uiElements.size(); //save the location of the first drop down menu for later reference
-	m_gyrFirstDropDown = m_accFirstDropDown + 7;
-	m_magFirstDropDown = m_gyrFirstDropDown + 7;
+	m_gyrFirstDropDown = m_accFirstDropDown + 9;
+	m_magFirstDropDown = m_gyrFirstDropDown + 9;
 
-	//First set up the accelerometer drop downs
-	//TODO: Condense all of the below into a loop after creating a method to space out the drop downs appropriately
-	DropDownMenu accFS(windowSize, { 0.06, 0.4 }, { 0.15, 0.1 }, m_dropDownText[ACC_SENSOR][FS_RANGE], 0.0225);
-	DropDownMenu accODR(windowSize, { 0.24, 0.4 }, { 0.15, 0.1 }, m_dropDownText[ACC_SENSOR][ODR], 0.0225);
-	DropDownMenu accPOW(windowSize, { 0.06, 0.55 }, { 0.15, 0.1 }, m_dropDownText[ACC_SENSOR][POWER], 0.0225);
-	DropDownMenu accFILT(windowSize, { 0.24, 0.55 }, { 0.15, 0.1 }, m_dropDownText[ACC_SENSOR][FILTER_SELECTION], 0.0225);
-	DropDownMenu accLP(windowSize, { 0.06, 0.7 }, { 0.15, 0.1 }, m_dropDownText[ACC_SENSOR][LOW_PASS_FILTER], 0.0225);
-	DropDownMenu accHP(windowSize, { 0.24, 0.7 }, { 0.15, 0.1 }, m_dropDownText[ACC_SENSOR][HIGH_PASS_FILTER], 0.0225);
-	DropDownMenu accEF(windowSize, { 0.15, 0.85 }, { 0.15, 0.1 }, m_dropDownText[ACC_SENSOR][EXTRA_FILTER], 0.0225);
+	for (int i = 0; i < 3; i++)
+	{
+		for (int j = FS_RANGE; j <= EXTRA_2; j++)
+		{
+			DropDownMenu menu(windowSize, { 0, 0 }, { 0.15, 0.1 }, m_dropDownText[i][j], 0.0225); //the locations will get set by a separate method
+			m_uiElements.push_back(std::make_shared<DropDownMenu>(menu));
+		}
+	}
 
-	m_uiElements.push_back(std::make_shared<DropDownMenu>(accFS));
-	m_uiElements.push_back(std::make_shared<DropDownMenu>(accODR));
-	m_uiElements.push_back(std::make_shared<DropDownMenu>(accPOW));
-	m_uiElements.push_back(std::make_shared<DropDownMenu>(accFILT));
-	m_uiElements.push_back(std::make_shared<DropDownMenu>(accLP));
-	m_uiElements.push_back(std::make_shared<DropDownMenu>(accHP));
-	m_uiElements.push_back(std::make_shared<DropDownMenu>(accEF));
-
-	//Then set up the gyroscope drop downs
-	DropDownMenu gyrFS(windowSize, { 0.41, 0.4 }, { 0.15, 0.1 }, m_dropDownText[GYR_SENSOR][FS_RANGE], 0.0225);
-	DropDownMenu gyrODR(windowSize, { 0.59, 0.4 }, { 0.15, 0.1 }, m_dropDownText[GYR_SENSOR][ODR], 0.0225);
-	DropDownMenu gyrPOW(windowSize, { 0.41, 0.55 }, { 0.15, 0.1 }, m_dropDownText[GYR_SENSOR][POWER], 0.0225);
-	DropDownMenu gyrFILT(windowSize, { 0.59, 0.55 }, { 0.15, 0.1 }, m_dropDownText[GYR_SENSOR][FILTER_SELECTION], 0.0225);
-	DropDownMenu gyrLP(windowSize, { 0.41, 0.7 }, { 0.15, 0.1 }, m_dropDownText[GYR_SENSOR][LOW_PASS_FILTER], 0.0225);
-	DropDownMenu gyrHP(windowSize, { 0.59, 0.7 }, { 0.15, 0.1 }, m_dropDownText[GYR_SENSOR][HIGH_PASS_FILTER], 0.0225);
-	DropDownMenu gyrEF(windowSize, { 0.5, 0.85 }, { 0.15, 0.1 }, m_dropDownText[GYR_SENSOR][EXTRA_FILTER], 0.0225);
-
-	m_uiElements.push_back(std::make_shared<DropDownMenu>(gyrFS));
-	m_uiElements.push_back(std::make_shared<DropDownMenu>(gyrODR));
-	m_uiElements.push_back(std::make_shared<DropDownMenu>(gyrPOW));
-	m_uiElements.push_back(std::make_shared<DropDownMenu>(gyrFILT));
-	m_uiElements.push_back(std::make_shared<DropDownMenu>(gyrLP));
-	m_uiElements.push_back(std::make_shared<DropDownMenu>(gyrHP));
-	m_uiElements.push_back(std::make_shared<DropDownMenu>(gyrEF));
-
-	//Finally set up the magnetometer drop downs
-	DropDownMenu magFS(windowSize, { 0.76, 0.4 }, { 0.15, 0.1 }, m_dropDownText[MAG_SENSOR][FS_RANGE], 0.0225);
-	DropDownMenu magODR(windowSize, { 0.94, 0.4 }, { 0.15, 0.1 }, m_dropDownText[MAG_SENSOR][ODR], 0.0225);
-	DropDownMenu magPOW(windowSize, { 0.76, 0.55 }, { 0.15, 0.1 }, m_dropDownText[MAG_SENSOR][POWER], 0.0225);
-	DropDownMenu magFILT(windowSize, { 0.94, 0.55 }, { 0.15, 0.1 }, m_dropDownText[MAG_SENSOR][FILTER_SELECTION], 0.0225);
-	DropDownMenu magLP(windowSize, { 0.76, 0.7 }, { 0.15, 0.1 }, m_dropDownText[MAG_SENSOR][LOW_PASS_FILTER], 0.0225);
-	DropDownMenu magHP(windowSize, { 0.94, 0.7 }, { 0.15, 0.1 }, m_dropDownText[MAG_SENSOR][HIGH_PASS_FILTER], 0.0225);
-	DropDownMenu magEF(windowSize, { 0.85, 0.85 }, { 0.15, 0.1 }, m_dropDownText[MAG_SENSOR][EXTRA_FILTER], 0.0225);
-
-	m_uiElements.push_back(std::make_shared<DropDownMenu>(magFS));
-	m_uiElements.push_back(std::make_shared<DropDownMenu>(magODR));
-	m_uiElements.push_back(std::make_shared<DropDownMenu>(magPOW));
-	m_uiElements.push_back(std::make_shared<DropDownMenu>(magFILT));
-	m_uiElements.push_back(std::make_shared<DropDownMenu>(magLP));
-	m_uiElements.push_back(std::make_shared<DropDownMenu>(magHP));
-	m_uiElements.push_back(std::make_shared<DropDownMenu>(magEF));
+	
 }
 
 void IMUSettingsMode::populateDropDownText()
@@ -191,19 +151,19 @@ void IMUSettingsMode::populateDropDownText()
 	if (m_currentSettings[ACC_START] == LSM9DS1_ACC)
 	{
 		//Get text using the LSM9DS1 method
-		for (int i = SENSOR_MODEL; i <= EXTRA_2; i++) m_dropDownText[ACC_SENSOR][i] = converter.from_bytes(lsm9ds1_get_complete_settings_string(ACC_SENSOR, static_cast<sensor_settings_t>(i)));
+		for (int i = SENSOR_MODEL; i <= EXTRA_2; i++) m_dropDownText[ACC_SENSOR][i] = lsm9ds1_get_complete_settings_string(ACC_SENSOR, static_cast<sensor_settings_t>(i));
 	}
 
 	if (m_currentSettings[GYR_START] == LSM9DS1_GYR)
 	{
 		//Get text using the LSM9DS1 method
-		for (int i = SENSOR_MODEL; i <= EXTRA_2; i++) m_dropDownText[GYR_SENSOR][i] = converter.from_bytes(lsm9ds1_get_complete_settings_string(GYR_SENSOR, static_cast<sensor_settings_t>(i)));
+		for (int i = SENSOR_MODEL; i <= EXTRA_2; i++) m_dropDownText[GYR_SENSOR][i] = lsm9ds1_get_complete_settings_string(GYR_SENSOR, static_cast<sensor_settings_t>(i));
 	}
 
 	if (m_currentSettings[MAG_START] == LSM9DS1_MAG)
 	{
 		//Get text using the LSM9DS1 method
-		for (int i = SENSOR_MODEL; i <= EXTRA_2; i++) m_dropDownText[MAG_SENSOR][i] = converter.from_bytes(lsm9ds1_get_complete_settings_string(MAG_SENSOR, static_cast<sensor_settings_t>(i)));
+		for (int i = SENSOR_MODEL; i <= EXTRA_2; i++) m_dropDownText[MAG_SENSOR][i] = lsm9ds1_get_complete_settings_string(MAG_SENSOR, static_cast<sensor_settings_t>(i));
 	}
 }
 
@@ -244,7 +204,7 @@ void IMUSettingsMode::update()
 
 		//We remove any drop down menus that don't actually have any text, so we need to use
 		//a while loop to iterate over all the drop down menus instead of a for loop.
-		int i = m_accFirstDropDown, index = 0, row = 0, sensor = 0;
+		int i = m_accFirstDropDown, index = 0, row = 0, sensor = 0, type = 0;
 		std::pair<int, int> indices = { 0, 0 };
 		float location = 1.0f / 6.0f, marginWidth; //the margin size is the width of two buttons (all drop down menus will have the same size button)
 
@@ -262,8 +222,11 @@ void IMUSettingsMode::update()
 		//We place two drop downs next to each other, so we need to know the width of both 
 		//before figuring out their locations. The goal is to have the arrow buttons of all
 		//the drop downs line up.
+		int sensor_start_locations[3] = { ACC_START, GYR_START, MAG_START };
 		while (i < m_uiElements.size())
 		{
+			type++; //this variable is used for poulating the drop downs with the current settings from the settings array
+
 			if (m_uiElements[i]->getChildren()[0]->getChildren()[1]->getText()->message == L"")
 			{
 				m_uiElements.erase(m_uiElements.begin() + i);
@@ -277,6 +240,11 @@ void IMUSettingsMode::update()
 			}
 			else
 			{
+				//First, choose the correct setting for this drop down menu
+				auto a = lsm9ds1_get_settings_string(static_cast<sensor_type_t>(sensor), static_cast<sensor_settings_t>(type), m_currentSettings[sensor_start_locations[sensor] + type]);
+				m_uiElements[i]->getChildren()[0]->getChildren()[1]->getText()->message = a;
+
+				//Then work on placing it
 				if (index == 0)
 				{
 					indices.first = i;
@@ -314,6 +282,7 @@ void IMUSettingsMode::update()
 
 				sensor++;
 				row = 0;
+				type = 0;
 				location += 1.0f / 3.0f;
 			}
 		}

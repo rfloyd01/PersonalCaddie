@@ -62,8 +62,8 @@ void update_sensor_setting(uint8_t* settings_array, sensor_settings_t setting, u
 float lsm9ds1_odr_calculate(uint8_t imu_odr_setting, uint8_t mag_odr_setting);
 float lsm9ds1_fsr_conversion(sensor_type_t sensor, uint8_t fsr_setting);
 
-const char* lsm9ds1_get_settings_string(sensor_type_t sensor_type, sensor_settings_t setting_type, uint8_t setting);
-const char* lsm9ds1_get_complete_settings_string(sensor_type_t sensor_type, sensor_settings_t setting_type);
+const wchar_t* lsm9ds1_get_settings_string(sensor_type_t sensor_type, sensor_settings_t setting_type, uint8_t setting);
+const wchar_t* lsm9ds1_get_complete_settings_string(sensor_type_t sensor_type, sensor_settings_t setting_type);
 
 #ifdef __cplusplus
 }
