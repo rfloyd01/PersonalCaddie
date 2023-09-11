@@ -60,7 +60,7 @@ public:
 	//Alert Methods
 	void createAlert(std::wstring message, UIColor color, winrt::Windows::Foundation::Size windowSize);
 	void createAlert(TextOverlay& alert);
-	TextOverlay removeAlerts();
+	virtual TextOverlay removeAlerts(); //some modes need to maintain a specific order for elements and removing alerts can change this. This method is virtual so those modes can override this one.
 
 	virtual uint32_t handleUIElementStateChange(int i) = 0;
 

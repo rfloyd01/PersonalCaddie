@@ -23,6 +23,8 @@ public:
 
 	void getCurrentSettings(winrt::Windows::Foundation::Size windowSize, std::vector<uint8_t*> settings);
 
+	virtual TextOverlay removeAlerts() override;
+
 	bool dropDownsSet;
 
 private:

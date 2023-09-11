@@ -154,8 +154,6 @@ void IMUSettingsMode::createDropDownMenus(winrt::Windows::Foundation::Size windo
 			m_uiElements.push_back(std::make_shared<DropDownMenu>(menu));
 		}
 	}
-
-	
 }
 
 void IMUSettingsMode::populateDropDownText()
@@ -201,6 +199,29 @@ uint32_t IMUSettingsMode::handleUIElementStateChange(int i)
 			//We also erase the body text so that we can actually
 			//display the option dropdowns.
 			m_uiElements.erase(m_uiElements.begin() + 2);
+		}
+	}
+	else if (i >= m_accFirstDropDown)
+	{
+		//One of the drop down menus was clicked, see if an option was selected. If so, update the m_newSettings
+		//array and compare it to the m_currentSettings array. If the arrays are different we can enable to 
+		//update settings button at the top of the page. If they're the same, the button is disabled.
+		if (m_uiElements[i]->getChildren()[2]->getState() & UIElementState::Invisible)
+		{
+			//The drop down menu scroll box becomes invisible as soon as we select a new option
+			std::wstring selectedOption = ((FullScrollingTextBox*)m_uiElements[i]->getChildren()[2].get())->getLastSelectedText();
+			selectedOption = selectedOption.substr(selectedOption.find(L"0x")); //extract the hexadecimal at the end of the option
+			
+			//Update the new settings array
+			int sensor = 0;
+			if (i >= m_gyrFirstDropDown) sensor = 1;
+			if (i >= m_magFirstDropDown) sensor = 2;
+
+			int x = 5;
+
+			//TODO: Depending on what option was selected it may effect the text in other text boxes, or the selection of other
+			//text boxes. Need to implement a function that updates drop down selections and text based on new selection
+
 		}
 	}
 	return m_state;
@@ -357,6 +378,32 @@ void IMUSettingsMode::update()
 
 		dropDownsSet = true;
 	}
+}
+
+TextOverlay IMUSettingsMode::removeAlerts()
+{
+	//If an alert is removed from in front of the drop down boxes then we need to updated the starting locations
+	//for each of the sensors. If not though then nothing needs to be changed
+	TextOverlay alert({ 0, 0 }, { 0, 0 }, { 0, 0 }, L"", 0, { UIColor::Black }, { 0, 0 }, UITextJustification::CenterCenter);
+	for (int i = m_uiElements.size() - 1; i >= 0; i--)
+	{
+		if (m_uiElements[i]->isAlert())
+		{
+			alert = *((TextOverlay*)m_uiElements[i].get());
+			m_uiElements[i] = nullptr;
+			m_uiElements.erase(m_uiElements.begin() + i);
+
+			if (i < m_accFirstDropDown)
+			{
+				m_accFirstDropDown--;
+				m_gyrFirstDropDown--;
+				m_magFirstDropDown--;
+			}
+			break;
+		}
+	}
+
+	return alert;
 }
 
 void IMUSettingsMode::handlePersonalCaddieConnectionEvent(bool connectionStatus)
