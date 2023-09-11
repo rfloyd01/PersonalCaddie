@@ -210,21 +210,282 @@ uint32_t IMUSettingsMode::handleUIElementStateChange(int i)
 		{
 			//The drop down menu scroll box becomes invisible as soon as we select a new option
 			std::wstring selectedOption = ((FullScrollingTextBox*)m_uiElements[i]->getChildren()[2].get())->getLastSelectedText();
-			selectedOption = selectedOption.substr(selectedOption.find(L"0x")); //extract the hexadecimal at the end of the option
+			selectedOption = selectedOption.substr(selectedOption.find(L"0x") + 2); //extract the hexadecimal at the end of the option
 			
 			//Update the new settings array
 			int sensor = 0;
 			if (i >= m_gyrFirstDropDown) sensor = 1;
 			if (i >= m_magFirstDropDown) sensor = 2;
 
-			int x = 5;
+			uint8_t newSetting = convertStringToHex(selectedOption);
 
-			//TODO: Depending on what option was selected it may effect the text in other text boxes, or the selection of other
-			//text boxes. Need to implement a function that updates drop down selections and text based on new selection
+			//Before applying the new setting we need to see if it's a compound setting that will potentially alter the
+			//values in other text boxes. In most cases we'll only change other options on the same sensor, however, there
+			//are instances where setting on other sensors will be affected as well. For example, if both the LSM9DS1 
+			//accelerometer and gyrocsope are used then their ODR and Power levels are tied together. We call a separate
+			//method to help us update all settings appropriately.
+			updateSetting(static_cast<sensor_type_t>(sensor), static_cast<sensor_settings_t>(m_dropDownCategories[i - m_accFirstDropDown]), newSetting);
+
+			bool different = false;
+
+			for (int j = 0; j < SENSOR_SETTINGS_LENGTH; j++)
+			{
+				if (m_currentSettings[j] != m_newSettings[j])
+				{
+					//the settings have now been changed, this means we enable the Update button
+					m_uiElements[0]->removeState(UIElementState::Disabled);
+					different = true;
+					break; //only need one byte to be different to enabled updating
+				}
+			}
+			if (!different)
+			{
+				//The settings haven't been altered from their original form, so disable the update button
+				m_uiElements[0]->setState(m_uiElements[0]->getState() | UIElementState::Disabled);
+			}
+
+			
 
 		}
 	}
 	return m_state;
+}
+
+void IMUSettingsMode::updateSetting(sensor_type_t sensor_type, sensor_settings_t setting_type, uint8_t setting)
+{
+	//This method will look at the setting and update it for the given sensor and setting type. This function
+	//will also figure out if any other settings should be updated as a result of this setting being updated
+	//(for example, turning off a sensor will also change its ODR to 0 Hz).
+	int sensor_start_locations[3] = { ACC_START, GYR_START, MAG_START }; //useful to know where each sensor's settings begins
+
+	if (sensor_type == ACC_SENSOR || sensor_type == GYR_SENSOR)
+	{
+		if ((m_currentSettings[ACC_START] == LSM9DS1_ACC) && (m_currentSettings[GYR_START] == LSM9DS1_GYR) && (setting_type == ODR || setting_type == POWER))
+		{
+			//We're using both an LSM9DS1 accelerometer and gyroscope. These two sensors will have a shared
+			//ODR and power level. Furthermore, the odr and power level settings are also tied together.
+			//This means that changing any of these four settings will case the other three to update as well.
+
+			uint8_t newSetting = m_newSettings[sensor_start_locations[sensor_type] + setting_type]; //will be the same at all four locations
+
+			//calcualte and save a few variables that may come in handy down below
+			int accOdrIndex = 0, gyrOdrIndex, accPowerIndex = 0, gyrPowerIndex = 0; //figure out which dropdown menu represents the acc ODR
+			for (int i = 0; i < (m_gyrFirstDropDown - m_accFirstDropDown); i++)
+			{
+				if (m_dropDownCategories[i] == ODR) accOdrIndex = i;
+				else if (m_dropDownCategories[i] == POWER) accPowerIndex = i;
+			}
+
+			for (int i = m_gyrFirstDropDown - m_accFirstDropDown; i < (m_magFirstDropDown - m_accFirstDropDown); i++)
+			{
+				if (m_dropDownCategories[i] == ODR) gyrOdrIndex = i;
+				else if (m_dropDownCategories[i] == POWER) gyrPowerIndex = i;
+			}
+
+			uint8_t accOdr = m_newSettings[ACC_START + ODR] & 0b01110000, accPower = m_newSettings[ACC_START + ODR] & 0b01110000;
+			uint8_t gyrOdr = m_newSettings[GYR_START + ODR] & 0b00000111, gyrPower = m_newSettings[GYR_START + ODR] & 0b10000111;
+
+			//If the new setting is a power level setting
+			if (setting_type == POWER)
+			{
+				if (sensor_type == ACC_SENSOR)
+				{
+					if (setting == 0)
+					{
+						//If we're here it means we want to turn off the accelerometer. To do this we set bits 4, 5 and 6 to 0
+						newSetting &= 0b10001111;
+					}
+					else
+					{
+						//We're turning the accelerometer on. If the accelerometer was previously off than its ODR was set at 
+						//0 Hz so we need to change the ODR to match that of the gyroscope. If the gyroscope is also off,
+						//then we pick a default value of 50 Hz for it.
+						
+						if (gyrOdr != 0)
+						{
+							newSetting |= (gyrOdr << 4);
+						}
+						else
+						{
+							newSetting |= 0b00100000;
+						}
+					}
+				}
+				else
+				{
+					//we're looking at gyroscope power. The gyroscope can either be turned off, put into low power mode, or be put into 
+					//normal operating mode.
+					if (setting == 0)
+					{
+						//If we're here it means we want to turn off the gyroscope. To do this we set bits 0, 1 and 2 to 0
+						newSetting &= 0b01111000;
+					}
+					else if (setting == 0x87)
+					{
+						//We're putting the gyroscope into low power, flip the MSB to 1. Only 3 ODR's are available in low power mode:
+						//14.9 Hz, 59.5 Hz and 119 Hz. If we aren't using one of these ODR's already then put the
+						//sensors at 59.5 Hz.
+						newSetting |= 0b10000000;
+
+						if (gyrOdr > 3 || gyrOdr == 0)
+						{
+							newSetting &= 0b11111000; //remove current gyr odr
+							gyrOdr = 0b00000010;
+							newSetting |= gyrOdr; //set current gyr odr to 59.5
+						}
+
+						//We also need to alter the acc odr to match the gyrODR (if the acc is on).
+						if (accOdr > 0)
+						{
+							newSetting &= 0b10001111; //remove current acc odr
+							newSetting |= (gyrOdr << 4); //set current acc odr to 59.5
+						}
+					}
+					else if (setting == 0x07)
+					{
+						//We're putting the gyroscope into normal power mode. All odr's are available at normal power mode.
+						//The only thing that we need to make sure of is that if the gyroscope was previously off we match
+						//its odr to that of the acc. 
+						if (gyrOdr == 0)
+						{
+							if (accOdr == 0)
+							{
+								//put the gyro at 59.5 Hz.
+								newSetting = 0b00000010;
+							}
+							else
+							{
+								newSetting = accOdr | (accOdr >> 4);
+							}
+						}
+					}
+				}
+			}
+			else
+			{
+				if (sensor_type == ACC_SENSOR)
+				{
+					//We just changed the acc odr drop down. If the gyroscope is on then we need to change its ODR
+					//to match with a few exceptions. The acc can only be set at 10 or 50 Hz if the gyroscope is off,
+					//so if we change to one of these odrs then the gyroscope must be turned off. Also, if we set the 
+					//acc odr over a frequency of 119 Hz then the gyroscope can't be in low power mode so we need to
+					//take it out if it is. Finally, if we turn the acc off by making its odr 0 then we don't need
+					//to change anything with the gyroscope.
+					if (setting == 0)
+					{
+						//an odr reading of 0 will turn off the accelerometer. This shouldn't have any effect on 
+						//the gyroscope.
+						newSetting &= 0b10001111;
+					}
+					else if (setting == 0x10 || setting == 0x20)
+					{
+						//both of these options have the potential to turn off the gyro, but we can't know without looking
+						//at the text in the acc odr drop down.
+						std::wstring acc_odr_text = m_uiElements[m_accFirstDropDown + accOdrIndex]->getChildren()[0]->getChildren()[1]->getText()->message;
+						if (acc_odr_text == L"10 Hz 0x10" || acc_odr_text == L"50 Hz 0x20")
+						{
+							//we need to turn off the gyroscope. Set all settings to the new setting
+							newSetting = setting;
+						}
+						else
+						{
+							//We've selected an ODR that requires the gyroscope to be on. Make the gyroscope odr
+							//match the acc one, even if we need to turn on the gyro to do it.
+							newSetting = setting | (setting >> 4);
+						}
+					}
+					else
+					{
+						//We picked one of the standard ODR's, match the gyroscope ODR (unless the gyro is off). If the ODR is above
+						//119 Hz then make sure the gyro isn't in low power mode.
+						if (newSetting & 0b00000111)
+						{
+							//the gyro is on so match the odrs
+							if ((newSetting & 0b10000000) && (setting > 0x30))
+							{
+								//the gyro is in low power mode and the new odr is too high, take the gyro
+								//out of low power mode
+								newSetting &= 0b01111111;
+							}
+
+							newSetting = (newSetting & 0b10000000) | (setting >> 4);
+						}
+						newSetting |= setting;
+					}
+				}
+				else
+				{
+					//we just changed to gyroscope odr drop down menu. All we really need to do is see if
+					//this new odr will take us out of lower power mode and make sure that the acc odr matches.
+					if (setting > 3 && (newSetting & 0b10000000))
+					{
+						//we need to leave low power mode 
+						newSetting &= 0b01111111;
+					}
+
+					//make the acc and gyr odrs match (if the acc is on). If the gyroscope is off then it will turn on here
+					//and default to normal power mode.
+					if (newSetting & 0b01110000) newSetting = (newSetting & 0b10000000) | (setting << 4);
+					newSetting &= 0b11111000; //remove the current gyr odr
+					newSetting |= setting;
+				}
+			}
+
+			//After making the necessaru adjustment, update the m_newSettings array and any text boxes that need it.
+			m_newSettings[ACC_START + ODR]   = newSetting;
+			m_newSettings[ACC_START + POWER] = newSetting;
+			m_newSettings[GYR_START + ODR]   = newSetting;
+			m_newSettings[GYR_START + POWER] = newSetting;
+
+			m_uiElements[m_accFirstDropDown + accOdrIndex]->getChildren()[0]->getChildren()[1]->getText()->message = lsm9ds1_get_settings_string(ACC_SENSOR, ODR, newSetting);
+			m_uiElements[m_accFirstDropDown + accOdrIndex]->getChildren()[0]->getChildren()[1]->getText()->colorLocations.back() = m_uiElements[m_accFirstDropDown + accOdrIndex]->getChildren()[0]->getChildren()[1]->getText()->message.length();
+
+			m_uiElements[m_accFirstDropDown + accPowerIndex]->getChildren()[0]->getChildren()[1]->getText()->message = lsm9ds1_get_settings_string(ACC_SENSOR, POWER, newSetting);
+			m_uiElements[m_accFirstDropDown + accPowerIndex]->getChildren()[0]->getChildren()[1]->getText()->colorLocations.back() = m_uiElements[m_accFirstDropDown + accPowerIndex]->getChildren()[0]->getChildren()[1]->getText()->message.length();
+
+			m_uiElements[m_accFirstDropDown + gyrOdrIndex]->getChildren()[0]->getChildren()[1]->getText()->message = lsm9ds1_get_settings_string(GYR_SENSOR, ODR, newSetting);
+			m_uiElements[m_accFirstDropDown + gyrOdrIndex]->getChildren()[0]->getChildren()[1]->getText()->colorLocations.back() = m_uiElements[m_accFirstDropDown + gyrOdrIndex]->getChildren()[0]->getChildren()[1]->getText()->message.length();
+
+			m_uiElements[m_accFirstDropDown + gyrPowerIndex]->getChildren()[0]->getChildren()[1]->getText()->message = lsm9ds1_get_settings_string(GYR_SENSOR, POWER, newSetting);
+			m_uiElements[m_accFirstDropDown + gyrPowerIndex]->getChildren()[0]->getChildren()[1]->getText()->colorLocations.back() = m_uiElements[m_accFirstDropDown + gyrPowerIndex]->getChildren()[0]->getChildren()[1]->getText()->message.length();
+		}
+	}
+}
+
+uint8_t IMUSettingsMode::convertStringToHex(std::wstring hexString)
+{
+	//This method takes a string which represents a hexadecimal number (without the leading 0x)
+	//and converts it into an actual number. The longest hexString should be 2 digits.
+	uint8_t number = 0;
+	
+	for (int i = 0; i < hexString.length(); i++)
+	{
+		wchar_t character = hexString[i];
+		number <<= 4;
+
+		if (character >= L'0' && character <= L'9')
+		{
+			//this is a normal number
+			number += (uint8_t)(character - '0');
+		}
+		else if (character >= L'a' && character <= L'f')
+		{
+			//this is a lower case hex letter
+			number += (uint8_t)(character - 'a') + 10;
+		}
+		else if (character >= L'A' && character <= L'F')
+		{
+			//this is an upper case hex letter
+			number += (uint8_t)(character - 'A') + 10;
+		}
+		else
+		{
+			OutputDebugString(L"IMUSettingsMode: convertStringToHex: Invalid hex number supplied.\n");
+			return 0;
+		}
+	}
+	
+	return number;
 }
 
 void IMUSettingsMode::update()

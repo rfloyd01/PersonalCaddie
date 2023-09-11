@@ -33,6 +33,10 @@ private:
 
 	void populateDropDownText();
 
+	void updateSetting(sensor_type_t sensor_type, sensor_settings_t setting_type, uint8_t setting);
+
+	uint8_t convertStringToHex(std::wstring hexString);
+
 	uint8_t m_currentSettings[SENSOR_SETTINGS_LENGTH]; //an array holding the current settings for the IMU
 	uint8_t m_newSettings[SENSOR_SETTINGS_LENGTH]; //an array holding the new settings for the IMU
 
