@@ -307,6 +307,10 @@ void ModeScreen::changeCurrentMode(ModeType mt)
 	//Check to see if the current mode is in the active state, if so then take it out
 	//of that state. Then uninitialize the mode.
 	if (m_modeState & ModeState::Active) leaveActiveState();
+	if ((m_modeState & ModeState::PersonalCaddieSensorIdleMode) || (m_modeState & ModeState::PersonalCaddieSensorIdleMode))
+	{
+		m_personalCaddie->changePowerMode(PersonalCaddiePowerMode::CONNECTED_MODE);
+	}
 	m_modeState = 0;
 	m_modes[static_cast<int>(m_currentMode)]->uninitializeMode();
 
@@ -329,7 +333,6 @@ void ModeScreen::changeCurrentMode(ModeType mt)
 		//When going to the IMU settings mode, we need to pass in a reference
 		//to the current sensor settings. This will allow the mode to populate
 		//all of the drop down menus.
-		if (m_personalCaddie->ble_device_connected) startingModeState |= DeviceDiscoveryState::CONNECTED;
 	}
 	}
 
@@ -537,7 +540,7 @@ void ModeScreen::stateUpdate()
 
 void ModeScreen::leaveActiveState()
 {
-	m_modeState ^= ModeState::Active; //turn off the active state
+	m_modeState ^= (ModeState::Active | ModeState::CanTransfer); //turn off the active state
 
 	switch (m_currentMode)
 	{
