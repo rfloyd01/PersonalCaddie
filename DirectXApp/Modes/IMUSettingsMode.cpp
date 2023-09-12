@@ -298,23 +298,15 @@ void IMUSettingsMode::updateSetting(sensor_type_t sensor_type, sensor_settings_t
 				{
 					if (setting == 0)
 					{
-						//If we're here it means we want to turn off the accelerometer. To do this we set bits 4, 5 and 6 to 0
-						newSetting &= 0b10001111;
+						//If we're here it means we want to turn off the accelerometer. The LSM9DS1 doesn't support a gyroscope
+						//only mode so we also need to turn off the gyro here.
+						newSetting = 0;
 					}
 					else
 					{
-						//We're turning the accelerometer on. If the accelerometer was previously off than its ODR was set at 
-						//0 Hz so we need to change the ODR to match that of the gyroscope. If the gyroscope is also off,
-						//then we pick a default value of 50 Hz for it.
-						
-						if (gyrOdr != 0)
-						{
-							newSetting |= (gyrOdr << 4);
-						}
-						else
-						{
-							newSetting |= 0b00100000;
-						}
+						//We're turning the accelerometer on. Since the gyroscope can't be on alone then it's also off.
+						//Only turn on the acc for now and give at an ODR of 50 Hz
+						newSetting |= 0b00100000;
 					}
 				}
 				else
@@ -340,12 +332,10 @@ void IMUSettingsMode::updateSetting(sensor_type_t sensor_type, sensor_settings_t
 							newSetting |= gyrOdr; //set current gyr odr to 59.5
 						}
 
-						//We also need to alter the acc odr to match the gyrODR (if the acc is on).
-						if (accOdr > 0)
-						{
-							newSetting &= 0b10001111; //remove current acc odr
-							newSetting |= (gyrOdr << 4); //set current acc odr to 59.5
-						}
+						//We also need to alter the acc odr to match the gyrODR (if the acc is on). The gyroscope can't be 
+						//on alone, see if the acc is off then turn it on.
+						newSetting &= 0b10001111; //remove current acc odr
+						newSetting |= (gyrOdr << 4); //set current acc odr to 59.5
 					}
 					else if (setting == 0x07)
 					{
@@ -357,7 +347,7 @@ void IMUSettingsMode::updateSetting(sensor_type_t sensor_type, sensor_settings_t
 							if (accOdr == 0)
 							{
 								//put the gyro at 59.5 Hz.
-								newSetting = 0b00000010;
+								newSetting = 0b00100010; //the acc must be turne on as well
 							}
 							else
 							{
@@ -379,9 +369,9 @@ void IMUSettingsMode::updateSetting(sensor_type_t sensor_type, sensor_settings_t
 					//to change anything with the gyroscope.
 					if (setting == 0)
 					{
-						//an odr reading of 0 will turn off the accelerometer. This shouldn't have any effect on 
-						//the gyroscope.
-						newSetting &= 0b10001111;
+						//an odr reading of 0 will turn off the accelerometer. The LSM9DS1 doesn't have a gyroscope
+						//only mode so we also need to turn off the gyro here.
+						newSetting = 0;
 					}
 					else if (setting == 0x10 || setting == 0x20)
 					{
@@ -404,6 +394,7 @@ void IMUSettingsMode::updateSetting(sensor_type_t sensor_type, sensor_settings_t
 					{
 						//We picked one of the standard ODR's, match the gyroscope ODR (unless the gyro is off). If the ODR is above
 						//119 Hz then make sure the gyro isn't in low power mode.
+						newSetting &= 0b10001111; //remove the current acc odr setting
 						if (newSetting & 0b00000111)
 						{
 							//the gyro is on so match the odrs
@@ -429,10 +420,11 @@ void IMUSettingsMode::updateSetting(sensor_type_t sensor_type, sensor_settings_t
 						newSetting &= 0b01111111;
 					}
 
-					//make the acc and gyr odrs match (if the acc is on). If the gyroscope is off then it will turn on here
+					//make the acc and gyr odrs match (if the acc is off then turn it on because the gyroscope can't be
+					//on without the acc). If the gyroscope is off then it will turn on here
 					//and default to normal power mode.
-					if (newSetting & 0b01110000) newSetting = (newSetting & 0b10000000) | (setting << 4);
-					newSetting &= 0b11111000; //remove the current gyr odr
+					newSetting = (newSetting & 0b10000000) | (setting << 4 | setting); //remove existing acc odr while maintaining low power mode if it's engaged
+					//newSetting &= 0b11111000; //remove the current gyr odr
 					newSetting |= setting;
 				}
 			}
