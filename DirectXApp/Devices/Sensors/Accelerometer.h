@@ -15,6 +15,6 @@ private:
 	//PRIVATE FUNCTIONS
 	//void getCalibrationNumbersFromTextFile();
 
-	void setConversionRateFromSettings();
-	void setCurrentODRFromSettings();
+	virtual void setConversionRateFromSettings() override;
+	virtual void setCurrentODRFromSettings() override;
 };

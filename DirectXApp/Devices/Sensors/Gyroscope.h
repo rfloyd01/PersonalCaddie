@@ -13,6 +13,6 @@ private:
 	gyroscope_model_t gyr_model;
 
 	//PRIVATE FUNCTIONS
-	void setConversionRateFromSettings();
-	void setCurrentODRFromSettings();
+	virtual void setConversionRateFromSettings() override;
+	virtual void setCurrentODRFromSettings() override;
 };

@@ -641,6 +641,47 @@ void PersonalCaddie::changePowerMode(PersonalCaddiePowerMode mode)
     );
 }
 
+void PersonalCaddie::updateIMUSettings(uint8_t* newSettings)
+{
+    //After updating the settings for the IMU in the IMU Settings mode, this method can be 
+    //called to apply these new settings to the IMU on the Personal Caddie.
+
+    //The IMU Settings doesn't change byte 0 or 31, so we make sure that those are set to the current
+    //Personal Caddie settings. Currently byte 31 represents the FIFO of the IMU which isn't
+    //actually being used so its value doesn't matter too too much for now.
+    newSettings[0] = static_cast<uint8_t>(current_power_mode); //keep the power mode the same
+    newSettings[31] = 0;
+
+    winrt::Windows::Storage::Streams::DataWriter writer;
+    writer.ByteOrder(winrt::Windows::Storage::Streams::ByteOrder::LittleEndian);
+
+    //Add all bytes into the buffer
+    for (int i = 0; i < SENSOR_SETTINGS_LENGTH; i++) writer.WriteByte(newSettings[i]);
+
+    auto writeOperation = this->m_settings_characteristic.WriteValueAsync(writer.DetachBuffer());
+
+    writeOperation.Completed([this, newSettings](IAsyncOperation<GattCommunicationStatus> const& sender, AsyncStatus const asyncStatus)
+        {
+            if (asyncStatus != AsyncStatus::Completed) OutputDebugString(L"Something went wrong trying to update the Personal Caddie settings characteristic.\n");
+
+            if (sender.get() != Bluetooth::GenericAttributeProfile::GattCommunicationStatus::Success)
+            {
+                OutputDebugString(L"Error writing Personal Caddie settings characteristic, write returned with error code: " + static_cast<int>(sender.get()));
+                OutputDebugString(L"\n");
+            }
+            else
+            {
+                //We successfully updated the settings. Make these changes in the individual sensor classes
+                //and then send out an alert with the positive resuilts
+                p_imu->updateSensorSettings(newSettings);
+
+                std::wstring message = L"IMU Settings successfully updated. ";
+                event_handler(PersonalCaddieEventType::IMU_ALERT, (void*)&message);
+            }
+        }
+    );
+}
+
 //Methods and fields from original BluetoothLE Class
 float PersonalCaddie::getDataPoint(DataType dt, Axis a, int sample_number)
 {

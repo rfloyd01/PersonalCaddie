@@ -11,8 +11,6 @@ Magnetometer::Magnetometer(uint8_t* current_settings)
 	this->mag_model = static_cast<magnetometer_model_t>(current_settings[SENSOR_MODEL]);
 
 	setCurrentSettings(current_settings);
-	setConversionRateFromSettings();
-	setCurrentODRFromSettings();
 
 	//set up calibration info
 	this->cal_offset_number = 3; //magnetometers need 3 axis offset values

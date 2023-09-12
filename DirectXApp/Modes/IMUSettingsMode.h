@@ -6,6 +6,7 @@
 enum IMUSettingsState
 {
 	DISPLAY_SETTINGS = 1, //overwrite the active mode state
+	UPDATE_SETTINGS = 2
 };
 
 class IMUSettingsMode : public Mode
@@ -22,6 +23,7 @@ public:
 	virtual uint32_t handleUIElementStateChange(int i) override;
 
 	void getCurrentSettings(winrt::Windows::Foundation::Size windowSize, std::vector<uint8_t*> settings);
+	uint8_t* getNewSettings() { return m_newSettings; }
 
 	virtual TextOverlay removeAlerts() override;
 

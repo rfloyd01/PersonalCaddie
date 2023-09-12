@@ -76,7 +76,7 @@ public:
 	void updateMagnetometerCalibrationNumbers(float* offset, float** gain);
 
 	//Setting Altering Functions
-	//TODO: eventually create functions that will allow for the changing of sensor settings over bluetooth and TWI or SPI
+	void updateSensorSettings(uint8_t* imu_settings);
 
 	//Axes Altering Functions
 	//TODO: eventually create functions that will allow for the swapping of axes to acoomodate flipping of sensors on bread board

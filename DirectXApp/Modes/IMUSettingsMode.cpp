@@ -24,10 +24,12 @@ uint32_t IMUSettingsMode::initializeMode(winrt::Windows::Foundation::Size window
 	m_state = initialState;
 
 	//initialize the vector which will hold drop down text
+	m_dropDownText = { {}, {}, {} };
+	m_dropDownCategories = {};
 	for (int i = 0; i < 3; i++)
 	{
-		m_dropDownText.push_back({});
-		for (int j = SENSOR_MODEL; j <= EXTRA_2; j++) m_dropDownText.back().push_back(L"");
+		//m_dropDownText.push_back({});
+		for (int j = SENSOR_MODEL; j <= EXTRA_2; j++) m_dropDownText[i].push_back(L"");
 	}
 	dropDownsSet = false; //This won't get set to true until all drop downs are sized and placed
 
@@ -200,6 +202,12 @@ uint32_t IMUSettingsMode::handleUIElementStateChange(int i)
 			//display the option dropdowns.
 			m_uiElements.erase(m_uiElements.begin() + 2);
 		}
+		else
+		{
+			//clicking the update settings button while it's active will cause
+			//the settings to be updated on the actual device.
+			m_state |= IMUSettingsState::UPDATE_SETTINGS;
+		}
 	}
 	else if (i >= m_accFirstDropDown)
 	{
@@ -238,14 +246,12 @@ uint32_t IMUSettingsMode::handleUIElementStateChange(int i)
 					break; //only need one byte to be different to enabled updating
 				}
 			}
+
 			if (!different)
 			{
 				//The settings haven't been altered from their original form, so disable the update button
 				m_uiElements[0]->setState(m_uiElements[0]->getState() | UIElementState::Disabled);
 			}
-
-			
-
 		}
 	}
 	return m_state;
@@ -663,6 +669,8 @@ void IMUSettingsMode::update()
 				location += 1.0f / 3.0f;
 			}
 		}
+
+		int x = 10;
 
 		//Once all of the drop down menus have been placed, we put labels over each of them
 		for (int i = 0; i < m_dropDownCategories.size(); i++)

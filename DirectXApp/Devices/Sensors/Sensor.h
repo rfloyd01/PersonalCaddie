@@ -17,6 +17,11 @@ public:
 	{
 		//Just copy the relevant info over
 		for (int setting = SENSOR_MODEL; setting <= EXTRA_2; setting++) settings[setting] = new_settings[setting];
+
+		//After the sensor updates its settings array, calculate the current
+		//ODR and full scale conversion rate from the new settings.
+		setConversionRateFromSettings();
+		setCurrentODRFromSettings();
 	}
 
 	std::pair<const float*, const float**> getCalibrationNumbers();
@@ -50,5 +55,6 @@ protected:
 	void getCalibrationNumbersFromTextFile();
 	void setCalibrationNumbersInTextFile();
 
-	
+	virtual void setConversionRateFromSettings() = 0;
+	virtual void setCurrentODRFromSettings() = 0;
 };

@@ -11,8 +11,6 @@ Gyroscope::Gyroscope(uint8_t* current_settings)
 	this->gyr_model = static_cast<gyroscope_model_t>(current_settings[SENSOR_MODEL]);
 
 	setCurrentSettings(current_settings);
-	setConversionRateFromSettings();
-	setCurrentODRFromSettings();
 
 	//set up calibration info
 	this->cal_offset_number = 3; //gyroscopes need 3 axis offset values

@@ -13,6 +13,6 @@ private:
 	magnetometer_model_t mag_model;
 
 	//PRIVATE FUNCTIONS
-	void setConversionRateFromSettings();
-	void setCurrentODRFromSettings();
+	virtual void setConversionRateFromSettings() override;
+	virtual void setCurrentODRFromSettings() override;
 };

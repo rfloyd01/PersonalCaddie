@@ -68,6 +68,7 @@ public:
 
 	//BLE Related Functions
 	void changePowerMode(PersonalCaddiePowerMode mode);
+	void updateIMUSettings(uint8_t* newSettings);
 
 	void startDataTransfer();
 

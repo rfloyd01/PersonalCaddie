@@ -411,6 +411,12 @@ void ModeScreen::PersonalCaddieHandler(PersonalCaddieEventType pcEvent, void* ev
 		createAlert(alertText, UIColor::Yellow);
 		break;
 	}
+	case PersonalCaddieEventType::IMU_ALERT:
+	{
+		std::wstring alertText = *((std::wstring*)eventArgs); //cast the eventArgs into a wide string
+		createAlert(alertText, UIColor::Green);
+		break;
+	}
 	case PersonalCaddieEventType::DEVICE_WATCHER_UPDATE:
 	{
 		std::set<DeviceInfoDisplay>* foundDevices = (std::set<DeviceInfoDisplay>*)eventArgs;
@@ -486,10 +492,8 @@ void ModeScreen::enterActiveState()
 		//Personal Caddie for the current IMU sensor settings. These are used to populate
 		//the text for individual drop down menus
 
-		 //TODO: uncomment when ready to get live settings and delete the uncommented lines (but not the break)
 		((IMUSettingsMode*)m_modes[static_cast<int>(m_currentMode)].get())->getCurrentSettings(m_renderer->getCurrentScreenSize(), m_personalCaddie->getIMUSettings());
-		//std::vector<uint8_t*> test = { nullptr, nullptr, nullptr };
-		//((IMUSettingsMode*)m_modes[static_cast<int>(m_currentMode)].get())->getCurrentSettings(m_renderer->getCurrentScreenSize(), test);
+		m_modeState |= ModeState::CanTransfer; //We still need the ability to leave the page after going active
 		break;
 	}
 	}
@@ -515,13 +519,18 @@ void ModeScreen::stateUpdate()
 			uint64_t deviceAddress = std::wcstoull(&((DeviceDiscoveryMode*)m_modes[static_cast<int>(m_currentMode)].get())->getCurrentlySelectedDevice()[0], &endString, 10);
 			m_personalCaddie->connectToDevice(deviceAddress);
 		}
+		break;
 	}
 	case ModeType::IMU_SETTINGS:
 	{
-		if (!((IMUSettingsMode*)m_modes[static_cast<int>(m_currentMode)].get())->dropDownsSet)
+		if (m_modes[static_cast<int>(m_currentMode)]->getModeState() & IMUSettingsState::UPDATE_SETTINGS)
 		{
-			//
+			//New settings have been applied, send the new settings array to the personal caddie. Before
+			//doing this, update elements 0 and 31 of the array so that they reflect the current settings
+			//(as these aren't changed in the IMU settings menu).
+			m_personalCaddie->updateIMUSettings(((IMUSettingsMode*)m_modes[static_cast<int>(m_currentMode)].get())->getNewSettings());
 		}
+		break;
 	}
 	}
 }
@@ -537,6 +546,7 @@ void ModeScreen::leaveActiveState()
 		//Leaving active mode while in device discovery means that we need to stop the BLEAdvertisement watcher of 
 		//the Personal Caddie
 		m_personalCaddie->stopBLEAdvertisementWatcher();
+		break;
 	}
 	case ModeType::GRAPH_MODE:
 	{
@@ -544,6 +554,7 @@ void ModeScreen::leaveActiveState()
 		//power mode and turns off data notifications.
 		m_personalCaddie->disableDataNotifications();
 		m_personalCaddie->changePowerMode(PersonalCaddiePowerMode::SENSOR_IDLE_MODE);
+		break;
 	}
 	}
 }

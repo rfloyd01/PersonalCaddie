@@ -33,6 +33,15 @@ std::vector<uint8_t*> IMU::getSensorSettings()
     return settings;
 }
 
+void IMU::updateSensorSettings(uint8_t* imu_settings)
+{
+    //If we successfully update the IMU settings then we need to update the 
+    //settings arrays in each individual sensor class as well.
+    p_acc->setCurrentSettings(imu_settings + ACC_START);
+    p_gyr->setCurrentSettings(imu_settings + GYR_START);
+    p_mag->setCurrentSettings(imu_settings + MAG_START);
+}
+
 float* IMU::getSensorODRs() { return this->IMU_sample_frequencies; }
 float* IMU::getSensorConversionRates() { return this->IMU_data_sensitivity; }
 

@@ -8,7 +8,7 @@
 
 Sensor::Sensor()
 {
-	//Any kind of initialization that's commen regardless of sensor type will go here
+	//Any kind of initialization that's common regardless of sensor type will go here
 }
 
 std::pair<const float*, const float**> Sensor::getCalibrationNumbers()

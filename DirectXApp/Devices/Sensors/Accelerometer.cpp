@@ -12,8 +12,6 @@ Accelerometer::Accelerometer(uint8_t* current_settings)
 	this->acc_model = static_cast<accelerometer_model_t>(current_settings[SENSOR_MODEL]);
 
 	setCurrentSettings(current_settings);
-	setConversionRateFromSettings();
-	setCurrentODRFromSettings();
 	
 	//set up calibration info
 	this->cal_offset_number = 3; //accelerometers need 3 axis offset values
