@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "Graph.h"
+#include "Graphics/Objects/2D/BasicElements/TextOverlay.h"
 
 Graph::Graph(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, UIColor fillColor, UIColor outlineColor)
 {
@@ -80,7 +81,7 @@ void Graph::addLine(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOA
 
 void Graph::removeAllLines()
 {
-	//Remove all lines from the graph. The first line starts at chilc element 1
+	//Remove all lines from the graph. The first line starts at child element 1
 	for (int i = 1; i < p_children.size(); i++) p_children[i] = nullptr;
 	p_children.erase(p_children.begin() + 1, p_children.end());
 }
@@ -101,7 +102,7 @@ void Graph::addAxisLine(int axis, float location)
 	{
 		//this is the x-axis, so we place a straight horizontal line at the specified y-value
 		location = -1 * (absoluteDifference.y * ((location - m_minimalDataPoint.y) / difference.y) - m_maximalAbsolutePoint.y);//convert the given location from data coordinates into absolute window coordinates (y-axis is flipped)
-		Line dataLine(currentWindowSize, {m_location.x - m_size.x / 2.0f, location}, { m_location.x + m_size.x / 2.0f, location });
+		Line dataLine(currentWindowSize, {m_location.x - m_size.x / 2.0f, location}, { m_location.x + m_size.x / 2.0f, location }, UIColor::Black, 1.5f);
 		p_children.push_back(std::make_shared<Line>(dataLine));
 		break;
 	}
@@ -109,9 +110,30 @@ void Graph::addAxisLine(int axis, float location)
 	{
 		//this is the y-axis, so we place a straight vertical line at the specified x-value
 		location = absoluteDifference.x * ((location - m_minimalDataPoint.x) / difference.x) + m_minimalAbsolutePoint.x; //convert the given location from data coordinates into absolute window coordinates.
-		Line dataLine(currentWindowSize, { location,  m_location.y - m_size.y / 2.0f }, { location,  m_location.y + m_size.y / 2.0f });
+		Line dataLine(currentWindowSize, { location,  m_location.y - m_size.y / 2.0f }, { location,  m_location.y + m_size.y / 2.0f }, UIColor::Black, 1.5f);
 		p_children.push_back(std::make_shared<Line>(dataLine));
 		break;
 	}
 	}
+}
+
+void Graph::addAxisLabel(std::wstring label, float location)
+{
+	//adds a label to the y-axis of the graph at the specified height. The height
+	//is specified in the same units as the data itself, so it must be converted into absolute
+	//coordinates.
+	float absoluteYLocation = convertUnitsToAbsolute({ 0, location }).y;
+	TextOverlay graphText(getCurrentWindowSize(), { m_location.x, absoluteYLocation}, { m_size.x, 0.035 }, label, 0.015, { UIColor::Black }, { 0, (unsigned int)label.length() }, UITextJustification::UpperLeft);
+	p_children.push_back(std::make_shared<TextOverlay>(graphText));
+}
+
+DirectX::XMFLOAT2 Graph::convertUnitsToAbsolute(DirectX::XMFLOAT2 coordinates)
+{
+	//The graph class needs to take points in the graph (which will be in whatever unit the graph is displaying) and convert
+	//these into aboslute window coordinates so that everything will display correctly. This method handles the conversion.
+	//It does this by looking at the minimum/maximum data values and the current locations of the edges of the graph
+
+	DirectX::XMFLOAT2 difference = { m_maximalDataPoint.x - m_minimalDataPoint.x, m_maximalDataPoint.y - m_minimalDataPoint.y };
+	DirectX::XMFLOAT2 absoluteDifference = { m_maximalAbsolutePoint.x - m_minimalAbsolutePoint.x, m_maximalAbsolutePoint.y - m_minimalAbsolutePoint.y };
+	return { absoluteDifference.x * ((coordinates.x - m_minimalDataPoint.x) / difference.x) + m_minimalAbsolutePoint.x, -1 * (absoluteDifference.y * ((coordinates.y - m_minimalDataPoint.y) / difference.y) - m_maximalAbsolutePoint.y) };
 }

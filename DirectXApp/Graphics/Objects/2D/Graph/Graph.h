@@ -22,8 +22,11 @@ public:
 	void removeAllLines();
 
 	void addAxisLine(int axis, float location);
+	void addAxisLabel(std::wstring label, float location);
 
 protected:
 	DirectX::XMFLOAT2 m_minimalAbsolutePoint, m_maximalAbsolutePoint; //these variables hold the absolute locations for the x and y min/maxes in the graph
 	DirectX::XMFLOAT2 m_minimalDataPoint, m_maximalDataPoint; //these variables hold the actual data locations for the x and y min/maxes in the graph
+
+	DirectX::XMFLOAT2 convertUnitsToAbsolute(DirectX::XMFLOAT2 coordinates);
 };

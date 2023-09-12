@@ -63,19 +63,6 @@ uint32_t GraphMode::handleUIElementStateChange(int i)
 {
 	if (i == 0)
 	{
-		/*std::vector<DirectX::XMFLOAT2> data;
-		float end = 2 * 3.14159 * m_sinePeaks, increment = end / m_dataPoints;
-		for (float i = 0; i <= end; i += increment)
-		{
-			DirectX::XMFLOAT2 point = { i, sinf(i) };
-			data.push_back(point);
-		}
-
-		((Graph*)m_uiElements[2].get())->addNewDataPoints(data);
-
-		m_sinePeaks++;
-		OutputDebugString(L"Clicked the graph button.\n");*/
-
 		//UI Element 0 is begin/stop recording button. This will bring the personal caddie
 		//into or out of sensor active mode. If coming out of active mode it will also display
 		//a graph with the data collected.
@@ -86,7 +73,7 @@ uint32_t GraphMode::handleUIElementStateChange(int i)
 			m_uiElements[0]->getText()->message = L"Stop Recording Data";
 
 			//Clear out any existing data points
-			((Graph*)m_uiElements[2].get())->removeAllLines();
+			((Graph*)m_uiElements[2].get())->removeAllLines(); //this will also clear out any text on the graph
 
 			//clear out all existing data, and then add a single dummy point for later use
 			m_graphDataX.clear();
@@ -99,8 +86,8 @@ uint32_t GraphMode::handleUIElementStateChange(int i)
 
 			//rest the local minimums and maximums. Use values that are just about guaranteed
 			//to be overwritten.
-			m_minimalPoint = { 1000.0f, 1000.0f };
-			m_maximalPoint = { -1000.0f, -1000.0f };
+			m_minimalPoint = { 5000.0f, 5000.0f }; //max reading should be from gyroscope at +/-2000 dps
+			m_maximalPoint = { -5000.0f, -5000.0f };
 		}
 		else
 		{
@@ -111,19 +98,37 @@ uint32_t GraphMode::handleUIElementStateChange(int i)
 
 			//Update the first element of each data set to have a matching y value as the second element.
 			//The first piece of data was only created to start the time axis at 0.
-			m_graphDataX[0].y = m_graphDataX[1].y;
-			m_graphDataY[0].y = m_graphDataY[1].y;
-			m_graphDataZ[0].y = m_graphDataZ[1].y;
+			if (m_graphDataX.size() >= 2)
+			{
+				m_graphDataX[0].y = m_graphDataX[1].y;
+				m_graphDataY[0].y = m_graphDataY[1].y;
+				m_graphDataZ[0].y = m_graphDataZ[1].y;
 
-			//set the min and max data values for the graph
-			((Graph*)m_uiElements[2].get())->setAxisMaxAndMins({ 0,  m_minimalPoint.y }, { m_graphDataX.back().x, m_maximalPoint.y });
+				//set the min and max data values for the graph
+				((Graph*)m_uiElements[2].get())->setAxisMaxAndMins({ 0,  m_minimalPoint.y }, { m_graphDataX.back().x, m_maximalPoint.y });
 
-			((Graph*)m_uiElements[2].get())->addDataSet(m_graphDataX, UIColor::Red);
-			((Graph*)m_uiElements[2].get())->addDataSet(m_graphDataY, UIColor::Blue);
-			((Graph*)m_uiElements[2].get())->addDataSet(m_graphDataZ, UIColor::Green);
+				((Graph*)m_uiElements[2].get())->addDataSet(m_graphDataX, UIColor::Red);
+				((Graph*)m_uiElements[2].get())->addDataSet(m_graphDataY, UIColor::Blue);
+				((Graph*)m_uiElements[2].get())->addDataSet(m_graphDataZ, UIColor::Green);
 
-			//add a few axis lines to the graph
-			((Graph*)m_uiElements[2].get())->addAxisLine(X, (m_minimalPoint.y + m_maximalPoint.y) / 2.0f); //a horizontal line through the middle of the graph
+				//add a few axis lines to the graph
+				float centerLineLocation = (m_minimalPoint.y + m_maximalPoint.y) / 2.0f; //The average of the highest and lowest data point
+				float upperLineLocation = m_maximalPoint.y - 0.05f * (m_maximalPoint.y - m_minimalPoint.y); //95% of the highest data point
+				float lowerLineLocation = m_minimalPoint.y + 0.05f * (m_maximalPoint.y - m_minimalPoint.y); //95% of the lowest data point
+
+				((Graph*)m_uiElements[2].get())->addAxisLine(X, centerLineLocation);
+				((Graph*)m_uiElements[2].get())->addAxisLine(X, upperLineLocation);
+				((Graph*)m_uiElements[2].get())->addAxisLine(X, lowerLineLocation);
+
+				std::wstring axisText = std::to_wstring(centerLineLocation);
+				((Graph*)m_uiElements[2].get())->addAxisLabel(axisText, centerLineLocation);
+
+				axisText = std::to_wstring(upperLineLocation);
+				((Graph*)m_uiElements[2].get())->addAxisLabel(axisText, upperLineLocation);
+
+				axisText = std::to_wstring(lowerLineLocation);
+				((Graph*)m_uiElements[2].get())->addAxisLabel(axisText, lowerLineLocation);
+			}
 		}
 		m_state ^= GraphModeState::RECORDING; //toggle the recording state
 	}
