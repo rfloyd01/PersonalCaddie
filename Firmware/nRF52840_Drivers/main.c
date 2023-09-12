@@ -370,16 +370,16 @@ static void data_reading_timer_handler(void * p_context)
     //after the samples are read, update the characteristics and notify
     if ( measurements_taken == SENSOR_SAMPLES)
     {
-        SEGGER_RTT_WriteString(0, "Sending the following bytes to Acc characteristic:\n");
-        for (int i = 0; i < SENSOR_SAMPLES; i++)
-        {
-            for (int j = 0; j < SAMPLE_SIZE; j++)
-            {
-                SEGGER_RTT_printf(0, "0x%#01x ", *(acc_characteristic_data + i * SENSOR_SAMPLES + j));
-            }
-            SEGGER_RTT_WriteString(0, "\n");
-        }
-        SEGGER_RTT_WriteString(0, "\n");
+        //SEGGER_RTT_WriteString(0, "Sending the following bytes to Acc characteristic:\n");
+        //for (int i = 0; i < SENSOR_SAMPLES; i++)
+        //{
+        //    for (int j = 0; j < SAMPLE_SIZE; j++)
+        //    {
+        //        SEGGER_RTT_printf(0, "0x%#01x ", *(acc_characteristic_data + i * SENSOR_SAMPLES + j));
+        //    }
+        //    SEGGER_RTT_WriteString(0, "\n");
+        //}
+        //SEGGER_RTT_WriteString(0, "\n");
 
         characteristic_update_and_notify();
         measurements_taken = 0; //reset the data counter

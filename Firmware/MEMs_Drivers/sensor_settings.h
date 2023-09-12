@@ -7,6 +7,7 @@ extern "C" {
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <wchar.h>
 
 //This file includes different enums and structs for organizing the settings for various
 //different IMU sensors

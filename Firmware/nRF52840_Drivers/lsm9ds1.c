@@ -75,8 +75,23 @@ void lsm9ds1_idle_mode_enable(stmdev_ctx_t* lsm9ds1_imu, stmdev_ctx_t* lsm9ds1_m
 
 void lsm9ds1_active_mode_enable(stmdev_ctx_t* lsm9ds1_imu, stmdev_ctx_t* lsm9ds1_mag)
 {
+    //TEST: Read the current ODR setting from the LSM9DS1 to confirm changes have been applied
+    uint8_t original_register_value = 0;
+    lsm9ds1_read_imu(lsm9ds1_imu, LSM9DS1_CTRL_REG6_XL, &original_register_value, 1);
+
     //Applies all of the settings stored in the settings array to the LSM9DS1
-    for (int i = 0; i < SENSOR_SETTINGS_LENGTH; i++) lsm9ds1_apply_setting(lsm9ds1_imu, lsm9ds1_mag, i);
+    SEGGER_RTT_WriteString(0, "lsm9ds1 activated with the following settings:\n[");
+    for (int i = 0; i < SENSOR_SETTINGS_LENGTH; i++)
+    {
+        lsm9ds1_apply_setting(lsm9ds1_imu, lsm9ds1_mag, i);
+        SEGGER_RTT_printf(0, "0x%x ", p_sensor_settings[i]);
+    }
+    SEGGER_RTT_WriteString(0, "\n\n");
+
+    //TEST: Read the current ODR setting from the LSM9DS1 to confirm changes have been applied
+    uint8_t after_register_value = 0;
+    lsm9ds1_read_imu(lsm9ds1_imu, LSM9DS1_CTRL_REG6_XL, &after_register_value, 1);
+    int x = 1;
 }
 
 void lsm9ds1_apply_setting(stmdev_ctx_t* lsm9ds1_imu, stmdev_ctx_t* lsm9ds1_mag, sensor_settings_t setting)
@@ -124,7 +139,13 @@ void lsm9ds1_apply_setting(stmdev_ctx_t* lsm9ds1_imu, stmdev_ctx_t* lsm9ds1_mag,
             err_code = lsm9ds1_gy_filter_hp_bandwidth_set(lsm9ds1_imu, p_sensor_settings[setting]);
             break;
         default:
-            break; //don't do anything
+            err_code = 0; //no methods were called so set the error code to success
+            break;
+    }
+
+    if (err_code != 0)
+    {
+        SEGGER_RTT_WriteString(0, "There was an issue trying to start lsm9ds1 with current settings.\n");
     }
 }
 

@@ -653,7 +653,7 @@ void PersonalCaddie::updateIMUSettings(uint8_t* newSettings)
     //The IMU Settings doesn't change byte 0 or 31, so we make sure that those are set to the current
     //Personal Caddie settings. Currently byte 31 represents the FIFO of the IMU which isn't
     //actually being used so its value doesn't matter too too much for now.
-    newSettings[0] = static_cast<uint8_t>(current_power_mode); //keep the power mode the same
+    newSettings[0] = 3; //In order to update the IMU settings, we need to go into power mode 3. This will be reset to connected mode after data transfer
     newSettings[31] = 0;
 
     winrt::Windows::Storage::Streams::DataWriter writer;
@@ -678,6 +678,9 @@ void PersonalCaddie::updateIMUSettings(uint8_t* newSettings)
                 //We successfully updated the settings. Make these changes in the individual sensor classes
                 //and then send out an alert with the positive resuilts
                 p_imu->updateSensorSettings(newSettings);
+
+                //Put the Personal Caddie back into connected mode after making changes
+                changePowerMode(PersonalCaddiePowerMode::CONNECTED_MODE);
 
                 std::wstring message = L"IMU Settings successfully updated. ";
                 event_handler(PersonalCaddieEventType::IMU_ALERT, (void*)&message);
