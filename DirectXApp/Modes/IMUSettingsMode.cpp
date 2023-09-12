@@ -449,7 +449,85 @@ void IMUSettingsMode::updateSetting(sensor_type_t sensor_type, sensor_settings_t
 			m_uiElements[m_accFirstDropDown + gyrPowerIndex]->getChildren()[0]->getChildren()[1]->getText()->message = lsm9ds1_get_settings_string(GYR_SENSOR, POWER, newSetting);
 			m_uiElements[m_accFirstDropDown + gyrPowerIndex]->getChildren()[0]->getChildren()[1]->getText()->colorLocations.back() = m_uiElements[m_accFirstDropDown + gyrPowerIndex]->getChildren()[0]->getChildren()[1]->getText()->message.length();
 		}
+		else
+		{
+			//We've selected a setting that doesn't affect any other settings. We just need to update the
+			//m_new settings array accordingly.
+			m_newSettings[sensor_start_locations[sensor_type] + setting_type] = setting;
+        }
 	}
+	else
+	{
+		//we're looking at the magnetometer. The ODR and power level are tied to each other so changing one will change the other.
+		//The full scale range doesn't have any carry over effects though.
+		int magOdrIndex = 0, magPowerIndex = 0; //find the indices for the mag odr and power drop down menus
+		for (int i = m_magFirstDropDown - m_accFirstDropDown; i < m_dropDownCategories.size(); i++)
+		{
+			if (m_dropDownCategories[i] == ODR) magOdrIndex = i;
+			else if (m_dropDownCategories[i] == POWER) magPowerIndex = i;
+		}
+
+		if (setting_type == ODR)
+		{
+			//Update the mag odr setting
+			m_newSettings[sensor_start_locations[sensor_type] + setting_type] &= 0xF0; //remove the current odr setting (least significant byte)
+			m_newSettings[sensor_start_locations[sensor_type] + setting_type] |= setting; //apply the new odr
+
+			//If one of the 0x08 odr options is selected it will cause the power level to change,
+			//otherwise the power level remains the same.
+			if (setting == 0x08)
+			{
+				//there are four options here, each one will causes us to go to a different power level.
+				//We look at the actual text in the drop down to figure out which power level we need.
+				m_newSettings[sensor_start_locations[sensor_type] + POWER] = 0x08; //erase the current power mode and set the second byte to 8
+
+				std::wstring mag_odr_text = m_uiElements[m_accFirstDropDown + magOdrIndex]->getChildren()[0]->getChildren()[1]->getText()->message;
+				if (mag_odr_text == L"155 Hz 0x08") m_newSettings[sensor_start_locations[sensor_type] + POWER] |= 0x30; //put the sensor into ultra high power mode
+				else if (mag_odr_text == L"300 Hz 0x08") m_newSettings[sensor_start_locations[sensor_type] + POWER] |= 0x20; //put the sensor into high power mode
+				else if (mag_odr_text == L"560 Hz 0x08") m_newSettings[sensor_start_locations[sensor_type] + POWER] |= 0x10; //put the sensor into medium power mode
+				//if none of the three if statements above gets triggered then the chip will be put into low power mode
+
+				m_newSettings[sensor_start_locations[sensor_type] + setting_type] = m_newSettings[sensor_start_locations[sensor_type] + POWER]; //update the odr setting to reflect the power setting
+			}
+			else if (setting == 0xC0)
+			{
+				//putting the odr at 0 hz will turn off the magnetometer
+				m_newSettings[sensor_start_locations[sensor_type] + ODR] = setting;
+				m_newSettings[sensor_start_locations[sensor_type] + POWER] = setting;
+			}
+			else
+			{
+				//a normal odr was chosen. If the magnetometer is off turn it on by placing it into
+				//low power mode
+				if (m_newSettings[sensor_start_locations[sensor_type] + POWER] == 0xC0)
+				{
+					m_newSettings[sensor_start_locations[sensor_type] + ODR] &= 0x0F;
+				}
+				m_newSettings[sensor_start_locations[sensor_type] + POWER] = m_newSettings[sensor_start_locations[sensor_type] + ODR];;
+			}
+		}
+		else if (setting_type == POWER)
+		{
+			//Changing the power will only effect the ODR if we're in high odr mode. This should happen automatically
+			//though, just update the settings.
+			m_newSettings[sensor_start_locations[sensor_type] + POWER] &= 0x0F; //erase the current power setting
+			m_newSettings[sensor_start_locations[sensor_type] + POWER] |= setting; //erase the current power setting
+
+			if (setting == 0xC0) m_newSettings[sensor_start_locations[sensor_type] + POWER] = setting; //turning the power off changes the whole setting
+			m_newSettings[sensor_start_locations[sensor_type] + ODR] = m_newSettings[sensor_start_locations[sensor_type] + POWER];
+		}
+		else m_newSettings[sensor_start_locations[sensor_type] + setting_type] = setting; //update the full scale range
+
+		//Update the odr and power drop down menu text as neceessary
+		m_uiElements[m_accFirstDropDown + magOdrIndex]->getChildren()[0]->getChildren()[1]->getText()->message = lsm9ds1_get_settings_string(MAG_SENSOR, ODR, m_newSettings[MAG_START + ODR]);
+		m_uiElements[m_accFirstDropDown + magOdrIndex]->getChildren()[0]->getChildren()[1]->getText()->colorLocations.back() = m_uiElements[m_accFirstDropDown + magOdrIndex]->getChildren()[0]->getChildren()[1]->getText()->message.length();
+
+		m_uiElements[m_accFirstDropDown + magPowerIndex]->getChildren()[0]->getChildren()[1]->getText()->message = lsm9ds1_get_settings_string(MAG_SENSOR, POWER, m_newSettings[MAG_START + POWER]);
+		m_uiElements[m_accFirstDropDown + magPowerIndex]->getChildren()[0]->getChildren()[1]->getText()->colorLocations.back() = m_uiElements[m_accFirstDropDown + magPowerIndex]->getChildren()[0]->getChildren()[1]->getText()->message.length();
+    }
+
+	//TODO: I should break this method up into smaller methods to make things easier to read, and some code reusable
+	//TODO: Need to tie together some other dependent settings, and make non-dependent settings actually change the settings array
 }
 
 uint8_t IMUSettingsMode::convertStringToHex(std::wstring hexString)

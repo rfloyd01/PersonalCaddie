@@ -487,7 +487,7 @@ const wchar_t* lsm9ds1_get_settings_string(sensor_type_t sensor_type, sensor_set
             case LSM9DS1_MAG_HP_80Hz:
             case LSM9DS1_MAG_UHP_80Hz:
                 return L"80 Hz 0x07";
-            case LSM9DS1_MAG_UHP_155Hz: return L"115 Hz 0x08";
+            case LSM9DS1_MAG_UHP_155Hz: return L"155 Hz 0x08";
             case LSM9DS1_MAG_HP_300Hz: return L"300 Hz 0x08";
             case LSM9DS1_MAG_MP_560Hz: return L"560 Hz 0x08";
             case LSM9DS1_MAG_LP_1000Hz: return L"1000 Hz 0x08";
