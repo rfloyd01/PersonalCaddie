@@ -171,6 +171,7 @@ static int32_t read_mag(void *handle, uint8_t reg, uint8_t *bufp, uint16_t len);
 static void tx_com( uint8_t *tx_buffer, uint16_t len );
 static int32_t get_IMU_data(uint8_t offset);
 static int32_t get_MAG_data(uint8_t offset);
+static float current_sensor_odr = 59.5;         //keeps track of the current sensor ODR to let us know if we need to update the connection interval
 
 static personal_caddie_operating_mode_t current_operating_mode = ADVERTISING_MODE; /**< The chip starts in advertising mode*/
 
@@ -636,6 +637,38 @@ static void advertising_mode_start()
     //TODO: Implement this feature
 }
 
+void update_connection_interval()
+{
+    //When changing the settings for the IMU, we take a look to see if the ODR for the sensors
+    //has changed. If so, we alter the current connection interval to get all data to the 
+    //app in a timely manner.
+    float sensor_odr = lsm9ds1_odr_calculate(sensor_settings[ODR + GYR_START], sensor_settings[ODR + MAG_START]);
+    if (sensor_odr != current_sensor_odr)
+    {
+        //if the odr has changed then we update the connection interval to match it
+        int minimum_interval_required = 1000.0 / sensor_odr * SENSOR_SAMPLES + 1; //this is in milliseconds, hence the 1000
+        minimum_interval_required += (15 - minimum_interval_required % 15); //round up to the nearest 15th millisecond
+
+        //Convert from milliseconds to 1.25 millisecond units by dividing by 1.25 (same multiplying by 4/5)
+        int mir_125 = minimum_interval_required / 5;
+        mir_125 *= 4;
+
+        //Now make the connection interval change request
+        ret_code_t err_code = BLE_ERROR_INVALID_CONN_HANDLE;
+        ble_gap_conn_params_t new_params;
+
+        new_params.min_conn_interval = mir_125;
+        new_params.max_conn_interval = mir_125 + 12; //must be 15 ms (or 12 in 1.25ms units) greater at a minimum
+        new_params.slave_latency = SLAVE_LATENCY;
+        new_params.conn_sup_timeout = SENSOR_CONN_SUP_TIMEOUT;
+
+        err_code = ble_conn_params_change_conn_params(m_conn_handle, &new_params);
+
+        if (err_code != NRF_SUCCESS) SEGGER_RTT_WriteString(0, "Couldn't update connection interval.\n");
+        else current_sensor_odr = sensor_odr;
+    }
+}
+
 /**@brief Function for handling write events to the Sensor Settings Characteristic.
  *
  * @param[in] p_lbs     Instance of Sensor Settings Service to which the write applies.
@@ -658,6 +691,7 @@ static void sensor_settings_write_handler(uint16_t conn_handle, ble_sensor_servi
         case 3:
             sensor_idle_mode_start();
             for (int i = 1; i < SENSOR_SETTINGS_LENGTH; i++) sensor_settings[i] = *(settings_state + i);
+            update_connection_interval();
             break;
         case 4:
             sensor_idle_mode_start();
