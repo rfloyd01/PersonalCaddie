@@ -58,11 +58,11 @@ void lsm9ds1_init(stmdev_ctx_t* lsm9ds1_imu, stmdev_ctx_t* lsm9ds1_mag, uint8_t*
     update_sensor_setting(p_sensor_settings + ACC_START, FILTER_SELECTION, LSM9DS1_LP_OUT); //accelerometer filter selection (low pass filter only)
     update_sensor_setting(p_sensor_settings + ACC_START, LOW_PASS_FILTER, LSM9DS1_LP_DISABLE); //accelerometer low pass filter setting (frequency is automatically tied to ODR)
     update_sensor_setting(p_sensor_settings + ACC_START, HIGH_PASS_FILTER, 0); //accelerometer high pass filter setting (only takes effect when HP_OUT is set for accelerometer)
-    update_sensor_setting(p_sensor_settings + ACC_START, EXTRA_FILTER, LSM9DS1_AUTO); //accelerometer anti-aliasing bandwidth (automatically set based on current ODR)
+    update_sensor_setting(p_sensor_settings + ACC_START, EXTRA_FILTER, LSM9DS1_50Hz); //accelerometer anti-aliasing bandwidth (50 Hz bandwidth)
 
-    update_sensor_setting(p_sensor_settings + GYR_START, FILTER_SELECTION, LSM9DS1_LPF1_OUT); //Gyroscope filter selection (low pass filter 1 only)
+    update_sensor_setting(p_sensor_settings + GYR_START, FILTER_SELECTION, LSM9DS1_LPF1_HPF_OUT); //Gyroscope filter selection (low pass filter 1 and HPF)
     update_sensor_setting(p_sensor_settings + GYR_START, LOW_PASS_FILTER, 0); //gyroscope low pass filter setting (only takes effect when LPF2 is set in gyro filter path)
-    update_sensor_setting(p_sensor_settings + GYR_START, HIGH_PASS_FILTER, 0); //gyroscope high pass filter setting (only takes effect when HPF is set in gyro filter path)
+    update_sensor_setting(p_sensor_settings + GYR_START, HIGH_PASS_FILTER, LSM9DS1_HP_MEDIUM); //gyroscope high pass filter setting (at an ODR of 59.5 Hz this correlates to 0.5 Hz cut-off)
 }
 
 void lsm9ds1_idle_mode_enable(stmdev_ctx_t* lsm9ds1_imu, stmdev_ctx_t* lsm9ds1_mag)
