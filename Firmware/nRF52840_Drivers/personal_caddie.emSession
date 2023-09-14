@@ -66,12 +66,12 @@
  </Watch4>
  <Files>
   <SessionOpenFile windowGroup="DockEditLeft" x="0" y="1226" useTextEdit="1" openedFrom="" useBinaryEdit="0" left="0" path="main.c" selected="1" top="1205" codecName="Default"/>
-  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="93" useTextEdit="1" openedFrom="D:/Coding/PersonalCaddie/Firmware/nRF52840_Drivers/lsm9ds1.h" useBinaryEdit="0" left="0" path="lsm9ds1.c" selected="0" top="69" codecName="Default"/>
-  <SessionOpenFile windowGroup="DockEditLeft" x="26" y="23" useTextEdit="1" openedFrom="D:/Coding/PersonalCaddie/Firmware/nRF52840_Drivers/lsm9ds1.c" useBinaryEdit="0" left="0" path="lsm9ds1.h" selected="0" top="0" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="61" useTextEdit="1" openedFrom="D:/Coding/PersonalCaddie/Firmware/nRF52840_Drivers/main.c" useBinaryEdit="0" left="0" path="lsm9ds1.c" selected="0" top="30" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="23" useTextEdit="1" openedFrom="D:/Coding/PersonalCaddie/Firmware/nRF52840_Drivers/lsm9ds1.c" useBinaryEdit="0" left="0" path="lsm9ds1.h" selected="0" top="0" codecName="Default"/>
   <SessionOpenFile windowGroup="DockEditLeft" x="0" y="284" useTextEdit="1" openedFrom="D:/Coding/PersonalCaddie/Firmware/nRF52840_Drivers/lsm9ds1.c" useBinaryEdit="0" left="0" path="../MEMs_Drivers/lsm9ds1_reg.c" selected="0" top="249" codecName="Default"/>
-  <SessionOpenFile windowGroup="DockEditLeft" x="6" y="1020" useTextEdit="1" openedFrom="D:/Coding/PersonalCaddie/Firmware/MEMs_Drivers/lsm9ds1_reg.c" useBinaryEdit="0" left="0" path="../MEMs_Drivers/lsm9ds1_reg.h" selected="0" top="993" codecName="Default"/>
-  <SessionOpenFile windowGroup="DockEditLeft" x="2" y="57" useTextEdit="1" openedFrom="D:/Coding/PersonalCaddie/Firmware/nRF52840_Drivers/lsm9ds1.c" useBinaryEdit="0" left="0" path="../MEMs_Drivers/sensor_settings.h" selected="0" top="36" codecName="Default"/>
-  <SessionOpenFile windowGroup="DockEditLeft" x="27" y="14" useTextEdit="1" openedFrom="" useBinaryEdit="0" left="0" path="../MEMs_Drivers/sensor_settings.c" selected="0" top="0" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="8" y="1263" useTextEdit="1" openedFrom="D:/Coding/PersonalCaddie/Firmware/nRF52840_Drivers/lsm9ds1.c" useBinaryEdit="0" left="0" path="../MEMs_Drivers/lsm9ds1_reg.h" selected="0" top="1236" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="57" useTextEdit="1" openedFrom="D:/Coding/PersonalCaddie/Firmware/nRF52840_Drivers/lsm9ds1.c" useBinaryEdit="0" left="0" path="../MEMs_Drivers/sensor_settings.h" selected="0" top="36" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="14" useTextEdit="1" openedFrom="" useBinaryEdit="0" left="0" path="../MEMs_Drivers/sensor_settings.c" selected="0" top="0" codecName="Default"/>
   <SessionOpenFile windowGroup="DockEditLeft" x="0" y="87" useTextEdit="1" openedFrom="D:/Coding/PersonalCaddie/Firmware/nRF52840_Drivers/main.c" useBinaryEdit="0" left="0" path="ble_sensor_service.h" selected="0" top="0" codecName="Default"/>
   <SessionOpenFile windowGroup="DockEditLeft" x="0" y="177" useTextEdit="1" openedFrom="" useBinaryEdit="0" left="0" path="ble_sensor_service.c" selected="0" top="145" codecName="Default"/>
   <SessionOpenFile windowGroup="DockEditLeft" x="0" y="101" useTextEdit="1" openedFrom="" useBinaryEdit="0" left="0" path="C:/Users/Bobby/Documents/Coding/BLE/nRFSDK17.0.2/components/libraries/util/app_error_weak.c" selected="0" top="80" codecName="Default"/>

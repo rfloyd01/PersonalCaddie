@@ -115,6 +115,24 @@
     <ClCompile Include="Modes\IMUSettingsMode.cpp">
       <Filter>Modes</Filter>
     </ClCompile>
+    <ClCompile Include="Graphics\Objects\3D\Meshes\FaceMesh.cpp">
+      <Filter>Graphics\Objects\3D\Meshes</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\Objects\3D\Elements\Face.cpp">
+      <Filter>Graphics\Objects\3D\Elements</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\Objects\3D\Elements\VolumeElement.cpp">
+      <Filter>Graphics\Objects\3D\Elements</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\Objects\3D\Animate.cpp">
+      <Filter>Graphics\Objects\3D</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\Rendering\Material.cpp">
+      <Filter>Graphics\Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\Objects\3D\Meshes\MeshObject.cpp">
+      <Filter>Graphics\Objects\3D\Meshes</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -268,6 +286,27 @@
     <ClInclude Include="Modes\IMUSettingsMode.h">
       <Filter>Modes</Filter>
     </ClInclude>
+    <ClInclude Include="Graphics\Objects\3D\Meshes\FaceMesh.h">
+      <Filter>Graphics\Objects\3D\Meshes</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Objects\3D\Elements\Face.h">
+      <Filter>Graphics\Objects\3D\Elements</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Objects\3D\Elements\VolumeElement.h">
+      <Filter>Graphics\Objects\3D\Elements</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Objects\3D\Animate.h">
+      <Filter>Graphics\Objects\3D</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Rendering\Material.h">
+      <Filter>Graphics\Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Objects\3D\Meshes\MeshObject.h">
+      <Filter>Graphics\Objects\3D\Meshes</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Rendering\ConstantBuffers.h">
+      <Filter>Graphics\Rendering</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Assets\Wide310x150Logo.scale-200.png">
@@ -347,10 +386,25 @@
     <Filter Include="Graphics\Objects\2D\Graph">
       <UniqueIdentifier>{af01e006-597f-4807-81a5-62be057f2d89}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Graphics\Objects\3D">
+      <UniqueIdentifier>{bc41179f-3bd6-4294-b22f-31bf5583526b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Graphics\Objects\3D\Meshes">
+      <UniqueIdentifier>{ceefda7f-1c4d-49c8-8810-74867a4a2205}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Graphics\Objects\3D\Elements">
+      <UniqueIdentifier>{22fc892c-8527-4a62-a32d-6d357de372c8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Graphics\Shaders">
+      <UniqueIdentifier>{9187e1c9-45e8-43cf-97aa-9d3e7be5888d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="PropertySheet.props" />
     <None Include="packages.config" />
+    <None Include="Graphics\Shaders\ConstantBuffers.hlsli">
+      <Filter>Graphics\Shaders</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Text Include="readme.txt" />
