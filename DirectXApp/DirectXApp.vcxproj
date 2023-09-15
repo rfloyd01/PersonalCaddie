@@ -163,6 +163,7 @@
     <ClInclude Include="Graphics\Objects\2D\UIShape.h" />
     <ClInclude Include="Graphics\Objects\2D\UIText.h" />
     <ClInclude Include="Graphics\Objects\3D\Animate.h" />
+    <ClInclude Include="Graphics\Objects\3D\Camera.h" />
     <ClInclude Include="Graphics\Objects\3D\Elements\Face.h" />
     <ClInclude Include="Graphics\Objects\3D\Elements\VolumeElement.h" />
     <ClInclude Include="Graphics\Objects\3D\Meshes\FaceMesh.h" />
@@ -171,7 +172,13 @@
     <ClInclude Include="Graphics\Rendering\MasterRenderer.h" />
     <ClInclude Include="Graphics\Rendering\Material.h" />
     <ClInclude Include="Graphics\Rendering\UIElementRenderer.h" />
+    <ClInclude Include="Graphics\Utilities\BasicLoader.h" />
+    <ClInclude Include="Graphics\Utilities\BasicMath.h" />
+    <ClInclude Include="Graphics\Utilities\BasicReaderWriter.h" />
+    <ClInclude Include="Graphics\Utilities\BasicShapes.h" />
+    <ClInclude Include="Graphics\Utilities\DDSTextureLoader.h" />
     <ClInclude Include="Graphics\Utilities\DeviceResources.h" />
+    <ClInclude Include="Graphics\Utilities\DirectXSample.h" />
     <ClInclude Include="Graphics\Utilities\GraphicsHelpers.h" />
     <ClInclude Include="Graphics\Utilities\UIElementColors.h" />
     <ClInclude Include="Input\InputProcessor.h" />
@@ -183,6 +190,7 @@
     <ClInclude Include="Modes\DeviceDiscoveryMode.h" />
     <ClInclude Include="Modes\GraphMode.h" />
     <ClInclude Include="Modes\IMUSettingsMode.h" />
+    <ClInclude Include="Modes\MadgwickTestMode.h" />
     <ClInclude Include="Modes\MainMenuMode.h" />
     <ClInclude Include="Modes\Mode.h" />
     <ClInclude Include="Modes\ModeScreen.h" />
@@ -238,6 +246,7 @@
     <ClCompile Include="Graphics\Objects\2D\UIShape.cpp" />
     <ClCompile Include="Graphics\Objects\2D\UIText.cpp" />
     <ClCompile Include="Graphics\Objects\3D\Animate.cpp" />
+    <ClCompile Include="Graphics\Objects\3D\Camera.cpp" />
     <ClCompile Include="Graphics\Objects\3D\Elements\Face.cpp" />
     <ClCompile Include="Graphics\Objects\3D\Elements\VolumeElement.cpp" />
     <ClCompile Include="Graphics\Objects\3D\Meshes\FaceMesh.cpp" />
@@ -245,6 +254,9 @@
     <ClCompile Include="Graphics\Rendering\MasterRenderer.cpp" />
     <ClCompile Include="Graphics\Rendering\Material.cpp" />
     <ClCompile Include="Graphics\Rendering\UIElementRenderer.cpp" />
+    <ClCompile Include="Graphics\Utilities\BasicLoader.cpp" />
+    <ClCompile Include="Graphics\Utilities\BasicReaderWriter.cpp" />
+    <ClCompile Include="Graphics\Utilities\DDSTextureLoader.cpp" />
     <ClCompile Include="Graphics\Utilities\DeviceResources.cpp" />
     <ClCompile Include="Graphics\Utilities\UIElementColors.cpp" />
     <ClCompile Include="Input\InputProcessor.cpp" />
@@ -255,6 +267,7 @@
     <ClCompile Include="Modes\DeviceDiscoveryMode.cpp" />
     <ClCompile Include="Modes\GraphMode.cpp" />
     <ClCompile Include="Modes\IMUSettingsMode.cpp" />
+    <ClCompile Include="Modes\MadgwickTestMode.cpp" />
     <ClCompile Include="Modes\MainMenuMode.cpp" />
     <ClCompile Include="Modes\Mode.cpp" />
     <ClCompile Include="Modes\ModeScreen.cpp" />
@@ -271,6 +284,48 @@
     <Text Include="readme.txt">
       <DeploymentContent>false</DeploymentContent>
     </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="Graphics\Shaders\PixelShader.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Graphics\Shaders\PixelShaderFlat.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Graphics\Shaders\VertexShader.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Graphics\Shaders\VertexShaderFlat.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
+    </FxCompile>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

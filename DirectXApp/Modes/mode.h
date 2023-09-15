@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Graphics/Objects/2D/UIElements.h"
+#include "Graphics/Objects/3D/Elements/VolumeElement.h"
 #include "Input/InputProcessor.h"
 #include <string>
 
@@ -21,7 +22,8 @@ enum class ModeType
 	UI_TEST_MODE = 7,
 	GRAPH_MODE = 8,
 	IMU_SETTINGS = 9,
-	END = 10 //allows for looping through of ModeType enum class. This number should be one more than previous value
+	MADGWICK = 10,
+	END = 11 //allows for looping through of ModeType enum class. This number should be one more than previous value
 };
 
 //The ModeState enum keeps track of what the current state of the app is. Each of these
@@ -51,6 +53,7 @@ public:
 	const UIColor getBackgroundColor();
 
 	std::vector<std::shared_ptr<UIElement> > const& getUIElements() { return m_uiElements; }
+	std::vector<std::shared_ptr<VolumeElement> > const& getVolumeElements() { return m_volumeElements; }
 
 	uint32_t getModeState() { return m_state; }
 
@@ -64,10 +67,13 @@ public:
 
 	virtual uint32_t handleUIElementStateChange(int i) = 0;
 
+	bool m_needsCamera = false; //Modes that require 3D rendering will set this variable to true to let the ModeScreen know that its camera is needed
+
 protected:
 	UIColor m_backgroundColor; //represents the background color when this mode is being rendered
 
 	std::vector<std::shared_ptr<UIElement> >  m_uiElements; //2d objects like Drop downs, combo boxes, buttons and text
+	std::vector<std::shared_ptr<VolumeElement> >  m_volumeElements; //3d objects to be rendered on screen (not all modes feature 3D objects)
 
 	uint32_t m_state; //the state of the current mode
 };

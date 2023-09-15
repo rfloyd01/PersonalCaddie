@@ -133,6 +133,21 @@
     <ClCompile Include="Graphics\Objects\3D\Meshes\MeshObject.cpp">
       <Filter>Graphics\Objects\3D\Meshes</Filter>
     </ClCompile>
+    <ClCompile Include="Graphics\Objects\3D\Camera.cpp">
+      <Filter>Graphics\Objects\3D</Filter>
+    </ClCompile>
+    <ClCompile Include="Modes\MadgwickTestMode.cpp">
+      <Filter>Modes</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\Utilities\BasicLoader.cpp">
+      <Filter>Graphics\Utilities</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\Utilities\BasicReaderWriter.cpp">
+      <Filter>Graphics\Utilities</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\Utilities\DDSTextureLoader.cpp">
+      <Filter>Graphics\Utilities</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -307,6 +322,30 @@
     <ClInclude Include="Graphics\Rendering\ConstantBuffers.h">
       <Filter>Graphics\Rendering</Filter>
     </ClInclude>
+    <ClInclude Include="Graphics\Objects\3D\Camera.h">
+      <Filter>Graphics\Objects\3D</Filter>
+    </ClInclude>
+    <ClInclude Include="Modes\MadgwickTestMode.h">
+      <Filter>Modes</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Utilities\BasicLoader.h">
+      <Filter>Graphics\Utilities</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Utilities\BasicReaderWriter.h">
+      <Filter>Graphics\Utilities</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Utilities\BasicShapes.h">
+      <Filter>Graphics\Utilities</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Utilities\BasicMath.h">
+      <Filter>Graphics\Utilities</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Utilities\DDSTextureLoader.h">
+      <Filter>Graphics\Utilities</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Utilities\DirectXSample.h">
+      <Filter>Graphics\Utilities</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Assets\Wide310x150Logo.scale-200.png">
@@ -408,5 +447,19 @@
   </ItemGroup>
   <ItemGroup>
     <Text Include="readme.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="Graphics\Shaders\PixelShader.hlsl">
+      <Filter>Graphics\Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Graphics\Shaders\PixelShaderFlat.hlsl">
+      <Filter>Graphics\Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Graphics\Shaders\VertexShader.hlsl">
+      <Filter>Graphics\Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Graphics\Shaders\VertexShaderFlat.hlsl">
+      <Filter>Graphics\Shaders</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>

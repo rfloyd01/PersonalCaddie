@@ -8,6 +8,7 @@
 #include "UITestMode.h"
 #include "GraphMode.h"
 #include "IMUSettingsMode.h"
+#include "MadgwickTestMode.h"
 
 #include "Graphics/Rendering/MasterRenderer.h"
 
@@ -27,6 +28,7 @@ ModeScreen::ModeScreen() :
 	m_modes[static_cast<int>(ModeType::UI_TEST_MODE)] = std::make_shared<UITestMode>();
 	m_modes[static_cast<int>(ModeType::GRAPH_MODE)] = std::make_shared<GraphMode>();
 	m_modes[static_cast<int>(ModeType::IMU_SETTINGS)] = std::make_shared<IMUSettingsMode>();
+	m_modes[static_cast<int>(ModeType::MADGWICK)] = std::make_shared<MadgwickTestMode>();
 
 	//Set default times for various timers (in milliseconds)
 	alert_timer_duration = 5000;
@@ -44,7 +46,7 @@ void ModeScreen::Initialize(
 	//Load the main mode (which is set in the constructor) and pass any resources
 	//generated to the master renderer
 	m_modeState = m_modes[static_cast<int>(m_currentMode)]->initializeMode(m_renderer->getCurrentScreenSize());
-	m_renderer->CreateModeResources();
+	m_renderer->CreateModeResourcesAsync();
 }
 
 void ModeScreen::setPersonalCaddie(_In_ std::shared_ptr<PersonalCaddie> const& pc)
@@ -107,7 +109,7 @@ void ModeScreen::processKeyboardInput(winrt::Windows::System::VirtualKey pressed
 			{
 				changeCurrentMode(ModeType::SETTINGS_MENU);
 			}
-			else if (m_currentMode == ModeType::UI_TEST_MODE || m_currentMode == ModeType::GRAPH_MODE)
+			else if (m_currentMode == ModeType::UI_TEST_MODE || m_currentMode == ModeType::GRAPH_MODE || m_currentMode == ModeType::MADGWICK)
 			{
 				changeCurrentMode(ModeType::DEVELOPER_TOOLS);
 			}
@@ -159,6 +161,17 @@ void ModeScreen::processKeyboardInput(winrt::Windows::System::VirtualKey pressed
 			}
 		}
 
+		break;
+	case winrt::Windows::System::VirtualKey::Number3:
+		if (m_modeState & ModeState::CanTransfer)
+		{
+			if (m_currentMode == ModeType::DEVELOPER_TOOLS)
+			{
+				//If we're on the Main Menu screen then pressing the 5 key will take us to the
+				//sensor settings page
+				changeCurrentMode(ModeType::MADGWICK);
+			}
+		}
 		break;
 	case winrt::Windows::System::VirtualKey::Number5:
 		if (m_modeState & ModeState::CanTransfer)
@@ -363,6 +376,12 @@ void ModeScreen::resizeCurrentModeUIElements(winrt::Windows::Foundation::Size wi
 	for (int i = 0; i < uiElements.size(); i++) uiElements[i]->resize(windowSize);
 }
 
+std::vector<std::shared_ptr<VolumeElement> > const& ModeScreen::getCurrentModeVolumeElements()
+{
+	//returns a reference to all 3D elements to be rendered on screen
+	return m_modes[static_cast<int>(m_currentMode)]->getVolumeElements();
+}
+
 const UIColor ModeScreen::getBackgroundColor()
 {
 	//returns the background color of the current mode
@@ -560,4 +579,11 @@ void ModeScreen::leaveActiveState()
 		break;
 	}
 	}
+}
+
+bool ModeScreen::needs3DRendering()
+{
+	//return true if the current mode requires 3D rendering and all 3D resources have
+	//been loaded
+	return m_modes[static_cast<int>(m_currentMode)]->m_needsCamera;
 }

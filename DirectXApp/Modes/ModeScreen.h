@@ -3,6 +3,7 @@
 #include "Input/InputProcessor.h"
 #include "Devices/PersonalCaddie.h"
 #include "Mode.h"
+#include "Graphics/Objects/3D/Camera.h"
 
 /*
 * The ModeScreen represents the main visual context of the application. The app has a number of
@@ -41,10 +42,17 @@ public:
 	//Handler Methods
 	void PersonalCaddieHandler(PersonalCaddieEventType pcEvent, void* eventArgs);
 
+	//2D Rendering Methods
 	std::vector<std::shared_ptr<UIElement> > const& getCurrentModeUIElements();
 	void resizeCurrentModeUIElements(winrt::Windows::Foundation::Size windowSize);
 
 	void createAlert(std::wstring message, UIColor color);
+
+	//3D Rendering Methods
+	bool needs3DRendering();
+	DirectX::XMMATRIX getCameraView() { return m_camera.View(); };
+
+	std::vector<std::shared_ptr<VolumeElement> > const& getCurrentModeVolumeElements();
 
 private:
 	void processKeyboardInput(winrt::Windows::System::VirtualKey pressedKey);
@@ -69,6 +77,8 @@ private:
 	//Modes
 	std::vector<std::shared_ptr<Mode> > m_modes;
 	ModeType                            m_currentMode;
+
+	Camera                              m_camera; //a camera for rendering 3D scenes of certain modes
 
 	//Event variables
 	volatile PersonalCaddieEventType personal_caddy_event; //let's the main thread know that a new alert has been created from a different thread and needs to be rendered
