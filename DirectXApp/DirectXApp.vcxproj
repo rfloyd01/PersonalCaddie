@@ -205,7 +205,12 @@
     </AppxManifest>
   </ItemGroup>
   <ItemGroup>
+    <Image Include="Assets\cellceiling.dds" />
+    <Image Include="Assets\cellfloor.dds" />
+    <Image Include="Assets\cellwall.dds" />
     <Image Include="Assets\LockScreenLogo.scale-200.png" />
+    <Image Include="Assets\metal_texture.dds" />
+    <Image Include="Assets\seafloor.dds" />
     <Image Include="Assets\SplashScreen.scale-200.png" />
     <Image Include="Assets\Square150x150Logo.scale-200.png" />
     <Image Include="Assets\Square44x44Logo.scale-200.png" />

@@ -7,7 +7,7 @@ VolumeElement::VolumeElement() :
     m_normalMaterial(nullptr),
     m_hitMaterial(nullptr)
 {
-    m_active = false;
+    m_active = true;
     m_target = false;
     m_targetId = 0;
     m_hit = false;

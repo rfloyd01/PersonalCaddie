@@ -25,8 +25,6 @@ void MasterRenderer::CreateDeviceDependentResources()
 {
     m_gameResourcesLoaded = false;
     m_levelResourcesLoaded = false;
-
-    //m_2DRenderer.CreateDeviceDependentResources();
 }
 
 winrt::Windows::Foundation::Size MasterRenderer::getCurrentScreenSize()
@@ -36,8 +34,6 @@ winrt::Windows::Foundation::Size MasterRenderer::getCurrentScreenSize()
 
 void MasterRenderer::CreateWindowSizeDependentResources()
 {
-    //m_2DRenderer.CreateWindowSizeDependentResources(m_mode->getCurrentModeMenuObjects());
-
     auto d3dContext = m_deviceResources->GetD3DDeviceContext();
     auto renderTargetSize = m_deviceResources->GetRenderTargetSize();
 }
@@ -111,11 +107,11 @@ IAsyncAction MasterRenderer::CreateModeResourcesAsync()
     m_wallsTexture = nullptr;
 
     // Load Game specific textures.
-    /*tasks.push_back(loader.LoadTextureAsync(L"Assets\\seafloor.dds", nullptr, m_sphereTexture.put()));
+    tasks.push_back(loader.LoadTextureAsync(L"Assets\\seafloor.dds", nullptr, m_sphereTexture.put()));
     tasks.push_back(loader.LoadTextureAsync(L"Assets\\metal_texture.dds", nullptr, m_cylinderTexture.put()));
     tasks.push_back(loader.LoadTextureAsync(L"Assets\\cellceiling.dds", nullptr, m_ceilingTexture.put()));
     tasks.push_back(loader.LoadTextureAsync(L"Assets\\cellfloor.dds", nullptr, m_floorTexture.put()));
-    tasks.push_back(loader.LoadTextureAsync(L"Assets\\cellwall.dds", nullptr, m_wallsTexture.put()));*/
+    tasks.push_back(loader.LoadTextureAsync(L"Assets\\cellwall.dds", nullptr, m_wallsTexture.put()));
 
     // Simulate loading additional resources by introducing a delay.
     tasks.push_back([]() -> IAsyncAction { co_await winrt::resume_after(2s); }());
@@ -125,6 +121,76 @@ IAsyncAction MasterRenderer::CreateModeResourcesAsync()
     {
         co_await task;
     }
+}
+
+void MasterRenderer::FinalizeCreateDeviceResources()
+{
+    // All asynchronously loaded resources have completed loading.
+    // Now associate all the resources with the appropriate game objects.
+    // This method is expected to run in the same thread as the GameRenderer
+    // was created.
+
+    // Initialize the Constant buffer with the light positions
+    // These are handled here to ensure that the d3dContext is only
+    // used in one thread.
+
+    auto d3dDevice = m_deviceResources->GetD3DDevice();
+
+    ConstantBufferNeverChanges constantBufferNeverChanges;
+    constantBufferNeverChanges.lightPosition[0] = XMFLOAT4(3.5f, 2.5f, 5.5f, 1.0f);
+    constantBufferNeverChanges.lightPosition[1] = XMFLOAT4(3.5f, 2.5f, -5.5f, 1.0f);
+    constantBufferNeverChanges.lightPosition[2] = XMFLOAT4(-3.5f, 2.5f, -5.5f, 1.0f);
+    constantBufferNeverChanges.lightPosition[3] = XMFLOAT4(3.5f, 2.5f, 5.5f, 1.0f);
+    constantBufferNeverChanges.lightColor = XMFLOAT4(0.25f, 0.25f, 0.25f, 1.0f);
+    m_deviceResources->GetD3DDeviceContext()->UpdateSubresource(
+        m_constantBufferNeverChanges.get(),
+        0,
+        nullptr,
+        &constantBufferNeverChanges,
+        0,
+        0
+    );
+
+    // Ensure that the camera has been initialized with the right Projection
+    // matrix. The camera is not created at the time the first window resize event
+    // occurs.
+    auto renderTargetSize = m_deviceResources->GetRenderTargetSize();
+    m_mode->getCamera().SetProjParams(
+        XM_PI / 2,
+        renderTargetSize.Width / renderTargetSize.Height,
+        0.01f,
+        100.0f
+    );
+
+    // Make sure that Projection matrix has been set in the constant buffer
+    // now that all the resources are loaded.
+    // We are handling screen rotations directly to eliminate an unaligned
+    // fullscreen copy. As a result, it is necessary to post-multiply the rotationTransform3D
+    // matrix to the camera projection matrix.
+    // The matrices are transposed due to the shader code expecting the matrices in the opposite
+    // row/column order from the DirectX math library.
+
+    auto orientation = m_deviceResources->GetOrientationTransform3D();
+
+    ConstantBufferChangeOnResize changesOnResize;
+    XMStoreFloat4x4(
+        &changesOnResize.projection,
+        XMMatrixMultiply(
+            XMMatrixTranspose(m_mode->getCamera().Projection()),
+            XMMatrixTranspose(XMLoadFloat4x4(&orientation))
+        )
+    );
+
+    m_deviceResources->GetD3DDeviceContext()->UpdateSubresource(
+        m_constantBufferChangeOnResize.get(),
+        0,
+        nullptr,
+        &changesOnResize,
+        0,
+        0
+    );
+
+    m_gameResourcesLoaded = true;
 }
 
 void MasterRenderer::ReleaseDeviceDependentResources()
@@ -140,6 +206,27 @@ void MasterRenderer::ReleaseDeviceDependentResources()
 void MasterRenderer::setTextLayoutPixels(UIText* text)
 {
     m_uiElementRenderer.setTextLayoutPixels(text);
+}
+
+void MasterRenderer::setMaterialAndMesh(std::shared_ptr<VolumeElement> element, MaterialType mt)
+{
+    //This method creates the appropriate mesh for the given VolumeElement, and sets its
+    //material based on the input material type
+    auto d3dDevice = m_deviceResources->GetD3DDevice();
+
+    if (auto face = dynamic_cast<Face*>(element.get()))
+    {
+        element->setMesh(std::make_shared<FaceMesh>(d3dDevice));
+        element->setMaterial(std::make_shared<Material>(
+            XMFLOAT4(0.8f, 0.4f, 0.0f, 1.0f),
+            XMFLOAT4(0.8f, 0.4f, 0.0f, 1.0f),
+            XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f),
+            50.0f,
+            m_sphereTexture.get(),
+            m_vertexShader.get(),
+            m_pixelShader.get()
+        ));
+    }
 }
 
 void MasterRenderer::Render()
@@ -165,7 +252,7 @@ void MasterRenderer::Render()
         ConstantBufferChangesEveryFrame constantBufferChangesEveryFrameValue;
         XMStoreFloat4x4(
             &constantBufferChangesEveryFrameValue.view,
-            XMMatrixTranspose(m_mode->getCameraView())
+            XMMatrixTranspose(m_mode->getCamera().View())
         );
         d3dContext->UpdateSubresource(
             m_constantBufferChangesEveryFrame.get(),

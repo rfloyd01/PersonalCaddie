@@ -22,7 +22,7 @@ public:
     void AnimatePosition(_In_ std::shared_ptr<Animate> const& animate);
     std::shared_ptr<Animate> AnimatePosition();
 
-    void Mesh(_In_ std::shared_ptr<MeshObject> const& mesh);
+    void setMesh(_In_ std::shared_ptr<MeshObject> const& mesh);
 
     void setMaterial(_In_ std::shared_ptr<Material> const& material);
     std::shared_ptr<Material> getMaterial();
@@ -131,7 +131,7 @@ __forceinline std::shared_ptr<Material> VolumeElement::getMaterial()
     return m_normalMaterial;
 }
 
-__forceinline void VolumeElement::Mesh(_In_ std::shared_ptr<MeshObject> const& mesh)
+__forceinline void VolumeElement::setMesh(_In_ std::shared_ptr<MeshObject> const& mesh)
 {
     m_mesh = mesh;
 }

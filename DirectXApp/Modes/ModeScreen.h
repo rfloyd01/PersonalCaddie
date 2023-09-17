@@ -28,7 +28,7 @@ class ModeScreen
 public:
 	ModeScreen();
 
-	void Initialize(
+	winrt::fire_and_forget Initialize(
 		_In_ std::shared_ptr<InputProcessor> const& input,
 		_In_ std::shared_ptr<MasterRenderer> const& renderer
 	);
@@ -50,7 +50,7 @@ public:
 
 	//3D Rendering Methods
 	bool needs3DRendering();
-	DirectX::XMMATRIX getCameraView() { return m_camera.View(); };
+	Camera& getCamera() { return m_camera; };
 
 	std::vector<std::shared_ptr<VolumeElement> > const& getCurrentModeVolumeElements();
 
@@ -68,17 +68,19 @@ private:
 	void stateUpdate();
 	void leaveActiveState();
 
-	uint32_t                            m_modeState; //holds info on the current mode state
+	uint32_t                                m_modeState; //holds info on the current mode state
 
-	std::shared_ptr<PersonalCaddie>     m_personalCaddie;
-	std::shared_ptr<InputProcessor>     m_inputProcessor;
-	std::shared_ptr<MasterRenderer>     m_renderer;
+	std::shared_ptr<PersonalCaddie>         m_personalCaddie;
+	std::shared_ptr<InputProcessor>         m_inputProcessor;
+	std::shared_ptr<MasterRenderer>         m_renderer;
 
 	//Modes
-	std::vector<std::shared_ptr<Mode> > m_modes;
-	ModeType                            m_currentMode;
+	std::vector<std::shared_ptr<Mode> >     m_modes;
+	ModeType                                m_currentMode;
 
-	Camera                              m_camera; //a camera for rendering 3D scenes of certain modes
+	//Rendering variables
+	Camera                                  m_camera; //a camera for rendering 3D scenes of certain modes
+	std::vector<std::shared_ptr<Material> > m_materials; //materials used for rendering 3D objects
 
 	//Event variables
 	volatile PersonalCaddieEventType personal_caddy_event; //let's the main thread know that a new alert has been created from a different thread and needs to be rendered

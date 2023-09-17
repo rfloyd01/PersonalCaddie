@@ -2,6 +2,7 @@
 
 #include "Graphics/Objects/2D/UIElements.h"
 #include "Graphics/Objects/3D/Elements/VolumeElement.h"
+#include "Graphics/Rendering/Material.h"
 #include "Input/InputProcessor.h"
 #include <string>
 
@@ -35,7 +36,8 @@ enum ModeState
 	CanTransfer = 4,
 	NeedTextUpdate = 8,
 	PersonalCaddieSensorIdleMode = 16,
-	PersonalCaddieSensorActiveMode = 32
+	PersonalCaddieSensorActiveMode = 32,
+	NeedMaterial = 64
 };
 
 //Class definition
@@ -56,6 +58,8 @@ public:
 	std::vector<std::shared_ptr<VolumeElement> > const& getVolumeElements() { return m_volumeElements; }
 
 	uint32_t getModeState() { return m_state; }
+
+	virtual void pickMaterial(std::vector<std::shared_ptr<Material>> const& materials) {}; //modes with 3d rendering need materials generated from the Direct3D context
 
 	template <typename T>
 	void addUIElement(T const& element) { m_uiElements.push_back(std::make_shared<T>(element)); }

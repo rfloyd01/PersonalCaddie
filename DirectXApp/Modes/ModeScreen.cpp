@@ -35,7 +35,7 @@ ModeScreen::ModeScreen() :
 	button_pressed_duration = 100;
 }
 
-void ModeScreen::Initialize(
+winrt::fire_and_forget ModeScreen::Initialize(
 	_In_ std::shared_ptr<InputProcessor> const& input,
 	_In_ std::shared_ptr<MasterRenderer> const& renderer
 )
@@ -46,7 +46,8 @@ void ModeScreen::Initialize(
 	//Load the main mode (which is set in the constructor) and pass any resources
 	//generated to the master renderer
 	m_modeState = m_modes[static_cast<int>(m_currentMode)]->initializeMode(m_renderer->getCurrentScreenSize());
-	m_renderer->CreateModeResourcesAsync();
+	co_await m_renderer->CreateModeResourcesAsync();
+	m_renderer->FinalizeCreateDeviceResources();
 }
 
 void ModeScreen::setPersonalCaddie(_In_ std::shared_ptr<PersonalCaddie> const& pc)
@@ -73,6 +74,16 @@ void ModeScreen::update()
 
 	//finally, check to see if there are any timers that are going on or expired
 	processTimers();
+
+	//Call any necessary functions based on the current mode state
+	//TODO: Make this a separate method when refactoring in the future
+	//TODO: Make the pickMaterial method return a new mode state
+	if (m_modeState & ModeState::NeedMaterial)
+	{
+		auto volumeElements = m_modes[static_cast<int>(m_currentMode)]->getVolumeElements();
+		for (int i = 0; i < volumeElements.size(); i++) m_renderer->setMaterialAndMesh(volumeElements[i], MaterialType::SEA_FLOOR);
+		m_modeState ^= ModeState::NeedMaterial; //TODO: Not a safe call as materials may not actually be loaded when this get's called the first time
+	}
 
 	//after all input, events and timers have been handled defer to the current mode
 	//to update its state if necessary. This only occurs when in the Active ModeState

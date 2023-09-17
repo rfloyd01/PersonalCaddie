@@ -42,12 +42,19 @@ public:
 
     void CreateDeviceDependentResources();
     void CreateWindowSizeDependentResources();
+    void FinalizeCreateDeviceResources();
     void ReleaseDeviceDependentResources();
+
     void Render();
 
     void setTextLayoutPixels(UIText* text);
+    void setMaterialAndMesh(std::shared_ptr<VolumeElement> element, MaterialType mt);
 
     winrt::Windows::Foundation::Size getCurrentScreenSize();
+    winrt::com_ptr<ID3D11ShaderResourceView> getTexture() { return m_sphereTexture; }
+    winrt::com_ptr<ID3D11PixelShader> getPixelShader() { return m_pixelShader; }
+    winrt::com_ptr<ID3D11VertexShader> getVertexShader() { return m_vertexShader; }
+
 
 private:
     // Cached pointer to device resources.

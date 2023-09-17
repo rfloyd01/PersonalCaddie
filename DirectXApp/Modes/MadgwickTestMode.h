@@ -12,6 +12,8 @@ public:
 
 	virtual uint32_t handleUIElementStateChange(int i) override;
 
+	virtual void pickMaterial(std::vector<std::shared_ptr<Material>> const& materials) override;
+
 private:
 	void initializeTextOverlay(winrt::Windows::Foundation::Size windowSize);
 

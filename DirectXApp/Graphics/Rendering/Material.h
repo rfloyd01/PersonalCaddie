@@ -11,6 +11,13 @@
 
 #include "ConstantBuffers.h"
 
+//A list of all the different materials in the app
+enum class MaterialType
+{
+    SEA_FLOOR,
+    CELL_WALL
+};
+
 class Material
 {
 public:
