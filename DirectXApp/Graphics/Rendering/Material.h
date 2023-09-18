@@ -14,8 +14,10 @@
 //A list of all the different materials in the app
 enum class MaterialType
 {
-    SEA_FLOOR,
-    CELL_WALL
+    SENSOR_TOP,
+    SENSOR_BOTTOM,
+    SENSOR_LONG_SIDE,
+    SENSOR_SHORT_SIDE
 };
 
 class Material

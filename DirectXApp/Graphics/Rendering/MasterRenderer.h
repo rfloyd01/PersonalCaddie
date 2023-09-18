@@ -75,6 +75,10 @@ private:
     winrt::com_ptr<ID3D11ShaderResourceView>    m_ceilingTexture;
     winrt::com_ptr<ID3D11ShaderResourceView>    m_floorTexture;
     winrt::com_ptr<ID3D11ShaderResourceView>    m_wallsTexture;
+    winrt::com_ptr<ID3D11ShaderResourceView>    m_sensorTopTexture;
+    winrt::com_ptr<ID3D11ShaderResourceView>    m_sensorBottomTexture;
+    winrt::com_ptr<ID3D11ShaderResourceView>    m_sensorLongSideTexture;
+    winrt::com_ptr<ID3D11ShaderResourceView>    m_sensorShortSideTexture;
 
     // Constant Buffers
     winrt::com_ptr<ID3D11Buffer>                m_constantBufferNeverChanges;

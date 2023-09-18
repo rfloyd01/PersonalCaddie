@@ -15,13 +15,52 @@ uint32_t MadgwickTestMode::initializeMode(winrt::Windows::Foundation::Size windo
 
 	m_needsCamera = true; //alerts the mode screen that 3d rendering will take place in this mode
 
-	//std::shared_ptr<Face> target = std::make_shared<Face>(DirectX::XMFLOAT3(-2.5f, -1.0f, 1.5f), DirectX::XMFLOAT3(-1.5f, -1.0f, 2.0f), DirectX::XMFLOAT3(-2.5f, 1.0f, 1.5f));
-	std::shared_ptr<Face> target = std::make_shared<Face>(DirectX::XMFLOAT3(-0.25f, 0.25f, 1.0f), DirectX::XMFLOAT3(0.25f, 0.25f, 1.0f), DirectX::XMFLOAT3(-0.25f, -0.25f, 1.0f));
-	m_volumeElements.push_back(target);
+	float sensorHeight = 0.5f, sensorLength = 0.3f, sensorWidth = 0.052f;
+
+	std::shared_ptr<Face> sensorTop = std::make_shared<Face>(DirectX::XMFLOAT3(-0.15f, -0.25f, 1.0f), DirectX::XMFLOAT3(0.15f, -0.25f, 1.0f), DirectX::XMFLOAT3(-0.15f, 0.25f, 1.0f));
+	std::shared_ptr<Face> sensorLongSideOne = std::make_shared<Face>(DirectX::XMFLOAT3(-0.026f, -0.25f, 1.0f), DirectX::XMFLOAT3(0.026f, -0.25f, 1.0f), DirectX::XMFLOAT3(-0.026f, 0.25f, 1.0f));
+	std::shared_ptr<Face> sensorLongSideTwo = std::make_shared<Face>(DirectX::XMFLOAT3(-0.026f, -0.25f, 1.0f), DirectX::XMFLOAT3(0.026f, -0.25f, 1.0f), DirectX::XMFLOAT3(-0.026f, 0.25f, 1.0f));
+	std::shared_ptr<Face> sensorShortSideOne = std::make_shared<Face>(DirectX::XMFLOAT3(-0.15f, -0.026f, 1.0f), DirectX::XMFLOAT3(0.15f, -0.026f, 1.0f), DirectX::XMFLOAT3(-0.15f, 0.026f, 1.0f));
+	std::shared_ptr<Face> sensorShortSideTwo = std::make_shared<Face>(DirectX::XMFLOAT3(-0.15f, -0.026f, 1.0f), DirectX::XMFLOAT3(0.15f, -0.026f, 1.0f), DirectX::XMFLOAT3(-0.15f, 0.026f, 1.0f));
+	std::shared_ptr<Face> sensorBottom = std::make_shared<Face>(DirectX::XMFLOAT3(-0.15f, -0.25f, 1.0f), DirectX::XMFLOAT3(0.15f, -0.25f, 1.0f), DirectX::XMFLOAT3(-0.15f, 0.25f, 1.0f));
+
+	sensorLongSideOne->rotateFaceAboutVector({ 0.0f, 1.0f, 0.0f }, PI / 2.0f);
+	sensorLongSideOne->translateFace({ -0.15f, 0.0f, 0.026f });
+
+	sensorLongSideTwo->rotateFaceAboutVector({ 0.0f, 1.0f, 0.0f }, PI / 2.0f);
+	sensorLongSideTwo->translateFace({ 0.15f, 0.0f, 0.026f });
+
+	sensorShortSideOne->rotateFaceAboutVector({ 1.0f, 0.0f, 0.0f }, PI / 2.0f);
+	sensorShortSideOne->translateFace({ 0.0f, -0.25f, 0.026f });
+
+	sensorShortSideTwo->rotateFaceAboutVector({ 1.0f, 0.0f, 0.0f }, PI / 2.0f);
+	sensorShortSideTwo->translateFace({ 0.0f, 0.25f, 0.026f });
+
+	sensorBottom->rotateFaceAboutVector({ 0.0f, 1.0f, 0.0f }, PI);
+	sensorBottom->translateFace({ 0.0f, 0.0f, 0.052f });
+
+	m_volumeElements.push_back(sensorTop);
+	m_volumeElements.push_back(sensorLongSideOne);
+	m_volumeElements.push_back(sensorLongSideTwo);
+	m_volumeElements.push_back(sensorShortSideOne);
+	m_volumeElements.push_back(sensorShortSideTwo);
+	m_volumeElements.push_back(sensorBottom);
+
+	//After creating the faces of the sensor, add the appropriate material types for each face.
+	//The index of each material type in the vector needs to match the index of the appropriate
+	//face in the m_volumeElements vector.
+	m_materialTypes.push_back(MaterialType::SENSOR_TOP);
+	m_materialTypes.push_back(MaterialType::SENSOR_LONG_SIDE);
+	m_materialTypes.push_back(MaterialType::SENSOR_LONG_SIDE);
+	m_materialTypes.push_back(MaterialType::SENSOR_SHORT_SIDE);
+	m_materialTypes.push_back(MaterialType::SENSOR_SHORT_SIDE);
+	m_materialTypes.push_back(MaterialType::SENSOR_BOTTOM);
+
+	m_currentRotation = 0.0f;
 
 	//The NeedMaterial modeState lets the mode screen know that it needs to pass
 	//a list of materials to this mode that it can use to initialize 3d objects
-	return (ModeState::CanTransfer | ModeState::NeedMaterial);
+	return (ModeState::CanTransfer | ModeState::NeedMaterial | ModeState::Active);
 }
 
 void MadgwickTestMode::uninitializeMode()
@@ -31,6 +70,9 @@ void MadgwickTestMode::uninitializeMode()
 	
 	for (int i = 0; i < m_uiElements.size(); i++) m_uiElements[i] = nullptr;
 	m_uiElements.clear();
+
+	for (int i = 0; i < m_volumeElements.size(); i++) m_volumeElements[i] = nullptr;
+	m_volumeElements.clear();
 }
 
 void MadgwickTestMode::initializeTextOverlay(winrt::Windows::Foundation::Size windowSize)
@@ -48,24 +90,6 @@ void MadgwickTestMode::initializeTextOverlay(winrt::Windows::Foundation::Size wi
 	m_uiElements.push_back(std::make_shared<TextOverlay>(footnote));
 }
 
-void MadgwickTestMode::pickMaterial(std::vector<std::shared_ptr<Material>> const& materials)
-{
-	//In this mode we render a model of the current sesnor, so all materials having to do 
-	//with different sensors are picked here.
-	if (materials.size() == 0)
-	{
-		//the materials haven't actually been loaded yet so don't update anything. This method
-		//will keep getting called in the main render loop until the materials are actually
-		//loaded
-		int x = 5;
-		return;
-	}
-	else
-	{
-		m_volumeElements[0]->setMaterial(materials[0]);
-	}
-}
-
 uint32_t MadgwickTestMode::handleUIElementStateChange(int i)
 {
 	if (i == 1)
@@ -73,4 +97,11 @@ uint32_t MadgwickTestMode::handleUIElementStateChange(int i)
 		return 1;
 	}
 	return 0;
+}
+
+void MadgwickTestMode::update()
+{
+	//for now, rotate the sensor by a small amount
+	for (int i = 0; i < m_volumeElements.size(); i++)
+		((Face*)m_volumeElements[i].get())->rotateFaceAboutVector({ 1.0f, 1.0f, 1.0f }, PI / 180.0f);
 }

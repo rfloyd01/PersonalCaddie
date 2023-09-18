@@ -81,7 +81,11 @@ void ModeScreen::update()
 	if (m_modeState & ModeState::NeedMaterial)
 	{
 		auto volumeElements = m_modes[static_cast<int>(m_currentMode)]->getVolumeElements();
-		for (int i = 0; i < volumeElements.size(); i++) m_renderer->setMaterialAndMesh(volumeElements[i], MaterialType::SEA_FLOOR);
+		auto materialTypes = m_modes[static_cast<int>(m_currentMode)]->getMaterialTypes();
+		for (int i = 0; i < volumeElements.size(); i++)
+		{
+			m_renderer->setMaterialAndMesh(volumeElements[i], materialTypes[i]);
+		}
 		m_modeState ^= ModeState::NeedMaterial; //TODO: Not a safe call as materials may not actually be loaded when this get's called the first time
 	}
 

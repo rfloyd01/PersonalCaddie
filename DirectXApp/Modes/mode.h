@@ -59,7 +59,7 @@ public:
 
 	uint32_t getModeState() { return m_state; }
 
-	virtual void pickMaterial(std::vector<std::shared_ptr<Material>> const& materials) {}; //modes with 3d rendering need materials generated from the Direct3D context
+	std::vector<MaterialType> const& getMaterialTypes() { return m_materialTypes; }; //modes with 3d rendering need materials generated from the Direct3D context
 
 	template <typename T>
 	void addUIElement(T const& element) { m_uiElements.push_back(std::make_shared<T>(element)); }
@@ -78,6 +78,7 @@ protected:
 
 	std::vector<std::shared_ptr<UIElement> >  m_uiElements; //2d objects like Drop downs, combo boxes, buttons and text
 	std::vector<std::shared_ptr<VolumeElement> >  m_volumeElements; //3d objects to be rendered on screen (not all modes feature 3D objects)
+	std::vector<MaterialType> m_materialTypes; //A vector of material types to be applied to 3d rendered objects
 
 	uint32_t m_state; //the state of the current mode
 };

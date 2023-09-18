@@ -31,10 +31,25 @@ void Face::SetPlane(
     XMStoreFloat3(&m_widthVector, XMLoadFloat3(&p1) - XMLoadFloat3(&origin));
     XMStoreFloat3(&m_heightVector, XMLoadFloat3(&p2) - XMLoadFloat3(&origin));
 
-    m_point[0] = m_position;
+    m_point[0] = origin;
     m_point[1] = p1;
     m_point[3] = p2;
     XMStoreFloat3(&m_point[2], XMLoadFloat3(&p1) + XMLoadFloat3(&m_heightVector));
+
+    //figure out the max and min values for x, y and z from the points and use 
+    //these values to set the position of the face to be the center of the face
+    float minX = m_point[0].x, maxX = m_point[0].x, minY = m_point[0].y, maxY = m_point[0].y, minZ = m_point[0].z, maxZ = m_point[0].z;
+    for (int i = 0; i < 4; i++)
+    {
+        if (m_point[i].x < minX) minX = m_point[i].x;
+        if (m_point[i].x > maxX) maxX = m_point[i].x;
+
+        if (m_point[i].y < minY) minY = m_point[i].y;
+        if (m_point[i].y > maxY) maxY = m_point[i].y;
+
+        if (m_point[i].z < minZ) minZ = m_point[i].z;
+        if (m_point[i].z > maxZ) maxZ = m_point[i].z;
+    }
 
     XMStoreFloat(&m_width, XMVector3Length(XMLoadFloat3(&m_widthVector)));
     XMStoreFloat(&m_height, XMVector3Length(XMLoadFloat3(&m_heightVector)));
@@ -61,7 +76,7 @@ void Face::UpdatePosition()
     XMStoreFloat4x4(
         &m_modelMatrix,
         XMMatrixScaling(m_width, m_height, 1.0f) *
-        XMLoadFloat4x4(&m_rotationMatrix) *
+        XMLoadFloat4x4(&m_rotationMatrix) * 
         XMMatrixTranslation(m_position.x, m_position.y, m_position.z)
         );
 }
@@ -139,4 +154,83 @@ void Face::UpdateMatrix()
         mat2 *
         XMMatrixTranslation(m_position.x, m_position.y, m_position.z)
         );
+}
+
+//void Face::rotateFace(float pitch, float yaw, float roll)
+//{
+//    //Rotates the face about the given point using the given Euler Angles.
+//    /*XMStoreFloat4x4(
+//        &m_modelMatrix,
+//        XMMatrixScaling(m_width, m_height, 1.0f) *
+//        XMMatrixRotationRollPitchYaw(pitch, yaw, roll) *
+//        XMMatrixTranslation(0.5f, 0.0f, 1.0f)
+//    );*/
+//
+//    //For the rotation to work correctly we need to translate the model 
+//    //to the front of the screen, rotate it, and then translate it back
+//    //to it's current location
+//    XMFLOAT3 yo = { 0.5f, 0.5f, 0.5f };
+//    //setPosition(yo); //move to origin
+//    auto currentModel = XMLoadFloat4x4(&m_modelMatrix);
+//    auto yeet = XMMatrixTranslation(0.0f, 0.0f, 0.0f);
+//
+//    XMStoreFloat4x4(
+//        &m_modelMatrix,
+//        currentModel *
+//        XMMatrixTranslation(0, 0, -m_position.z) *
+//        XMMatrixRotationRollPitchYaw(pitch, yaw, roll) *
+//        XMMatrixTranslation(0, 0, m_position.z)
+//    );
+//
+//    /*XMStoreFloat4x4(
+//        &m_modelMatrix,
+//        currentModel *
+//        XMMatrixRotationRollPitchYaw(pitch, yaw, roll)
+//    );
+//
+//    XMStoreFloat4x4(
+//        &m_modelMatrix,
+//        currentModel *
+//        XMMatrixTranslation(m_position.x, m_position.y, m_position.z)
+//    );*/
+//
+//    //setPosition(m_position); //move back to current location
+//    //Draw a line through the center of the face that's parallel to the Z-axis (this is using
+//    //model coordinates)
+//    /*auto zzTop = XMVectorSet(0.5f, 0.5f, 0.0f, 1.0f);
+//    auto yeet = XMVector4Transform(zzTop, XMLoadFloat4x4(&m_modelMatrix));
+//    int x = 5;*/
+//}
+
+void Face::rotateFaceAboutVector(DirectX::XMVECTOR axis, float degrees)
+{
+    //When the Face volume element is created, it happens in the x-y plane with a z value
+    //of 0 (basically, it gets created right on top of the screen). It then get's scaled, 
+    //translated and rotated accordingly. In order to carry out further rotations on the
+    //face it must be translated back into the x-y plane at the screen. We then carry out 
+    //the appropriate rotation before translating it back to its correct location.
+
+    translateFace({ 0.0f, 0.0f, -m_position.z }); //first move the face back to the x-y plane
+
+    //then carry out the rotation
+    auto currentModel = XMLoadFloat4x4(&m_modelMatrix);
+    XMStoreFloat4x4(
+        &m_modelMatrix,
+        currentModel *
+        XMMatrixRotationAxis(axis, degrees)
+    );
+
+    translateFace({ 0.0f, 0.0f, m_position.z }); //and finally move the Face back to the correct location
+}
+
+void Face::translateFace(DirectX::XMFLOAT3 location)
+{
+    //Translates the face in space by the amount dictated in the location vector
+    auto currentModel = XMLoadFloat4x4(&m_modelMatrix);
+
+    XMStoreFloat4x4(
+        &m_modelMatrix,
+        currentModel *
+        XMMatrixTranslation(location.x, location.y, location.z)
+    );
 }

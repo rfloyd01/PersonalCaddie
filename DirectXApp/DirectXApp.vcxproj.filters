@@ -384,6 +384,18 @@
     <Image Include="Assets\metal_texture.dds">
       <Filter>Assets</Filter>
     </Image>
+    <Image Include="Assets\Sensor_Top.dds">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\Sensor_Bottom.dds">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\Sensor_Long_Side.dds">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\Sensor_Short_Side.dds">
+      <Filter>Assets</Filter>
+    </Image>
   </ItemGroup>
   <ItemGroup>
     <AppxManifest Include="Package.appxmanifest" />

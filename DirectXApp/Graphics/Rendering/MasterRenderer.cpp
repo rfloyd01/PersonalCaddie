@@ -112,6 +112,10 @@ IAsyncAction MasterRenderer::CreateModeResourcesAsync()
     tasks.push_back(loader.LoadTextureAsync(L"Assets\\cellceiling.dds", nullptr, m_ceilingTexture.put()));
     tasks.push_back(loader.LoadTextureAsync(L"Assets\\cellfloor.dds", nullptr, m_floorTexture.put()));
     tasks.push_back(loader.LoadTextureAsync(L"Assets\\cellwall.dds", nullptr, m_wallsTexture.put()));
+    tasks.push_back(loader.LoadTextureAsync(L"Assets\\Sensor_Top.dds", nullptr, m_sensorTopTexture.put()));
+    tasks.push_back(loader.LoadTextureAsync(L"Assets\\Sensor_Bottom.dds", nullptr, m_sensorBottomTexture.put()));
+    tasks.push_back(loader.LoadTextureAsync(L"Assets\\Sensor_Long_Side.dds", nullptr, m_sensorLongSideTexture.put()));
+    tasks.push_back(loader.LoadTextureAsync(L"Assets\\Sensor_Short_Side.dds", nullptr, m_sensorShortSideTexture.put()));
 
     // Simulate loading additional resources by introducing a delay.
     tasks.push_back([]() -> IAsyncAction { co_await winrt::resume_after(2s); }());
@@ -210,19 +214,38 @@ void MasterRenderer::setTextLayoutPixels(UIText* text)
 
 void MasterRenderer::setMaterialAndMesh(std::shared_ptr<VolumeElement> element, MaterialType mt)
 {
+    //TODO: Need to load the material type based on the input value
+    
     //This method creates the appropriate mesh for the given VolumeElement, and sets its
     //material based on the input material type
     auto d3dDevice = m_deviceResources->GetD3DDevice();
+
+    ID3D11ShaderResourceView* textureResourceView;
+    switch (mt)
+    {
+    case MaterialType::SENSOR_TOP:
+        textureResourceView = m_sensorTopTexture.get();
+        break;
+    case MaterialType::SENSOR_BOTTOM:
+        textureResourceView = m_sensorBottomTexture.get();
+        break;
+    case MaterialType::SENSOR_LONG_SIDE:
+        textureResourceView = m_sensorLongSideTexture.get();
+        break;
+    case MaterialType::SENSOR_SHORT_SIDE:
+        textureResourceView = m_sensorShortSideTexture.get();
+        break;
+    }
 
     if (auto face = dynamic_cast<Face*>(element.get()))
     {
         element->setMesh(std::make_shared<FaceMesh>(d3dDevice));
         element->setMaterial(std::make_shared<Material>(
-            XMFLOAT4(0.8f, 0.4f, 0.0f, 1.0f),
-            XMFLOAT4(0.8f, 0.4f, 0.0f, 1.0f),
+            XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f),
+            XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f),
             XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f),
             50.0f,
-            m_sphereTexture.get(),
+            textureResourceView,
             m_vertexShader.get(),
             m_pixelShader.get()
         ));

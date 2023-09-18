@@ -211,6 +211,10 @@
     <Image Include="Assets\LockScreenLogo.scale-200.png" />
     <Image Include="Assets\metal_texture.dds" />
     <Image Include="Assets\seafloor.dds" />
+    <Image Include="Assets\Sensor_Bottom.dds" />
+    <Image Include="Assets\Sensor_Long_Side.dds" />
+    <Image Include="Assets\Sensor_Short_Side.dds" />
+    <Image Include="Assets\Sensor_Top.dds" />
     <Image Include="Assets\SplashScreen.scale-200.png" />
     <Image Include="Assets\Square150x150Logo.scale-200.png" />
     <Image Include="Assets\Square44x44Logo.scale-200.png" />
