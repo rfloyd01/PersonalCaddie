@@ -103,5 +103,5 @@ void MadgwickTestMode::update()
 {
 	//for now, rotate the sensor by a small amount
 	for (int i = 0; i < m_volumeElements.size(); i++)
-		((Face*)m_volumeElements[i].get())->rotateFaceAboutVector({ 1.0f, 1.0f, 1.0f }, PI / 180.0f);
+		((Face*)m_volumeElements[i].get())->rotateFaceAboutVector({ 1.0f, 1.0f, 2.0f }, PI / 60.0f);
 }
