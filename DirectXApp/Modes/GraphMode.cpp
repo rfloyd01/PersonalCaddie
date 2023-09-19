@@ -165,6 +165,8 @@ void GraphMode::addData(std::vector<std::vector<std::vector<float> > > const& se
 		if (z_data > m_maximalPoint.y) m_maximalPoint.y = z_data;
 		else if (z_data < m_minimalPoint.y) m_minimalPoint.y = z_data;
 
+		//TODO: Every now and then one of these push_back calls leads to a crash,
+		//need to investigate why this is the case.
 		m_graphDataX.push_back({ m_graphDataX.back().x + time_increment, x_data });
 		m_graphDataY.push_back({ m_graphDataY.back().x + time_increment, y_data });
 		m_graphDataZ.push_back({ m_graphDataZ.back().x + time_increment, z_data });

@@ -139,12 +139,17 @@ static ble_uuid_t m_sr_uuids[] =                                               /
 
 //TWI Parameters
 #if TWI0_ENABLED
-#define TWI_INSTANCE_ID     0
-#elif TWI1_ENABLED
-#define TWI_INSTANCE_ID     1
+#define INTERNAL_TWI_INSTANCE_ID     0
 #endif
 
-const nrf_drv_twi_t m_twi = NRF_DRV_TWI_INSTANCE(TWI_INSTANCE_ID);
+#if TWI1_ENABLED
+#define EXTERNAL_TWI_INSTANCE_ID     1
+#endif
+
+const nrf_drv_twi_t m_twi_internal = NRF_DRV_TWI_INSTANCE(INTERNAL_TWI_INSTANCE_ID);
+const nrf_drv_twi_t m_twi_external = NRF_DRV_TWI_INSTANCE(EXTERNAL_TWI_INSTANCE_ID);
+nrf_drv_twi_t const * m_twi = &m_twi_internal; //a reference to the current active twi bus
+
 volatile bool m_xfer_done = false; //Indicates if operation on TWI has ended.
 static int measurements_taken = 0;                                              /**< keeps track of how many IMU measurements have taken in the given connection interval. */
 
@@ -179,10 +184,10 @@ static personal_caddie_operating_mode_t current_operating_mode = ADVERTISING_MOD
 #define USE_EXTERNAL_SENSORS      false                                            /**< Let's the BLE33 know tuat external sensors are being used*/
 #define USE_EXTERNAL_LEDS         false                                            /**< Let's the BLE33 know that external LEDs are being used*/
 #define EXTERNAL_SENSOR_POWER_PIN NRF_GPIO_PIN_MAP(1, 10)                         /**< Pin used to power external sensors (mapped to D9 on BLE 33)*/
-//#define EXTERNAL_SCL_PIN          NRF_GPIO_PIN_MAP(0, 21)                         /**< Pin used for external TWI clock (mapped to D8 on BLE 33) */
-//#define EXTERNAL_SDA_PIN          NRF_GPIO_PIN_MAP(0, 23)                          /**< Pin used for external TWI data (mapped to D10 on BLE 33) */
-#define EXTERNAL_SCL_PIN          NRF_GPIO_PIN_MAP(0, 26)                         /**< Pin used for external TWI clock (mapped to D8 on BLE 33) */
-#define EXTERNAL_SDA_PIN          NRF_GPIO_PIN_MAP(0, 27)                          /**< Pin used for external TWI data (mapped to D10 on BLE 33) */
+#define EXTERNAL_SCL_PIN          NRF_GPIO_PIN_MAP(0, 21)                         /**< Pin used for external TWI clock (mapped to D8 on BLE 33) */
+#define EXTERNAL_SDA_PIN          NRF_GPIO_PIN_MAP(0, 23)                          /**< Pin used for external TWI data (mapped to D7 on BLE 33) */
+//#define EXTERNAL_SCL_PIN          NRF_GPIO_PIN_MAP(0, 26)                         /**< Pin used for external TWI clock (mapped to D8 on BLE 33) */
+//#define EXTERNAL_SDA_PIN          NRF_GPIO_PIN_MAP(0, 27)                          /**< Pin used for external TWI data (mapped to D10 on BLE 33) */
 #define EXTERNAL_RED_LED          NRF_GPIO_PIN_MAP(1, 15)                         /**< Pin used for powering an external red LED (mapped to D4 on BLE 33)*/
 #define EXTERNAL_BLUE_LED         NRF_GPIO_PIN_MAP(1, 13)                         /**< Pin used for powering an external blue LED (mapped to D5 on BLE 33)*/
 #define EXTERNAL_GREEN_LED        NRF_GPIO_PIN_MAP(1, 14)                         /**< Pin used for powering an external green LED (mapped to D6 on BLE 33)*/
@@ -244,12 +249,12 @@ static void sensors_init(void)
     for (int i = 0; i < SENSOR_SETTINGS_LENGTH; i++) sensor_settings[i] = 0;
 
     //Handle the initialization of individual sensors
-    lsm9ds1_init(&lsm9ds1_imu, &lsm9ds1_mag, sensor_settings, &m_twi, &m_xfer_done, USE_EXTERNAL_SENSORS);
+    lsm9ds1_init(&lsm9ds1_imu, &lsm9ds1_mag, sensor_settings, m_twi, &m_xfer_done, USE_EXTERNAL_SENSORS);
 
     //after sensor initialization is complete we attempt to communicate 
     //with each sensor just to ensure that it's there and working properly.
     //To do so, turn on the TWI bus and configure/turn on any power pin(s) and/or pullup resistors
-    nrf_drv_twi_enable(&m_twi);
+    nrf_drv_twi_enable(m_twi);
 
     //configure the power pin and pullup resistor pins for the the sensors
     if (USE_EXTERNAL_SENSORS)
@@ -300,7 +305,7 @@ static void sensors_init(void)
         nrf_gpio_pin_clear(BLE_33_SENSOR_POWER_PIN);
     }
     
-    nrf_drv_twi_disable(&m_twi);
+    nrf_drv_twi_disable(m_twi);
 
     //After all sensors have been initialized, update the sensor settings characteristic to 
     //reflect the sensor settings array. Furthermore, we also set the connection interval 
@@ -535,7 +540,7 @@ static void sensor_idle_mode_start()
         //if (enabled == 0) nrf_drv_twi_enable(&m_twi);
 
         //turn on the TWI bus
-        nrf_drv_twi_enable(&m_twi);
+        nrf_drv_twi_enable(m_twi);
 
         //Power the sensor and the pullup resistors to the SCL and SDA line
         if (USE_EXTERNAL_SENSORS)
@@ -599,7 +604,7 @@ static void connected_mode_start()
         }
 
         //Turn off the TWI bus
-        nrf_drv_twi_disable(&m_twi);
+        nrf_drv_twi_disable(m_twi);
     }
 
     //change the color of the blinking LED to green
@@ -1164,24 +1169,41 @@ void  twi_init (void)
 {
     ret_code_t err_code;
 
-    if (USE_EXTERNAL_SENSORS)
-    {
-        const nrf_drv_twi_config_t twi_lsm9ds1_config = {
-       .scl                = EXTERNAL_SCL_PIN,
-       .sda                = EXTERNAL_SDA_PIN,
-       .frequency          = NRF_DRV_TWI_FREQ_400K,
-       .interrupt_priority = APP_IRQ_PRIORITY_HIGH,
-       .clear_bus_init     = false
-        };
+    //if (USE_EXTERNAL_SENSORS)
+    //{
+    //    const nrf_drv_twi_config_t twi_lsm9ds1_config = {
+    //   .scl                = EXTERNAL_SCL_PIN,
+    //   .sda                = EXTERNAL_SDA_PIN,
+    //   .frequency          = NRF_DRV_TWI_FREQ_400K,
+    //   .interrupt_priority = APP_IRQ_PRIORITY_HIGH,
+    //   .clear_bus_init     = false
+    //    };
 
-        //A handler method is necessary to enable non-blocking mode. TXRX operations can only be carried 
-        //out when non-blocking mode is enabled so a handler is needed here.
-        err_code = nrf_drv_twi_init(&m_twi, &twi_lsm9ds1_config, twi_handler, NULL);
-        APP_ERROR_CHECK(err_code);
-    }
-    else
-    {
-        const nrf_drv_twi_config_t twi_lsm9ds1_config = {
+    //    //A handler method is necessary to enable non-blocking mode. TXRX operations can only be carried 
+    //    //out when non-blocking mode is enabled so a handler is needed here.
+    //    err_code = nrf_drv_twi_init(&m_twi, &twi_lsm9ds1_config, twi_handler, NULL);
+    //    APP_ERROR_CHECK(err_code);
+    //}
+    //else
+    //{
+    //    const nrf_drv_twi_config_t twi_lsm9ds1_config = {
+    //   .scl                = BLE_33_SCL_PIN,
+    //   .sda                = BLE_33_SDA_PIN,
+    //   .frequency          = NRF_DRV_TWI_FREQ_400K,
+    //   .interrupt_priority = APP_IRQ_PRIORITY_HIGH,
+    //   .clear_bus_init     = false
+    //    };
+
+    //    //A handler method is necessary to enable non-blocking mode. TXRX operations can only be carried 
+    //    //out when non-blocking mode is enabled so a handler is needed here.
+    //    err_code = nrf_drv_twi_init(&m_twi, &twi_lsm9ds1_config, twi_handler, NULL);
+    //    APP_ERROR_CHECK(err_code);
+    //}
+
+    //There are two separate TWI buses that are used here. One for communication with
+    //sensors that are on the current board, and one for communication with sensors that
+    //are external to the board.
+    const nrf_drv_twi_config_t twi_lsm9ds1_config = {
        .scl                = BLE_33_SCL_PIN,
        .sda                = BLE_33_SDA_PIN,
        .frequency          = NRF_DRV_TWI_FREQ_400K,
@@ -1189,11 +1211,19 @@ void  twi_init (void)
        .clear_bus_init     = false
         };
 
-        //A handler method is necessary to enable non-blocking mode. TXRX operations can only be carried 
-        //out when non-blocking mode is enabled so a handler is needed here.
-        err_code = nrf_drv_twi_init(&m_twi, &twi_lsm9ds1_config, twi_handler, NULL);
-        APP_ERROR_CHECK(err_code);
-    }
+    const nrf_drv_twi_config_t twi_external_config = {
+       .scl                = EXTERNAL_SCL_PIN,
+       .sda                = EXTERNAL_SDA_PIN,
+       .frequency          = NRF_DRV_TWI_FREQ_400K,
+       .interrupt_priority = APP_IRQ_PRIORITY_HIGH,
+       .clear_bus_init     = false
+        };
+
+    //A handler method is necessary to enable non-blocking mode. TXRX operations can only be carried 
+    //out when non-blocking mode is enabled so a handler is needed here.
+    err_code = nrf_drv_twi_init(&m_twi_internal, &twi_lsm9ds1_config, twi_handler, NULL);
+    err_code = nrf_drv_twi_init(&m_twi_external, &twi_external_config, twi_handler, NULL);
+    APP_ERROR_CHECK(err_code);
 }
 
 static void leds_init()

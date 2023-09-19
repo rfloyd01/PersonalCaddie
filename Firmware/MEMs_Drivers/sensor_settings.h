@@ -29,18 +29,21 @@ typedef enum
 typedef enum
 {
     LSM9DS1_ACC = 0x00,
+    BMI270_ACC  = 0x01,
 } accelerometer_model_t;
 
 //A list of all the different accelerometers that currently have drivers
 typedef enum
 {
     LSM9DS1_GYR = 0x00,
+    BMI270_GYR  = 0x01,
 } gyroscope_model_t;
 
 //A list of all the different accelerometers that currently have drivers
 typedef enum
 {
     LSM9DS1_MAG = 0x00,
+    BMM150_MAG  = 0x01
 } magnetometer_model_t;
 
 typedef enum
