@@ -260,10 +260,10 @@ static void twi_address_scan(uint8_t* addresses, uint8_t* device_count)
         m_xfer_done = false;
         do
         {
-            err_code = nrf_drv_twi_rx(&m_twi_internal, add, &sample_data, sizeof(sample_data));
+            err_code = nrf_drv_twi_rx(m_twi, add, &sample_data, sizeof(sample_data));
         } while (err_code == 0x11); //if the nrf is currently busy doing something else this line will wait until its done before executing
         while (m_xfer_done == false); //this line forces the program to wait for the TWI transfer to complete before moving on
-        nrf_delay_ms(50); //add a slight delay after the reading to allow time for logs to print
+        //nrf_delay_ms(50); //add a slight delay after the reading to allow time for logs to print
 
         if (m_twi_bus_status == NRF_DRV_TWI_EVT_DONE)
         {
@@ -271,6 +271,40 @@ static void twi_address_scan(uint8_t* addresses, uint8_t* device_count)
             addresses[(*device_count)++] = add;
         }
     }
+}
+
+static void enable_twi_bus(int instance_id)
+{
+    //This method enables the given twi bus instance, as well as turns on any 
+    //necessary power and pullup resistor pins. It also disables the other twi
+    //instance in the case that it's currently on.
+
+    nrf_drv_twi_disable(m_twi); //disable the current bus
+    if (instance_id == INTERNAL_TWI_INSTANCE_ID)
+    {
+        m_twi = &m_twi_internal;
+
+        //Send power to the internal sensors and the pullup resistor,
+        //also make sure that power for the external sensors is off
+        nrf_gpio_pin_set(BLE_33_PULLUP);
+        nrf_gpio_pin_set(BLE_33_SENSOR_POWER_PIN);
+        
+        nrf_gpio_pin_clear(EXTERNAL_SENSOR_POWER_PIN);
+    }
+    else
+    {
+        m_twi = &m_twi_external;
+
+        //Send power to the external sensors. also make sure that power,
+        //afor the internal sensors and the pullup resistor is off
+        nrf_gpio_pin_set(EXTERNAL_SENSOR_POWER_PIN);
+
+        nrf_gpio_pin_clear(BLE_33_PULLUP);
+        nrf_gpio_pin_clear(BLE_33_SENSOR_POWER_PIN);
+    }
+
+    nrf_delay_ms(50); //slight delay so sensors have time to power on
+    nrf_drv_twi_enable(m_twi); //enable the new bus
 }
 
 /**@brief Function for the LSM9DS1 initialization.
@@ -288,16 +322,17 @@ static void sensors_init(void)
 
     //Next we scan both the external and internal TWI lines to see what sensors we can find
     //Check the external bus first
-    m_twi = &m_twi_internal;
-    nrf_drv_twi_enable(m_twi);
-    twi_address_scan(external_sensors, &external_sensors_found);
-    nrf_drv_twi_disable(m_twi);
+    enable_twi_bus(INTERNAL_TWI_INSTANCE_ID);
+    twi_address_scan(internal_sensors, &internal_sensors_found);
 
     //Then check the internal bus
-    m_twi = &m_twi_internal;
-    nrf_drv_twi_enable(m_twi);
-    twi_address_scan(internal_sensors, &internal_sensors_found);
-    nrf_drv_twi_disable(m_twi);
+    enable_twi_bus(EXTERNAL_TWI_INSTANCE_ID);
+    twi_address_scan(external_sensors, &external_sensors_found);
+
+    //Scan the external sensors to see if any of them match the default sensors that were
+    //set in the settings array. If not, then scan the internal sensors to see if any of
+    //them are there. If one of the default sensors isn't found on either bus then a
+    //different one will need to be selected.
 
     //Handle the initialization of individual sensors
     lsm9ds1_init(&lsm9ds1_imu, &lsm9ds1_mag, sensor_settings, m_twi, &m_xfer_done, USE_EXTERNAL_SENSORS);
@@ -1299,6 +1334,12 @@ void  twi_init (void)
     err_code = nrf_drv_twi_init(&m_twi_internal, &twi_internal_config, internal_twi_handler, NULL);
     err_code = nrf_drv_twi_init(&m_twi_external, &twi_external_config, external_twi_handler, NULL);
     APP_ERROR_CHECK(err_code);
+
+    //After initializing the buses, configure the necessary gpio pins to use these buses
+    nrf_gpio_cfg_output(BLE_33_PULLUP); //send power to BLE 33 Sense pullup resistors (they aren't connected to VDD)
+    nrf_gpio_cfg(BLE_33_SENSOR_POWER_PIN, NRF_GPIO_PIN_DIR_OUTPUT, NRF_GPIO_PIN_INPUT_CONNECT, NRF_GPIO_PIN_NOPULL, NRF_GPIO_PIN_S0H1, NRF_GPIO_PIN_NOSENSE);
+
+    nrf_gpio_cfg(EXTERNAL_SENSOR_POWER_PIN, NRF_GPIO_PIN_DIR_OUTPUT, NRF_GPIO_PIN_INPUT_CONNECT, NRF_GPIO_PIN_NOPULL, NRF_GPIO_PIN_S0H1, NRF_GPIO_PIN_NOSENSE);
 }
 
 static void leds_init()
