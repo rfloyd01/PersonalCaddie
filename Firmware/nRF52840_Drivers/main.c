@@ -148,12 +148,20 @@ static ble_uuid_t m_sr_uuids[] =                                               /
 
 const nrf_drv_twi_t m_twi_internal = NRF_DRV_TWI_INSTANCE(INTERNAL_TWI_INSTANCE_ID);
 const nrf_drv_twi_t m_twi_external = NRF_DRV_TWI_INSTANCE(EXTERNAL_TWI_INSTANCE_ID);
-nrf_drv_twi_t const * m_twi = &m_twi_internal; //a reference to the current active twi bus
+nrf_drv_twi_t const * m_twi = &m_twi_internal; //a reference to the current active twi bus, default to internal bus as external sensors might not be installed
 
 volatile bool m_xfer_done = false; //Indicates if operation on TWI has ended.
 static int measurements_taken = 0;                                              /**< keeps track of how many IMU measurements have taken in the given connection interval. */
+static int m_twi_bus_status;                                                    /**< lets us know the status of the TWI bus after each communication attempt on the bus */
 
 //IMU Sensor Parameters
+static uint8_t default_sensors[3] = {LSM9DS1_ACC, LSM9DS1_GYR, LSM9DS1_MAG};    /**< Default sensors that are attempted to be initialized first. */
+static uint8_t internal_sensors[10];                                            /**< An array for holding the addresses of sensors on the internal TWI line */
+static uint8_t external_sensors[10];                                            /**< An array for holding the addresses of sensors on the external TWI line */
+
+static uint8_t internal_sensors_found = 0;
+static uint8_t external_sensors_found = 0;
+
 static stmdev_ctx_t lsm9ds1_imu;                                                /**< LSM9DS1 accelerometer/gyroscope instance. */
 static stmdev_ctx_t lsm9ds1_mag;                                                /**< LSM9DS1 magnetometer instance. */
 
@@ -239,14 +247,57 @@ static void pm_evt_handler(pm_evt_t const * p_evt)
     }
 }
 
+static void twi_address_scan(uint8_t* addresses, uint8_t* device_count)
+{
+    //This method scans for all possible TWI addresses on the current bus. If an
+    //address is found it gets added to the given array of addresses and the cound
+    //of device gets incremented.
+    uint8_t sample_data;
+
+    for (uint8_t add = 0; add <= 127; add++)
+    {
+        ret_code_t err_code;
+        m_xfer_done = false;
+        do
+        {
+            err_code = nrf_drv_twi_rx(&m_twi_internal, add, &sample_data, sizeof(sample_data));
+        } while (err_code == 0x11); //if the nrf is currently busy doing something else this line will wait until its done before executing
+        while (m_xfer_done == false); //this line forces the program to wait for the TWI transfer to complete before moving on
+        nrf_delay_ms(50); //add a slight delay after the reading to allow time for logs to print
+
+        if (m_twi_bus_status == NRF_DRV_TWI_EVT_DONE)
+        {
+            //A sensor was found so we add it to the list
+            addresses[(*device_count)++] = add;
+        }
+    }
+}
+
 /**@brief Function for the LSM9DS1 initialization.
  *
  * @details Initializes the LSM9DS1 accelerometer, gyroscope and magnetometer
  */
 static void sensors_init(void)
 {
-    //first reset the sensor settings array
+    //First reset the sensor settings array, everything goes to zero except
+    //the sensor models which are set to the default sensors.
     for (int i = 0; i < SENSOR_SETTINGS_LENGTH; i++) sensor_settings[i] = 0;
+    sensor_settings[ACC_START + SENSOR_MODEL] = default_sensors[0];
+    sensor_settings[GYR_START + SENSOR_MODEL] = default_sensors[1];
+    sensor_settings[MAG_START + SENSOR_MODEL] = default_sensors[2];
+
+    //Next we scan both the external and internal TWI lines to see what sensors we can find
+    //Check the external bus first
+    m_twi = &m_twi_internal;
+    nrf_drv_twi_enable(m_twi);
+    twi_address_scan(external_sensors, &external_sensors_found);
+    nrf_drv_twi_disable(m_twi);
+
+    //Then check the internal bus
+    m_twi = &m_twi_internal;
+    nrf_drv_twi_enable(m_twi);
+    twi_address_scan(internal_sensors, &internal_sensors_found);
+    nrf_drv_twi_disable(m_twi);
 
     //Handle the initialization of individual sensors
     lsm9ds1_init(&lsm9ds1_imu, &lsm9ds1_mag, sensor_settings, m_twi, &m_xfer_done, USE_EXTERNAL_SENSORS);
@@ -273,19 +324,6 @@ static void sensors_init(void)
         nrf_gpio_pin_set(BLE_33_SENSOR_POWER_PIN);
         nrf_delay_ms(50); //slight delay so sensors have time to power on
     }
-
-    //uint8_t sample_data;
-    //for (uint8_t add = 0; add <= 127; add++)
-    //{
-    //    ret_code_t err_code;
-    //    m_xfer_done = false;
-    //    do
-    //    {
-    //        err_code = nrf_drv_twi_rx(&m_twi, add, &sample_data, sizeof(sample_data));
-    //    } while (err_code == 0x11); //if the nrf is currently busy doing something else this line will wait until its done before executing
-    //    //while (m_xfer_done == false); //this line forces the program to wait for the TWI transfer to complete before moving on
-    //    nrf_delay_ms(50); //slight delay so sensors have time to power on
-    //}
 
     //attempt to read the WHOAMI register for each sensor
     uint32_t ret = lsm9ds1_dev_id_get(&lsm9ds1_mag, &lsm9ds1_imu, &whoamI);
@@ -1130,10 +1168,11 @@ static void advertising_start(bool erase_bonds)
     }
 }
 
-void twi_handler(nrf_drv_twi_evt_t const * p_event, void * p_context)
+void internal_twi_handler(nrf_drv_twi_evt_t const * p_event, void * p_context)
 {
     //A handler that gets called when events happen on the TWI bus. I'm currently not really using this 
     //method for anything as my sensor reading functions work on a timer. I should keep this function though.
+    m_twi_bus_status = p_event->type;
     switch (p_event->type)
     {
         case NRF_DRV_TWI_EVT_DONE:
@@ -1151,13 +1190,49 @@ void twi_handler(nrf_drv_twi_evt_t const * p_event, void * p_context)
             SEGGER_RTT_printf(0, "Data NACK received while trying to reach slave address 0x%x.\n", p_event->xfer_desc.address);
             break;
         case NRFX_TWI_EVT_OVERRUN:
-            //SEGGER_RTT_printf(0, "Overrun event while trying to reach slave address 0x%x.\n", p_event->xfer_desc.address);
+            SEGGER_RTT_printf(0, "Overrun event while trying to reach slave address 0x%x.\n", p_event->xfer_desc.address);
             break;
         case NRFX_TWI_EVT_BUS_ERROR:
-            //SEGGER_RTT_printf(0, "Bus Error received while trying to reach slave address 0x%x.\n", p_event->xfer_desc.address);
+            SEGGER_RTT_printf(0, "Bus Error received while trying to reach slave address 0x%x.\n", p_event->xfer_desc.address);
             break;
         default:
-            //SEGGER_RTT_WriteString(0, "Something other than Event Done was achieved.\n");
+            SEGGER_RTT_WriteString(0, "Something other than Event Done was achieved.\n");
+            break;
+    }
+
+    NRF_LOG_PROCESS();
+    m_xfer_done = true; //this must be set to true before another TWI transaction can occur
+}
+
+void external_twi_handler(nrf_drv_twi_evt_t const * p_event, void * p_context)
+{
+    //A handler that gets called when events happen on the TWI bus. I'm currently not really using this 
+    //method for anything as my sensor reading functions work on a timer. I should keep this function though.
+    m_twi_bus_status = p_event->type;
+    switch (p_event->type)
+    {
+        case NRF_DRV_TWI_EVT_DONE:
+            //SEGGER_RTT_printf(0, "Successfully reached slave address 0x%x.\n", p_event->xfer_desc.address);
+            //if (p_event->xfer_desc.type == NRF_DRV_TWI_XFER_TXRX | p_event->xfer_desc.type == NRF_DRV_TWI_XFER_RX)
+            //{
+            //    //uncomment below line after the data_handler function has been written
+            //    //data_handler(m_data);
+            //}
+            break;
+        case NRF_DRV_TWI_EVT_ADDRESS_NACK:
+            SEGGER_RTT_printf(0, "Address NACK received while trying to reach slave address 0x%x.\n", p_event->xfer_desc.address);
+            break;
+        case NRF_DRV_TWI_EVT_DATA_NACK:
+            SEGGER_RTT_printf(0, "Data NACK received while trying to reach slave address 0x%x.\n", p_event->xfer_desc.address);
+            break;
+        case NRFX_TWI_EVT_OVERRUN:
+            SEGGER_RTT_printf(0, "Overrun event while trying to reach slave address 0x%x.\n", p_event->xfer_desc.address);
+            break;
+        case NRFX_TWI_EVT_BUS_ERROR:
+            SEGGER_RTT_printf(0, "Bus Error received while trying to reach slave address 0x%x.\n", p_event->xfer_desc.address);
+            break;
+        default:
+            SEGGER_RTT_WriteString(0, "Something other than Event Done was achieved.\n");
             break;
     }
 
@@ -1203,12 +1278,12 @@ void  twi_init (void)
     //There are two separate TWI buses that are used here. One for communication with
     //sensors that are on the current board, and one for communication with sensors that
     //are external to the board.
-    const nrf_drv_twi_config_t twi_lsm9ds1_config = {
+    const nrf_drv_twi_config_t twi_internal_config = {
        .scl                = BLE_33_SCL_PIN,
        .sda                = BLE_33_SDA_PIN,
        .frequency          = NRF_DRV_TWI_FREQ_400K,
        .interrupt_priority = APP_IRQ_PRIORITY_HIGH,
-       .clear_bus_init     = false
+       .clear_bus_init     = true
         };
 
     const nrf_drv_twi_config_t twi_external_config = {
@@ -1216,13 +1291,13 @@ void  twi_init (void)
        .sda                = EXTERNAL_SDA_PIN,
        .frequency          = NRF_DRV_TWI_FREQ_400K,
        .interrupt_priority = APP_IRQ_PRIORITY_HIGH,
-       .clear_bus_init     = false
+       .clear_bus_init     = true
         };
 
     //A handler method is necessary to enable non-blocking mode. TXRX operations can only be carried 
     //out when non-blocking mode is enabled so a handler is needed here.
-    err_code = nrf_drv_twi_init(&m_twi_internal, &twi_lsm9ds1_config, twi_handler, NULL);
-    err_code = nrf_drv_twi_init(&m_twi_external, &twi_external_config, twi_handler, NULL);
+    err_code = nrf_drv_twi_init(&m_twi_internal, &twi_internal_config, internal_twi_handler, NULL);
+    err_code = nrf_drv_twi_init(&m_twi_external, &twi_external_config, external_twi_handler, NULL);
     APP_ERROR_CHECK(err_code);
 }
 
