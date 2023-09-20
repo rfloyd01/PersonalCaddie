@@ -263,14 +263,24 @@ static void twi_address_scan(uint8_t* addresses, uint8_t* device_count)
             err_code = nrf_drv_twi_rx(m_twi, add, &sample_data, sizeof(sample_data));
         } while (err_code == 0x11); //if the nrf is currently busy doing something else this line will wait until its done before executing
         while (m_xfer_done == false); //this line forces the program to wait for the TWI transfer to complete before moving on
-        //nrf_delay_ms(50); //add a slight delay after the reading to allow time for logs to print
 
-        if (m_twi_bus_status == NRF_DRV_TWI_EVT_DONE)
-        {
-            //A sensor was found so we add it to the list
-            addresses[(*device_count)++] = add;
-        }
+        //A sensor was found so we add it to the list
+        if (m_twi_bus_status == NRF_DRV_TWI_EVT_DONE) addresses[(*device_count)++] = add;
     }
+}
+
+static void disable_twi_bus()
+{
+    //this method disables the currently enabled twi bus, as well as shuts
+    //off power to any gpio pins that it requires.
+    if (m_twi == &m_twi_internal)
+    {
+        nrf_gpio_pin_clear(BLE_33_PULLUP);
+        nrf_gpio_pin_clear(BLE_33_SENSOR_POWER_PIN);
+    }
+    else nrf_gpio_pin_clear(EXTERNAL_SENSOR_POWER_PIN);
+
+    nrf_drv_twi_disable(m_twi); //disable the current bus
 }
 
 static void enable_twi_bus(int instance_id)
@@ -278,8 +288,8 @@ static void enable_twi_bus(int instance_id)
     //This method enables the given twi bus instance, as well as turns on any 
     //necessary power and pullup resistor pins. It also disables the other twi
     //instance in the case that it's currently on.
+    disable_twi_bus(); //disable the currently active bus and shut off any power pins
 
-    nrf_drv_twi_disable(m_twi); //disable the current bus
     if (instance_id == INTERNAL_TWI_INSTANCE_ID)
     {
         m_twi = &m_twi_internal;
@@ -288,8 +298,6 @@ static void enable_twi_bus(int instance_id)
         //also make sure that power for the external sensors is off
         nrf_gpio_pin_set(BLE_33_PULLUP);
         nrf_gpio_pin_set(BLE_33_SENSOR_POWER_PIN);
-        
-        nrf_gpio_pin_clear(EXTERNAL_SENSOR_POWER_PIN);
     }
     else
     {
@@ -298,9 +306,6 @@ static void enable_twi_bus(int instance_id)
         //Send power to the external sensors. also make sure that power,
         //afor the internal sensors and the pullup resistor is off
         nrf_gpio_pin_set(EXTERNAL_SENSOR_POWER_PIN);
-
-        nrf_gpio_pin_clear(BLE_33_PULLUP);
-        nrf_gpio_pin_clear(BLE_33_SENSOR_POWER_PIN);
     }
 
     nrf_delay_ms(50); //slight delay so sensors have time to power on
@@ -333,6 +338,22 @@ static void sensors_init(void)
     //set in the settings array. If not, then scan the internal sensors to see if any of
     //them are there. If one of the default sensors isn't found on either bus then a
     //different one will need to be selected.
+    if (external_sensors_found > 0)
+    {
+        for (int i = 0; i < 3; i++)
+        {
+            uint8_t default_sensor_address_l = get_sensor_low_address(i, default_sensors[i]);
+            uint8_t default_sensor_address_h = get_sensor_high_address(i, default_sensors[i]);
+
+            for (int j = 0; j < external_sensors_found; j++)
+            {
+                if (external_sensors[j] == default_sensor_address_l || external_sensors[j] == default_sensor_address_h)
+                {
+                    int x = 5;
+                }
+            }
+        }
+    }
 
     //Handle the initialization of individual sensors
     lsm9ds1_init(&lsm9ds1_imu, &lsm9ds1_mag, sensor_settings, m_twi, &m_xfer_done, USE_EXTERNAL_SENSORS);

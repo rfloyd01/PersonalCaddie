@@ -11,6 +11,58 @@ void update_sensor_setting(uint8_t* settings_array, sensor_settings_t setting, u
     if (setting >= 0 && setting <= EXTRA_2) settings_array[setting] = value;
 }
 
+uint8_t get_sensor_high_address(sensor_type_t sensor_type, uint8_t sensor_model)
+{
+    //returns the slave address for the given sensor when the address pin is held high
+    if (sensor_type == ACC_SENSOR)
+    {
+        switch (sensor_model)
+        {
+            case LSM9DS1_ACC: return LSM9DS1_IMU_I2C_ADD_H >> 1;
+        }
+    }
+    else if (sensor_type == GYR_SENSOR)
+    {
+        switch (sensor_model)
+        {
+            case LSM9DS1_GYR: return LSM9DS1_IMU_I2C_ADD_H >> 1;
+        }
+    }
+    else if (sensor_type == MAG_SENSOR)
+    {
+        switch (sensor_model)
+        {
+            case LSM9DS1_MAG: return LSM9DS1_MAG_I2C_ADD_H >> 1;
+        }
+    }
+}
+
+uint8_t get_sensor_low_address(sensor_type_t sensor_type, uint8_t sensor_model)
+{
+    //returns the slave address for the given sensor when the address pin is held low
+    if (sensor_type == ACC_SENSOR)
+    {
+        switch (sensor_model)
+        {
+            case LSM9DS1_ACC: return LSM9DS1_IMU_I2C_ADD_L >> 1;
+        }
+    }
+    else if (sensor_type == GYR_SENSOR)
+    {
+        switch (sensor_model)
+        {
+            case LSM9DS1_GYR: return LSM9DS1_IMU_I2C_ADD_L >> 1;
+        }
+    }
+    else if (sensor_type == MAG_SENSOR)
+    {
+        switch (sensor_model)
+        {
+            case LSM9DS1_MAG: return LSM9DS1_MAG_I2C_ADD_L >> 1;
+        }
+    }
+}
+
 //LSM9DS1 conversions
 float lsm9ds1_odr_calculate(uint8_t imu_odr_setting, uint8_t mag_odr_setting)
 {

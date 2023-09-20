@@ -69,6 +69,9 @@ float lsm9ds1_fsr_conversion(sensor_type_t sensor, uint8_t fsr_setting);
 const wchar_t* lsm9ds1_get_settings_string(sensor_type_t sensor_type, sensor_settings_t setting_type, uint8_t setting);
 const wchar_t* lsm9ds1_get_complete_settings_string(sensor_type_t sensor_type, sensor_settings_t setting_type);
 
+uint8_t get_sensor_high_address(sensor_type_t sensor_type, uint8_t sensor_model);
+uint8_t get_sensor_low_address(sensor_type_t sensor_type, uint8_t sensor_model);
+
 #ifdef __cplusplus
 }
 #endif
