@@ -2,10 +2,6 @@
 #include "app_error.h"
 #include "SEGGER_RTT.h"
 
-//set up pointers to TWI instance for chip communication
-const nrf_drv_twi_t* p_twi;
-volatile bool* p_xfer_done;
-
 //set up settings variables
 static imu_communication_t* imu_comm;
 
@@ -20,8 +16,7 @@ static lsm9ds1_id_t whoamI;
 
 static bool lsm9ds1_register_auto_increment = true;                       /**register auto increment function for multiple byte reads of LSM9DS1 chip **/
 
-void lsm9ds1_init(imu_communication_t* comm, uint8_t sensors, uint8_t* settings,
-                  const nrf_drv_twi_t* twi, volatile bool* xfer_done, bool external_board)
+void lsm9ds1_init(imu_communication_t* comm, uint8_t sensors, uint8_t* settings)
 {
     //create a pointer to an array which holds settings for the sensor
     p_sensor_settings = settings;
@@ -30,25 +25,40 @@ void lsm9ds1_init(imu_communication_t* comm, uint8_t sensors, uint8_t* settings,
     imu_comm = comm;
 
     //initialize read/write methods, addresses, and default settings for acc + gyro
-    if (sensors & 0b110)
+    if (sensors & 0b001)
     {
         lsm9ds1_imu.read_reg = lsm9ds1_read_imu;
         lsm9ds1_imu.write_reg = lsm9ds1_write_imu;
         IMU_Address = comm->acc_comm.address;
 
-        //Apply default settings for the acc and gyro
+        //Apply default settings for the acc
         update_sensor_setting(p_sensor_settings + ACC_START, FS_RANGE, LSM9DS1_4g); //accelerometer full scale range (+/- 4 g)
-        update_sensor_setting(p_sensor_settings + GYR_START, FS_RANGE, LSM9DS1_2000dps); //gyroscope full scale range (+/- 2000 degrees/s)
 
         update_sensor_setting(p_sensor_settings + ACC_START, ODR, LSM9DS1_IMU_59Hz5); //accelerometer/gyroscope ODR and Power (59.5 Hz, gyroscope in standard power mode)
-        update_sensor_setting(p_sensor_settings + GYR_START, ODR, LSM9DS1_IMU_59Hz5); //accelerometer/gyroscope ODR and Power (59.5 Hz, gyroscope in standard power mode)
         update_sensor_setting(p_sensor_settings + ACC_START, POWER, LSM9DS1_IMU_59Hz5); //accelerometer/gyroscope ODR and Power (59.5 Hz, gyroscope in standard power mode)
-        update_sensor_setting(p_sensor_settings + GYR_START, POWER, LSM9DS1_IMU_59Hz5); //accelerometer/gyroscope ODR and Power (59.5 Hz, gyroscope in standard power mode)
 
         update_sensor_setting(p_sensor_settings + ACC_START, FILTER_SELECTION, LSM9DS1_LP_OUT); //accelerometer filter selection (low pass filter only)
         update_sensor_setting(p_sensor_settings + ACC_START, LOW_PASS_FILTER, LSM9DS1_LP_DISABLE); //accelerometer low pass filter setting (frequency is automatically tied to ODR)
         update_sensor_setting(p_sensor_settings + ACC_START, HIGH_PASS_FILTER, 0); //accelerometer high pass filter setting (only takes effect when HP_OUT is set for accelerometer)
         update_sensor_setting(p_sensor_settings + ACC_START, EXTRA_FILTER, LSM9DS1_50Hz); //accelerometer anti-aliasing bandwidth (50 Hz bandwidth)
+
+        //After setting default settings, attempt to read the whoAmI register
+        uint32_t ret = lsm9ds1_dev_id_get(NULL, &lsm9ds1_imu, &whoamI);
+        if (whoamI.imu == LSM9DS1_IMU_ID) SEGGER_RTT_WriteString(0, "LSM9DS1 Acc discovered.\n");
+        else SEGGER_RTT_WriteString(0, "Error: Couldn't find LSM9DS1 Acc.\n");
+    }
+
+    if (sensors & 0b010)
+    {
+        lsm9ds1_imu.read_reg = lsm9ds1_read_imu;
+        lsm9ds1_imu.write_reg = lsm9ds1_write_imu;
+        IMU_Address = comm->gyr_comm.address;
+
+        //Apply default settings for the acc and gyro
+        update_sensor_setting(p_sensor_settings + GYR_START, FS_RANGE, LSM9DS1_2000dps); //gyroscope full scale range (+/- 2000 degrees/s)
+
+        update_sensor_setting(p_sensor_settings + GYR_START, ODR, LSM9DS1_IMU_59Hz5); //accelerometer/gyroscope ODR and Power (59.5 Hz, gyroscope in standard power mode)
+        update_sensor_setting(p_sensor_settings + GYR_START, POWER, LSM9DS1_IMU_59Hz5); //accelerometer/gyroscope ODR and Power (59.5 Hz, gyroscope in standard power mode)
 
         update_sensor_setting(p_sensor_settings + GYR_START, FILTER_SELECTION, LSM9DS1_LPF1_HPF_OUT); //Gyroscope filter selection (low pass filter 1 and HPF)
         update_sensor_setting(p_sensor_settings + GYR_START, LOW_PASS_FILTER, 0); //gyroscope low pass filter setting (only takes effect when LPF2 is set in gyro filter path)
@@ -56,12 +66,12 @@ void lsm9ds1_init(imu_communication_t* comm, uint8_t sensors, uint8_t* settings,
 
         //After setting default settings, attempt to read the whoAmI register
         uint32_t ret = lsm9ds1_dev_id_get(NULL, &lsm9ds1_imu, &whoamI);
-        if (whoamI.imu == LSM9DS1_IMU_ID) SEGGER_RTT_WriteString(0, "LSM9DS1 Acc + Gyro discovered.\n");
-        else SEGGER_RTT_WriteString(0, "Error: Couldn't find LSM9DS1 Acc + Gyro.\n");
+        if (whoamI.imu == LSM9DS1_IMU_ID) SEGGER_RTT_WriteString(0, "LSM9DS1 Gyro discovered.\n");
+        else SEGGER_RTT_WriteString(0, "Error: Couldn't find LSM9DS1 Gyro.\n");
     }
 
     //initialize read/write methods, address, and default settings for mag
-    if (sensors & 0b001)
+    if (sensors & 0b100)
     {
         lsm9ds1_mag.read_reg = lsm9ds1_read_mag;
         lsm9ds1_mag.write_reg = lsm9ds1_write_mag;
@@ -84,8 +94,8 @@ int32_t lsm9ds1_idle_mode_enable(uint8_t sensors)
 {
     //Set the sensors in the sensor variable to sleep (0b100 = acc, 0b010 = gyr, 0b001 = mag)
     int32_t ret = 0;
-    if (sensors & 0b110) ret = lsm9ds1_imu_data_rate_set(&lsm9ds1_imu, LSM9DS1_IMU_OFF);
-    if (sensors & 0b001) ret = lsm9ds1_mag_data_rate_set(&lsm9ds1_mag, LSM9DS1_MAG_POWER_DOWN);
+    if (sensors & 0b011) ret = lsm9ds1_imu_data_rate_set(&lsm9ds1_imu, LSM9DS1_IMU_OFF);
+    if (sensors & 0b100) ret = lsm9ds1_mag_data_rate_set(&lsm9ds1_mag, LSM9DS1_MAG_POWER_DOWN);
 
     return ret;
 }
@@ -97,9 +107,9 @@ int32_t lsm9ds1_active_mode_enable(uint8_t sensors)
     int32_t ret = 0;
     for (int i = 0; i < SENSOR_SETTINGS_LENGTH / 3; i++)
     {
-        if (sensors & 0b100) ret = lsm9ds1_acc_apply_setting(i + ACC_START);
+        if (sensors & 0b001) ret = lsm9ds1_acc_apply_setting(i + ACC_START);
         if (sensors & 0b010) ret = lsm9ds1_gyr_apply_setting(i + GYR_START);
-        if (sensors & 0b001) ret = lsm9ds1_mag_apply_setting(i + MAG_START);
+        if (sensors & 0b100) ret = lsm9ds1_mag_apply_setting(i + MAG_START);
         //SEGGER_RTT_printf(0, "0x%x ", p_sensor_settings[i]);
     }
     //SEGGER_RTT_WriteString(0, "\n\n");

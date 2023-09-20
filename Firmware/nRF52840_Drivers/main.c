@@ -87,6 +87,7 @@
 #include "SEGGER_RTT.h"
 
 #include "lsm9ds1.h"
+#include "fxos8700.h"
 #include "ble_sensor_service.h"
 #include "personal_caddie_operating_modes.h"
 
@@ -158,7 +159,7 @@ static int m_twi_external_bus_status;                                           
 static int measurements_taken = 0;                                              /**< keeps track of how many IMU measurements have taken in the given connection interval. */
 
 //IMU Sensor Parameters
-static uint8_t default_sensors[3] = {LSM9DS1_ACC, LSM9DS1_GYR, LSM9DS1_MAG};    /**< Default sensors that are attempted to be initialized first. */
+static uint8_t default_sensors[3] = {FXOS8700_ACC, LSM9DS1_GYR, LSM9DS1_MAG};   /**< Default sensors that are attempted to be initialized first. */
 static bool sensors_initialized[3] = {false, false, false};                     /**< Keep track of which sensors are currently initialized */
 static uint8_t internal_sensors[10];                                            /**< An array for holding the addresses of sensors on the internal TWI line */
 static uint8_t external_sensors[10];                                            /**< An array for holding the addresses of sensors on the external TWI line */
@@ -439,9 +440,31 @@ static void sensors_init(void)
         }
     }
 
-    //Handle the initialization of individual sensors
-    //TODO: Need some kind of variable to keep track of which sensor init methods to call, just use lsm9ds1 for now
-    lsm9ds1_init(&imu_comm, 0b111, sensor_settings, &m_twi_external, &m_xfer_external_done, USE_EXTERNAL_SENSORS);
+    //Handle the initialization of individual sensors. Currently the model for each sensor type
+    //matches the enums for the other sensor models (i.e. lsm9ds1 acc/gyrmag all have enum values of 0x00).
+    //We take advantage of this fact to see how many sensors from each model need to be initialized. This
+    //may not hold up as more sensors get added, but I'll address that when the time comes.
+    for (int i = 0; i < ACC_MODEL_END; i++)
+    {
+        int sensors = 0;
+        for (int j = 0; j < 3; j++)
+        {
+            if (default_sensors[j] == i) sensors |= (1 << j);
+        }
+
+        if (sensors != 0)
+        {
+            switch(i)
+            {
+                case LSM9DS1_ACC:
+                    lsm9ds1_init(&imu_comm, sensors, sensor_settings);
+                    break;
+                case FXOS8700_ACC:
+                    fxos8700init(&imu_comm, sensors, sensor_settings);
+            }
+        }
+    }
+    
 
     //regardless of whether or not any sensors are found, disable the power pins and TWI bus
     disable_twi_bus(INTERNAL_TWI_INSTANCE_ID);

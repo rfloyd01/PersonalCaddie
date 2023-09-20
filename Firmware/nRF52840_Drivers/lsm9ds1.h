@@ -11,8 +11,7 @@
 extern "C" {
 #else
 
-void lsm9ds1_init(imu_communication_t* comm, uint8_t sensors, uint8_t* settings,
-    const nrf_drv_twi_t* twi, volatile bool* xfer_done, bool external_board);
+void lsm9ds1_init(imu_communication_t* comm, uint8_t sensors, uint8_t* settings);
 #endif
 
 int32_t lsm9ds1_idle_mode_enable(uint8_t sensors);

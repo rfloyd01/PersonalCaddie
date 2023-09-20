@@ -106,6 +106,7 @@
       <file file_name="ble_sensor_service.c" />
       <file file_name="lsm9ds1.c" />
       <file file_name="../MEMs_Drivers/sensor_settings.c" />
+      <file file_name="fxos8700.c" />
     </folder>
     <folder Name="nRF_Segger_RTT">
       <file file_name="$(IncludeDir)/$(SDKVer)/external/segger_rtt/SEGGER_RTT.c" />
@@ -143,6 +144,9 @@
     </folder>
     <folder Name="MEMS_Sensor_Drivers">
       <file file_name="../MEMs_Drivers/lsm9ds1_reg.c" />
+      <file file_name="../MEMs_Drivers/NXP/fxos8700/src/fxos8700_driver.c" />
+      <file file_name="../MEMs_Drivers/NXP/fxos8700/src/common/sensor_comm.c" />
+      <file file_name="../MEMs_Drivers/NXP/fxos8700/src/common/sensor_common.c" />
     </folder>
   </project>
   <configuration

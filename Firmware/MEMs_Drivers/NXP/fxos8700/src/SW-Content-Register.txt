@@ -1,0 +1,34 @@
+﻿Release Name:    Component Library
+Package Version: v1.3
+
+Sensor Drivers             Version: 1.1
+                           Description: Platform agnostic sensor driver interfaces for NXP sensors
+                           License: Open Source - BSD-3
+                           Author: NXP
+                           Name: sensor_drivers for fxos8700
+                           Location: fxos8700
+                           Format: source code
+
+MCUXpresso SDK             Version: 2.x
+                           Description: NXP's MCUXpresso SDK is a comprehensive software enablement package designed to simplify
+						   and accelerate application development with NXP’s microcontrollers and crossover processors based on
+						   Arm® Cortex®-M cores. Component lib integration examples use MCUXpresso SDK to demonstrate usage.
+                           License: LA_OPT_NXP_Software_License.htm - Production Use, Section 2.3 applies
+                           Author: NXP
+                           Name: MCUXpresso SDK
+                           Location: fxos8700
+
+                           Format: source code
+
+CMSIS                      Version: 5.6.0
+                           Description: Vendor-independent hardware abstraction layer for microcontrollers that are based on
+						   Arm® Cortex® processors, distributed by ARM® cores.
+                           License: Apache License 2.0, CMSIS/LICENSE.txt
+                           Author: ARM
+                           Name: CMSIS
+                           Location: example projects/CMSIS
+                           Format: source code
+						   URL: https://github.com/ARM-software/CMSIS_5/releases/tag/5.6.0
+
+
+

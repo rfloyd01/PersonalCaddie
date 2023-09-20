@@ -1,5 +1,6 @@
 #include "sensor_settings.h"
 #include "lsm9ds1_reg.h"
+#include "NXP/fxos8700/src/fxos8700_regdef.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -18,21 +19,23 @@ uint8_t get_sensor_high_address(sensor_type_t sensor_type, uint8_t sensor_model)
     {
         switch (sensor_model)
         {
-            case LSM9DS1_ACC: return LSM9DS1_IMU_I2C_ADD_H >> 1;
+            case LSM9DS1_ACC: return LSM9DS1_IMU_I2C_ADD_H >> 1; //saved address for LSM9DS1 is 8-bit instead of 7 bit so right shift by 1
+            case FXOS8700_ACC: return FXOS8700_DEVICE_ADDR_SA_11;
         }
     }
     else if (sensor_type == GYR_SENSOR)
     {
         switch (sensor_model)
         {
-            case LSM9DS1_GYR: return LSM9DS1_IMU_I2C_ADD_H >> 1;
+            case LSM9DS1_GYR: return LSM9DS1_IMU_I2C_ADD_H >> 1; //saved address for LSM9DS1 is 8-bit instead of 7 bit so right shift by 1
         }
     }
     else if (sensor_type == MAG_SENSOR)
     {
         switch (sensor_model)
         {
-            case LSM9DS1_MAG: return LSM9DS1_MAG_I2C_ADD_H >> 1;
+            case LSM9DS1_MAG: return LSM9DS1_MAG_I2C_ADD_H >> 1; //saved address for LSM9DS1 is 8-bit instead of 7 bit so right shift by 1
+            case FXOS8700_MAG: return FXOS8700_DEVICE_ADDR_SA_11;
         }
     }
 }
@@ -44,21 +47,23 @@ uint8_t get_sensor_low_address(sensor_type_t sensor_type, uint8_t sensor_model)
     {
         switch (sensor_model)
         {
-            case LSM9DS1_ACC: return LSM9DS1_IMU_I2C_ADD_L >> 1;
+            case LSM9DS1_ACC: return LSM9DS1_IMU_I2C_ADD_L >> 1; //saved address for LSM9DS1 is 8-bit instead of 7 bit so right shift by 1
+            case FXOS8700_ACC: return FXOS8700_DEVICE_ADDR_SA_10;
         }
     }
     else if (sensor_type == GYR_SENSOR)
     {
         switch (sensor_model)
         {
-            case LSM9DS1_GYR: return LSM9DS1_IMU_I2C_ADD_L >> 1;
+            case LSM9DS1_GYR: return LSM9DS1_IMU_I2C_ADD_L >> 1; //saved address for LSM9DS1 is 8-bit instead of 7 bit so right shift by 1
         }
     }
     else if (sensor_type == MAG_SENSOR)
     {
         switch (sensor_model)
         {
-            case LSM9DS1_MAG: return LSM9DS1_MAG_I2C_ADD_L >> 1;
+            case LSM9DS1_MAG: return LSM9DS1_MAG_I2C_ADD_L >> 1; //saved address for LSM9DS1 is 8-bit instead of 7 bit so right shift by 1
+            case FXOS8700_MAG: return FXOS8700_DEVICE_ADDR_SA_10;
         }
     }
 }
