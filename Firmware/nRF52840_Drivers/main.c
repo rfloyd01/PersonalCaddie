@@ -1224,43 +1224,7 @@ static void advertising_start(bool erase_bonds)
     }
 }
 
-void internal_twi_handler(nrf_drv_twi_evt_t const * p_event, void * p_context)
-{
-    //A handler that gets called when events happen on the TWI bus. I'm currently not really using this 
-    //method for anything as my sensor reading functions work on a timer. I should keep this function though.
-    m_twi_bus_status = p_event->type;
-    switch (p_event->type)
-    {
-        case NRF_DRV_TWI_EVT_DONE:
-            //SEGGER_RTT_printf(0, "Successfully reached slave address 0x%x.\n", p_event->xfer_desc.address);
-            //if (p_event->xfer_desc.type == NRF_DRV_TWI_XFER_TXRX | p_event->xfer_desc.type == NRF_DRV_TWI_XFER_RX)
-            //{
-            //    //uncomment below line after the data_handler function has been written
-            //    //data_handler(m_data);
-            //}
-            break;
-        case NRF_DRV_TWI_EVT_ADDRESS_NACK:
-            SEGGER_RTT_printf(0, "Address NACK received while trying to reach slave address 0x%x.\n", p_event->xfer_desc.address);
-            break;
-        case NRF_DRV_TWI_EVT_DATA_NACK:
-            SEGGER_RTT_printf(0, "Data NACK received while trying to reach slave address 0x%x.\n", p_event->xfer_desc.address);
-            break;
-        case NRFX_TWI_EVT_OVERRUN:
-            SEGGER_RTT_printf(0, "Overrun event while trying to reach slave address 0x%x.\n", p_event->xfer_desc.address);
-            break;
-        case NRFX_TWI_EVT_BUS_ERROR:
-            SEGGER_RTT_printf(0, "Bus Error received while trying to reach slave address 0x%x.\n", p_event->xfer_desc.address);
-            break;
-        default:
-            SEGGER_RTT_WriteString(0, "Something other than Event Done was achieved.\n");
-            break;
-    }
-
-    NRF_LOG_PROCESS();
-    m_xfer_done = true; //this must be set to true before another TWI transaction can occur
-}
-
-void external_twi_handler(nrf_drv_twi_evt_t const * p_event, void * p_context)
+void twi_handler(nrf_drv_twi_evt_t const * p_event, void * p_context)
 {
     //A handler that gets called when events happen on the TWI bus. I'm currently not really using this 
     //method for anything as my sensor reading functions work on a timer. I should keep this function though.
@@ -1352,8 +1316,8 @@ void  twi_init (void)
 
     //A handler method is necessary to enable non-blocking mode. TXRX operations can only be carried 
     //out when non-blocking mode is enabled so a handler is needed here.
-    err_code = nrf_drv_twi_init(&m_twi_internal, &twi_internal_config, internal_twi_handler, NULL);
-    err_code = nrf_drv_twi_init(&m_twi_external, &twi_external_config, external_twi_handler, NULL);
+    err_code = nrf_drv_twi_init(&m_twi_internal, &twi_internal_config, twi_handler, NULL);
+    err_code = nrf_drv_twi_init(&m_twi_external, &twi_external_config, twi_handler, NULL);
     APP_ERROR_CHECK(err_code);
 
     //After initializing the buses, configure the necessary gpio pins to use these buses
