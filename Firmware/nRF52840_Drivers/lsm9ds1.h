@@ -5,20 +5,22 @@
 #include <stdbool.h>
 #include "lsm9ds1_reg.h"
 #include "sensor_settings.h"
+#include "sensor_communication.h"
 
 #ifdef __cplusplus
 extern "C" {
 #else
-#include "nrf_drv_twi.h" //don't want to include this on the C++ side
 
-void lsm9ds1_init(stmdev_ctx_t* lsm9ds1_imu, stmdev_ctx_t* lsm9ds1_mag, uint8_t* settings,
+void lsm9ds1_init(imu_communication_t* comm, uint8_t sensors, uint8_t* settings,
     const nrf_drv_twi_t* twi, volatile bool* xfer_done, bool external_board);
 #endif
 
-void lsm9ds1_idle_mode_enable(stmdev_ctx_t* lsm9ds1_imu, stmdev_ctx_t* lsm9ds1_mag);
-void lsm9ds1_active_mode_enable(stmdev_ctx_t* lsm9ds1_imu, stmdev_ctx_t* lsm9ds1_mag);
+int32_t lsm9ds1_idle_mode_enable(uint8_t sensors);
+int32_t lsm9ds1_active_mode_enable(uint8_t sensors);
 
-void lsm9ds1_apply_setting(stmdev_ctx_t* lsm9ds1_imu, stmdev_ctx_t* lsm9ds1_mag, sensor_settings_t setting);
+int32_t lsm9ds1_acc_apply_setting(uint8_t setting);
+int32_t lsm9ds1_gyr_apply_setting(uint8_t setting);
+int32_t lsm9ds1_mag_apply_setting(uint8_t setting);
 
 //Register reading and writing methods
 static int32_t lsm9ds1_read_imu(void *handle, uint8_t reg, uint8_t *bufp, uint16_t len);

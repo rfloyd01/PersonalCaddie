@@ -148,19 +148,26 @@ static ble_uuid_t m_sr_uuids[] =                                               /
 
 const nrf_drv_twi_t m_twi_internal = NRF_DRV_TWI_INSTANCE(INTERNAL_TWI_INSTANCE_ID);
 const nrf_drv_twi_t m_twi_external = NRF_DRV_TWI_INSTANCE(EXTERNAL_TWI_INSTANCE_ID);
-nrf_drv_twi_t const * m_twi = &m_twi_internal; //a reference to the current active twi bus, default to internal bus as external sensors might not be installed
 
-volatile bool m_xfer_done = false; //Indicates if operation on TWI has ended.
+volatile bool m_xfer_internal_done = false; //Indicates if operation on the internal TWI bus has ended.
+volatile bool m_xfer_external_done = false; //Indicates if operation on the external TWI bus has ended.
+
+static int m_twi_internal_bus_status;                                                    /**< lets us know the status of the internal TWI bus after each communication attempt on the bus */
+static int m_twi_external_bus_status;                                                    /**< lets us know the status of the external TWI bus after each communication attempt on the bus */
+
 static int measurements_taken = 0;                                              /**< keeps track of how many IMU measurements have taken in the given connection interval. */
-static int m_twi_bus_status;                                                    /**< lets us know the status of the TWI bus after each communication attempt on the bus */
 
 //IMU Sensor Parameters
 static uint8_t default_sensors[3] = {LSM9DS1_ACC, LSM9DS1_GYR, LSM9DS1_MAG};    /**< Default sensors that are attempted to be initialized first. */
+static bool sensors_initialized[3] = {false, false, false};                     /**< Keep track of which sensors are currently initialized */
 static uint8_t internal_sensors[10];                                            /**< An array for holding the addresses of sensors on the internal TWI line */
 static uint8_t external_sensors[10];                                            /**< An array for holding the addresses of sensors on the external TWI line */
 
 static uint8_t internal_sensors_found = 0;
 static uint8_t external_sensors_found = 0;
+
+static int32_t sensor_read_register(void *bus, uint8_t add, uint8_t reg, uint8_t *bufp, uint16_t len); //function declaration for reading sensor registers
+static int32_t sensor_write_register(void *bus, uint8_t add, uint8_t reg, const uint8_t *bufp); //function declaration for writing sensor registers
 
 static stmdev_ctx_t lsm9ds1_imu;                                                /**< LSM9DS1 accelerometer/gyroscope instance. */
 static stmdev_ctx_t lsm9ds1_mag;                                                /**< LSM9DS1 magnetometer instance. */
@@ -175,7 +182,6 @@ static uint8_t acc_characteristic_data[SENSOR_SAMPLES * SAMPLE_SIZE];
 static uint8_t gyr_characteristic_data[SENSOR_SAMPLES * SAMPLE_SIZE];
 static uint8_t mag_characteristic_data[SENSOR_SAMPLES * SAMPLE_SIZE];
 uint8_t sensor_settings[SENSOR_SETTINGS_LENGTH];                               /**< An array represnting the IMU sensor settings */
-static lsm9ds1_id_t whoamI;
 
 static int32_t write_imu(void *handle, uint8_t reg, const uint8_t *bufp, uint16_t len);
 static int32_t read_imu(void *handle, uint8_t reg, uint8_t *bufp, uint16_t len);
@@ -208,6 +214,8 @@ static personal_caddie_operating_mode_t current_operating_mode = ADVERTISING_MOD
 #define BLE_33_BLUE_LED           NRF_GPIO_PIN_MAP(0, 6)                          /**< Blue LED Indicator on BLE 33 sense*/
 #define BLE_33_GREEN_LED          NRF_GPIO_PIN_MAP(0, 16)                         /**< Green LED Indicator on BLE 33 sense*/
 static volatile uint8_t active_led = USE_EXTERNAL_LEDS ? EXTERNAL_BLUE_LED : BLE_33_BLUE_LED;                             /**< Variable used to keep track of which LED to turn on/off*/
+
+imu_communication_t imu_comm;                                                          /**< Holds information on how to communicate with each sensor*/
 
 static void advertising_start(bool erase_bonds);
 
@@ -247,7 +255,7 @@ static void pm_evt_handler(pm_evt_t const * p_evt)
     }
 }
 
-static void twi_address_scan(uint8_t* addresses, uint8_t* device_count)
+static void twi_address_scan(uint8_t* addresses, uint8_t* device_count, nrf_drv_twi_t const * bus)
 {
     //This method scans for all possible TWI addresses on the current bus. If an
     //address is found it gets added to the given array of addresses and the cound
@@ -257,59 +265,111 @@ static void twi_address_scan(uint8_t* addresses, uint8_t* device_count)
     for (uint8_t add = 0; add <= 127; add++)
     {
         ret_code_t err_code;
-        m_xfer_done = false;
+        
+        //set the m_xfer_done bool to false given the current TWI bus
+        uint8_t instance = ((nrf_drv_twi_t const*)bus)->inst_idx;
+        volatile bool * m_xfer_done;
+        if (instance == INTERNAL_TWI_INSTANCE_ID) m_xfer_done = &m_xfer_internal_done; //set to false before any read or write operations (this gets set to true in twi_handler when the transfer is complete)
+        else m_xfer_done = &m_xfer_external_done;
+
+        *m_xfer_done = false;
+
         do
         {
-            err_code = nrf_drv_twi_rx(m_twi, add, &sample_data, sizeof(sample_data));
+            err_code = nrf_drv_twi_rx(bus, add, &sample_data, sizeof(sample_data));
         } while (err_code == 0x11); //if the nrf is currently busy doing something else this line will wait until its done before executing
-        while (m_xfer_done == false); //this line forces the program to wait for the TWI transfer to complete before moving on
+        while (*m_xfer_done == false); //this line forces the program to wait for the TWI transfer to complete before moving on
 
-        //A sensor was found so we add it to the list
-        if (m_twi_bus_status == NRF_DRV_TWI_EVT_DONE) addresses[(*device_count)++] = add;
+        //If a sensor was found so we add it to the list, get the bus status from the 
+        //current twi bus and add the current address if we get an ACK
+        int* m_twi_bus_status;
+        if (instance == INTERNAL_TWI_INSTANCE_ID) m_twi_bus_status = &m_twi_internal_bus_status;
+        else m_twi_bus_status = &m_twi_external_bus_status;
+
+        if (*m_twi_bus_status == NRF_DRV_TWI_EVT_DONE) addresses[(*device_count)++] = add;
     }
 }
 
-static void disable_twi_bus()
+static void disable_twi_bus(int instance_id)
 {
-    //this method disables the currently enabled twi bus, as well as shuts
+    //this method disables a currently enabled twi bus, as well as shuts
     //off power to any gpio pins that it requires.
-    if (m_twi == &m_twi_internal)
+    if (instance_id == INTERNAL_TWI_INSTANCE_ID)
     {
         nrf_gpio_pin_clear(BLE_33_PULLUP);
         nrf_gpio_pin_clear(BLE_33_SENSOR_POWER_PIN);
-    }
-    else nrf_gpio_pin_clear(EXTERNAL_SENSOR_POWER_PIN);
 
-    nrf_drv_twi_disable(m_twi); //disable the current bus
+        nrf_drv_twi_disable(&m_twi_internal); //disable the current bus
+    }
+    else
+    {
+        nrf_gpio_pin_clear(EXTERNAL_SENSOR_POWER_PIN);
+
+        nrf_drv_twi_disable(&m_twi_external); //disable the current bus
+    }
 }
 
 static void enable_twi_bus(int instance_id)
 {
     //This method enables the given twi bus instance, as well as turns on any 
-    //necessary power and pullup resistor pins. It also disables the other twi
-    //instance in the case that it's currently on.
-    disable_twi_bus(); //disable the currently active bus and shut off any power pins
-
+    //necessary power and pullup resistor pins. Before enabling, make sure the
+    //current instance isn't already enabled as this will cause an error.
     if (instance_id == INTERNAL_TWI_INSTANCE_ID)
     {
-        m_twi = &m_twi_internal;
+        if (!m_twi_internal.u.twim.p_twim->ENABLE)
+        {
+            //Send power to the internal sensors and the pullup resistor,
+            //also make sure that power for the external sensors is off
+            nrf_gpio_pin_set(BLE_33_PULLUP);
+            nrf_gpio_pin_set(BLE_33_SENSOR_POWER_PIN);
 
-        //Send power to the internal sensors and the pullup resistor,
-        //also make sure that power for the external sensors is off
-        nrf_gpio_pin_set(BLE_33_PULLUP);
-        nrf_gpio_pin_set(BLE_33_SENSOR_POWER_PIN);
+            nrf_drv_twi_enable(&m_twi_internal); //enable the bus
+        }
     }
     else
     {
-        m_twi = &m_twi_external;
+        if (!m_twi_external.u.twim.p_twim->ENABLE)
+        {
+            //Send power to the external sensors. also make sure that power,
+            //afor the internal sensors and the pullup resistor is off
+            nrf_gpio_pin_set(EXTERNAL_SENSOR_POWER_PIN);
 
-        //Send power to the external sensors. also make sure that power,
-        //afor the internal sensors and the pullup resistor is off
-        nrf_gpio_pin_set(EXTERNAL_SENSOR_POWER_PIN);
+            nrf_drv_twi_enable(&m_twi_external); //enable the bus
+        }
     }
 
     nrf_delay_ms(50); //slight delay so sensors have time to power on
-    nrf_drv_twi_enable(m_twi); //enable the new bus
+}
+
+static void sensor_communication_init(sensor_type_t type, uint8_t model, uint8_t address, nrf_drv_twi_t const * bus)
+{
+    switch (type)
+    {
+        case ACC_SENSOR:
+            imu_comm.acc_comm.address = address;
+            imu_comm.acc_comm.twi_bus = bus;
+            imu_comm.acc_comm.read_register = sensor_read_register;
+            imu_comm.acc_comm.write_register = sensor_write_register;
+            if (model == LSM9DS1_ACC)  imu_comm.acc_comm.update_settings = lsm9ds1_acc_apply_setting;
+            //else if (model == //Need to add functions for other sensors after creating
+            break;
+        case GYR_SENSOR:
+            imu_comm.gyr_comm.address = address;
+            imu_comm.gyr_comm.twi_bus = bus;
+            imu_comm.gyr_comm.read_register = sensor_read_register;
+            imu_comm.gyr_comm.write_register = sensor_write_register;
+            if (model == LSM9DS1_GYR)  imu_comm.gyr_comm.update_settings = lsm9ds1_gyr_apply_setting;
+            //else if (model == //Need to add functions for other sensors after creating
+            break;
+        case MAG_SENSOR:
+            imu_comm.mag_comm.address = address;
+            imu_comm.mag_comm.twi_bus = bus;
+            imu_comm.mag_comm.read_register = sensor_read_register;
+            imu_comm.mag_comm.write_register = sensor_write_register;
+            if (model == LSM9DS1_MAG)  imu_comm.mag_comm.update_settings = lsm9ds1_mag_apply_setting;
+            //else if (model == //Need to add functions for other sensors after creating
+            break;
+    }
 }
 
 /**@brief Function for the LSM9DS1 initialization.
@@ -326,13 +386,13 @@ static void sensors_init(void)
     sensor_settings[MAG_START + SENSOR_MODEL] = default_sensors[2];
 
     //Next we scan both the external and internal TWI lines to see what sensors we can find
-    //Check the external bus first
+    //Check the internal bus first
     enable_twi_bus(INTERNAL_TWI_INSTANCE_ID);
-    twi_address_scan(internal_sensors, &internal_sensors_found);
+    twi_address_scan(internal_sensors, &internal_sensors_found, &m_twi_internal);
 
-    //Then check the internal bus
+    //Then check the external bus
     enable_twi_bus(EXTERNAL_TWI_INSTANCE_ID);
-    twi_address_scan(external_sensors, &external_sensors_found);
+    twi_address_scan(external_sensors, &external_sensors_found, &m_twi_external);
 
     //Scan the external sensors to see if any of them match the default sensors that were
     //set in the settings array. If not, then scan the internal sensors to see if any of
@@ -349,57 +409,43 @@ static void sensors_init(void)
             {
                 if (external_sensors[j] == default_sensor_address_l || external_sensors[j] == default_sensor_address_h)
                 {
-                    int x = 5;
+                    sensor_communication_init(i, default_sensors[i], external_sensors[j], &m_twi_external);
+                    sensors_initialized[i] = true;
+                    break; //if for whatever reason there are two of the same sensor on the line we only want to add the first one
+                }
+            }
+        }
+    }
+
+    //See if all sensors we're initialized on the external bus, if not, then initialized sensors
+    //from internal bus
+    if (!sensors_initialized[0] || !sensors_initialized[1] || !sensors_initialized[2])
+    {
+        for (int i = 0; i < 3; i++)
+        {
+            if (sensors_initialized[i]) continue; //this sensor was initialized on the external bus so skip it
+            uint8_t default_sensor_address_l = get_sensor_low_address(i, default_sensors[i]);
+            uint8_t default_sensor_address_h = get_sensor_high_address(i, default_sensors[i]);
+
+            for (int j = 0; j < internal_sensors_found; j++)
+            {
+                if (internal_sensors[j] == default_sensor_address_l || internal_sensors[j] == default_sensor_address_h)
+                {
+                    sensor_communication_init(i, default_sensors[i], internal_sensors[j], &m_twi_internal);
+                    sensors_initialized[i] == true;
+                    break; //if for whatever reason there are two of the same sensor on the line we only want to add the first one
                 }
             }
         }
     }
 
     //Handle the initialization of individual sensors
-    lsm9ds1_init(&lsm9ds1_imu, &lsm9ds1_mag, sensor_settings, m_twi, &m_xfer_done, USE_EXTERNAL_SENSORS);
-
-    //after sensor initialization is complete we attempt to communicate 
-    //with each sensor just to ensure that it's there and working properly.
-    //To do so, turn on the TWI bus and configure/turn on any power pin(s) and/or pullup resistors
-    nrf_drv_twi_enable(m_twi);
-
-    //configure the power pin and pullup resistor pins for the the sensors
-    if (USE_EXTERNAL_SENSORS)
-    {
-        nrf_gpio_cfg(EXTERNAL_SENSOR_POWER_PIN, NRF_GPIO_PIN_DIR_OUTPUT, NRF_GPIO_PIN_INPUT_CONNECT, NRF_GPIO_PIN_NOPULL, NRF_GPIO_PIN_S0H1, NRF_GPIO_PIN_NOSENSE);
-
-        nrf_gpio_pin_set(EXTERNAL_SENSOR_POWER_PIN);
-        nrf_delay_ms(50); //slight delay so sensors have time to power on
-    }
-    else
-    {
-        nrf_gpio_cfg_output(BLE_33_PULLUP); //send power to BLE 33 Sense pullup resistors (they aren't connected to VDD)
-        nrf_gpio_cfg(BLE_33_SENSOR_POWER_PIN, NRF_GPIO_PIN_DIR_OUTPUT, NRF_GPIO_PIN_INPUT_CONNECT, NRF_GPIO_PIN_NOPULL, NRF_GPIO_PIN_S0H1, NRF_GPIO_PIN_NOSENSE);
-
-        nrf_gpio_pin_set(BLE_33_PULLUP);
-        nrf_gpio_pin_set(BLE_33_SENSOR_POWER_PIN);
-        nrf_delay_ms(50); //slight delay so sensors have time to power on
-    }
-
-    //attempt to read the WHOAMI register for each sensor
-    uint32_t ret = lsm9ds1_dev_id_get(&lsm9ds1_mag, &lsm9ds1_imu, &whoamI);
-    if (whoamI.imu == LSM9DS1_IMU_ID) SEGGER_RTT_WriteString(0, "LSM9DS1 discovered.\n");
-    else SEGGER_RTT_WriteString(0, "Error: Couldn't find LSM9DS1.\n");
-
-    //In the future, more sensors can be initialized here
+    //TODO: Need some kind of variable to keep track of which sensor init methods to call, just use lsm9ds1 for now
+    lsm9ds1_init(&imu_comm, 0b111, sensor_settings, &m_twi_external, &m_xfer_external_done, USE_EXTERNAL_SENSORS);
 
     //regardless of whether or not any sensors are found, disable the power pins and TWI bus
-    if (USE_EXTERNAL_SENSORS)
-    {
-        nrf_gpio_pin_clear(EXTERNAL_SENSOR_POWER_PIN);
-    }
-    else
-    {
-        nrf_gpio_pin_clear(BLE_33_PULLUP);
-        nrf_gpio_pin_clear(BLE_33_SENSOR_POWER_PIN);
-    }
-    
-    nrf_drv_twi_disable(m_twi);
+    disable_twi_bus(INTERNAL_TWI_INSTANCE_ID);
+    disable_twi_bus(EXTERNAL_TWI_INSTANCE_ID);
 
     //After all sensors have been initialized, update the sensor settings characteristic to 
     //reflect the sensor settings array. Furthermore, we also set the connection interval 
@@ -618,7 +664,7 @@ static void sensor_idle_mode_start()
         //If we're transitioning from active to idle mode we need to stop the data collection timer
         //and then put the sensor into sleep mode.
         err_code = app_timer_stop(m_data_reading_timer); //Even if the timer isn't actively on it's ok to call this method
-        lsm9ds1_idle_mode_enable(&lsm9ds1_imu, &lsm9ds1_mag);
+        lsm9ds1_idle_mode_enable(0b111);
 
         //the LED is deactivated during data collection so turn it back on
         err_code = app_timer_start(m_led_timer, LED_DELAY, NULL); //Even if the timer is already on it's ok to call this method
@@ -629,24 +675,10 @@ static void sensor_idle_mode_start()
         //This means that both the TWI bus and LSM9DS1 need to be turned on. No need to put the LSM9DS1 
         //into sleep mode as this happens automatically upon power up.
 
-        // Leave the below two lines commented for future reference
-        //uint32_t enabled = m_twi.u.twim.p_twim->ENABLE;
-        //if (enabled == 0) nrf_drv_twi_enable(&m_twi);
-
-        //turn on the TWI bus
-        nrf_drv_twi_enable(m_twi);
-
-        //Power the sensor and the pullup resistors to the SCL and SDA line
-        if (USE_EXTERNAL_SENSORS)
-        {
-            nrf_gpio_pin_set(EXTERNAL_SENSOR_POWER_PIN);
-        }
-        else
-        {
-            nrf_gpio_pin_set(BLE_33_SENSOR_POWER_PIN);
-            nrf_gpio_pin_set(BLE_33_PULLUP);
-        }
-        
+        //turn on any TWI buses that are needed by the current sensors
+        enable_twi_bus(imu_comm.acc_comm.twi_bus->inst_idx);
+        enable_twi_bus(imu_comm.gyr_comm.twi_bus->inst_idx);
+        enable_twi_bus(imu_comm.mag_comm.twi_bus->inst_idx);        
     }
 
     current_operating_mode = SENSOR_IDLE_MODE; //set the current operating mode to idle
@@ -661,7 +693,7 @@ static void sensor_active_mode_start()
     app_timer_stop(m_led_timer); //disable the led by turning of it's timer
 
     //turn on the sensors by applying the current settings in the settings array
-    lsm9ds1_active_mode_enable(&lsm9ds1_imu, &lsm9ds1_mag);
+    lsm9ds1_active_mode_enable(0b111);
 
     //start data acquisition by turning on the data timer The timer needs to be converted from ms
     //to 'ticks' which match the frequency of the app timer. Normally this is done with a Macro but
@@ -684,21 +716,10 @@ static void connected_mode_start()
     //disable the power going to the sensor and the TWI bus.
     if (current_operating_mode == SENSOR_IDLE_MODE)
     {
-        //The chip is currently in sensor idle mode so we need to power off the sensor and disable the TWI bus
-        //Disable power to the sensor and the pullup resistors to the SCL and SDA line
-        //Power the sensor and the pullup resistors to the SCL and SDA line
-        if (USE_EXTERNAL_SENSORS)
-        {
-            nrf_gpio_pin_clear(EXTERNAL_SENSOR_POWER_PIN);
-        }
-        else
-        {
-            nrf_gpio_pin_clear(BLE_33_SENSOR_POWER_PIN);
-            nrf_gpio_pin_clear(BLE_33_PULLUP);
-        }
-
-        //Turn off the TWI bus
-        nrf_drv_twi_disable(m_twi);
+        //The chip is currently in sensor idle mode so we need to power off the sensors and disable any active TWI bus
+        disable_twi_bus(imu_comm.acc_comm.twi_bus->inst_idx);
+        disable_twi_bus(imu_comm.gyr_comm.twi_bus->inst_idx);
+        disable_twi_bus(imu_comm.mag_comm.twi_bus->inst_idx);
     }
 
     //change the color of the blinking LED to green
@@ -1228,7 +1249,6 @@ void twi_handler(nrf_drv_twi_evt_t const * p_event, void * p_context)
 {
     //A handler that gets called when events happen on the TWI bus. I'm currently not really using this 
     //method for anything as my sensor reading functions work on a timer. I should keep this function though.
-    m_twi_bus_status = p_event->type;
     switch (p_event->type)
     {
         case NRF_DRV_TWI_EVT_DONE:
@@ -1240,10 +1260,10 @@ void twi_handler(nrf_drv_twi_evt_t const * p_event, void * p_context)
             //}
             break;
         case NRF_DRV_TWI_EVT_ADDRESS_NACK:
-            SEGGER_RTT_printf(0, "Address NACK received while trying to reach slave address 0x%x.\n", p_event->xfer_desc.address);
+            //SEGGER_RTT_printf(0, "Address NACK received while trying to reach slave address 0x%x.\n", p_event->xfer_desc.address);
             break;
         case NRF_DRV_TWI_EVT_DATA_NACK:
-            SEGGER_RTT_printf(0, "Data NACK received while trying to reach slave address 0x%x.\n", p_event->xfer_desc.address);
+            //SEGGER_RTT_printf(0, "Data NACK received while trying to reach slave address 0x%x.\n", p_event->xfer_desc.address);
             break;
         case NRFX_TWI_EVT_OVERRUN:
             SEGGER_RTT_printf(0, "Overrun event while trying to reach slave address 0x%x.\n", p_event->xfer_desc.address);
@@ -1255,45 +1275,25 @@ void twi_handler(nrf_drv_twi_evt_t const * p_event, void * p_context)
             SEGGER_RTT_WriteString(0, "Something other than Event Done was achieved.\n");
             break;
     }
+}
 
-    NRF_LOG_PROCESS();
-    m_xfer_done = true; //this must be set to true before another TWI transaction can occur
+void internal_twi_handler(nrf_drv_twi_evt_t const * p_event, void * p_context)
+{
+    m_twi_internal_bus_status = p_event->type;
+    twi_handler(p_event, p_context);
+    m_xfer_internal_done = true;
+}
+
+void external_twi_handler(nrf_drv_twi_evt_t const * p_event, void * p_context)
+{
+    m_twi_external_bus_status = p_event->type;
+    twi_handler(p_event, p_context);
+    m_xfer_external_done = true;
 }
 
 void  twi_init (void)
 {
     ret_code_t err_code;
-
-    //if (USE_EXTERNAL_SENSORS)
-    //{
-    //    const nrf_drv_twi_config_t twi_lsm9ds1_config = {
-    //   .scl                = EXTERNAL_SCL_PIN,
-    //   .sda                = EXTERNAL_SDA_PIN,
-    //   .frequency          = NRF_DRV_TWI_FREQ_400K,
-    //   .interrupt_priority = APP_IRQ_PRIORITY_HIGH,
-    //   .clear_bus_init     = false
-    //    };
-
-    //    //A handler method is necessary to enable non-blocking mode. TXRX operations can only be carried 
-    //    //out when non-blocking mode is enabled so a handler is needed here.
-    //    err_code = nrf_drv_twi_init(&m_twi, &twi_lsm9ds1_config, twi_handler, NULL);
-    //    APP_ERROR_CHECK(err_code);
-    //}
-    //else
-    //{
-    //    const nrf_drv_twi_config_t twi_lsm9ds1_config = {
-    //   .scl                = BLE_33_SCL_PIN,
-    //   .sda                = BLE_33_SDA_PIN,
-    //   .frequency          = NRF_DRV_TWI_FREQ_400K,
-    //   .interrupt_priority = APP_IRQ_PRIORITY_HIGH,
-    //   .clear_bus_init     = false
-    //    };
-
-    //    //A handler method is necessary to enable non-blocking mode. TXRX operations can only be carried 
-    //    //out when non-blocking mode is enabled so a handler is needed here.
-    //    err_code = nrf_drv_twi_init(&m_twi, &twi_lsm9ds1_config, twi_handler, NULL);
-    //    APP_ERROR_CHECK(err_code);
-    //}
 
     //There are two separate TWI buses that are used here. One for communication with
     //sensors that are on the current board, and one for communication with sensors that
@@ -1316,8 +1316,8 @@ void  twi_init (void)
 
     //A handler method is necessary to enable non-blocking mode. TXRX operations can only be carried 
     //out when non-blocking mode is enabled so a handler is needed here.
-    err_code = nrf_drv_twi_init(&m_twi_internal, &twi_internal_config, twi_handler, NULL);
-    err_code = nrf_drv_twi_init(&m_twi_external, &twi_external_config, twi_handler, NULL);
+    err_code = nrf_drv_twi_init(&m_twi_internal, &twi_internal_config, internal_twi_handler, NULL);
+    err_code = nrf_drv_twi_init(&m_twi_external, &twi_external_config, external_twi_handler, NULL);
     APP_ERROR_CHECK(err_code);
 
     //After initializing the buses, configure the necessary gpio pins to use these buses
@@ -1395,14 +1395,16 @@ static int32_t get_IMU_data(uint8_t offset)
     //First read the gyroscope data
 
     uint8_t new_data[6];
-    int ret = lsm9ds1_read_reg(&lsm9ds1_imu, LSM9DS1_OUT_X_L_G, gyr_characteristic_data + offset, 6);
+    //int ret = lsm9ds1_read_reg(&lsm9ds1_imu, LSM9DS1_OUT_X_L_G, gyr_characteristic_data + offset, 6);
+    int32_t ret = imu_comm.gyr_comm.read_register((void*)imu_comm.gyr_comm.twi_bus, imu_comm.gyr_comm.address, LSM9DS1_OUT_X_L_G, gyr_characteristic_data + offset, 6);
 
     //If there aren't any issues then read the accelerometer data
     if (ret == 0)
     {
         //SEGGER_RTT_printf(0, "Base Characteristic Address: 0x%#08x\n", acc_characteristic_data);
         //SEGGER_RTT_printf(0, "Writing data to address: 0x%#08x\n", acc_characteristic_data + offset);
-        ret = lsm9ds1_read_reg(&lsm9ds1_imu, LSM9DS1_OUT_X_L_XL, acc_characteristic_data + offset, 6);
+        //ret = lsm9ds1_read_reg(&lsm9ds1_imu, LSM9DS1_OUT_X_L_XL, acc_characteristic_data + offset, 6);
+        ret = imu_comm.acc_comm.read_register((void*)imu_comm.acc_comm.twi_bus, imu_comm.acc_comm.address, LSM9DS1_OUT_X_L_XL, acc_characteristic_data + offset, 6);
     }
 
     return ret;
@@ -1411,9 +1413,80 @@ static int32_t get_IMU_data(uint8_t offset)
 static int32_t get_MAG_data(uint8_t offset)
 {
     //Reads the raw magnetometer data and stores it in its respective array
-    int ret = lsm9ds1_read_reg(&lsm9ds1_mag, LSM9DS1_OUT_X_L_M, mag_characteristic_data + offset, 6);
+    //int ret = lsm9ds1_read_reg(&lsm9ds1_mag, LSM9DS1_OUT_X_L_M, mag_characteristic_data + offset, 6);
+
+    //The mag address needs a bit added to the front to allow continuous reading
+    uint8_t auto_inc_address = ((0x1 << 7) | imu_comm.mag_comm.address);
+    int32_t ret = imu_comm.gyr_comm.read_register((void*)imu_comm.mag_comm.twi_bus, auto_inc_address, LSM9DS1_OUT_X_L_M, mag_characteristic_data + offset, 6);
 
     return ret;
+}
+
+static int32_t sensor_read_register(void *bus, uint8_t add, uint8_t reg, uint8_t *bufp, uint16_t len)
+{
+    //This method allows for the reading of a sensor register(s). In most cases only a single register 
+    //will be read, however, some sensors have a register auto-increment method so if the input read 
+    //length is greater than 1 multiple registers can be read with a single command.
+    ret_code_t err_code = 0;
+
+    const nrf_drv_twi_xfer_desc_t sensor_read = {
+        .address = add,
+        .primary_length = 1,
+        .secondary_length = (uint8_t)len,
+        .p_primary_buf = &reg,
+        .p_secondary_buf = bufp,
+        .type =  NRF_DRV_TWI_XFER_TXRX};
+
+    //set the m_xfer_done bool to false given the current TWI bus
+    uint8_t instance = ((nrf_drv_twi_t const*)bus)->inst_idx;
+    volatile bool * m_xfer_done;
+    if (instance == INTERNAL_TWI_INSTANCE_ID) m_xfer_done = &m_xfer_internal_done; //set to false before any read or write operations (this gets set to true in twi_handler when the transfer is complete)
+    else m_xfer_done = &m_xfer_external_done;
+
+    *m_xfer_done = false;
+
+    do
+    {
+        err_code = nrf_drv_twi_xfer((nrf_drv_twi_t const*)bus, &sensor_read, 0); //no flags needed here
+    } while (err_code == 0x11); //if the nrf is currently busy doing something else this line will wait until its done before executing
+    while (*m_xfer_done == false); //this line forces the program to wait for the TWI transfer to complete before moving on
+
+    APP_ERROR_CHECK(err_code);
+    return (int32_t)err_code;
+}
+static int32_t sensor_write_register(void *bus, uint8_t add, uint8_t reg, const uint8_t *bufp)
+{
+    //This method is for writing data to a single register for a sensor
+    ret_code_t err_code = 0;
+
+    uint8_t register_and_data[2] = {reg, bufp[0]};
+
+    //the primary buffer will hold the register address, as well as the value to write into it.
+    //for a single write operation, the secondary buffer has no use in a single write command
+    const nrf_drv_twi_xfer_desc_t sensor_write = {
+        .address = add,
+        .primary_length = 2,
+        .secondary_length = 0,
+        .p_primary_buf = register_and_data,
+        .p_secondary_buf = NULL,
+        .type =  NRF_DRV_TWI_XFER_TX};
+
+    //set the m_xfer_done bool to false given the current TWI bus
+    uint8_t instance = ((nrf_drv_twi_t const*)bus)->inst_idx;
+    volatile bool * m_xfer_done;
+    if (instance == INTERNAL_TWI_INSTANCE_ID) m_xfer_done = &m_xfer_internal_done; //set to false before any read or write operations (this gets set to true in twi_handler when the transfer is complete)
+    else m_xfer_done = &m_xfer_external_done;
+
+    *m_xfer_done = false;
+
+    do
+    {
+        err_code = nrf_drv_twi_xfer((nrf_drv_twi_t const*)bus, &sensor_write, 0); //no flags needed here
+    } while (err_code == 0x11); //if the nrf is currently busy doing something else this line will wait until its done before executing
+    while (*m_xfer_done == false); //this line forces the program to wait for the TWI transfer to complete before moving on
+
+    APP_ERROR_CHECK(err_code);
+    return (int32_t)err_code;
 }
 
 /**

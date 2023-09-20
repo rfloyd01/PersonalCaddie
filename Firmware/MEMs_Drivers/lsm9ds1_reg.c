@@ -1394,15 +1394,21 @@ int32_t lsm9ds1_dev_id_get(stmdev_ctx_t* ctx_mag,
     stmdev_ctx_t* ctx_imu,
     lsm9ds1_id_t* buff)
 {
-    int32_t ret;
+    int32_t ret = 0;
 
-    ret = lsm9ds1_read_reg(ctx_imu, LSM9DS1_WHO_AM_I,
-        (uint8_t*)&(buff->imu), 1);
-
-    if (ret == 0)
+    if (ctx_imu != NULL)
     {
-        ret = lsm9ds1_read_reg(ctx_mag, LSM9DS1_WHO_AM_I_M,
-            (uint8_t*)&(buff->mag), 1);
+        ret = lsm9ds1_read_reg(ctx_imu, LSM9DS1_WHO_AM_I,
+        (uint8_t*)&(buff->imu), 1);
+    }
+    
+    if (ctx_mag != NULL)
+    {
+        if (ret == 0)
+        {
+            ret = lsm9ds1_read_reg(ctx_mag, LSM9DS1_WHO_AM_I_M,
+                (uint8_t*)&(buff->mag), 1);
+        }
     }
 
     return ret;
