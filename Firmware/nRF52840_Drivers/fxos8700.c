@@ -8,6 +8,8 @@ static uint8_t*             p_sensor_settings;
 static fxos8700_driver_t    sensor_driver;
 static sensor_comm_handle_t fxos_com;
 
+static uint8_t used_sensors;                                              /**< a 3-bit number which lets us know which sensors of the acc, gyro and mag are in use */
+
 //TODO: Should add fxas21002 stuff here in the future
 
 void fxos8700init(imu_communication_t* comm, uint8_t sensors, uint8_t* settings)
@@ -20,6 +22,7 @@ void fxos8700init(imu_communication_t* comm, uint8_t sensors, uint8_t* settings)
     //chip. If both the FXOS acc and mag ar in use then the built-in communication
     //struct will default to the magnetometer.
     imu_comm = comm;
+    used_sensors = sensors;
 
     //initialize read/write methods, address, and default settings for acc
     if (sensors & 0b001)
@@ -48,21 +51,225 @@ void fxos8700init(imu_communication_t* comm, uint8_t sensors, uint8_t* settings)
     //initialize read/write methods, address, and default settings for mag
     if (sensors & 0b100)
     {
-        //Set up the communication struct needed to use the FXOS8700 driver using my own communication struct
-        sensor_driver.pComHandle = (void*)(&comm->mag_comm);
-        //lsm9ds1_mag.read_reg = lsm9ds1_read_mag;
-        //lsm9ds1_mag.write_reg = lsm9ds1_write_mag;
-        //MAG_Address = comm->mag_comm.address;
+        //Set up the communication struct needed to use the FXOS8700 driver using my own communication struct.
+        //This will overwrite the acc communication if it's in place, but this is ok because both mag and acc
+        //have the same address and communication methods.
+        fxos_com.pComm = (void*)(&comm->mag_comm);
+        sensor_driver.pComHandle = & fxos_com; 
+        fxos8700_driver_t* tester = &sensor_driver;
 
-        //Apply default settings for the mag
-        //update_sensor_setting(p_sensor_settings + MAG_START, FS_RANGE, LSM9DS1_4Ga); //magnetometer full scale range (+/- 4 Gauss)
+        //Apply default settings for the mag. Unlike the accelerometer, the magnetometer
+        //has a fixed full-scale range of +/- 1200 uT. The power mode is share. Furthermore,
+        //low power modes are only applied to the acc, not the mag, so really the only thing
+        //we set here is the mag ODR.
+        update_sensor_setting(p_sensor_settings + MAG_START, ODR, FXOS8700_ODR_SINGLE_100_HZ); //accelerometer ODR (100 Hz)
 
-        //update_sensor_setting(p_sensor_settings + MAG_START, ODR, LSM9DS1_MAG_LP_40Hz); //magnetomer ODR and Power (40 Hz, magnetometer in low power mode)
-        //update_sensor_setting(p_sensor_settings + MAG_START, POWER, LSM9DS1_MAG_LP_40Hz); //magnetomer ODR and Power (40 Hz, magnetometer in low power mode)
-
-        ////After setting default settings, attempt to read the whoAmI register
-        //uint32_t ret = lsm9ds1_dev_id_get(&lsm9ds1_mag, NULL, &whoamI);
-        //if (whoamI.mag == LSM9DS1_MAG_ID) SEGGER_RTT_WriteString(0, "LSM9DS1 Mag discovered.\n");
-        //else SEGGER_RTT_WriteString(0, "Error: Couldn't find LSM9DS1 Mag.\n");
+        //After setting default settings, attempt to read the whoAmI register
+        uint8_t whoamI;
+        uint8_t ret = sensor_comm_read(sensor_driver.pComHandle, FXOS8700_WHO_AM_I, 1, &whoamI);
+        if (whoamI == FXOS8700_WHO_AM_I_PROD_VALUE) SEGGER_RTT_WriteString(0, "FXOS8700 Mag discovered.\n");
+        else SEGGER_RTT_WriteString(0, "Error: Couldn't find FXOS8700 Mag.\n");
     }
+}
+
+int32_t fxos8700_idle_mode_enable()
+{
+    //Regardless of whether the acc and mag, or just the acc/mag are being used, idle mode
+    //will be the same. Put the chip into standyby mode which has an average current draw of 2 uA.
+
+    //TODO: There is also a sleep mode, I should look into the difference between this and standby,
+    //I'm assuming there are shorter times to get good data from the sensors.
+    uint8_t ret = 0;
+    if (used_sensors & 0b101) ret = fxos8700_set_mode(&sensor_driver, FXOS8700_STANDBY_MODE);
+    return ret;
+}
+
+int32_t fxos8700_active_mode_enable()
+{
+    //First we apply the acc full-scale range and filter settings (if the acc is active).
+    //We then handle the ODR and Power settings as these values are updated using the same
+    //driver method (which also sets the sensor mode to active).
+    int32_t ret = 0;
+
+    if (used_sensors & 0b001)
+    {
+        ret |= fxos8700_acc_apply_setting(FS_RANGE + ACC_START);
+        ret |= fxos8700_acc_apply_setting(FILTER_SELECTION + ACC_START);
+        ret |= fxos8700_acc_apply_setting(HIGH_PASS_FILTER + ACC_START);
+    }
+
+    if (used_sensors == 0b101)
+    {
+        //Both sensors are present so we need to start the chip in hybrid mode. The ODR's for the sensors
+        //should be set at the same value, but in the case they aren't take the lower of the two ODRs.
+        //Ironically, the larger the setting number is the lower the ODR is.
+        uint8_t hybrid_odr = *(p_sensor_settings + MAG_START + ODR) > *(p_sensor_settings + ACC_START + ODR) ?
+            *(p_sensor_settings + MAG_START + ODR) : *(p_sensor_settings + ACC_START + ODR);
+
+        ret |= fxos8700_configure_hybrid(&sensor_driver, hybrid_odr, FXOS8700_HYBRID_READ_POLL_MODE);
+    }
+    else if (used_sensors == 0b001) ret |= fxos8700_configure_accel(&sensor_driver, *(p_sensor_settings + ACC_START + ODR), FXOS8700_ACCEL_NORMAL, FXOS8700_ACCEL_14BIT_READ_POLL_MODE);
+    else if (used_sensors == 0b100) ret |= fxos8700_configure_mag(&sensor_driver, *(p_sensor_settings + MAG_START + ODR), FXOS8700_MAG_READ_POLLING_MODE);
+
+    if (ret != 0) SEGGER_RTT_WriteString(0, "Error: FXOS8700 enabled with incorrect settings.\n");
+
+    return ret;
+}
+
+int32_t fxos8700_acc_apply_setting(uint8_t setting)
+{
+    //the acc odr, power and full scale range are all updated with the same method.
+    //If we want to update only one of these settings then we need to read the other 
+    //two from the sensor to see what they are (this is because the sensor settings array
+    //can be updated via Bluetooth from the PC app and we have no way to know if all of
+    //these settings have been changed, or just one of them). It would be possible to just
+    //manually write a single register, however, I'd rather use the built in method from 
+    //the driver.
+
+    //Regardless of the setting being updated, we need to put the chip into standby mode
+    uint8_t status = fxos8700_set_mode(&sensor_driver, FXOS8700_STANDBY_MODE);
+
+    switch (setting)
+    {
+        case (FS_RANGE + ACC_START):
+        {
+            //Read the data configuration register to get the other settings
+            uint8_t register_value;
+            sensor_comm_read(sensor_driver.pComHandle, FXOS8700_XYZ_DATA_CFG, 1, &register_value);
+
+            //remove the current full-scale range setting and then apply the new one
+            register_value &= (0xFF ^ (FXOS8700_XYZ_DATA_CFG_FS_MASK << FXOS8700_XYZ_DATA_CFG_FS_SHIFT)); //remove the original setting
+            register_value |= (p_sensor_settings[setting] << FXOS8700_XYZ_DATA_CFG_FS_SHIFT); //then add the new one
+
+            //finally update the register with the new value
+            if (status == SENSOR_SUCCESS) status |= sensor_comm_write(sensor_driver.pComHandle, FXOS8700_XYZ_DATA_CFG, 1, &register_value);
+            if (status != SENSOR_SUCCESS) SEGGER_RTT_WriteString(0, "Error: Couldn't update FXOS8700 Acc Full-Scale Range.\n");
+
+            break;
+        }
+        case (ODR + ACC_START):
+        {
+            //Need to get the current power mode from the chip
+            uint8_t power;
+            sensor_comm_read(sensor_driver.pComHandle, FXOS8700_CTRL_REG2, 1, &power);
+
+            //We need to right shift and use bitwise AND to extract the appropriate setting
+            power >>= FXOS8700_CTRL_REG2_SMODS_SHIFT;
+            power &= FXOS8700_CTRL_REG2_SMODS_MASK;
+
+            //We can now update the odr while keeping the same power setting. If the 
+            //magnetometer is also on then we need to call the hybrid configuration method.
+            status |= fxos8700_configure_accel(&sensor_driver, p_sensor_settings[setting], power, FXOS8700_ACCEL_14BIT_READ_POLL_MODE);
+
+            break;
+        }
+        case (POWER + ACC_START):
+        {
+            //Need to get the current odr from the chip
+            uint8_t odr;
+            sensor_comm_read(sensor_driver.pComHandle, FXOS8700_CTRL_REG1, 1, &odr);
+
+            //We need to right shift and use bitwise and to extract the appropriate setting
+            odr >>= FXOS8700_CTRL_REG1_DR_SHIFT;
+            odr &= FXOS8700_CTRL_REG1_DR_MASK;
+
+            //we can now update the power while keeping the same odr setting
+            status |= fxos8700_configure_accel(&sensor_driver, odr, p_sensor_settings[setting], FXOS8700_ACCEL_14BIT_READ_POLL_MODE);
+
+            break;
+        }
+        case (FILTER_SELECTION + ACC_START):
+        {
+            //Read the data configuration register to get the other settings
+            uint8_t register_value;
+            sensor_comm_read(sensor_driver.pComHandle, FXOS8700_XYZ_DATA_CFG, 1, &register_value);
+
+            //remove the current filter setting and then apply the new one
+            register_value &= (0xFF ^ (FXOS8700_XYZ_DATA_CFG_HPF_OUT_MASK << FXOS8700_XYZ_DATA_CFG_HPF_OUT_SHIFT)); //remove the original setting
+            register_value |= (p_sensor_settings[setting] << FXOS8700_XYZ_DATA_CFG_HPF_OUT_SHIFT); //then add the new one
+
+            //finally update the register with the new value
+            if (status == SENSOR_SUCCESS) status |= sensor_comm_write(sensor_driver.pComHandle, FXOS8700_XYZ_DATA_CFG, 1, &register_value);
+            if (status != SENSOR_SUCCESS) SEGGER_RTT_WriteString(0, "Error: Couldn't update FXOS8700 Acc Filter Selection.\n");
+
+            break;
+        }
+        case (HIGH_PASS_FILTER + ACC_START):
+        {
+            //Read the filter configuration register to get the other settings
+            uint8_t register_value;
+            sensor_comm_read(sensor_driver.pComHandle, FXOS8700_HP_FILTER_CUTOFF, 1, &register_value);
+
+            //remove the current filter setting and then apply the new one
+            register_value &= (0xFF ^ (FXOS8700_HP_FILTER_CUTOFF_SEL_MASK << FXOS8700_HP_FILTER_CUTOFF_SEL_SHIFT)); //remove the original setting
+            register_value |= (p_sensor_settings[setting] << FXOS8700_HP_FILTER_CUTOFF_SEL_SHIFT); //then add the new one
+
+            //finally update the register with the new value
+            if (status == SENSOR_SUCCESS) status |= sensor_comm_write(sensor_driver.pComHandle, FXOS8700_HP_FILTER_CUTOFF, 1, &register_value);
+            if (status != SENSOR_SUCCESS) SEGGER_RTT_WriteString(0, "Error: Couldn't update FXOS8700 Acc High Pass Filter Cut-off.\n");
+
+            break;
+        }
+        default:
+            SEGGER_RTT_WriteString(0, "Error: Incorrect setting entered for FXOS8700 Acc.\n");
+    }
+
+    //Some of the built-in driver methods automatically put the sensor into active mode, so make
+    //sure the sensor is in standby mode when leaving this method
+    status |= fxos8700_set_mode(&sensor_driver, FXOS8700_STANDBY_MODE);
+    return status;
+}
+
+int32_t fxos8700_mag_apply_setting(uint8_t setting)
+{
+    //The magnetometer doesn't have as many settings as the accelerometer does, in fact,
+    //the only thing we can actually change is the ODR.
+
+    uint8_t status = 0;
+    switch (setting)
+    {
+        case (ODR + MAG_START):
+        {
+            status |= fxos8700_configure_mag(&sensor_driver, p_sensor_settings[setting], FXOS8700_MAG_READ_POLLING_MODE);
+            break;
+        }
+        default:
+            SEGGER_RTT_WriteString(0, "Error: Incorrect setting entered for FXOS8700 Mag.\n");
+    }
+
+    //Put the sensor back into standby mode when leaving this method
+    status |= fxos8700_set_mode(&sensor_driver, FXOS8700_STANDBY_MODE);
+    return status;
+}
+
+int32_t fxos8700_get_acc_data(uint8_t* pBuff, uint8_t offset)
+{
+    fxos8700_data_t dataBuffer;
+    uint8_t ret = fxos8700_read_data(&sensor_driver, FXOS8700_ACCEL_14BIT_DATAREAD, &dataBuffer);
+
+    //Acc data is read into the dataBuffer object, we need to extract it and put it into our
+    //own data buffer, one byte at a time, need to be careful of endianness here
+    for (int i = 0; i < 3; i++)
+    {
+        pBuff[2 * i + offset] = dataBuffer.accel[i] & 0xFF;
+        pBuff[2 * i + 1 + offset] = (dataBuffer.accel[i] & 0xFF00) >> 8;
+    }
+
+    return ret;
+}
+
+int32_t fxos8700_get_mag_data(uint8_t* pBuff, uint8_t offset)
+{
+    fxos8700_data_t dataBuffer;
+    uint8_t ret = fxos8700_read_data(&sensor_driver, FXOS8700_MAG_DATAREAD, &dataBuffer);
+
+    //Mag data is read into the dataBuffer object, we need to extract it and put it into our
+    //own data buffer, one byte at a time, need to be careful of endianness here
+    for (int i = 0; i < 3; i++)
+    {
+        pBuff[2 * i + offset] = dataBuffer.mag[i] & 0xFF;
+        pBuff[2 * i + 1 + offset] = (dataBuffer.mag[i] & 0xFF00) >> 8;
+    }
+
+    return ret;
 }

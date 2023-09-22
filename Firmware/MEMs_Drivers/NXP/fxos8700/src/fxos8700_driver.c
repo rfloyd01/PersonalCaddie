@@ -26,7 +26,7 @@
  *  @param[in]   fxos8700_mode_type_t sensorMode, FXOS8700 sensor mode that user want to set to.
  *  @return      returns the status of the operation.
  */
-static uint8_t fxos8700_set_mode(fxos8700_driver_t *pDriver, fxos8700_mode_type_t sensorMode);
+uint8_t fxos8700_set_mode(fxos8700_driver_t *pDriver, fxos8700_mode_type_t sensorMode);
 /*******************************************************************************
  * Code
  ******************************************************************************/
@@ -45,7 +45,7 @@ uint8_t fxos8700_init(fxos8700_driver_t *pDriver)
 
 /*! @brief  The local function to set operating mode for the FXOS8700 sensor.
 */
-static uint8_t fxos8700_set_mode(fxos8700_driver_t *pDriver, fxos8700_mode_type_t sensorMode)
+uint8_t fxos8700_set_mode(fxos8700_driver_t *pDriver, fxos8700_mode_type_t sensorMode)
 {
     uint8_t status = SENSOR_SUCCESS;
 
@@ -534,6 +534,98 @@ uint8_t fxos8700_configure_accel(fxos8700_driver_t *pDriver, fxos8700_odr_t odr,
 
             /*! Apply Register Configuration to configure FXOS8700 for reading Accel samples in INT mode */
             status = sensor_burst_write(pDriver->pComHandle, gFxos8700AccelInterruptConfig);
+            if (SENSOR_SUCCESS != status)
+            {
+                return status;
+            }
+
+            /*! Set FXOS8700 into Active mode.*/
+            status = fxos8700_set_mode(pDriver, FXOS8700_ACTIVE_MODE);
+            if (SENSOR_SUCCESS != status)
+            {
+                return status;
+            }
+
+            /*! Successfully applied sensor configuration. */
+
+            break;
+        default:
+            status = SENSOR_INVALIDPARAM_ERR;
+
+            break;
+	}
+    return status;
+}
+
+/*! @brief  The interface function to apply FXOS8700 Mag configuration.
+ */
+uint8_t fxos8700_configure_mag(fxos8700_driver_t *pDriver, fxos8700_odr_t odr, fxos8700_mag_config_type_t pConfig)
+{
+	uint8_t status = SENSOR_SUCCESS;
+
+	/* Check for bad address. */
+	if (NULL == pDriver)
+	{
+	    return SENSOR_BAD_ADDRESS;
+	}
+
+	/*! Prepare the register write list to configure FXOS8700 for required ODR. */
+	registerwritelist_t fxos8700OdrSmodConfig[] = {
+		/*! Configure FXOS8700 CTRL_REG1 Register "dr[2:0]" bit-fields to set ODR value. */
+		{FXOS8700_CTRL_REG1, odr, FXOS8700_CTRL_REG1_DR_MASK},
+		__END_WRITE_DATA__};
+
+	switch (pConfig)
+	{
+	case FXOS8700_MAG_READ_POLLING_MODE:
+            /*! Set FXOS8700 into standby mode so that configuration can be applied.*/
+            status = fxos8700_set_mode(pDriver, FXOS8700_STANDBY_MODE);
+            if (SENSOR_SUCCESS != status)
+            {
+                return status;
+            }
+
+            /*! Apply Register Configuration to configure FXOS8700 for required ODR and SMOD */
+            status = sensor_burst_write(pDriver->pComHandle, fxos8700OdrSmodConfig);
+            if (SENSOR_SUCCESS != status)
+            {
+                return status;
+            }
+
+            /*! Apply Register Configuration to configure FXOS8700 for reading Accel 8-bit samples in Polling mode */
+            status = sensor_burst_write(pDriver->pComHandle, gFxos8700MagPollConfig);
+            if (SENSOR_SUCCESS != status)
+            {
+                return status;
+            }
+
+            /*! Set FXOS8700 into Active mode.*/
+            status = fxos8700_set_mode(pDriver, FXOS8700_ACTIVE_MODE);
+            if (SENSOR_SUCCESS != status)
+            {
+                return status;
+            }
+
+            /*! Successfully applied sensor configuration. */
+
+            break;
+	case FXOS8700_MAG_READ_INT_MODE:
+            /*! Set FXOS8700 into standby mode so that configuration can be applied.*/
+            status = fxos8700_set_mode(pDriver, FXOS8700_STANDBY_MODE);
+            if (SENSOR_SUCCESS != status)
+            {
+                return status;
+            }
+
+            /*! Apply Register Configuration to configure FXOS8700 for required ODR and SMOD */
+            status = sensor_burst_write(pDriver->pComHandle, fxos8700OdrSmodConfig);
+            if (SENSOR_SUCCESS != status)
+            {
+                return status;
+            }
+
+            /*! Apply Register Configuration to configure FXOS8700 for reading Mag samples in INT mode */
+            status = sensor_burst_write(pDriver->pComHandle, gFxos8700MagInterruptConfig);
             if (SENSOR_SUCCESS != status)
             {
                 return status;

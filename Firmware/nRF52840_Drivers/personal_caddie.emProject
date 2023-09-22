@@ -147,6 +147,7 @@
       <file file_name="../MEMs_Drivers/NXP/fxos8700/src/fxos8700_driver.c" />
       <file file_name="../MEMs_Drivers/NXP/fxos8700/src/common/sensor_comm.c" />
       <file file_name="../MEMs_Drivers/NXP/fxos8700/src/common/sensor_common.c" />
+      <file file_name="../MEMs_Drivers/NXP/fxos8700/src/fxos8700_config.c" />
     </folder>
   </project>
   <configuration

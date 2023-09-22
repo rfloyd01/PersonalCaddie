@@ -332,7 +332,7 @@ uint8_t fxos8700_configure_accel(fxos8700_driver_t *pDriver, fxos8700_odr_t odr,
  *  @param[in]   pConfig, the pointer to the acceleration configuration.
  *  @return      returns the status of the operation.
  */
-uint8_t fxos8700_configure_mag(fxos8700_driver_t *pDriver, fxos8700_odr_t odr, fxos8700_mag_config_type_t *pConfig);
+uint8_t fxos8700_configure_mag(fxos8700_driver_t *pDriver, fxos8700_odr_t odr, fxos8700_mag_config_type_t pConfig);
 
 /*! @brief       The interface function to configure fxos8700 in hybrid mode
  *  @details     This function configure the fxos8700 with desired configuration in hybrid mode.

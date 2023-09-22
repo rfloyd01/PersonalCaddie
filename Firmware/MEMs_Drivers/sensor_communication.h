@@ -8,12 +8,11 @@ extern "C" {
 #include <stdint.h>
 #include "nrf_drv_twi.h"
 
+//pointers for storing functions that read and write sensor registers
 typedef int32_t(*update_ptr)(uint8_t);
 typedef int32_t(*read_register_ptr)(void*, uint8_t, uint8_t, uint8_t*, uint16_t);
 typedef int32_t(*write_register_ptr)(void*, uint8_t, uint8_t, const uint8_t*);
-
-typedef int32_t(*stmdev_write_ptr)(void*, uint8_t, const uint8_t*, uint16_t);
-    typedef int32_t(*stmdev_read_ptr)(void*, uint8_t, uint8_t*, uint16_t);
+typedef int32_t(*data_ptr)(uint8_t*, uint8_t);
 
 //a struct that holds info for communication with an individual sensor
 typedef struct
@@ -23,6 +22,7 @@ typedef struct
     update_ptr            update_settings; //pointer to function that updates sensor settings
     read_register_ptr     read_register;   //pointer to method for reading sensor registers
     write_register_ptr    write_register;  //pointer to method for writing sensor registers
+    data_ptr              get_data;        //pointer to method for getting sensor data
     void*                 other;           //an extra customizable pointer
 } sensor_communication_t;
 

@@ -42,6 +42,7 @@ uint8_t sensor_burst_write(sensor_comm_handle_t* pCommHandle, const registerwrit
         }
         tempReg = (tempReg & ~ pCmd->mask) | pCmd->value;
         status = sensor_comm_write(pCommHandle, pCmd->writeTo, 1, &tempReg);
+
         if(status != SENSOR_SUCCESS)
         {
             return status;

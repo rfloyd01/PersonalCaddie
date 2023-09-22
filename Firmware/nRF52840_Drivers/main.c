@@ -159,7 +159,8 @@ static int m_twi_external_bus_status;                                           
 static int measurements_taken = 0;                                              /**< keeps track of how many IMU measurements have taken in the given connection interval. */
 
 //IMU Sensor Parameters
-static uint8_t default_sensors[3] = {FXOS8700_ACC, LSM9DS1_GYR, LSM9DS1_MAG};   /**< Default sensors that are attempted to be initialized first. */
+static uint8_t default_sensors[3] = {FXOS8700_ACC, LSM9DS1_GYR, FXOS8700_MAG};  /**< Default sensors that are attempted to be initialized first. */
+//static uint8_t default_sensors[3] = {LSM9DS1_ACC, LSM9DS1_GYR, LSM9DS1_MAG};  /**< Default sensors that are attempted to be initialized first. */
 static bool sensors_initialized[3] = {false, false, false};                     /**< Keep track of which sensors are currently initialized */
 static uint8_t internal_sensors[10];                                            /**< An array for holding the addresses of sensors on the internal TWI line */
 static uint8_t external_sensors[10];                                            /**< An array for holding the addresses of sensors on the external TWI line */
@@ -351,24 +352,47 @@ static void sensor_communication_init(sensor_type_t type, uint8_t model, uint8_t
             imu_comm.acc_comm.twi_bus = bus;
             imu_comm.acc_comm.read_register = sensor_read_register;
             imu_comm.acc_comm.write_register = sensor_write_register;
-            if (model == LSM9DS1_ACC)  imu_comm.acc_comm.update_settings = lsm9ds1_acc_apply_setting;
-            //else if (model == //Need to add functions for other sensors after creating
+            if (model == LSM9DS1_ACC)
+            {
+                imu_comm.acc_comm.update_settings = lsm9ds1_acc_apply_setting;
+                imu_comm.acc_comm.get_data = lsm9ds1_get_acc_data;
+            }
+            else if (model == FXOS8700_ACC)
+            {
+                imu_comm.acc_comm.update_settings = fxos8700_acc_apply_setting;
+                imu_comm.acc_comm.get_data = fxos8700_get_acc_data;
+            }
             break;
         case GYR_SENSOR:
             imu_comm.gyr_comm.address = address;
             imu_comm.gyr_comm.twi_bus = bus;
             imu_comm.gyr_comm.read_register = sensor_read_register;
             imu_comm.gyr_comm.write_register = sensor_write_register;
-            if (model == LSM9DS1_GYR)  imu_comm.gyr_comm.update_settings = lsm9ds1_gyr_apply_setting;
-            //else if (model == //Need to add functions for other sensors after creating
+            if (model == LSM9DS1_GYR)
+            {
+                imu_comm.gyr_comm.update_settings = lsm9ds1_gyr_apply_setting;
+                imu_comm.gyr_comm.get_data = lsm9ds1_get_gyr_data;
+            }
+            else if (model == FXAS21002_GYR)
+            {
+                //TODO: add methods here after adding driver
+            }
             break;
         case MAG_SENSOR:
             imu_comm.mag_comm.address = address;
             imu_comm.mag_comm.twi_bus = bus;
             imu_comm.mag_comm.read_register = sensor_read_register;
             imu_comm.mag_comm.write_register = sensor_write_register;
-            if (model == LSM9DS1_MAG)  imu_comm.mag_comm.update_settings = lsm9ds1_mag_apply_setting;
-            //else if (model == //Need to add functions for other sensors after creating
+            if (model == LSM9DS1_MAG)
+            {
+                imu_comm.mag_comm.update_settings = lsm9ds1_mag_apply_setting;
+                imu_comm.mag_comm.get_data = lsm9ds1_get_mag_data;
+            }
+            else if (model == FXOS8700_MAG)
+            {
+                imu_comm.mag_comm.update_settings = fxos8700_mag_apply_setting;
+                imu_comm.mag_comm.get_data = fxos8700_get_mag_data;
+            }
             break;
     }
 }
@@ -418,7 +442,7 @@ static void sensors_init(void)
         }
     }
 
-    //See if all sensors we're initialized on the external bus, if not, then initialized sensors
+    //See if all sensors were initialized on the external bus, if not, then initialized sensors
     //from internal bus
     if (!sensors_initialized[0] || !sensors_initialized[1] || !sensors_initialized[2])
     {
@@ -439,6 +463,10 @@ static void sensors_init(void)
             }
         }
     }
+
+    //TODO: Need to create a method that checks if all sensors have been initialized, if not, it needs
+    //to choose from the options available to initialize and update the default sensors and sensor settings
+    //arrays. If for whatever reason there aren't any sensors then some kind of error should be kicked up.
 
     //Handle the initialization of individual sensors. Currently the model for each sensor type
     //matches the enums for the other sensor models (i.e. lsm9ds1 acc/gyrmag all have enum values of 0x00).
@@ -464,7 +492,6 @@ static void sensors_init(void)
             }
         }
     }
-    
 
     //regardless of whether or not any sensors are found, disable the power pins and TWI bus
     disable_twi_bus(INTERNAL_TWI_INSTANCE_ID);
@@ -527,8 +554,11 @@ static void data_reading_timer_handler(void * p_context)
     //Everytime the data reading timer goes off we take sensor readings and then 
     //update the appropriate characteristic values. The timer should go off once
     //every connection interval
-    get_IMU_data(SAMPLE_SIZE * measurements_taken);
-    get_MAG_data(SAMPLE_SIZE * measurements_taken);
+
+    imu_comm.acc_comm.get_data(acc_characteristic_data, SAMPLE_SIZE * measurements_taken);
+    imu_comm.gyr_comm.get_data(gyr_characteristic_data, SAMPLE_SIZE * measurements_taken);
+    //imu_comm.mag_comm.get_data(mag_characteristic_data, SAMPLE_SIZE * measurements_taken);
+    
     measurements_taken++;
 
     //TEST: bytes aren't being updated correctly
@@ -687,7 +717,11 @@ static void sensor_idle_mode_start()
         //If we're transitioning from active to idle mode we need to stop the data collection timer
         //and then put the sensor into sleep mode.
         err_code = app_timer_stop(m_data_reading_timer); //Even if the timer isn't actively on it's ok to call this method
-        lsm9ds1_idle_mode_enable(0b111);
+        
+        //TODO: For now activate lsm9ds1 and fxos idle modes, but should implement a better
+        //way to figure out which methods to call
+        lsm9ds1_idle_mode_enable();
+        fxos8700_idle_mode_enable();
 
         //the LED is deactivated during data collection so turn it back on
         err_code = app_timer_start(m_led_timer, LED_DELAY, NULL); //Even if the timer is already on it's ok to call this method
@@ -695,8 +729,7 @@ static void sensor_idle_mode_start()
     else 
     {
         //If we aren't in sensor active or idle mode, it means that we arrived here from connection mode.
-        //This means that both the TWI bus and LSM9DS1 need to be turned on. No need to put the LSM9DS1 
-        //into sleep mode as this happens automatically upon power up.
+        //This means that both the TWI bus and sensors need to be turned on.
 
         //turn on any TWI buses that are needed by the current sensors
         enable_twi_bus(imu_comm.acc_comm.twi_bus->inst_idx);
@@ -716,7 +749,11 @@ static void sensor_active_mode_start()
     app_timer_stop(m_led_timer); //disable the led by turning of it's timer
 
     //turn on the sensors by applying the current settings in the settings array
-    lsm9ds1_active_mode_enable(0b111);
+    
+    //TODO: For now activate lsm9ds1 and fxos active modes, but should implement a better
+    //way to figure out which methods to call
+    lsm9ds1_active_mode_enable();
+    fxos8700_active_mode_enable();
 
     //start data acquisition by turning on the data timer The timer needs to be converted from ms
     //to 'ticks' which match the frequency of the app timer. Normally this is done with a Macro but
@@ -1410,39 +1447,6 @@ int main(void)
     {
         idle_state_handle(); //puts CPU into sleep and waits for an even signal to wake it up
     }
-}
-
-static int32_t get_IMU_data(uint8_t offset)
-{
-    //Reads the raw accelerometer and magnetometer data and stores it in their respective arrays.
-    //First read the gyroscope data
-
-    uint8_t new_data[6];
-    //int ret = lsm9ds1_read_reg(&lsm9ds1_imu, LSM9DS1_OUT_X_L_G, gyr_characteristic_data + offset, 6);
-    int32_t ret = imu_comm.gyr_comm.read_register((void*)imu_comm.gyr_comm.twi_bus, imu_comm.gyr_comm.address, LSM9DS1_OUT_X_L_G, gyr_characteristic_data + offset, 6);
-
-    //If there aren't any issues then read the accelerometer data
-    if (ret == 0)
-    {
-        //SEGGER_RTT_printf(0, "Base Characteristic Address: 0x%#08x\n", acc_characteristic_data);
-        //SEGGER_RTT_printf(0, "Writing data to address: 0x%#08x\n", acc_characteristic_data + offset);
-        //ret = lsm9ds1_read_reg(&lsm9ds1_imu, LSM9DS1_OUT_X_L_XL, acc_characteristic_data + offset, 6);
-        ret = imu_comm.acc_comm.read_register((void*)imu_comm.acc_comm.twi_bus, imu_comm.acc_comm.address, LSM9DS1_OUT_X_L_XL, acc_characteristic_data + offset, 6);
-    }
-
-    return ret;
-}
-
-static int32_t get_MAG_data(uint8_t offset)
-{
-    //Reads the raw magnetometer data and stores it in its respective array
-    //int ret = lsm9ds1_read_reg(&lsm9ds1_mag, LSM9DS1_OUT_X_L_M, mag_characteristic_data + offset, 6);
-
-    //The mag address needs a bit added to the front to allow continuous reading
-    uint8_t auto_inc_address = ((0x1 << 7) | imu_comm.mag_comm.address);
-    int32_t ret = imu_comm.gyr_comm.read_register((void*)imu_comm.mag_comm.twi_bus, auto_inc_address, LSM9DS1_OUT_X_L_M, mag_characteristic_data + offset, 6);
-
-    return ret;
 }
 
 static int32_t sensor_read_register(void *bus, uint8_t add, uint8_t reg, uint8_t *bufp, uint16_t len)

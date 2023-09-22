@@ -13,6 +13,7 @@ static stmdev_ctx_t lsm9ds1_imu;                                          /**< L
 static stmdev_ctx_t lsm9ds1_mag;                                          /**< LSM9DS1 magnetometer instance. */
 
 static lsm9ds1_id_t whoamI;
+static uint8_t used_sensors;                                              /**< a 3-bit number which lets us know which sensors of the acc, gyro and mag are in use */
 
 static bool lsm9ds1_register_auto_increment = true;                       /**register auto increment function for multiple byte reads of LSM9DS1 chip **/
 
@@ -23,6 +24,7 @@ void lsm9ds1_init(imu_communication_t* comm, uint8_t sensors, uint8_t* settings)
 
     //set up communication with the chip
     imu_comm = comm;
+    used_sensors = sensors;
 
     //initialize read/write methods, addresses, and default settings for acc + gyro
     if (sensors & 0b001)
@@ -90,26 +92,26 @@ void lsm9ds1_init(imu_communication_t* comm, uint8_t sensors, uint8_t* settings)
     }
 }
 
-int32_t lsm9ds1_idle_mode_enable(uint8_t sensors)
+int32_t lsm9ds1_idle_mode_enable()
 {
     //Set the sensors in the sensor variable to sleep (0b100 = acc, 0b010 = gyr, 0b001 = mag)
     int32_t ret = 0;
-    if (sensors & 0b011) ret = lsm9ds1_imu_data_rate_set(&lsm9ds1_imu, LSM9DS1_IMU_OFF);
-    if (sensors & 0b100) ret = lsm9ds1_mag_data_rate_set(&lsm9ds1_mag, LSM9DS1_MAG_POWER_DOWN);
+    if (used_sensors & 0b011) ret = lsm9ds1_imu_data_rate_set(&lsm9ds1_imu, LSM9DS1_IMU_OFF);
+    if (used_sensors & 0b100) ret = lsm9ds1_mag_data_rate_set(&lsm9ds1_mag, LSM9DS1_MAG_POWER_DOWN);
 
     return ret;
 }
 
-int32_t lsm9ds1_active_mode_enable(uint8_t sensors)
+int32_t lsm9ds1_active_mode_enable()
 {
     //Applies all of the settings stored in the settings array to the LSM9DS1
     //SEGGER_RTT_WriteString(0, "lsm9ds1 activated with the following settings:\n[");
     int32_t ret = 0;
     for (int i = 0; i < SENSOR_SETTINGS_LENGTH / 3; i++)
     {
-        if (sensors & 0b001) ret = lsm9ds1_acc_apply_setting(i + ACC_START);
-        if (sensors & 0b010) ret = lsm9ds1_gyr_apply_setting(i + GYR_START);
-        if (sensors & 0b100) ret = lsm9ds1_mag_apply_setting(i + MAG_START);
+        if (used_sensors & 0b001) ret |= lsm9ds1_acc_apply_setting(i + ACC_START);
+        if (used_sensors & 0b010) ret |= lsm9ds1_gyr_apply_setting(i + GYR_START);
+        if (used_sensors & 0b100) ret |= lsm9ds1_mag_apply_setting(i + MAG_START);
         //SEGGER_RTT_printf(0, "0x%x ", p_sensor_settings[i]);
     }
     //SEGGER_RTT_WriteString(0, "\n\n");
@@ -226,10 +228,12 @@ static int32_t lsm9ds1_read_imu(void *handle, uint8_t reg, uint8_t *bufp, uint16
     //The lsm9ds1 driver methods for updating registers rely on a struct called stmdev_ctx_t
     //which essentially just holds methods for reading and writing. In order to take advantage
     //of the driver methods, this method acts as a passthrough, converting their reading method
-    //to my own. I also don't allow for the splitting of the lsm9ds1 acc and gyro (since the 
-    //the gyro can't be run without the acc on) which means they have the same read/write methods
-    //so we only call the acc method here.
-    imu_comm->acc_comm.read_register((void*)imu_comm->acc_comm.twi_bus, IMU_Address, reg, bufp, len);
+    //to my own. It's possible for this method to be called by both the accelerometer and the 
+    //gyroscope, and since we can have an acc and gyro that are on different chips, we need to 
+    //figure out which one actually called this method.
+
+    if (used_sensors & 0b001) imu_comm->acc_comm.read_register((void*)imu_comm->acc_comm.twi_bus, IMU_Address, reg, bufp, len);
+    else if (used_sensors & 0b010) imu_comm->gyr_comm.read_register((void*)imu_comm->gyr_comm.twi_bus, IMU_Address, reg, bufp, len);
 }
 static int32_t lsm9ds1_write_imu(void *handle, uint8_t reg, const uint8_t *bufp, uint16_t len)
 {
@@ -237,10 +241,11 @@ static int32_t lsm9ds1_write_imu(void *handle, uint8_t reg, const uint8_t *bufp,
     //which essentially just holds methods for reading and writing. In order to take advantage
     //of the driver methods, this method acts as a passthrough, converting their writing method
     //to my own. I only allow for writing a single byte at a time so the len variable gets dropped.
-    //I also don't allow for the splitting of the lsm9ds1 acc and gyro (since the 
-    //the gyro can't be run without the acc on) which means they have the same read/write methods
-    //so we only call the acc method here.
-    imu_comm->acc_comm.write_register((void*)imu_comm->acc_comm.twi_bus, IMU_Address, reg, bufp);
+    //It's possible for this method to be called by both the accelerometer and the 
+    //gyroscope, and since we can have an acc and gyro that are on different chips, we need to 
+    //figure out which one actually called this method.
+    if (used_sensors & 0b001) imu_comm->acc_comm.write_register((void*)imu_comm->acc_comm.twi_bus, IMU_Address, reg, bufp);
+    else if (used_sensors & 0b010) imu_comm->gyr_comm.write_register((void*)imu_comm->gyr_comm.twi_bus, IMU_Address, reg, bufp);
 }
 static int32_t lsm9ds1_read_mag(void *handle, uint8_t reg, uint8_t *bufp, uint16_t len)
 {
@@ -257,4 +262,23 @@ static int32_t lsm9ds1_write_mag(void *handle, uint8_t reg, const uint8_t *bufp,
     //of the driver methods, this method acts as a passthrough, converting their writing method
     //to my own. I only allow for writing a single byte at a time so the len variable gets dropped.
     imu_comm->mag_comm.write_register((void*)imu_comm->mag_comm.twi_bus, MAG_Address, reg, bufp);
+}
+
+int32_t lsm9ds1_get_acc_data(uint8_t* pBuff, uint8_t offset)
+{
+    int32_t ret = imu_comm->acc_comm.read_register((void*)imu_comm->acc_comm.twi_bus, imu_comm->acc_comm.address, LSM9DS1_OUT_X_L_XL, pBuff + offset, 6);
+    return ret;
+}
+
+int32_t lsm9ds1_get_gyr_data(uint8_t* pBuff, uint8_t offset)
+{
+    int32_t ret = imu_comm->gyr_comm.read_register((void*)imu_comm->gyr_comm.twi_bus, imu_comm->gyr_comm.address, LSM9DS1_OUT_X_L_G, pBuff + offset, 6);
+    return ret;
+}
+
+int32_t lsm9ds1_get_mag_data(uint8_t* pBuff, uint8_t offset)
+{
+    //The mag address needs a bit added to the front to allow continuous reading
+    uint8_t auto_inc_address = ((lsm9ds1_register_auto_increment << 7) | imu_comm->mag_comm.address);
+    int32_t ret = imu_comm->mag_comm.read_register((void*)imu_comm->mag_comm.twi_bus, auto_inc_address, LSM9DS1_OUT_X_L_M, pBuff + offset, 6);
 }

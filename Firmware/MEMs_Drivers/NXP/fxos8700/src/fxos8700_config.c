@@ -16,7 +16,7 @@
 //-----------------------------------------------------------------------
 #include "fxos8700_driver.h"
 #include "fxos8700_config.h"
-#include "sensor_common.h"
+#include "common/sensor_common.h"
 
 /*-------------------------------------------------------------------
 //Macros
@@ -103,6 +103,22 @@ const registerwritelist_t gFxos8700AccelInterruptConfig[] = {
     {FXOS8700_M_CTRL_REG2, FXOS8700_M_CTRL_REG2_M_AUTOINC_ACCEL_ONLY_MODE, FXOS8700_M_CTRL_REG2_M_AUTOINC_MASK},
     __END_WRITE_DATA__};
 
+/*! @brief Register Configuration to configure FXOS8700 for reading Mag samples in Interrupt mode */
+const registerwritelist_t gFxos8700MagInterruptConfig[] = {
+    /*! Configure FXOS8700 CTRL_REG3 Register "ipol" & "pp_od" bit-fields to set INT polarity to ActiveHigh
+	    and output mode selection as push-pull. */
+    {FXOS8700_CTRL_REG3, FXOS8700_CTRL_REG3_IPOL_ACTIVE_HIGH | FXOS8700_CTRL_REG3_PP_OD_PUSH_PULL,
+                         FXOS8700_CTRL_REG3_IPOL_MASK | FXOS8700_CTRL_REG3_PP_OD_MASK},
+    /*! Set FXOS8700 CTRL_REG4 Register "int_en_drdy" bit-field to enable data-ready interrupt. */
+    {FXOS8700_CTRL_REG4, FXOS8700_CTRL_REG4_INT_EN_DRDY_EN, FXOS8700_CTRL_REG4_INT_EN_DRDY_MASK},
+    /*! Set FXOS8700 CTRL_REG5 Register "int_cfg_drdy" bit-field to route data-ready interrupt to INT1. */
+    {FXOS8700_CTRL_REG5, FXOS8700_CTRL_REG5_INT_CFG_DRDY_INT1 | FXOS8700_CTRL_REG5_INT_CFG_DRDY_MASK},
+    /*! Set FXOS8700 M_CTRL_REG1 Register "m_hms[1:0]" bit-fields to configure sensor for Mag only mode. */
+    {FXOS8700_M_CTRL_REG1, FXOS8700_M_CTRL_REG1_M_HMS_MAG_ONLY, FXOS8700_M_CTRL_REG1_M_HMS_MASK},
+    /*! Reset FXOS8700 M_CTRL_REG2 Register "hyb_autoinc_mode" bit-field to disable Hybrid auto-increment mode. */
+    {FXOS8700_M_CTRL_REG2, FXOS8700_M_CTRL_REG2_M_AUTOINC_ACCEL_ONLY_MODE, FXOS8700_M_CTRL_REG2_M_AUTOINC_MASK},
+    __END_WRITE_DATA__};
+
 /*! @brief Register Configuration to configure FXOS8700 for reading Accel 8-bit samples in Polling mode */
 const registerwritelist_t gFxos87008bitAccelPollConfig[] = {
     /*! Set FXOS8700 M_CTRL_REG1 Register "m_hms[1:0]" bit-fields to configure sensor for Accel only mode. */
@@ -115,6 +131,14 @@ const registerwritelist_t gFxos87008bitAccelPollConfig[] = {
 const registerwritelist_t gFxos8700AccelPollConfig[] = {
     /*! Set FXOS8700 M_CTRL_REG1 Register "m_hms[1:0]" bit-fields to configure sensor for Accel only mode. */
     {FXOS8700_M_CTRL_REG1, FXOS8700_M_CTRL_REG1_M_HMS_ACCEL_ONLY, FXOS8700_M_CTRL_REG1_M_HMS_MASK},
+    /*! Reset FXOS8700 M_CTRL_REG2 Register "hyb_autoinc_mode" bit-field to disable Hybrid auto-increment mode. */
+    {FXOS8700_M_CTRL_REG2, FXOS8700_M_CTRL_REG2_M_AUTOINC_ACCEL_ONLY_MODE, FXOS8700_M_CTRL_REG2_M_AUTOINC_MASK},
+    __END_WRITE_DATA__};
+
+/*! @brief Register Configuration to configure FXOS8700 for reading Mag samples in Polling mode */
+const registerwritelist_t gFxos8700MagPollConfig[] = {
+    /*! Set FXOS8700 M_CTRL_REG1 Register "m_hms[1:0]" bit-fields to configure sensor for Accel only mode. */
+    {FXOS8700_M_CTRL_REG1, FXOS8700_M_CTRL_REG1_M_HMS_MAG_ONLY, FXOS8700_M_CTRL_REG1_M_HMS_MASK},
     /*! Reset FXOS8700 M_CTRL_REG2 Register "hyb_autoinc_mode" bit-field to disable Hybrid auto-increment mode. */
     {FXOS8700_M_CTRL_REG2, FXOS8700_M_CTRL_REG2_M_AUTOINC_ACCEL_ONLY_MODE, FXOS8700_M_CTRL_REG2_M_AUTOINC_MASK},
     __END_WRITE_DATA__};

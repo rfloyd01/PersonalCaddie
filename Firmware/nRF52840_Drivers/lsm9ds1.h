@@ -14,8 +14,8 @@ extern "C" {
 void lsm9ds1_init(imu_communication_t* comm, uint8_t sensors, uint8_t* settings);
 #endif
 
-int32_t lsm9ds1_idle_mode_enable(uint8_t sensors);
-int32_t lsm9ds1_active_mode_enable(uint8_t sensors);
+int32_t lsm9ds1_idle_mode_enable();
+int32_t lsm9ds1_active_mode_enable();
 
 int32_t lsm9ds1_acc_apply_setting(uint8_t setting);
 int32_t lsm9ds1_gyr_apply_setting(uint8_t setting);
@@ -26,6 +26,13 @@ static int32_t lsm9ds1_read_imu(void *handle, uint8_t reg, uint8_t *bufp, uint16
 static int32_t lsm9ds1_write_imu(void *handle, uint8_t reg, const uint8_t *bufp, uint16_t len);
 static int32_t lsm9ds1_read_mag(void *handle, uint8_t reg, uint8_t *bufp, uint16_t len);
 static int32_t lsm9ds1_write_mag(void *handle, uint8_t reg, const uint8_t *bufp, uint16_t len);
+
+//Data reading methods
+//TODO: There are separate functions for getting data from the acc, gyro and the mag, I should look into 
+//using a single function for when a combo of the sensors are in use.
+int32_t lsm9ds1_get_acc_data(uint8_t* pBuff, uint8_t offset);
+int32_t lsm9ds1_get_gyr_data(uint8_t* pBuff, uint8_t offset);
+int32_t lsm9ds1_get_mag_data(uint8_t* pBuff, uint8_t offset);
 
 #ifdef __cplusplus
 }
