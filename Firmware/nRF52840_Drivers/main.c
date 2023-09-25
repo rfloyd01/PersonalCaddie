@@ -479,7 +479,11 @@ static void sensors_init(void)
         int sensors = 0;
         for (int j = 0; j < 3; j++)
         {
-            if (default_sensors[j] == i) sensors |= (1 << j);
+            if (default_sensors[j] == i)
+            {
+                imu_comm.sensor_model[j] = i;
+                sensors |= (1 << j);
+            }
         }
 
         if (sensors != 0)

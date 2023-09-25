@@ -1,6 +1,7 @@
 #include "fxos8700.h"
 #include "app_error.h"
 #include "SEGGER_RTT.h"
+#include "sensor_settings.h"
 
 //set up settings variables
 static imu_communication_t* imu_comm;
@@ -8,7 +9,7 @@ static uint8_t*             p_sensor_settings;
 static fxos8700_driver_t    sensor_driver;
 static sensor_comm_handle_t fxos_com;
 
-static uint8_t used_sensors;                                              /**< a 3-bit number which lets us know which sensors of the acc, gyro and mag are in use */
+//static uint8_t used_sensors;                                              /**< a 3-bit number which lets us know which sensors of the acc, gyro and mag are in use */
 
 //TODO: Should add fxas21002 stuff here in the future
 
@@ -22,10 +23,9 @@ void fxos8700init(imu_communication_t* comm, uint8_t sensors, uint8_t* settings)
     //chip. If both the FXOS acc and mag ar in use then the built-in communication
     //struct will default to the magnetometer.
     imu_comm = comm;
-    used_sensors = sensors;
 
     //initialize read/write methods, address, and default settings for acc
-    if (sensors & 0b001)
+    if (imu_comm->sensor_model[ACC_SENSOR] == FXOS8700_ACC)
     {
         //Set up the communication struct needed to use the FXOS8700 driver using my own communication struct
         fxos_com.pComm = (void*)(&comm->acc_comm);
@@ -49,7 +49,7 @@ void fxos8700init(imu_communication_t* comm, uint8_t sensors, uint8_t* settings)
     }
 
     //initialize read/write methods, address, and default settings for mag
-    if (sensors & 0b100)
+    if (imu_comm->sensor_model[MAG_SENSOR] == FXOS8700_MAG)
     {
         //Set up the communication struct needed to use the FXOS8700 driver using my own communication struct.
         //This will overwrite the acc communication if it's in place, but this is ok because both mag and acc
@@ -80,7 +80,10 @@ int32_t fxos8700_idle_mode_enable()
     //TODO: There is also a sleep mode, I should look into the difference between this and standby,
     //I'm assuming there are shorter times to get good data from the sensors.
     uint8_t ret = 0;
-    if (used_sensors & 0b101) ret = fxos8700_set_mode(&sensor_driver, FXOS8700_STANDBY_MODE);
+    if (imu_comm->sensor_model[ACC_SENSOR] == FXOS8700_ACC || imu_comm->sensor_model[MAG_SENSOR] == FXOS8700_MAG)
+    {
+        ret = fxos8700_set_mode(&sensor_driver, FXOS8700_STANDBY_MODE);
+    }
     return ret;
 }
 
@@ -91,14 +94,14 @@ int32_t fxos8700_active_mode_enable()
     //driver method (which also sets the sensor mode to active).
     int32_t ret = 0;
 
-    if (used_sensors & 0b001)
+    if (imu_comm->sensor_model[ACC_SENSOR] == FXOS8700_ACC)
     {
         ret |= fxos8700_acc_apply_setting(FS_RANGE + ACC_START);
         ret |= fxos8700_acc_apply_setting(FILTER_SELECTION + ACC_START);
         ret |= fxos8700_acc_apply_setting(HIGH_PASS_FILTER + ACC_START);
     }
 
-    if (used_sensors == 0b101)
+    if (imu_comm->sensor_model[ACC_SENSOR] == FXOS8700_ACC && imu_comm->sensor_model[MAG_SENSOR] == FXOS8700_MAG)
     {
         //Both sensors are present so we need to start the chip in hybrid mode. The ODR's for the sensors
         //should be set at the same value, but in the case they aren't take the lower of the two ODRs.
@@ -108,8 +111,8 @@ int32_t fxos8700_active_mode_enable()
 
         ret |= fxos8700_configure_hybrid(&sensor_driver, hybrid_odr, FXOS8700_HYBRID_READ_POLL_MODE);
     }
-    else if (used_sensors == 0b001) ret |= fxos8700_configure_accel(&sensor_driver, *(p_sensor_settings + ACC_START + ODR), FXOS8700_ACCEL_NORMAL, FXOS8700_ACCEL_14BIT_READ_POLL_MODE);
-    else if (used_sensors == 0b100) ret |= fxos8700_configure_mag(&sensor_driver, *(p_sensor_settings + MAG_START + ODR), FXOS8700_MAG_READ_POLLING_MODE);
+    else if (imu_comm->sensor_model[ACC_SENSOR] == FXOS8700_ACC) ret |= fxos8700_configure_accel(&sensor_driver, *(p_sensor_settings + ACC_START + ODR), FXOS8700_ACCEL_NORMAL, FXOS8700_ACCEL_14BIT_READ_POLL_MODE);
+    else if (imu_comm->sensor_model[MAG_SENSOR] == FXOS8700_MAG) ret |= fxos8700_configure_mag(&sensor_driver, *(p_sensor_settings + MAG_START + ODR), FXOS8700_MAG_READ_POLLING_MODE);
 
     if (ret != 0) SEGGER_RTT_WriteString(0, "Error: FXOS8700 enabled with incorrect settings.\n");
 
@@ -246,8 +249,8 @@ int32_t fxos8700_get_acc_data(uint8_t* pBuff, uint8_t offset)
 {
     //create a fxos8700 dataType struct and zero all values
     fxos8700_data_t dataBuffer;
-    for (int i = 0; i < NUM_AXES; i++) dataBuffer.mag[i] = 0;
-    for (int i = 0; i < NUM_AXES * FIFO_SIZE; i++) dataBuffer.accel[i] = 0;
+    //for (int i = 0; i < NUM_AXES; i++) dataBuffer.mag[i] = 0;
+    //for (int i = 0; i < NUM_AXES * FIFO_SIZE; i++) dataBuffer.accel[i] = 0;
 
     //Then read the chip, storing the data in the above struct
     uint8_t ret;
@@ -255,16 +258,33 @@ int32_t fxos8700_get_acc_data(uint8_t* pBuff, uint8_t offset)
 
     //Acc data is read into the dataBuffer object, we need to extract it and put it into our
     //own data buffer, one byte at a time, need to be careful of endianness here
-    for (uint8_t i = 0; i < 3; i++)
+    if (__BYTE_ORDER__ == 1234)
     {
-        pBuff[2 * i + 1 + offset] = dataBuffer.accel[i] & 0xFF;
-        pBuff[2 * i + offset] = (dataBuffer.accel[i] & 0xFF00) >> 8;
-
-        //Erase below when done debugging
-        //SEGGER_RTT_printf(0, "Buffer %d = 0x%#01x\n", 2 * i + offset, (dataBuffer.accel[i] & 0xFF00) >> 8);
-        //SEGGER_RTT_printf(0, "Buffer %d = 0x%#01x\n", 2 * i + 1 + offset, dataBuffer.accel[i] & 0xFF);
+        //This byte order represents little endian mode so we need to put the less significant
+        //byte before the most significant byte. The chip already stores data in little endian
+        //so really we just copy the data as it is
+        for (uint8_t i = 0; i < 3; i++)
+        {
+            pBuff[2 * i + offset] = dataBuffer.accel[i] & 0xFF;
+            pBuff[2 * i + 1 + offset] = (dataBuffer.accel[i] & 0xFF00) >> 8;
+        }
     }
-    //SEGGER_RTT_WriteString(0, "\n");
+    else
+    {
+        //This byte order represents big endian mode so we need to put the less significant
+        //byte after the most significant byte. Since the chip stores data in little endian
+        //we need to swap bytes as they come in.
+        for (uint8_t i = 0; i < 3; i++)
+        {
+            pBuff[2 * i + offset] = (dataBuffer.accel[i] & 0xFF00) >> 8;;
+            pBuff[2 * i + 1 + offset] = dataBuffer.accel[i] & 0xFF;
+
+            //Erase below when done debugging
+            //SEGGER_RTT_printf(0, "Buffer %d = 0x%#01x\n", 2 * i + offset, (dataBuffer.accel[i] & 0xFF00) >> 8);
+            //SEGGER_RTT_printf(0, "Buffer %d = 0x%#01x\n", 2 * i + 1 + offset, dataBuffer.accel[i] & 0xFF);
+        }
+        //SEGGER_RTT_WriteString(0, "\n");
+    }
 
     return ret;
 }
@@ -276,10 +296,27 @@ int32_t fxos8700_get_mag_data(uint8_t* pBuff, uint8_t offset)
 
     //Mag data is read into the dataBuffer object, we need to extract it and put it into our
     //own data buffer, one byte at a time, need to be careful of endianness here
-    for (int i = 0; i < 3; i++)
+    if (__BYTE_ORDER__ == 1234)
     {
-        pBuff[2 * i + offset] = dataBuffer.mag[i] & 0xFF;
-        pBuff[2 * i + 1 + offset] = (dataBuffer.mag[i] & 0xFF00) >> 8;
+        //This byte order represents little endian mode so we need to put the less significant
+        //byte before the most significant byte. The chip already stores data in little endian
+        //so really we just copy the data as it is
+        for (uint8_t i = 0; i < 3; i++)
+        {
+            pBuff[2 * i + offset] = dataBuffer.accel[i] & 0xFF;
+            pBuff[2 * i + 1 + offset] = (dataBuffer.accel[i] & 0xFF00) >> 8;
+        }
+    }
+    else
+    {
+        //This byte order represents big endian mode so we need to put the less significant
+        //byte after the most significant byte. Since the chip stores data in little endian
+        //we need to swap bytes as they come in.
+        for (uint8_t i = 0; i < 3; i++)
+        {
+            pBuff[2 * i + offset] = (dataBuffer.accel[i] & 0xFF00) >> 8;;
+            pBuff[2 * i + 1 + offset] = dataBuffer.accel[i] & 0xFF;
+        }
     }
 
     return ret;

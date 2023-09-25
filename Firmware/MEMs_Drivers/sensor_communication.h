@@ -32,6 +32,7 @@ typedef struct
     sensor_communication_t acc_comm;
     sensor_communication_t gyr_comm;
     sensor_communication_t mag_comm;
+    uint8_t                sensor_model[3]; //an array letting us know the models of each sensor, useful for setting up certain function pointers
 } imu_communication_t;
 
 #endif /* SENSOR_COMMUNICATION_H */
