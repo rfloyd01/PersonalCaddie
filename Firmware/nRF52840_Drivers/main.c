@@ -153,6 +153,8 @@ const nrf_drv_twi_t m_twi_external = NRF_DRV_TWI_INSTANCE(EXTERNAL_TWI_INSTANCE_
 volatile bool m_xfer_internal_done = false; //Indicates if operation on the internal TWI bus has ended.
 volatile bool m_xfer_external_done = false; //Indicates if operation on the external TWI bus has ended.
 
+volatile bool m_data_ready  = false; //Indicates if radio has finished broadcasting data via notification
+
 static int m_twi_internal_bus_status;                                                    /**< lets us know the status of the internal TWI bus after each communication attempt on the bus */
 static int m_twi_external_bus_status;                                                    /**< lets us know the status of the external TWI bus after each communication attempt on the bus */
 
@@ -539,9 +541,48 @@ static void characteristic_update_and_notify()
     mag_notify_params.p_len  = &data_characteristic_size;
     mag_notify_params.offset = 0;
 
-    sd_ble_gatts_hvx(m_conn_handle, &acc_notify_params);
-    sd_ble_gatts_hvx(m_conn_handle, &gyr_notify_params);
-    sd_ble_gatts_hvx(m_conn_handle, &mag_notify_params);
+    //Send out the notifications. With three different characteristics
+    //notifying at once it's possible to get an NRF_ERROR_RESOURCES so
+    //keep trying until all notifications have gone out successfully.
+    uint32_t ret;
+    int acc_try = 0, gyr_try = 0, mag_try = 0;
+    
+    //TODO: Shouldn't call the sd_ble_gatts function in each loop
+    //iteration, should instead look at volatile bool for data ready
+    do
+    {
+        //SEGGER_RTT_printf(0, "ACC Notify Attempt %d\n", ++acc_try);
+        ret = sd_ble_gatts_hvx(m_conn_handle, &acc_notify_params);
+
+        if (acc_try >= 10)
+        {
+            int x = 5;
+        }
+    } while (ret != NRF_SUCCESS);
+
+    do
+    {
+        //SEGGER_RTT_printf(0, "GYR Notify Attempt %d\n", ++gyr_try);
+        ret = sd_ble_gatts_hvx(m_conn_handle, &gyr_notify_params);
+
+        if (gyr_try >= 10)
+        {
+            int x = 5;
+        }
+    } while (ret != NRF_SUCCESS);
+
+    do
+    {
+        //SEGGER_RTT_printf(0, "MAG Notify Attempt %d\n", ++mag_try);
+        ret = sd_ble_gatts_hvx(m_conn_handle, &mag_notify_params);
+
+        if (mag_try >= 10)
+        {
+            int x = 5;
+        }
+    } while (ret != NRF_SUCCESS);
+
+    //APP_ERROR_CHECK(ret);
 }
 
 static void data_reading_timer_handler(void * p_context)
@@ -555,32 +596,36 @@ static void data_reading_timer_handler(void * p_context)
     //update the appropriate characteristic values. The timer should go off once
     //every connection interval
 
+    //uint32_t timer_val = nrf_drv_timer_capture(&LED_ON_TIMER, NRF_TIMER_CC_CHANNEL0);
+    //SEGGER_RTT_printf(0, "Reading took %d ticks\n", timer_val);
+
     imu_comm.acc_comm.get_data(acc_characteristic_data, SAMPLE_SIZE * measurements_taken);
     imu_comm.gyr_comm.get_data(gyr_characteristic_data, SAMPLE_SIZE * measurements_taken);
-    //imu_comm.mag_comm.get_data(mag_characteristic_data, SAMPLE_SIZE * measurements_taken);
+    imu_comm.mag_comm.get_data(mag_characteristic_data, SAMPLE_SIZE * measurements_taken);
     
     measurements_taken++;
 
-    //TEST: bytes aren't being updated correctly
-    //SEGGER_RTT_WriteString(0, "Bytes going into gyro characteristic should be:\n");
-    //for (int i = 0; i < SENSOR_SAMPLES * SAMPLE_SIZE; i++) SEGGER_RTT_printf(0, "0x%#01x ", *(gyr_characteristic_data + i));
-    //SEGGER_RTT_WriteString(0, "\n\n");
+    //TEST: I think this method is getting called more often than it should be,
+    //print out current timer value every time this method is called to confirm
+    //uint32_t timer_val = nrf_drv_timer_capture(&LED_ON_TIMER, NRF_TIMER_CC_CHANNEL0);
+    //SEGGER_RTT_printf(0, "Timer at %d ticks\n", timer_val);
+    //SEGGER_RTT_WriteString(0, "\n");
 
     //after the samples are read, update the characteristics and notify
     if ( measurements_taken == SENSOR_SAMPLES)
     {
-        //SEGGER_RTT_WriteString(0, "Sending the following bytes to Acc characteristic:\n");
+        //SEGGER_RTT_WriteString(0, "Sending the following bytes to GYR characteristic:\n");
         //for (int i = 0; i < SENSOR_SAMPLES; i++)
         //{
         //    for (int j = 0; j < SAMPLE_SIZE; j++)
         //    {
-        //        SEGGER_RTT_printf(0, "0x%#01x ", *(acc_characteristic_data + i * SENSOR_SAMPLES + j));
+        //        SEGGER_RTT_printf(0, "0x%#01x ", *(gyr_characteristic_data + i * SAMPLE_SIZE + j));
         //    }
         //    SEGGER_RTT_WriteString(0, "\n");
         //}
         //SEGGER_RTT_WriteString(0, "\n");
 
-        characteristic_update_and_notify();
+        m_data_ready = true; //flags the main loop to broadcast data notifications
         measurements_taken = 0; //reset the data counter
     }
 }
@@ -754,6 +799,10 @@ static void sensor_active_mode_start()
     //way to figure out which methods to call
     lsm9ds1_active_mode_enable();
     fxos8700_active_mode_enable();
+
+    //TODO: The below is for testing purposes, remove when done
+    nrf_drv_timer_clear(&LED_ON_TIMER); //reset the LED-on timer
+    nrf_drv_timer_enable(&LED_ON_TIMER); //turn on the LED_on timer, the handler for this timer will turn the LED back off
 
     //start data acquisition by turning on the data timer The timer needs to be converted from ms
     //to 'ticks' which match the frequency of the app timer. Normally this is done with a Macro but
@@ -1007,7 +1056,7 @@ static void on_adv_evt(ble_adv_evt_t ble_adv_evt)
     switch (ble_adv_evt)
     {
         case BLE_ADV_EVT_FAST:
-            NRF_LOG_INFO("Fast advertising.");
+            SEGGER_RTT_WriteString(0, "Fast advertising.");
             //err_code = bsp_indication_set(BSP_INDICATE_ADVERTISING); //turn off LED indication for now
             //APP_ERROR_CHECK(err_code);
             break;
@@ -1050,7 +1099,7 @@ static void ble_evt_handler(ble_evt_t const * p_ble_evt, void * p_context)
 
         case BLE_GAP_EVT_PHY_UPDATE_REQUEST:
         {
-            NRF_LOG_DEBUG("PHY update request.");
+            //NRF_LOG_DEBUG("PHY update request.");
             ble_gap_phys_t const phys =
             {
                 .rx_phys = BLE_GAP_PHY_AUTO,
@@ -1067,7 +1116,7 @@ static void ble_evt_handler(ble_evt_t const * p_ble_evt, void * p_context)
 
         case BLE_GATTC_EVT_TIMEOUT:
             // Disconnect on GATT Client timeout event.
-            NRF_LOG_DEBUG("GATT Client Timeout.");
+            //NRF_LOG_DEBUG("GATT Client Timeout.");
             err_code = sd_ble_gap_disconnect(p_ble_evt->evt.gattc_evt.conn_handle,
                                              BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION);
             APP_ERROR_CHECK(err_code);
@@ -1075,10 +1124,15 @@ static void ble_evt_handler(ble_evt_t const * p_ble_evt, void * p_context)
 
         case BLE_GATTS_EVT_TIMEOUT:
             // Disconnect on GATT Server timeout event.
-            NRF_LOG_DEBUG("GATT Server Timeout.");
+            //NRF_LOG_DEBUG("GATT Server Timeout.");
             err_code = sd_ble_gap_disconnect(p_ble_evt->evt.gatts_evt.conn_handle,
                                              BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION);
             APP_ERROR_CHECK(err_code);
+            break;
+
+        case BLE_GATTS_EVT_HVN_TX_COMPLETE:
+            //m_notification_done = true; //set the notification done bool to true to allow more notifications
+            //SEGGER_RTT_WriteString(0, "Notification complete.\n");
             break;
 
         default:
@@ -1154,7 +1208,7 @@ static void delete_bonds(void)
 {
     ret_code_t err_code;
 
-    NRF_LOG_INFO("Erase bonds!");
+    //NRF_LOG_INFO("Erase bonds!");
 
     err_code = pm_peers_delete();
     APP_ERROR_CHECK(err_code);
@@ -1433,11 +1487,11 @@ int main(void)
     peer_manager_init();
     leds_init();
   
-    NRF_LOG_FLUSH(); //flush out all logs called during initialization
+    //NRF_LOG_FLUSH(); //flush out all logs called during initialization
 
     // Start execution.
-    NRF_LOG_INFO("Personal Caddie Initialized");
-    NRF_LOG_PROCESS();
+    //NRF_LOG_INFO("Personal Caddie Initialized");
+    //NRF_LOG_PROCESS();
     application_timers_start();
 
     advertising_start(erase_bonds);
@@ -1445,7 +1499,16 @@ int main(void)
     // Enter main loop.
     for (;;)
     {
-        idle_state_handle(); //puts CPU into sleep and waits for an even signal to wake it up
+        idle_state_handle(); //puts CPU into sleep and waits for an event signal to wake it up
+
+        //after the CPU get's woken up (at a minimum this should happen once every
+        //connection interval), see if the data ready flag has been set to true and
+        //if so, send out data notifications).
+        if (m_data_ready)
+        {
+            characteristic_update_and_notify();
+            m_data_ready = false;
+        }
     }
 }
 

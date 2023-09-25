@@ -110,182 +110,191 @@ uint8_t fxos8700_write_reg(fxos8700_driver_t *pDriver, uint16_t address, uint16_
  */
 uint8_t fxos8700_read_data(fxos8700_driver_t *pDriver, fxos8700_data_type_t dataType, fxos8700_data_t* pDataBuffer)
 {
-	uint8_t status;
-	uint8_t dr_status = 0;
-	uint8_t data[FXOS8700_ACCEL_DATA_SIZE * FIFO_SIZE];
+    uint8_t status;
+    uint8_t dr_status = 0;
+    uint8_t data[FXOS8700_ACCEL_DATA_SIZE * FIFO_SIZE];
 
-	/* Check for bad address and invalid params. */
-	if ((NULL == pDataBuffer) || (NULL == pDriver))
-	{
-	    return SENSOR_BAD_ADDRESS;
-	}
+    /* Check for bad address and invalid params. */
+    if ((NULL == pDataBuffer) || (NULL == pDriver))
+    {
+        return SENSOR_BAD_ADDRESS;
+    }
 
-	switch (dataType)
-	{
-		case FXOS8700_ACCEL_14BIT_DATAREAD:
+    switch (dataType)
+    {
+    case FXOS8700_ACCEL_14BIT_DATAREAD:
+        /* Read the FXOS8700 status register and wait till new data is ready*/
 
-            /* Read the FXOS8700 status register and wait till new data is ready*/
-			status = fxos8700_read_reg(pDriver, FXOS8700_STATUS, 1, &dr_status);
+        //TODO: The data ready register was taking much longer than the actual
+        //ODR to update, as a result a single data read was taking close to 40 milliseconds
+        //I've commented out waiting for the data ready register but should look into 
+        //again in the future
+
+        //status = fxos8700_read_reg(pDriver, FXOS8700_STATUS, 1, &dr_status);
+        //if (SENSOR_SUCCESS != status)
+        //{
+        //    return status;
+        //}
+        
+        //while (0 == (dr_status & FXOS8700_DR_STATUS_ZYXDR_MASK))
+        //{
+        //    status = fxos8700_read_reg(pDriver, FXOS8700_STATUS, 1, &dr_status);
+        //    if (SENSOR_SUCCESS != status)
+        //    {
+        //        return status;
+        //    }
+        //}
+
+        /* Received DataReady event, Read the FXOS8700 Accel samples*/
+        status = sensor_burst_read(pDriver->pComHandle, gFxos8700ReadAccel, data);
+        if (SENSOR_SUCCESS != status)
+        {
+            return status;
+        }
+
+        /*! Convert the raw sensor data to signed 16-bit container. */
+        pDataBuffer->accel[0] = ((int16_t)data[0] << 8) | data[1];
+        pDataBuffer->accel[0] /= 4;
+        pDataBuffer->accel[1] = ((int16_t)data[2] << 8) | data[3];
+        pDataBuffer->accel[1] /= 4;
+        pDataBuffer->accel[2] = ((int16_t)data[4] << 8) | data[5];
+        pDataBuffer->accel[2] /= 4;
+
+        break;
+    case FXOS8700_ACCEL_14BIT_FIFO_DATAREAD:
+        /* Read the FXOS8700 status register and wait till new data is ready*/
+                    status = fxos8700_read_reg(pDriver, FXOS8700_STATUS, 1, &dr_status);
+        if (SENSOR_SUCCESS != status)
+        {
+            return status;
+        }
+                    while (0 == (dr_status & FXOS8700_F_STATUS_F_WMRK_FLAG_MASK))
+                    {
+                            status = fxos8700_read_reg(pDriver, FXOS8700_STATUS, 1, &dr_status);
             if (SENSOR_SUCCESS != status)
             {
                 return status;
             }
-			while (0 == (dr_status & FXOS8700_DR_STATUS_ZYXDR_MASK))
-			{
-				status = fxos8700_read_reg(pDriver, FXOS8700_STATUS, 1, &dr_status);
-                if (SENSOR_SUCCESS != status)
-                {
-                    return status;
-                }
-			}
+                    }
 
-            /* Received DataReady event, Read the FXOS8700 Accel samples*/
-			status = sensor_burst_read(pDriver->pComHandle, gFxos8700ReadAccel, data);
-			if (SENSOR_SUCCESS != status)
-			{
-				return status;
-			}
+        /* Received DataReady event, Read the FXOS8700 Accel samples*/
+                    status = sensor_burst_read(pDriver->pComHandle, gFxos8700ReadAccelFifo, data);
+                    if (SENSOR_SUCCESS != status)
+                    {
+                            return status;
+                    }
 
-			/*! Convert the raw sensor data to signed 16-bit container. */
-			pDataBuffer->accel[0] = ((int16_t)data[0] << 8) | data[1];
-			pDataBuffer->accel[0] /= 4;
-			pDataBuffer->accel[1] = ((int16_t)data[2] << 8) | data[3];
-			pDataBuffer->accel[1] /= 4;
-			pDataBuffer->accel[2] = ((int16_t)data[4] << 8) | data[5];
-			pDataBuffer->accel[2] /= 4;
+            for (uint8_t i = 0; i < FIFO_SIZE; i++)
+            {
+                            /*! Convert the raw sensor data to signed 16-bit container. */
+                            pDataBuffer->accel[i*3 + 0] = ((int16_t)data[i * FXOS8700_ACCEL_DATA_SIZE + 0] << 8) | data[i * FXOS8700_ACCEL_DATA_SIZE + 1];
+                            pDataBuffer->accel[i*3 + 0] /= 4;
+                            pDataBuffer->accel[i*3 + 1] = ((int16_t)data[i * FXOS8700_ACCEL_DATA_SIZE + 2] << 8) | data[i * FXOS8700_ACCEL_DATA_SIZE + 3];
+                            pDataBuffer->accel[i*3 + 1] /= 4;
+                            pDataBuffer->accel[i*3 + 2] = ((int16_t)data[i * FXOS8700_ACCEL_DATA_SIZE + 4] << 8) | data[i * FXOS8700_ACCEL_DATA_SIZE + 5];
+                            pDataBuffer->accel[i*3 + 2] /= 4;
+            }
 
-			break;
-		case FXOS8700_ACCEL_14BIT_FIFO_DATAREAD:
+                    break;
+            case FXOS8700_ACCEL_8BIT_DATAREAD:
 
-            /* Read the FXOS8700 status register and wait till new data is ready*/
-			status = fxos8700_read_reg(pDriver, FXOS8700_STATUS, 1, &dr_status);
+        /* Read the FXOS8700 status register and wait till new data is ready*/
+                    status = fxos8700_read_reg(pDriver, FXOS8700_STATUS, 1, &dr_status);
+        if (SENSOR_SUCCESS != status)
+        {
+            return status;
+        }
+                    while (0 == (dr_status & FXOS8700_DR_STATUS_ZYXDR_MASK))
+                    {
+                            status = fxos8700_read_reg(pDriver, FXOS8700_STATUS, 1, &dr_status);
             if (SENSOR_SUCCESS != status)
             {
                 return status;
             }
-			while (0 == (dr_status & FXOS8700_F_STATUS_F_WMRK_FLAG_MASK))
-			{
-				status = fxos8700_read_reg(pDriver, FXOS8700_STATUS, 1, &dr_status);
-                if (SENSOR_SUCCESS != status)
-                {
-                    return status;
-                }
-			}
+                    }
 
-            /* Received DataReady event, Read the FXOS8700 Accel samples*/
-			status = sensor_burst_read(pDriver->pComHandle, gFxos8700ReadAccelFifo, data);
-			if (SENSOR_SUCCESS != status)
-			{
-				return status;
-			}
+        /* Received DataReady event, Read the FXOS8700 Accel samples*/
+                    status = sensor_burst_read(pDriver->pComHandle, gFxos8700ReadAccel8bit, data);
+                    if (SENSOR_SUCCESS != status)
+                    {
+                            return status;
+                    }
 
-	        for (uint8_t i = 0; i < FIFO_SIZE; i++)
-	        {
-				/*! Convert the raw sensor data to signed 16-bit container. */
-				pDataBuffer->accel[i*3 + 0] = ((int16_t)data[i * FXOS8700_ACCEL_DATA_SIZE + 0] << 8) | data[i * FXOS8700_ACCEL_DATA_SIZE + 1];
-				pDataBuffer->accel[i*3 + 0] /= 4;
-				pDataBuffer->accel[i*3 + 1] = ((int16_t)data[i * FXOS8700_ACCEL_DATA_SIZE + 2] << 8) | data[i * FXOS8700_ACCEL_DATA_SIZE + 3];
-				pDataBuffer->accel[i*3 + 1] /= 4;
-				pDataBuffer->accel[i*3 + 2] = ((int16_t)data[i * FXOS8700_ACCEL_DATA_SIZE + 4] << 8) | data[i * FXOS8700_ACCEL_DATA_SIZE + 5];
-				pDataBuffer->accel[i*3 + 2] /= 4;
-	        }
+                    /*! Convert the raw sensor data to signed 16-bit container. */
+                    pDataBuffer->accel[0] = ((int16_t)data[0]);
+                    pDataBuffer->accel[1] = ((int16_t)data[1]);
+                    pDataBuffer->accel[2] = ((int16_t)data[2]);
 
-			break;
-		case FXOS8700_ACCEL_8BIT_DATAREAD:
+                    break;
+    case FXOS8700_MAG_DATAREAD:
+        /* Read the FXOS8700 status register and wait till new data is ready*/
+        //TODO: The data ready register was taking much longer than the actual
+        //ODR to update, as a result a single data read was taking close to 40 milliseconds
+        //I've commented out waiting for the data ready register but should look into 
+        //again in the future
+        //while (dr_status != 0xFF)
+        //{
+        //    status = fxos8700_read_reg(pDriver, FXOS8700_M_DR_STATUS, 1, &dr_status);
+        //    if (SENSOR_SUCCESS != status)
+        //    {
+        //        return status;
+        //    }
+        //}
 
-            /* Read the FXOS8700 status register and wait till new data is ready*/
-			status = fxos8700_read_reg(pDriver, FXOS8700_STATUS, 1, &dr_status);
+        status = sensor_burst_read(pDriver->pComHandle, gFxos8700ReadMag, data);
+        if (SENSOR_SUCCESS != status)
+        {
+            return status;
+        }
+
+        /*! Convert the raw sensor data to signed 16-bit container. */
+        pDataBuffer->mag[0] = ((int16_t)data[0] << 8) | data[1];
+        pDataBuffer->mag[1] = ((int16_t)data[2] << 8) | data[3];
+        pDataBuffer->mag[2] = ((int16_t)data[4] << 8) | data[5];
+
+        break;
+    case FXOS8700_ACCEL_MAG_HYBRID:
+
+        /* Read the FXOS8700 status register and wait till new data is ready*/
+                    status = fxos8700_read_reg(pDriver, FXOS8700_STATUS, 1, &dr_status);
+        if (SENSOR_SUCCESS != status)
+        {
+            return status;
+        }
+                    while (0 == (dr_status & FXOS8700_DR_STATUS_ZYXDR_MASK))
+                    {
+                            status = fxos8700_read_reg(pDriver, FXOS8700_STATUS, 1, &dr_status);
             if (SENSOR_SUCCESS != status)
             {
                 return status;
             }
-			while (0 == (dr_status & FXOS8700_DR_STATUS_ZYXDR_MASK))
-			{
-				status = fxos8700_read_reg(pDriver, FXOS8700_STATUS, 1, &dr_status);
-                if (SENSOR_SUCCESS != status)
-                {
-                    return status;
-                }
-			}
+                    }
 
-            /* Received DataReady event, Read the FXOS8700 Accel samples*/
-			status = sensor_burst_read(pDriver->pComHandle, gFxos8700ReadAccel8bit, data);
-			if (SENSOR_SUCCESS != status)
-			{
-				return status;
-			}
+                    status = sensor_burst_read(pDriver->pComHandle, gFxos8700ReadAccelMag, data);
+                    if (SENSOR_SUCCESS != status)
+                    {
+                            return status;
+                    }
 
-			/*! Convert the raw sensor data to signed 16-bit container. */
-			pDataBuffer->accel[0] = ((int16_t)data[0]);
-			pDataBuffer->accel[1] = ((int16_t)data[1]);
-			pDataBuffer->accel[2] = ((int16_t)data[2]);
+                    /*! Convert the raw sensor data to signed 16-bit container. */
+                    pDataBuffer->accel[0] = (int16_t)((data[0] << 8) | data[1]);
+                    pDataBuffer->accel[0] /= 4;
+                    pDataBuffer->accel[1] = (int16_t)((data[2] << 8) | data[3]);
+                    pDataBuffer->accel[1] /= 4;
+                    pDataBuffer->accel[2] = (int16_t)((data[4] << 8) | data[5]);
+                    pDataBuffer->accel[2] /= 4;
 
-			break;
-		case FXOS8700_MAG_DATAREAD:
+                    pDataBuffer->mag[0] = (int16_t)((data[6] << 8) | data[7]);
+                    pDataBuffer->mag[1] = (int16_t)((data[8] << 8) | data[9]);
+                    pDataBuffer->mag[2] = (int16_t)((data[10] << 8) | data[11]);
 
-            /* Read the FXOS8700 status register and wait till new data is ready*/
-			while (dr_status != 0xFF)
-			{
-				status = fxos8700_read_reg(pDriver, FXOS8700_M_DR_STATUS, 1, &dr_status);
-                if (SENSOR_SUCCESS != status)
-                {
-                    return status;
-                }
-			}
-			status = sensor_burst_read(pDriver->pComHandle, gFxos8700ReadMag, data);
-			if (SENSOR_SUCCESS != status)
-			{
-				return status;
-			}
+                    break;
+    default:
+        status = SENSOR_INVALIDPARAM_ERR;
 
-			/*! Convert the raw sensor data to signed 16-bit container. */
-			pDataBuffer->mag[0] = ((int16_t)data[0] << 8) | data[1];
-			pDataBuffer->mag[1] = ((int16_t)data[2] << 8) | data[3];
-			pDataBuffer->mag[2] = ((int16_t)data[4] << 8) | data[5];
-
-			break;
-		case FXOS8700_ACCEL_MAG_HYBRID:
-
-            /* Read the FXOS8700 status register and wait till new data is ready*/
-			status = fxos8700_read_reg(pDriver, FXOS8700_STATUS, 1, &dr_status);
-            if (SENSOR_SUCCESS != status)
-            {
-                return status;
-            }
-			while (0 == (dr_status & FXOS8700_DR_STATUS_ZYXDR_MASK))
-			{
-				status = fxos8700_read_reg(pDriver, FXOS8700_STATUS, 1, &dr_status);
-                if (SENSOR_SUCCESS != status)
-                {
-                    return status;
-                }
-			}
-
-			status = sensor_burst_read(pDriver->pComHandle, gFxos8700ReadAccelMag, data);
-			if (SENSOR_SUCCESS != status)
-			{
-				return status;
-			}
-
-			/*! Convert the raw sensor data to signed 16-bit container. */
-			pDataBuffer->accel[0] = (int16_t)((data[0] << 8) | data[1]);
-			pDataBuffer->accel[0] /= 4;
-			pDataBuffer->accel[1] = (int16_t)((data[2] << 8) | data[3]);
-			pDataBuffer->accel[1] /= 4;
-			pDataBuffer->accel[2] = (int16_t)((data[4] << 8) | data[5]);
-			pDataBuffer->accel[2] /= 4;
-
-			pDataBuffer->mag[0] = (int16_t)((data[6] << 8) | data[7]);
-			pDataBuffer->mag[1] = (int16_t)((data[8] << 8) | data[9]);
-			pDataBuffer->mag[2] = (int16_t)((data[10] << 8) | data[11]);
-
-			break;
-        default:
-            status = SENSOR_INVALIDPARAM_ERR;
-
-            break;
-	}
-	return status;
+        break;
+    }
+    return status;
 }
 
 /*! @brief  The interface function to read FXOS8700 sensor events.

@@ -244,16 +244,27 @@ int32_t fxos8700_mag_apply_setting(uint8_t setting)
 
 int32_t fxos8700_get_acc_data(uint8_t* pBuff, uint8_t offset)
 {
+    //create a fxos8700 dataType struct and zero all values
     fxos8700_data_t dataBuffer;
-    uint8_t ret = fxos8700_read_data(&sensor_driver, FXOS8700_ACCEL_14BIT_DATAREAD, &dataBuffer);
+    for (int i = 0; i < NUM_AXES; i++) dataBuffer.mag[i] = 0;
+    for (int i = 0; i < NUM_AXES * FIFO_SIZE; i++) dataBuffer.accel[i] = 0;
+
+    //Then read the chip, storing the data in the above struct
+    uint8_t ret;
+    ret = fxos8700_read_data(&sensor_driver, FXOS8700_ACCEL_14BIT_DATAREAD, &dataBuffer);
 
     //Acc data is read into the dataBuffer object, we need to extract it and put it into our
     //own data buffer, one byte at a time, need to be careful of endianness here
-    for (int i = 0; i < 3; i++)
+    for (uint8_t i = 0; i < 3; i++)
     {
-        pBuff[2 * i + offset] = dataBuffer.accel[i] & 0xFF;
-        pBuff[2 * i + 1 + offset] = (dataBuffer.accel[i] & 0xFF00) >> 8;
+        pBuff[2 * i + 1 + offset] = dataBuffer.accel[i] & 0xFF;
+        pBuff[2 * i + offset] = (dataBuffer.accel[i] & 0xFF00) >> 8;
+
+        //Erase below when done debugging
+        //SEGGER_RTT_printf(0, "Buffer %d = 0x%#01x\n", 2 * i + offset, (dataBuffer.accel[i] & 0xFF00) >> 8);
+        //SEGGER_RTT_printf(0, "Buffer %d = 0x%#01x\n", 2 * i + 1 + offset, dataBuffer.accel[i] & 0xFF);
     }
+    //SEGGER_RTT_WriteString(0, "\n");
 
     return ret;
 }
