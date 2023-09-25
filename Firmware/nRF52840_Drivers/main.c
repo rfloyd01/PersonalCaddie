@@ -153,7 +153,8 @@ const nrf_drv_twi_t m_twi_external = NRF_DRV_TWI_INSTANCE(EXTERNAL_TWI_INSTANCE_
 volatile bool m_xfer_internal_done = false; //Indicates if operation on the internal TWI bus has ended.
 volatile bool m_xfer_external_done = false; //Indicates if operation on the external TWI bus has ended.
 
-volatile bool m_data_ready  = false; //Indicates if radio has finished broadcasting data via notification
+volatile bool m_data_ready  = false;        //Indicates when all characteristics have been filled with new data and we're ready to send it to the client
+volatile bool m_notification_done = false;  //Indicates when the current data notification has complete
 
 static int m_twi_internal_bus_status;                                                    /**< lets us know the status of the internal TWI bus after each communication attempt on the bus */
 static int m_twi_external_bus_status;                                                    /**< lets us know the status of the external TWI bus after each communication attempt on the bus */
@@ -399,6 +400,29 @@ static void sensor_communication_init(sensor_type_t type, uint8_t model, uint8_t
     }
 }
 
+static float sensor_odr_calculate()
+{
+    //Calculates the highest ODR of the three active sensors. The highest ODR
+    //value will dictate the appropriate connection interval for the BLE connection.
+    float current_highest_odr = 0.0;
+
+    for (int i = 0; i < 3; i++)
+    {
+        if (imu_comm.sensor_model[i] == LSM9DS1_ACC)
+        {
+            float new_odr = lsm9ds1_odr_calculate(sensor_settings, imu_comm.sensor_model[0], imu_comm.sensor_model[1], imu_comm.sensor_model[2], i);
+            if (new_odr > current_highest_odr) current_highest_odr = new_odr;
+        }
+        else if (imu_comm.sensor_model[i] == FXOS8700_ACC)
+        {
+            float new_odr = fxos8700_odr_calculate(imu_comm.sensor_model[0], imu_comm.sensor_model[2], sensor_settings[ACC_START + ODR], sensor_settings[MAG_START + ODR]);
+            if (new_odr > current_highest_odr) current_highest_odr = new_odr;
+        }
+    }
+
+    return current_highest_odr;
+}
+
 /**@brief Function for the LSM9DS1 initialization.
  *
  * @details Initializes the LSM9DS1 accelerometer, gyroscope and magnetometer
@@ -545,77 +569,36 @@ static void characteristic_update_and_notify()
     mag_notify_params.p_len  = &data_characteristic_size;
     mag_notify_params.offset = 0;
 
-    //Send out the notifications. With three different characteristics
-    //notifying at once it's possible to get an NRF_ERROR_RESOURCES so
-    //keep trying until all notifications have gone out successfully.
-    uint32_t ret;
-    int acc_try = 0, gyr_try = 0, mag_try = 0;
-    
-    //TODO: Shouldn't call the sd_ble_gatts function in each loop
-    //iteration, should instead look at volatile bool for data ready
-    do
-    {
-        //SEGGER_RTT_printf(0, "ACC Notify Attempt %d\n", ++acc_try);
-        ret = sd_ble_gatts_hvx(m_conn_handle, &acc_notify_params);
+    //Set the notifcation_done boolean to false and start notifications.
+    //The boolean will be set to true in the BLE handler when the notification
+    //is complete, alerting us to send out the next notification.
+    m_notification_done = false;
+    ret = sd_ble_gatts_hvx(m_conn_handle, &acc_notify_params); //acc data notification
+    while (!m_notification_done) {}
 
-        if (acc_try >= 10)
-        {
-            int x = 5;
-        }
-    } while (ret != NRF_SUCCESS);
+    m_notification_done = false;
+    ret = sd_ble_gatts_hvx(m_conn_handle, &gyr_notify_params); //gyr data notification
+    while (!m_notification_done) {}
 
-    do
-    {
-        //SEGGER_RTT_printf(0, "GYR Notify Attempt %d\n", ++gyr_try);
-        ret = sd_ble_gatts_hvx(m_conn_handle, &gyr_notify_params);
-
-        if (gyr_try >= 10)
-        {
-            int x = 5;
-        }
-    } while (ret != NRF_SUCCESS);
-
-    do
-    {
-        //SEGGER_RTT_printf(0, "MAG Notify Attempt %d\n", ++mag_try);
-        ret = sd_ble_gatts_hvx(m_conn_handle, &mag_notify_params);
-
-        if (mag_try >= 10)
-        {
-            int x = 5;
-        }
-    } while (ret != NRF_SUCCESS);
+    m_notification_done = false;
+    ret = sd_ble_gatts_hvx(m_conn_handle, &mag_notify_params); //mag data notification
+    while (!m_notification_done) {}
 
     //APP_ERROR_CHECK(ret);
 }
 
 static void data_reading_timer_handler(void * p_context)
 {
-    //uint32_t time_stamp = nrf_drv_timer_capture(&my_timer, NRF_TIMER_CC_CHANNEL1);
-    //float clock_conversion = 1.0 / 16000000.0;
-    //float actual_time = time_stamp * clock_conversion;
-    //SEGGER_RTT_printf(0, "TWI initiated at %u ticks of 16MHz.\n", time_stamp);
-
     //Everytime the data reading timer goes off we take sensor readings and then 
     //update the appropriate characteristic values. The timer should go off once
     //every connection interval
-
-    //uint32_t timer_val = nrf_drv_timer_capture(&LED_ON_TIMER, NRF_TIMER_CC_CHANNEL0);
-    //SEGGER_RTT_printf(0, "Reading took %d ticks\n", timer_val);
-
     imu_comm.acc_comm.get_data(acc_characteristic_data, SAMPLE_SIZE * measurements_taken);
     imu_comm.gyr_comm.get_data(gyr_characteristic_data, SAMPLE_SIZE * measurements_taken);
     imu_comm.mag_comm.get_data(mag_characteristic_data, SAMPLE_SIZE * measurements_taken);
     
     measurements_taken++;
 
-    //TEST: I think this method is getting called more often than it should be,
-    //print out current timer value every time this method is called to confirm
-    //uint32_t timer_val = nrf_drv_timer_capture(&LED_ON_TIMER, NRF_TIMER_CC_CHANNEL0);
-    //SEGGER_RTT_printf(0, "Timer at %d ticks\n", timer_val);
-    //SEGGER_RTT_WriteString(0, "\n");
-
-    //after the samples are read, update the characteristics and notify
+    //after all the samples are read, update the characteristics and notify
     if ( measurements_taken == SENSOR_SAMPLES)
     {
         //SEGGER_RTT_WriteString(0, "Sending the following bytes to GYR characteristic:\n");
@@ -708,7 +691,7 @@ static void gap_params_init(void)
     //calculate the connection interval based on the ODR of the sensor
     //TODO: It would be better to move this into the sensor_init() method
     //      but for some reason I waas getting an error when putting it there.
-    float sensor_odr = lsm9ds1_odr_calculate(sensor_settings[ODR + GYR_START], sensor_settings[ODR + MAG_START]);
+    float sensor_odr = sensor_odr_calculate();
 
     int minimum_interval_required = 1000.0 / sensor_odr * SENSOR_SAMPLES + 1; //this is in milliseconds, hence the 1000
     minimum_interval_required += (15 - minimum_interval_required % 15); //round up to the nearest 15th millisecond
@@ -804,14 +787,10 @@ static void sensor_active_mode_start()
     lsm9ds1_active_mode_enable();
     fxos8700_active_mode_enable();
 
-    //TODO: The below is for testing purposes, remove when done
-    nrf_drv_timer_clear(&LED_ON_TIMER); //reset the LED-on timer
-    nrf_drv_timer_enable(&LED_ON_TIMER); //turn on the LED_on timer, the handler for this timer will turn the LED back off
-
     //start data acquisition by turning on the data timer The timer needs to be converted from ms
     //to 'ticks' which match the frequency of the app timer. Normally this is done with a Macro but
     //that can't be accessed here so the macro code is copied here
-    float sensor_odr = lsm9ds1_odr_calculate(sensor_settings[ODR + GYR_START], sensor_settings[ODR + MAG_START]);
+    float sensor_odr = sensor_odr_calculate();
     int reading_timer_milliseconds = 1000.0 / sensor_odr + 1; //this is how often (in milliseconds) we need to take a sensor reading
 
     uint64_t A = reading_timer_milliseconds * (uint64_t)APP_TIMER_CLOCK_FREQ;
@@ -875,7 +854,7 @@ void update_connection_interval()
     //When changing the settings for the IMU, we take a look to see if the ODR for the sensors
     //has changed. If so, we alter the current connection interval to get all data to the 
     //app in a timely manner.
-    float sensor_odr = lsm9ds1_odr_calculate(sensor_settings[ODR + GYR_START], sensor_settings[ODR + MAG_START]);
+    float sensor_odr = sensor_odr_calculate();
     if (sensor_odr != current_sensor_odr)
     {
         //if the odr has changed then we update the connection interval to match it
@@ -1135,7 +1114,7 @@ static void ble_evt_handler(ble_evt_t const * p_ble_evt, void * p_context)
             break;
 
         case BLE_GATTS_EVT_HVN_TX_COMPLETE:
-            //m_notification_done = true; //set the notification done bool to true to allow more notifications
+            m_notification_done = true; //set the notification done bool to true to allow more notifications
             //SEGGER_RTT_WriteString(0, "Notification complete.\n");
             break;
 

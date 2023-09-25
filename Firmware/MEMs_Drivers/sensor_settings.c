@@ -1,6 +1,7 @@
 #include "sensor_settings.h"
 #include "lsm9ds1_reg.h"
 #include "NXP/fxos8700/src/fxos8700_regdef.h"
+#include "NXP/fxos8700/src/fxos8700_driver.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -75,9 +76,10 @@ uint8_t get_sensor_low_address(sensor_type_t sensor_type, uint8_t sensor_model)
 }
 
 //LSM9DS1 conversions
-float lsm9ds1_odr_calculate(uint8_t imu_odr_setting, uint8_t mag_odr_setting)
+float lsm9ds1_compound_odr_calculate(uint8_t imu_odr_setting, uint8_t mag_odr_setting)
 {
-    //Returns the current ODR of the sensor as indicated in the sensor settings array.
+    //When all three sensors are LSM9DS1 model, this method returns the current ODR
+    //of the sensor as indicated in the sensor settings array.
     //Normally the ODR is dictated by the gyroscope, however,
     //when the gyroscope is turned off then it's dictated by the accelerometer. If both the 
     //accelerometer and gyroscope are off then the ODR will be dictated by the magnetometer.
@@ -128,6 +130,7 @@ float lsm9ds1_odr_calculate(uint8_t imu_odr_setting, uint8_t mag_odr_setting)
                 break;
             }
         }
+        else return 0.0; //all sensors are off so return an ODR of 0 Hz
     }
     else
     {
@@ -174,6 +177,15 @@ float lsm9ds1_odr_calculate(uint8_t imu_odr_setting, uint8_t mag_odr_setting)
 
     return lsm9ds1_odr;
 }
+
+float lsm9ds1_odr_calculate(uint8_t* settings_array, uint8_t acc_model, uint8_t gyr_model, uint8_t mag_model, uint8_t sensor)
+{
+    //Gets the ODR for one of the specific sensors on the LSM9DS1 chip.
+    if (sensor == ACC_SENSOR) return lsm9ds1_compound_odr_calculate(settings_array[ACC_START + ODR], LSM9DS1_MAG_POWER_DOWN);
+    else if (sensor == GYR_SENSOR) return lsm9ds1_compound_odr_calculate(settings_array[GYR_START + ODR], LSM9DS1_MAG_POWER_DOWN);
+    else return lsm9ds1_compound_odr_calculate(LSM9DS1_IMU_OFF, settings_array[MAG_START + ODR]);
+}
+
 float lsm9ds1_fsr_conversion(sensor_type_t sensor, uint8_t fsr_setting)
 {
     if (sensor == ACC_SENSOR)
@@ -224,6 +236,94 @@ float lsm9ds1_fsr_conversion(sensor_type_t sensor, uint8_t fsr_setting)
     }
     else return 0; //invalid setting applied
 
+}
+
+float fxos8700_odr_calculate(uint8_t acc_model, uint8_t mag_model, uint8_t acc_odr_setting, uint8_t mag_odr_setting)
+{
+    //Check to see if the acc model and mag model are both FXOS sensors, if so, the ODR will be 
+    //cut in half with both sensors engaged. If one (or both) of the sensors are turned off then
+    //the ODR setting will have a value of 0xFF.
+    bool acc_on = (acc_model == FXOS8700_ACC), mag_on = (mag_model == FXOS8700_MAG);
+    if (acc_on && mag_on)
+    {
+        if (acc_odr_setting == 0xFF) acc_on = false;
+        else if (mag_odr_setting == 0xFF) mag_on = false;
+        else
+        {
+            //Both sensors are on which means the ODR values for each sensor
+            //are the same. Return the appropriate hybrid ODR
+            switch (acc_odr_setting)
+            {
+            case FXOS8700_ODR_HYBRID_400_HZ: return 400.0;
+            case FXOS8700_ODR_HYBRID_200_HZ: return 200.0;
+            case FXOS8700_ODR_HYBRID_100_HZ: return 100.0;
+            case FXOS8700_ODR_HYBRID_50_HZ: return 50.0;
+            case FXOS8700_ODR_HYBRID_25_HZ: return 25.0;
+            case FXOS8700_ODR_HYBRID_6P25_HZ: return 6.25;
+            case FXOS8700_ODR_HYBRID_3P125_HZ: return 3.125;
+            case FXOS8700_ODR_HYBRID_0P7813_HZ: return 0.7813;
+            default: return 0.0;
+            }
+        }
+    }
+
+    if (acc_on)
+    {
+        //Only the acc is on (or present) so return the acc only value
+        switch (acc_odr_setting)
+        {
+        case FXOS8700_ODR_SINGLE_800_HZ: return 800.0;
+        case FXOS8700_ODR_SINGLE_400_HZ: return 400.0;
+        case FXOS8700_ODR_SINGLE_200_HZ: return 200.0;
+        case FXOS8700_ODR_SINGLE_100_HZ: return 100.0;
+        case FXOS8700_ODR_SINGLE_50_HZ: return 50.0;
+        case FXOS8700_ODR_SINGLE_12P5_HZ: return 12.5;
+        case FXOS8700_ODR_SINGLE_6P25_HZ: return 6.25;
+        case FXOS8700_ODR_SINGLE_1P5625_HZ: return 1.5625;
+        default: return 0.0;
+        }
+    }
+    else if (mag_on)
+    {
+        //Only the mag is on (or present) so return the mag only value
+        switch (mag_odr_setting)
+        {
+        case FXOS8700_ODR_SINGLE_800_HZ: return 800.0;
+        case FXOS8700_ODR_SINGLE_400_HZ: return 400.0;
+        case FXOS8700_ODR_SINGLE_200_HZ: return 200.0;
+        case FXOS8700_ODR_SINGLE_100_HZ: return 100.0;
+        case FXOS8700_ODR_SINGLE_50_HZ: return 50.0;
+        case FXOS8700_ODR_SINGLE_12P5_HZ: return 12.5;
+        case FXOS8700_ODR_SINGLE_6P25_HZ: return 6.25;
+        case FXOS8700_ODR_SINGLE_1P5625_HZ: return 1.5625;
+        default: return 0.0;
+        }
+    }
+    else return 0.0; //If neither sensor is on then the ODR is 0 Hz
+}
+
+float fxos8700_fsr_conversion(sensor_type_t sensor, uint8_t fsr_setting)
+{
+    //Only the accelerometer has different options here (of which there are only three). 
+    //The magnetometer FSR is fixed
+    if (sensor == ACC_SENSOR)
+    {
+        switch (fsr_setting)
+        {
+        case FXOS8700_XYZ_DATA_CFG_FS_2G_0P244:
+            return 0.244;
+        case FXOS8700_XYZ_DATA_CFG_FS_4G_0P488:
+            return 0.488;
+        case FXOS8700_XYZ_DATA_CFG_FS_8G_0P976:
+            return 0.976;
+        default:
+            return 0; //invalid setting applied
+        }
+    }
+    else if (sensor == MAG_SENSOR)
+    {
+        return 0.1; //Magnetometer full-scale is locked in at 0.1 uT/LSB
+    }
 }
 
 const wchar_t* lsm9ds1_get_complete_settings_string(sensor_type_t sensor_type, sensor_settings_t setting_type)
