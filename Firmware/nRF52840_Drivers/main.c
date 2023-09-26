@@ -88,6 +88,7 @@
 
 #include "lsm9ds1.h"
 #include "fxos8700.h"
+#include "fxas21002.h"
 #include "ble_sensor_service.h"
 #include "personal_caddie_operating_modes.h"
 
@@ -162,7 +163,7 @@ static int m_twi_external_bus_status;                                           
 static int measurements_taken = 0;                                              /**< keeps track of how many IMU measurements have taken in the given connection interval. */
 
 //IMU Sensor Parameters
-static uint8_t default_sensors[3] = {FXOS8700_ACC, LSM9DS1_GYR, FXOS8700_MAG};  /**< Default sensors that are attempted to be initialized first. */
+static uint8_t default_sensors[3] = {FXOS8700_ACC, FXAS21002_GYR, FXOS8700_MAG};/**< Default sensors that are attempted to be initialized first. */
 //static uint8_t default_sensors[3] = {LSM9DS1_ACC, LSM9DS1_GYR, LSM9DS1_MAG};  /**< Default sensors that are attempted to be initialized first. */
 static bool sensors_initialized[3] = {false, false, false};                     /**< Keep track of which sensors are currently initialized */
 static uint8_t internal_sensors[10];                                            /**< An array for holding the addresses of sensors on the internal TWI line */
@@ -407,7 +408,8 @@ static void sensor_communication_init(sensor_type_t type, uint8_t model, uint8_t
             }
             else if (model == FXAS21002_GYR)
             {
-                //TODO: add methods here after adding driver
+                imu_comm.gyr_comm.update_settings = NULL;
+                imu_comm.gyr_comm.get_data = fxas21002_get_gyr_data;
             }
             break;
         case MAG_SENSOR:
@@ -444,7 +446,11 @@ static float sensor_odr_calculate()
         }
         else if (imu_comm.sensor_model[i] == FXOS8700_ACC)
         {
-            float new_odr = fxos8700_odr_calculate(imu_comm.sensor_model[0], imu_comm.sensor_model[2], sensor_settings[ACC_START + ODR], sensor_settings[MAG_START + ODR]);
+            float new_odr;
+
+            if (i == GYR_SENSOR) new_odr = fxas21002_odr_calculate(imu_comm.sensor_model[1], sensor_settings[GYR_START + ODR]);
+            else new_odr = fxos8700_odr_calculate(imu_comm.sensor_model[0], imu_comm.sensor_model[2], sensor_settings[ACC_START + ODR], sensor_settings[MAG_START + ODR]);
+            
             if (new_odr > current_highest_odr) current_highest_odr = new_odr;
         }
     }
@@ -689,6 +695,8 @@ static void sensors_init(void)
                     break;
                 case FXOS8700_ACC:
                     fxos8700init(&imu_comm, sensors, sensor_settings);
+                    fxas21002init(&imu_comm, sensors, sensor_settings);
+                    break;
             }
         }
     }
@@ -922,10 +930,11 @@ static void sensor_idle_mode_start()
         //and then put the sensor into sleep mode.
         err_code = app_timer_stop(m_data_reading_timer); //Even if the timer isn't actively on it's ok to call this method
         
-        //TODO: For now activate lsm9ds1 and fxos idle modes, but should implement a better
-        //way to figure out which methods to call
+        //Put all sensors into idle mode, any of the sensors that are active
+        //will be properly initialized
         lsm9ds1_idle_mode_enable();
         fxos8700_idle_mode_enable();
+        fxas21002_idle_mode_enable();
 
         //the LED is deactivated during data collection so turn it back on
         err_code = app_timer_start(m_led_timer, LED_DELAY, NULL); //Even if the timer is already on it's ok to call this method
@@ -954,10 +963,11 @@ static void sensor_active_mode_start()
 
     //turn on the sensors by applying the current settings in the settings array
     
-    //TODO: For now activate lsm9ds1 and fxos active modes, but should implement a better
-    //way to figure out which methods to call
+    //Put all sensors into idle mode, any of the sensors that are active
+    //will be properly initialized
     lsm9ds1_active_mode_enable();
     fxos8700_active_mode_enable();
+    fxas21002_active_mode_enable();
 
     //start data acquisition by turning on the data timer The timer needs to be converted from ms
     //to 'ticks' which match the frequency of the app timer. Normally this is done with a Macro but

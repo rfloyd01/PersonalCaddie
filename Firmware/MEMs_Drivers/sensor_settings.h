@@ -73,12 +73,13 @@ float lsm9ds1_compound_odr_calculate(uint8_t imu_odr_setting, uint8_t mag_odr_se
 float lsm9ds1_odr_calculate(uint8_t* settings_array, uint8_t acc_model, uint8_t gyr_model, uint8_t mag_model, uint8_t sensor);
 float lsm9ds1_fsr_conversion(sensor_type_t sensor, uint8_t fsr_setting);
 
-//FXOS conversions
-float fxos8700_odr_calculate(uint8_t acc_model, uint8_t mag_model, uint8_t acc_odr_setting, uint8_t mag_odr_setting);
-float fxos8700_fsr_conversion(sensor_type_t sensor, uint8_t fsr_setting);
-
 const wchar_t* lsm9ds1_get_settings_string(sensor_type_t sensor_type, sensor_settings_t setting_type, uint8_t setting);
 const wchar_t* lsm9ds1_get_complete_settings_string(sensor_type_t sensor_type, sensor_settings_t setting_type);
+
+//FXOS/FXAS conversions
+float fxos8700_odr_calculate(uint8_t acc_model, uint8_t mag_model, uint8_t acc_odr_setting, uint8_t mag_odr_setting);
+float fxas21002_odr_calculate(uint8_t gyr_model, uint8_t odr_setting);
+float fxos_fxas_fsr_conversion(sensor_type_t sensor, uint8_t fsr_setting);
 
 uint8_t get_sensor_high_address(sensor_type_t sensor_type, uint8_t sensor_model);
 uint8_t get_sensor_low_address(sensor_type_t sensor_type, uint8_t sensor_model);

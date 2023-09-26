@@ -286,6 +286,14 @@ typedef enum fxos8700_hybrid_odr
  */
 uint8_t fxos8700_init(fxos8700_driver_t *pDriver);
 
+/*! @brief       The interface function to set FXOS8700 sensor mode.
+ *  @details     This function set required FXOS8700 sensor mode.
+ *  @param[in]   fxos8700_driver_t *pDriver, the pointer to the fxos8700 comm handle.
+ *  @param[in]   fxos8700_mode_type_t sensorMode, FXOS8700 sensor mode that user want to set to.
+ *  @return      returns the status of the operation.
+ */
+uint8_t fxos8700_set_mode(fxos8700_driver_t *pDriver, fxos8700_mode_type_t sensorMode);
+
 /*! @brief       The interface function to generically read a fxos8700 sensor register.
  *  @details     This function read a fxos8700 sensor register.
  *  @param[in]   fxos8700_driver_t *pDriver, the pointer to the FXOS8700 driver handle.

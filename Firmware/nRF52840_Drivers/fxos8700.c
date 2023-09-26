@@ -9,10 +9,6 @@ static uint8_t*             p_sensor_settings;
 static fxos8700_driver_t    sensor_driver;
 static sensor_comm_handle_t fxos_com;
 
-//static uint8_t used_sensors;                                              /**< a 3-bit number which lets us know which sensors of the acc, gyro and mag are in use */
-
-//TODO: Should add fxas21002 stuff here in the future
-
 void fxos8700init(imu_communication_t* comm, uint8_t sensors, uint8_t* settings)
 {
     //create a pointer to an array which holds settings for the sensor

@@ -305,7 +305,26 @@ float fxos8700_odr_calculate(uint8_t acc_model, uint8_t mag_model, uint8_t acc_o
     else return 0.0; //If neither sensor is on then the ODR is 0 Hz
 }
 
-float fxos8700_fsr_conversion(sensor_type_t sensor, uint8_t fsr_setting)
+float fxas21002_odr_calculate(uint8_t gyr_model, uint8_t odr_setting)
+{
+    if (gyr_model == FXAS21002_GYR)
+    {
+        switch (odr_setting)
+        {
+        case FXAS21002_ODR_800_HZ: return 800.0;
+        case FXAS21002_ODR_400_HZ: return 400.0;
+        case FXAS21002_ODR_200_HZ: return 200.0;
+        case FXAS21002_ODR_100_HZ: return 100.0;
+        case FXAS21002_ODR_50_HZ: return 50.0;
+        case FXAS21002_ODR_25_HZ: return 25.0;
+        case FXAS21002_ODR_12_5_HZ: return 12.5;
+        default: return 0.0; //invalid setting passed in
+        }
+    }
+    else return 0.0;
+}
+
+float fxos_fxas_fsr_conversion(sensor_type_t sensor, uint8_t fsr_setting)
 {
     //Only the accelerometer has different options here (of which there are only three). 
     //The magnetometer FSR is fixed
@@ -319,6 +338,24 @@ float fxos8700_fsr_conversion(sensor_type_t sensor, uint8_t fsr_setting)
             return 0.488;
         case FXOS8700_XYZ_DATA_CFG_FS_8G_0P976:
             return 0.976;
+        default:
+            return 0; //invalid setting applied
+        }
+    }
+    else if (sensor == GYR_SENSOR)
+    {
+        switch (fsr_setting)
+        {
+        case FXAS21002_RANGE_4000DPS:
+            return 125.0;
+        case FXAS21002_RANGE_2000DPS:
+            return 62.50;
+        case FXAS21002_RANGE_1000DPS:
+            return 31.25;
+        case FXAS21002_RANGE_500DPS:
+            return 15.625;
+        case FXAS21002_RANGE_250DPS:
+            return 7.8125;
         default:
             return 0; //invalid setting applied
         }

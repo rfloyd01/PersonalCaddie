@@ -1,5 +1,5 @@
-#ifndef FXOS8700_H__
-#define FXOS8700_H__
+#ifndef FXAS21002_H__
+#define FXAS21002_H__
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -23,6 +23,6 @@ int32_t fxas21002_get_gyr_data(uint8_t* pBuff, uint8_t offset);
 }
 #endif
 
-#endif // FXOS8700_H__
+#endif // FXAS21002_H__
 
 /** @} */

@@ -32,7 +32,7 @@ void fxas21002init(imu_communication_t* comm, uint8_t sensors, uint8_t* settings
 
         //After setting default settings, attempt to read the whoAmI register
         uint8_t whoamI;
-        imu_comm->gyr_comm.write_register((void*)imu_comm->gyr_comm.twi_bus, imu_comm->gyr_comm.address, FXAS21002_REG_WHOAMI, &whoamI);
+        imu_comm->gyr_comm.read_register((void*)imu_comm->gyr_comm.twi_bus, imu_comm->gyr_comm.address, FXAS21002_REG_WHOAMI, &whoamI, 1);
         if (whoamI == FXAS21002_WHO_AM_I) SEGGER_RTT_WriteString(0, "FXAS21002 Gyr discovered.\n");
         else SEGGER_RTT_WriteString(0, "Error: Couldn't find FXAS21002 Gyr.\n");
     }
@@ -43,6 +43,7 @@ int32_t fxas21002_idle_mode_enable()
     //The fxas21002 has two idle modes, there's a standby mode which is very low power and
     //only the i2c bus is active, and there's a ready mode where the gyro is on but in a state
     //of low power. We opt to go into ready mode here so the gyro remains "warmed up"
+    if (imu_comm->sensor_model[GYR_SENSOR] != FXAS21002_GYR) return 0;
     return fxas21002_power_mode_set(&imu_comm->gyr_comm, FXAS21002_POWER_READY);
 }
 
@@ -51,6 +52,8 @@ int32_t fxas21002_active_mode_enable()
     //We first apply the ODR setting, as if this will put the chip in standby/ready mode so
     //we can safely alter the settings. The last setting we update is the high-pass filter settings
     //because changing the ODR or the power mode causes these settings to reset.
+    if (imu_comm->sensor_model[GYR_SENSOR] != FXAS21002_GYR) return 0;
+
     int32_t ret = 0;
     ret |= fxas21002_data_rate_set(&imu_comm->gyr_comm, p_sensor_settings[GYR_START + ODR]);
     ret |= fxas21002_full_scale_range_set(&imu_comm->gyr_comm, p_sensor_settings[GYR_START + FS_RANGE]);

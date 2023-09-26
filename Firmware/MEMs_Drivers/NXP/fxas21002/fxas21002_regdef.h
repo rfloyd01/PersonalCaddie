@@ -4,13 +4,19 @@
 #include <stdint.h>
 
 #ifdef __BYTE_ORDER__
+#ifndef DRV_LITTLE_ENDIAN
 #define DRV_LITTLE_ENDIAN 1234
+#endif
+#ifndef DRV_BIG_ENDIAN
 #define DRV_BIG_ENDIAN    4321
 #endif
+#endif
+#ifndef DRV_BYTE_ORDER
 #if __BYTE_ORDER__ == DRV_LITTLE_ENDIAN
 #define DRV_BYTE_ORDER    DRV_LITTLE_ENDIAN
 #else
 #define DRV_BYTE_ORDER    DRV_BIG_ENDIAN
+#endif
 #endif
 
 typedef struct

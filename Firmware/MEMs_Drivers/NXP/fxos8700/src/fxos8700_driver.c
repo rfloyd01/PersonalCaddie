@@ -20,13 +20,7 @@
 /*******************************************************************************
  * Prototypes
  ******************************************************************************/
-/*! @brief       The interface function to set FXOS8700 sensor mode.
- *  @details     This function set required FXOS8700 sensor mode.
- *  @param[in]   fxos8700_driver_t *pDriver, the pointer to the fxos8700 comm handle.
- *  @param[in]   fxos8700_mode_type_t sensorMode, FXOS8700 sensor mode that user want to set to.
- *  @return      returns the status of the operation.
- */
-uint8_t fxos8700_set_mode(fxos8700_driver_t *pDriver, fxos8700_mode_type_t sensorMode);
+
 /*******************************************************************************
  * Code
  ******************************************************************************/
