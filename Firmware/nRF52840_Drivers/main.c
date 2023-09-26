@@ -162,7 +162,7 @@ static int m_twi_external_bus_status;                                           
 static int measurements_taken = 0;                                              /**< keeps track of how many IMU measurements have taken in the given connection interval. */
 
 //IMU Sensor Parameters
-static uint8_t default_sensors[3] = {FXOS8700_ACC, FXOS8700_ACC, FXOS8700_MAG};  /**< Default sensors that are attempted to be initialized first. */
+static uint8_t default_sensors[3] = {FXOS8700_ACC, LSM9DS1_GYR, FXOS8700_MAG};  /**< Default sensors that are attempted to be initialized first. */
 //static uint8_t default_sensors[3] = {LSM9DS1_ACC, LSM9DS1_GYR, LSM9DS1_MAG};  /**< Default sensors that are attempted to be initialized first. */
 static bool sensors_initialized[3] = {false, false, false};                     /**< Keep track of which sensors are currently initialized */
 static uint8_t internal_sensors[10];                                            /**< An array for holding the addresses of sensors on the internal TWI line */

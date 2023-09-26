@@ -107,6 +107,7 @@
       <file file_name="lsm9ds1.c" />
       <file file_name="../MEMs_Drivers/sensor_settings.c" />
       <file file_name="fxos8700.c" />
+      <file file_name="fxas21002.c" />
     </folder>
     <folder Name="nRF_Segger_RTT">
       <file file_name="$(IncludeDir)/$(SDKVer)/external/segger_rtt/SEGGER_RTT.c" />
@@ -148,6 +149,7 @@
       <file file_name="../MEMs_Drivers/NXP/fxos8700/src/common/sensor_comm.c" />
       <file file_name="../MEMs_Drivers/NXP/fxos8700/src/common/sensor_common.c" />
       <file file_name="../MEMs_Drivers/NXP/fxos8700/src/fxos8700_config.c" />
+      <file file_name="../MEMs_Drivers/NXP/fxas21002/fxas21002_driver.c" />
     </folder>
   </project>
   <configuration
