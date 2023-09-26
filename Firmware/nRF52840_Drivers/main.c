@@ -162,8 +162,8 @@ static int m_twi_external_bus_status;                                           
 static int measurements_taken = 0;                                              /**< keeps track of how many IMU measurements have taken in the given connection interval. */
 
 //IMU Sensor Parameters
-//static uint8_t default_sensors[3] = {FXOS8700_ACC, LSM9DS1_GYR, FXOS8700_MAG};  /**< Default sensors that are attempted to be initialized first. */
-static uint8_t default_sensors[3] = {LSM9DS1_ACC, LSM9DS1_GYR, LSM9DS1_MAG};  /**< Default sensors that are attempted to be initialized first. */
+static uint8_t default_sensors[3] = {FXOS8700_ACC, FXOS8700_ACC, FXOS8700_MAG};  /**< Default sensors that are attempted to be initialized first. */
+//static uint8_t default_sensors[3] = {LSM9DS1_ACC, LSM9DS1_GYR, LSM9DS1_MAG};  /**< Default sensors that are attempted to be initialized first. */
 static bool sensors_initialized[3] = {false, false, false};                     /**< Keep track of which sensors are currently initialized */
 static uint8_t internal_sensors[10];                                            /**< An array for holding the addresses of sensors on the internal TWI line */
 static uint8_t external_sensors[10];                                            /**< An array for holding the addresses of sensors on the external TWI line */
@@ -461,9 +461,17 @@ static void default_sensor_select()
     //doesn't work, then select the first option available.
     if (!sensors_initialized[0] || !sensors_initialized[1] || !sensors_initialized[2])
     {
-        for (int i = 0; i < 3; i++)
+        for (int i = ACC_SENSOR; i <= MAG_SENSOR; i++)
         {
             if (sensors_initialized[i]) continue;
+
+            //We'll need to put the new model number into the sensor settings array
+            //so figure out the right place to do so.
+            int setting_location;
+            if (i == ACC_SENSOR) setting_location = ACC_START + SENSOR_MODEL;
+            else if (i == GYR_SENSOR) setting_location = GYR_START + SENSOR_MODEL;
+            else setting_location = MAG_START + SENSOR_MODEL;
+
             for (int j = 0; j < 3; j++)
             {
                 if (!sensors_initialized[j]) continue;
@@ -501,6 +509,8 @@ static void default_sensor_select()
                     {
                         sensor_communication_init(i, default_sensors[j], primary_search[k], known_sensor_bus);
                         sensors_initialized[i] = true;
+                        sensor_settings[setting_location] = default_sensors[j];
+                        default_sensors[i] = default_sensors[j];
                         break; //if for whatever reason there are two of the same sensor on the line we only want to add the first one
                     }
                 }
@@ -514,19 +524,74 @@ static void default_sensor_select()
                     {
                         sensor_communication_init(i, default_sensors[j], secondary_search[k], known_sensor_bus);
                         sensors_initialized[i] = true;
+                        sensor_settings[setting_location] = default_sensors[j];
+                        default_sensors[i] = default_sensors[j];
                         break; //if for whatever reason there are two of the same sensor on the line we only want to add the first one
                     }
                 }
 
                 if (sensors_initialized[i]) break; //move onto the next sensor
-
-                //If we haven't initialized the sensor yet then it means we can't find one of
-                //the appropriate model on either bus, so we need to just initialize the first
-                //one possible. 
             }
+
+            if (sensors_initialized[i]) continue; //if this sensor has been initialized then move on to the next one.
+
+            //If we haven't initialized the sensor yet then it means we can't find one of
+            //the appropriate model on either bus, so we need to just initialize the first
+            //one possible.
+            int stop;
+            if (i == ACC_SENSOR) stop = ACC_MODEL_END;
+            else if (i == GYR_SENSOR) stop = GYR_MODEL_END;
+            else stop = MAG_MODEL_END;
+
+            //search the external bus first
+            for (int k = 0; k < external_sensors_found; k++)
+            {
+                //loopt through all models of the current sensor type
+                for (int l = 0; l < stop; l++)
+                {
+                    uint8_t valid_sensor_address_l = get_sensor_low_address(i, l);
+                    uint8_t valid_sensor_address_h = get_sensor_high_address(i, l);
+
+                    if (external_sensors[k] == valid_sensor_address_l || external_sensors[k] == valid_sensor_address_h)
+                    {
+                        sensor_communication_init(i, l, external_sensors[k], &m_twi_external);
+                        sensors_initialized[i] = true;
+                        sensor_settings[setting_location] = l;
+                        default_sensors[i] = l;
+                        break; //if for whatever reason there are two of the same sensor on the line we only want to add the first one
+                    }
+                }
+            }
+
+            if (sensors_initialized[i]) continue; //move onto the next sensor
+
+            //and finally search the internal bus
+            for (int k = 0; k < internal_sensors_found; k++)
+            {
+                //loopt through all models of the current sensor type
+                for (int l = 0; l < stop; l++)
+                {
+                    uint8_t valid_sensor_address_l = get_sensor_low_address(i, l);
+                    uint8_t valid_sensor_address_h = get_sensor_high_address(i, l);
+
+                    if (internal_sensors[k] == valid_sensor_address_l || internal_sensors[k] == valid_sensor_address_h)
+                    {
+                        sensor_communication_init(i, l, internal_sensors[k], &m_twi_internal);
+                        sensors_initialized[i] = true;
+                        sensor_settings[setting_location] = l;
+                        default_sensors[i] = l;
+                        break; //if for whatever reason there are two of the same sensor on the line we only want to add the first one
+                    }
+                }
+            }
+
+            //If we haven't found a suitable sensor yet then there's something wrong. Print
+            //an error statement
+            if (!sensors_initialized[i]) SEGGER_RTT_WriteString(0, "Couldn't find any sensors, check board connections.\n");
         }
     }
 }
+
 
 /**@brief Function for the LSM9DS1 initialization.
  *
@@ -588,7 +653,7 @@ static void sensors_init(void)
                 if (internal_sensors[j] == default_sensor_address_l || internal_sensors[j] == default_sensor_address_h)
                 {
                     sensor_communication_init(i, default_sensors[i], internal_sensors[j], &m_twi_internal);
-                    sensors_initialized[i] == true;
+                    sensors_initialized[i] = true;
                     break; //if for whatever reason there are two of the same sensor on the line we only want to add the first one
                 }
             }
