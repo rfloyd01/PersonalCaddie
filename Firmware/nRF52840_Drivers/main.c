@@ -162,8 +162,8 @@ static int m_twi_external_bus_status;                                           
 static int measurements_taken = 0;                                              /**< keeps track of how many IMU measurements have taken in the given connection interval. */
 
 //IMU Sensor Parameters
-static uint8_t default_sensors[3] = {FXOS8700_ACC, LSM9DS1_GYR, FXOS8700_MAG};  /**< Default sensors that are attempted to be initialized first. */
-//static uint8_t default_sensors[3] = {LSM9DS1_ACC, LSM9DS1_GYR, LSM9DS1_MAG};  /**< Default sensors that are attempted to be initialized first. */
+//static uint8_t default_sensors[3] = {FXOS8700_ACC, LSM9DS1_GYR, FXOS8700_MAG};  /**< Default sensors that are attempted to be initialized first. */
+static uint8_t default_sensors[3] = {LSM9DS1_ACC, LSM9DS1_GYR, LSM9DS1_MAG};  /**< Default sensors that are attempted to be initialized first. */
 static bool sensors_initialized[3] = {false, false, false};                     /**< Keep track of which sensors are currently initialized */
 static uint8_t internal_sensors[10];                                            /**< An array for holding the addresses of sensors on the internal TWI line */
 static uint8_t external_sensors[10];                                            /**< An array for holding the addresses of sensors on the external TWI line */
@@ -291,7 +291,36 @@ static void twi_address_scan(uint8_t* addresses, uint8_t* device_count, nrf_drv_
         if (instance == INTERNAL_TWI_INSTANCE_ID) m_twi_bus_status = &m_twi_internal_bus_status;
         else m_twi_bus_status = &m_twi_external_bus_status;
 
-        if (*m_twi_bus_status == NRF_DRV_TWI_EVT_DONE) addresses[(*device_count)++] = add;
+        if (*m_twi_bus_status == NRF_DRV_TWI_EVT_DONE)
+        {
+            //We've found a TWI address, before adding it to the array though make sure that
+            //it's an IMU sensor. The BLE 33 Sense comes with some other sensors on board
+            //which we (for now at least) don't care about.
+            bool add_to_list = false;
+            for (int i = ACC_SENSOR; i <= MAG_SENSOR; i++)
+            {
+                int stop;
+                if (i == ACC_SENSOR) stop = ACC_MODEL_END;
+                else if (i == GYR_SENSOR) stop = GYR_MODEL_END;
+                else stop = MAG_MODEL_END;
+
+                //iterate through all sensor models of type i
+                for (int j = 0; j < stop; j++)
+                {
+                    uint8_t valid_sensor_address_l = get_sensor_low_address(i, j);
+                    uint8_t valid_sensor_address_h = get_sensor_high_address(i, j);
+
+                    if (add == valid_sensor_address_l || add == valid_sensor_address_h)
+                    {
+                        addresses[(*device_count)++] = add;
+                        add_to_list = true;
+                        break;
+                    }
+                }
+
+                if (add_to_list) break;
+            }
+        }
     }
 }
 
@@ -423,6 +452,82 @@ static float sensor_odr_calculate()
     return current_highest_odr;
 }
 
+static void default_sensor_select()
+{
+    //Check that all sensors have been initialized after scanning the internal and external bus.
+    //If not, then we're going to need to choose a non-default sensor. The first priority is to 
+    //pick a sensor on the same chip (i.e. same model and TWI bus). If this can't work for 
+    //whatever reason then try to select a sensor of the same model but on the other bus. If this
+    //doesn't work, then select the first option available.
+    if (!sensors_initialized[0] || !sensors_initialized[1] || !sensors_initialized[2])
+    {
+        for (int i = 0; i < 3; i++)
+        {
+            if (sensors_initialized[i]) continue;
+            for (int j = 0; j < 3; j++)
+            {
+                if (!sensors_initialized[j]) continue;
+
+                //Get the addresses for sensor i from sensor j's manufacturer
+                uint8_t new_sensor_address_l = get_sensor_low_address(i, default_sensors[j]);
+                uint8_t new_sensor_address_h = get_sensor_high_address(i, default_sensors[j]);
+
+                //figure out which TWI bus sensor j is on
+                nrf_drv_twi_t const * known_sensor_bus;
+                if (j == 0) known_sensor_bus = imu_comm.acc_comm.twi_bus;
+                else if (j == 1) known_sensor_bus = imu_comm.gyr_comm.twi_bus;
+                else if (j == 2) known_sensor_bus = imu_comm.mag_comm.twi_bus;
+
+                uint8_t* primary_search = internal_sensors, *secondary_search = external_sensors;
+                int primary_stop = internal_sensors_found, secondary_stop = external_sensors_found;
+                if (known_sensor_bus->inst_idx == 1)
+                {
+                    primary_search = external_sensors;
+                    secondary_search = internal_sensors;
+                    primary_stop = external_sensors_found;
+                    secondary_stop = internal_sensors_found;
+                }
+
+                //NOTE: In the below loops, we can only initialize sensor i using sensor j's model number
+                //because currently all sensor manufacturers I use have an acc, gyr and
+                //mag so the model numbers line up (i.e. lsm9ds1_acc = 0, lsm9ds1_gyr = 0).
+                //If I start using chips that don't have all three sensors then the 
+                //model numbers will no longer line up and the below loops won't be safe anymore.
+
+                //Search sensor j's TWI bus for sensor i.
+                for (int k = 0; k < primary_stop; k++)
+                {
+                    if (primary_search[k] == new_sensor_address_l || primary_search[k] == new_sensor_address_h)
+                    {
+                        sensor_communication_init(i, default_sensors[j], primary_search[k], known_sensor_bus);
+                        sensors_initialized[i] = true;
+                        break; //if for whatever reason there are two of the same sensor on the line we only want to add the first one
+                    }
+                }
+
+                if (sensors_initialized[i]) break; //move onto the next sensor
+
+                //If we were external on sensor j's TWI bus, search the other TWI bus
+                for (int k = 0; k < secondary_stop; k++)
+                {
+                    if (secondary_search[k] == new_sensor_address_l || secondary_search[k] == new_sensor_address_h)
+                    {
+                        sensor_communication_init(i, default_sensors[j], secondary_search[k], known_sensor_bus);
+                        sensors_initialized[i] = true;
+                        break; //if for whatever reason there are two of the same sensor on the line we only want to add the first one
+                    }
+                }
+
+                if (sensors_initialized[i]) break; //move onto the next sensor
+
+                //If we haven't initialized the sensor yet then it means we can't find one of
+                //the appropriate model on either bus, so we need to just initialize the first
+                //one possible. 
+            }
+        }
+    }
+}
+
 /**@brief Function for the LSM9DS1 initialization.
  *
  * @details Initializes the LSM9DS1 accelerometer, gyroscope and magnetometer
@@ -490,9 +595,9 @@ static void sensors_init(void)
         }
     }
 
-    //TODO: Need to create a method that checks if all sensors have been initialized, if not, it needs
-    //to choose from the options available to initialize and update the default sensors and sensor settings
-    //arrays. If for whatever reason there aren't any sensors then some kind of error should be kicked up.
+    //If any of the three sensors haven't been initialized yet, use the below
+    //function to pick a different default sensor(s).
+    default_sensor_select();
 
     //Handle the initialization of individual sensors. Currently the model for each sensor type
     //matches the enums for the other sensor models (i.e. lsm9ds1 acc/gyrmag all have enum values of 0x00).
@@ -536,6 +641,8 @@ static void sensors_init(void)
     settings.offset = 0;
     uint32_t err_code = sd_ble_gatts_value_set(m_conn_handle, m_ss.settings_handles.value_handle, &settings);
     APP_ERROR_CHECK(err_code);
+
+    //TODO: Add internal and external sensors to a characteristic
 }
 
 static void characteristic_update_and_notify()
@@ -573,7 +680,7 @@ static void characteristic_update_and_notify()
     //The boolean will be set to true in the BLE handler when the notification
     //is complete, alerting us to send out the next notification.
     m_notification_done = false;
-    ret = sd_ble_gatts_hvx(m_conn_handle, &acc_notify_params); //acc data notification
+    uint32_t ret = sd_ble_gatts_hvx(m_conn_handle, &acc_notify_params); //acc data notification
     while (!m_notification_done) {}
 
     m_notification_done = false;
