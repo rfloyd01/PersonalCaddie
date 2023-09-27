@@ -102,7 +102,11 @@ uint32_t ble_sensor_service_init(ble_sensor_service_t * p_ss, const ble_sensor_s
     VERIFY_SUCCESS(err_code);
 
     // Add Settings characteristic.
-    return ble_sensor_service_settings_char_add(p_ss, settings_length);
+    err_code = ble_sensor_service_settings_char_add(p_ss, settings_length);
+    VERIFY_SUCCESS(err_code);
+
+    // Add Available Sesnors characteristic
+    return ble_sensor_service_available_sensors_char_add(p_ss);
 }
 
 uint32_t ble_sensor_service_data_char_add(ble_sensor_service_t * p_ss)
@@ -185,6 +189,31 @@ uint32_t ble_sensor_service_settings_char_add(ble_sensor_service_t * p_ss, const
     uint32_t err_code = characteristic_add(p_ss->service_handle,
                                   &add_char_params,
                                   &p_ss->settings_handles);
+
+    return err_code;
+}
+
+uint32_t ble_sensor_service_available_sensors_char_add(ble_sensor_service_t * p_ss)
+{
+    ble_add_char_params_t add_char_params;
+
+    //Add Available Sensors characteristic. This is a read only
+    //characteristic that holds 20 bytes. The first 10 bytes
+    //represent the sensors available on the internal TWI bus and
+    //the second 10 bytes represent availble sensors on the 
+    //external TWI bus.
+    memset(&add_char_params, 0, sizeof(add_char_params));
+    add_char_params.uuid              = AVAILABLE_SENSORS_CHAR_UUID;
+    add_char_params.uuid_type         = p_ss->uuid_type;
+    add_char_params.init_len          = 20 * sizeof(uint8_t);
+    add_char_params.max_len           = 20 * sizeof(uint8_t);
+    add_char_params.char_props.read   = 1;
+
+    add_char_params.read_access       = SEC_OPEN;
+
+    uint32_t err_code = characteristic_add(p_ss->service_handle,
+                                  &add_char_params,
+                                  &p_ss->available_handle);
 
     return err_code;
 }

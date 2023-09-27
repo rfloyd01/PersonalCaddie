@@ -36,10 +36,11 @@ void Accelerometer::setConversionRateFromSettings()
 
 void Accelerometer::setCurrentODRFromSettings()
 {
+	//uint8_t* settings_array, uint8_t acc_model, uint8_t gyr_model, uint8_t mag_model, uint8_t sensor
 	switch (this->settings[SENSOR_MODEL])
 	{
 	case LSM9DS1_ACC:
-		this->current_odr = lsm9ds1_odr_calculate(this->settings[ODR], 0xC0); //the 0xC0 represents magnetometer off mode
+		this->current_odr = lsm9ds1_compound_odr_calculate(this->settings[ODR], 0xC0); //the 0xC0 represents magnetometer off mode
 		break;
 	default:
 		this->current_odr = 0;

@@ -29,6 +29,7 @@ NRF_SDH_BLE_OBSERVER(_name ## _obs,                                             
 #define ACC_DATA_CHARACTERISTIC_UUID      0xBF36
 #define GYR_DATA_CHARACTERISTIC_UUID      0xBF37
 #define MAG_DATA_CHARACTERISTIC_UUID      0xBF38
+#define AVAILABLE_SENSORS_CHAR_UUID       0xBF39
 
 #define SENSOR_SAMPLES 10                    /**< The number of full sensor samples to read into data characteristics */
 #define SAMPLE_SIZE     6                    /**< The size (in bytes) of a full sensor sample reading (includes x, y and z axes) */
@@ -51,6 +52,7 @@ struct ble_sensor_service_s
     uint16_t                    service_handle;                         /**< Handle of Sensor Service (as provided by the BLE stack). */
     ble_gatts_char_handles_t    data_handles[3];                        /**< Handles related to the Data Characteristic. */
     ble_gatts_char_handles_t    settings_handles;                       /**< Handles related to the Settings Characteristic. */
+    ble_gatts_char_handles_t    available_handle;                       /**< Handle related to the Available Sensors Characteristic. */
     uint8_t                     uuid_type;                              /**< UUID type for the Sensor Service. */
     ble_sensor_service_setting_write_handler_t setting_write_handler;   /**< Event handler to be called when the Settings Characteristic is written. */
 };
@@ -87,6 +89,15 @@ uint32_t ble_sensor_service_data_char_add(ble_sensor_service_t * p_ss);
  */
 uint32_t ble_sensor_service_settings_char_add(ble_sensor_service_t * p_ss, const uint8_t settings_length);
 
+/**@brief Function for adding the Available Sensors Characteristic.
+ *
+ * @param[out] p_ss       Sensor Service structure. This structure must be supplied by
+ *                        the application. It is initialized by this function and will later
+ *                        be used to identify this particular service instance.
+ *
+ * @retval NRF_SUCCESS If the characteristics were initialized successfully. Otherwise, an error code is returned.
+ */
+uint32_t ble_sensor_service_available_sensors_char_add(ble_sensor_service_t * p_ss);
 
 /**@brief Function for handling the application's BLE stack events.
  *

@@ -715,7 +715,24 @@ static void sensors_init(void)
     uint32_t err_code = sd_ble_gatts_value_set(m_conn_handle, m_ss.settings_handles.value_handle, &settings);
     APP_ERROR_CHECK(err_code);
 
-    //TODO: Add internal and external sensors to a characteristic
+    //We also need to populate the available sensors characteristic with all the sensors
+    //that were found on the internal and external TWI buses. This will allow the front
+    //end application to dynamically choose which sensors to use.
+    ble_gatts_value_t internal_available_sensors, external_available_sensors;
+
+    internal_available_sensors.len = 10;
+    internal_available_sensors.p_value = internal_sensors;
+    internal_available_sensors.offset = 0;
+
+    external_available_sensors.len = 10;
+    external_available_sensors.p_value = external_sensors;
+    external_available_sensors.offset = 10;
+
+    err_code = sd_ble_gatts_value_set(m_conn_handle, m_ss.available_handle.value_handle, &internal_available_sensors);
+    APP_ERROR_CHECK(err_code);
+
+    err_code = sd_ble_gatts_value_set(m_conn_handle, m_ss.available_handle.value_handle, &external_available_sensors);
+    APP_ERROR_CHECK(err_code);
 }
 
 static void characteristic_update_and_notify()

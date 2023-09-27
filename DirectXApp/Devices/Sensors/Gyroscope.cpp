@@ -37,7 +37,7 @@ void Gyroscope::setCurrentODRFromSettings()
 	switch (this->settings[SENSOR_MODEL])
 	{
 	case LSM9DS1_GYR:
-		this->current_odr = lsm9ds1_odr_calculate(this->settings[ODR], 0xC0); //the 0xC0 represents magnetometer off mode
+		this->current_odr = lsm9ds1_compound_odr_calculate(this->settings[ODR], 0xC0); //the 0xC0 represents magnetometer off mode
 		break;
 	default:
 		this->current_odr = 0;

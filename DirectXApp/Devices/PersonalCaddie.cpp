@@ -151,6 +151,7 @@ void PersonalCaddie::disconnectFromDevice()
         m_accelerometer_data_characteristic = nullptr;
         m_gyroscope_data_characteristic = nullptr;
         m_magnetometer_data_characteristic = nullptr;
+        m_available_sensors_characteristic = nullptr;
 
         p_ble->terminateConnection();
     }
@@ -330,7 +331,9 @@ void PersonalCaddie::getDataCharacteristics(Bluetooth::GenericAttributeProfile::
             this->m_settings_characteristic = data_characteristics.GetAt(i);
             setup_notifcations = false; //the settings characteristic doesn't have notification capability
             break;
-        default:
+        case AVAILABLE_SENSORS_CHARACTERISTIC_UUID:
+            this->m_available_sensors_characteristic = data_characteristics.GetAt(i);
+            setup_notifcations = false; //the available sensors characteristic doesn't have notification capability
             break;
         }
 

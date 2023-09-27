@@ -37,7 +37,7 @@ void Magnetometer::setCurrentODRFromSettings()
 	switch (this->settings[SENSOR_MODEL])
 	{
 	case LSM9DS1_MAG:
-		this->current_odr = lsm9ds1_odr_calculate(0x00, this->settings[ODR]); //the 0x00 represents IMU off mode
+		this->current_odr = lsm9ds1_compound_odr_calculate(0x00, this->settings[ODR]); //the 0x00 represents IMU off mode
 		break;
 	default:
 		this->current_odr = 0;

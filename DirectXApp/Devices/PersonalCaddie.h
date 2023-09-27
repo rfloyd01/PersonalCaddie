@@ -11,12 +11,13 @@ using namespace winrt;
 using namespace Windows::Devices;
 
 //Service and characteristic values are the same across Personal Caddie devices so define them here
-#define SENSOR_INFO_UUID                  0xBEEF
-#define SENSOR_SERVICE_UUID               0xBF34
-#define SETTINGS_CHARACTERISTIC_UUID      0xBF35
-#define ACC_DATA_CHARACTERISTIC_UUID      0xBF36
-#define GYR_DATA_CHARACTERISTIC_UUID      0xBF37
-#define MAG_DATA_CHARACTERISTIC_UUID      0xBF38
+#define SENSOR_INFO_UUID                       0xBEEF
+#define SENSOR_SERVICE_UUID                    0xBF34
+#define SETTINGS_CHARACTERISTIC_UUID           0xBF35
+#define ACC_DATA_CHARACTERISTIC_UUID           0xBF36
+#define GYR_DATA_CHARACTERISTIC_UUID           0xBF37
+#define MAG_DATA_CHARACTERISTIC_UUID           0xBF38
+#define AVAILABLE_SENSORS_CHARACTERISTIC_UUID  0xBF39
 
 //enums and structs used by the Personal Caddie class
 enum PersonalCaddiePowerMode
@@ -136,6 +137,7 @@ private:
 	//Gatt Settings and Characteristics obtained from m_ble
 	winrt::Windows::Foundation::Collections::IVectorView<Bluetooth::GenericAttributeProfile::GattDeviceService>  m_services{ nullptr };
 	Bluetooth::GenericAttributeProfile::GattCharacteristic m_settings_characteristic{ nullptr };
+	Bluetooth::GenericAttributeProfile::GattCharacteristic m_available_sensors_characteristic{ nullptr };
 	Bluetooth::GenericAttributeProfile::GattCharacteristic m_accelerometer_data_characteristic{ nullptr };
 	Bluetooth::GenericAttributeProfile::GattCharacteristic m_gyroscope_data_characteristic{ nullptr };
 	Bluetooth::GenericAttributeProfile::GattCharacteristic m_magnetometer_data_characteristic{ nullptr };
