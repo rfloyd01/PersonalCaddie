@@ -272,10 +272,18 @@ void PersonalCaddie::BLEDeviceHandler(BLEState state)
             sensor_settings.ByteOrder(Windows::Storage::Streams::ByteOrder::LittleEndian); //the nRF52840 uses little endian so we match it here
 
             for (int i = 0; i < SENSOR_SETTINGS_LENGTH; i++) sensor_settings_array[i] = sensor_settings.ReadByte();
+
+            //After getting the current sensor settings, read the list of available sensors from the available sensors characteristic
+            auto available_sensors_buffer = m_available_sensors_characteristic.ReadValueAsync(Bluetooth::BluetoothCacheMode::Uncached).get().Value(); //use unchached to read value from the device
+            auto available_sensors = Windows::Storage::Streams::DataReader::FromBuffer(available_sensors_buffer);
+            available_sensors.ByteOrder(Windows::Storage::Streams::ByteOrder::LittleEndian); //the nRF52840 uses little endian so we match it here
+
+            //There are a maximum of 20 sensors that can be attached to the personal caddie
+            for (int i = 0; i < 20; i++) m_availableSensors.push_back(available_sensors.ReadByte());
         }
         catch (...)
         {
-            OutputDebugString(L"something went wrong when reading characteristic\n");
+            OutputDebugString(L"something went wrong when reading characteristics\n");
         }
 
         //Use the data read from the settings characteristic to create a new IMU instance

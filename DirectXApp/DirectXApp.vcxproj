@@ -131,6 +131,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\Firmware\MEMs_Drivers\lsm9ds1_reg.h" />
+    <ClInclude Include="..\Firmware\MEMs_Drivers\NXP\fxas21002\fxas21002_regdef.h" />
+    <ClInclude Include="..\Firmware\MEMs_Drivers\NXP\fxos8700\src\fxos8700_driver.h" />
     <ClInclude Include="..\Firmware\MEMs_Drivers\sensor_settings.h" />
     <ClInclude Include="constants.h" />
     <ClInclude Include="Devices\BLE.h" />

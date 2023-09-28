@@ -22,7 +22,7 @@ public:
 
 	virtual uint32_t handleUIElementStateChange(int i) override;
 
-	void getCurrentSettings(winrt::Windows::Foundation::Size windowSize, std::vector<uint8_t*> settings);
+	void getCurrentSettings(winrt::Windows::Foundation::Size windowSize, std::vector<uint8_t*> settings, std::vector<uint8_t> const& availableSensors);
 	uint8_t* getNewSettings() { return m_newSettings; }
 
 	virtual TextOverlay removeAlerts() override;
@@ -41,6 +41,8 @@ private:
 
 	uint8_t m_currentSettings[SENSOR_SETTINGS_LENGTH]; //an array holding the current settings for the IMU
 	uint8_t m_newSettings[SENSOR_SETTINGS_LENGTH]; //an array holding the new settings for the IMU
+	std::vector<uint8_t> m_internalSensors; //a vector holding the sensor addresses available on the Personal Caddie internal TWI bus
+	std::vector<uint8_t> m_externalSensors; //a vector holding the sensor addresses available on the Personal Caddie external TWI bus
 
 	std::vector<std::vector<std::wstring> > m_dropDownText;
 	int m_accFirstDropDown, m_gyrFirstDropDown, m_magFirstDropDown;

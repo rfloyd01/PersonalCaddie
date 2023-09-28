@@ -612,6 +612,14 @@ static void sensors_init(void)
     sensor_settings[GYR_START + SENSOR_MODEL] = default_sensors[1];
     sensor_settings[MAG_START + SENSOR_MODEL] = default_sensors[2];
 
+    //Then initialize the internal and external sensors arrays so that each element
+    //has a value of 0xFF. This value alerts the front end that no sensor is present.
+    for (int i = 0; i < 10; i++)
+    {
+        internal_sensors[i] = 0xff;
+        external_sensors[i] = 0xff;
+    }
+
     //Next we scan both the external and internal TWI lines to see what sensors we can find
     //Check the internal bus first
     enable_twi_bus(INTERNAL_TWI_INSTANCE_ID);

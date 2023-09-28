@@ -529,7 +529,7 @@ void ModeScreen::enterActiveState()
 		//Personal Caddie for the current IMU sensor settings. These are used to populate
 		//the text for individual drop down menus
 
-		((IMUSettingsMode*)m_modes[static_cast<int>(m_currentMode)].get())->getCurrentSettings(m_renderer->getCurrentScreenSize(), m_personalCaddie->getIMUSettings());
+		((IMUSettingsMode*)m_modes[static_cast<int>(m_currentMode)].get())->getCurrentSettings(m_renderer->getCurrentScreenSize(), m_personalCaddie->getIMUSettings(), m_personalCaddie->getAvailableSensors());
 		m_modeState |= ModeState::CanTransfer; //We still need the ability to leave the page after going active
 		break;
 	}

@@ -88,7 +88,8 @@ public:
 	void connectToDevice(uint64_t deviceAddress);
 	void disconnectFromDevice();
 
-	std::vector<uint8_t*> getIMUSettings() { return p_imu->getSensorSettings(); };
+	std::vector<uint8_t*> getIMUSettings() { return p_imu->getSensorSettings(); }
+	std::vector<uint8_t> const& getAvailableSensors() { return m_availableSensors; }
 
 	//Methods and fields from original BluetoothLE Class
 	void dataUpdate(); //master update function
@@ -130,6 +131,8 @@ private:
 	
 	PersonalCaddiePowerMode current_power_mode;
 	bool dataNotificationsOn;
+
+	std::vector<uint8_t> m_availableSensors;
 
 	volatile bool sensor_data_updated[3] = { false, false, false };
 	volatile bool data_available = false;
