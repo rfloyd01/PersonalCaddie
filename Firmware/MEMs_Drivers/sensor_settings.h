@@ -74,6 +74,8 @@ const wchar_t* get_sensor_model_string(uint8_t sensor_type, uint8_t sensor_model
 const wchar_t* get_sensor_model_string_from_address(uint8_t sensor_type, uint8_t sensor_address);
 void update_sensor_setting(uint8_t* settings_array, sensor_settings_t setting, uint8_t value);
 
+void get_sensor_default_settings(uint8_t sensor_type, uint8_t sensor_model, uint8_t* settings_array);
+
 //LSM9DS1 conversions
 float lsm9ds1_compound_odr_calculate(uint8_t imu_odr_setting, uint8_t mag_odr_setting);
 float lsm9ds1_odr_calculate(uint8_t* settings_array, uint8_t acc_model, uint8_t gyr_model, uint8_t mag_model, uint8_t sensor);

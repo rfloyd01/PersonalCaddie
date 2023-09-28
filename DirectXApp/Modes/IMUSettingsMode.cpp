@@ -336,6 +336,12 @@ uint32_t IMUSettingsMode::handleUIElementStateChange(int i)
 					//m_dropDownText.push_back({});
 					for (int j = SENSOR_MODEL; j <= EXTRA_2; j++) m_dropDownText[i].push_back(L"");
 				}
+
+				//After removing the current drop down menus, update the m_newSettings array with the default values
+				//of the newly selected sensor
+				uint8_t sensor_starts[3] = { ACC_START, GYR_START, MAG_START };
+				get_sensor_default_settings(sensor, newSetting, &m_newSettings[sensor_starts[sensor]]);
+
 				dropDownsSet = false; //This won't get set to true until all drop downs are sized and placed
 				m_state |= IMUSettingsState::GET_SETTINGS; //signals the mode screen that we need to recreate drop downs
 			}
@@ -559,13 +565,13 @@ void IMUSettingsMode::update()
 			{
 				//First, choose the correct setting for this drop down menu
 				std::wstring initialText;
-				switch (m_currentSettings[sensor_start_locations[sensor] + SENSOR_MODEL])
+				switch (m_newSettings[sensor_start_locations[sensor] + SENSOR_MODEL])
 				{
 				case LSM9DS1_ACC:
-					initialText = lsm9ds1_get_settings_string(static_cast<sensor_type_t>(sensor), static_cast<sensor_settings_t>(type), m_currentSettings[sensor_start_locations[sensor] + type]);
+					initialText = lsm9ds1_get_settings_string(static_cast<sensor_type_t>(sensor), static_cast<sensor_settings_t>(type), m_newSettings[sensor_start_locations[sensor] + type]);
 					break;
 				case FXOS8700_ACC:
-					initialText = fxas_fxos_get_settings_string(static_cast<sensor_type_t>(sensor), static_cast<sensor_settings_t>(type), m_currentSettings[sensor_start_locations[sensor] + type]);
+					initialText = fxas_fxos_get_settings_string(static_cast<sensor_type_t>(sensor), static_cast<sensor_settings_t>(type), m_newSettings[sensor_start_locations[sensor] + type]);
 					break;
 				}
 				

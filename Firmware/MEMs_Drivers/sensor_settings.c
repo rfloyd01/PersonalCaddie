@@ -120,6 +120,57 @@ const wchar_t* get_sensor_model_string_from_address(uint8_t sensor_type, uint8_t
     
 }
 
+void get_sensor_default_settings(uint8_t sensor_type, uint8_t sensor_model, uint8_t* settings_array)
+{
+    //Load the default settings for the given sensor into the passed in settings array.
+    //First, reset the given array
+    for (int i = SENSOR_MODEL; i <= EXTRA_2; i++) settings_array[i] = 0;
+
+    switch (sensor_type)
+    {
+    case ACC_SENSOR:
+    {
+        if (sensor_model == LSM9DS1_ACC)
+        {
+            settings_array[SENSOR_MODEL] = LSM9DS1_ACC;
+            settings_array[FS_RANGE] = LSM9DS1_4g;
+            settings_array[ODR] = LSM9DS1_IMU_59Hz5;
+            settings_array[POWER] = LSM9DS1_IMU_59Hz5;
+            settings_array[FILTER_SELECTION] = LSM9DS1_LP_OUT;
+            settings_array[LOW_PASS_FILTER] = LSM9DS1_LP_DISABLE;
+            settings_array[HIGH_PASS_FILTER] = 0;
+            settings_array[EXTRA_FILTER] = LSM9DS1_50Hz;
+        }
+        break;
+    }
+    case GYR_SENSOR:
+    {
+        if (sensor_model == LSM9DS1_GYR)
+        {
+            settings_array[SENSOR_MODEL] = LSM9DS1_GYR;
+            settings_array[FS_RANGE] = LSM9DS1_2000dps;
+            settings_array[ODR] = LSM9DS1_IMU_59Hz5;
+            settings_array[POWER] = LSM9DS1_IMU_59Hz5;
+            settings_array[FILTER_SELECTION] = LSM9DS1_LPF1_HPF_OUT;
+            settings_array[LOW_PASS_FILTER] = 0;
+            settings_array[HIGH_PASS_FILTER] = LSM9DS1_HP_MEDIUM;
+        }
+        break;
+    }
+    case MAG_SENSOR:
+    {
+        if (sensor_model == LSM9DS1_MAG)
+        {
+            settings_array[SENSOR_MODEL] = LSM9DS1_MAG;
+            settings_array[FS_RANGE] = LSM9DS1_4Ga;
+            settings_array[ODR] = LSM9DS1_MAG_LP_40Hz;
+            settings_array[POWER] = LSM9DS1_MAG_LP_40Hz;
+        }
+        break;
+    }
+    }
+}
+
 //LSM9DS1 conversions
 float lsm9ds1_compound_odr_calculate(uint8_t imu_odr_setting, uint8_t mag_odr_setting)
 {
