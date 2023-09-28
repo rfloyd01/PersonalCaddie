@@ -347,186 +347,103 @@ uint32_t IMUSettingsMode::handleUIElementStateChange(int i)
 void IMUSettingsMode::updateSetting(sensor_type_t sensor_type, sensor_settings_t setting_type, uint8_t setting)
 {
 	//This method will look at the setting and update it for the given sensor and setting type. This function
-	//will also figure out if any other settings should be updated as a result of this setting being updated
-	//(for example, turning off a sensor will also change its ODR to 0 Hz).
+	//will also figure out if any other settings should be updated as a result of this setting being updated.
+	//For example, turning off a sensor will also change its ODR to 0 Hz. As another example, if we have an 
+	//LSM9DS1 acc and LSM9DS1 gyro activated, their ODR's need to be equal, so changing one will cascade to
+	//the other
 	int sensor_start_locations[3] = { ACC_START, GYR_START, MAG_START }; //useful to know where each sensor's settings begins
 
-	if (sensor_type == ACC_SENSOR || sensor_type == GYR_SENSOR)
+	//Before updating anything, check to see if we're updating a sensor model type. This has the effect
+	//of changing all the drop downs for a certain sensor as opposed to just changing a few of them.
+	//This will be handled elsewhere so just update the settings array and return from this function for now
+	if (setting_type == SENSOR_MODEL)
 	{
-		if ((m_currentSettings[ACC_START] == LSM9DS1_ACC) && (m_currentSettings[GYR_START] == LSM9DS1_GYR) && (setting_type == ODR || setting_type == POWER))
+		m_newSettings[sensor_start_locations[sensor_type] + setting_type] = setting;
+		return;
+	}
+
+	//Before making any updates, save the locations of some key drop down menus in the uiElement array.
+	int accOdrIndex = 0, gyrOdrIndex = 0, accPowerIndex = 0, gyrPowerIndex = 0, magOdrIndex = 0, magPowerIndex = 0; //figure out which dropdown menu represents the acc ODR
+	for (int i = 0; i < (m_gyrFirstDropDown - m_accFirstDropDown); i++)
+	{
+		if (m_dropDownCategories[i] == ODR) accOdrIndex = i;
+		else if (m_dropDownCategories[i] == POWER) accPowerIndex = i;
+	}
+
+	for (int i = m_gyrFirstDropDown - m_accFirstDropDown; i < (m_magFirstDropDown - m_accFirstDropDown); i++)
+	{
+		if (m_dropDownCategories[i] == ODR) gyrOdrIndex = i;
+		else if (m_dropDownCategories[i] == POWER) gyrPowerIndex = i;
+	}
+
+	for (int i = m_magFirstDropDown - m_accFirstDropDown; i < m_dropDownCategories.size(); i++)
+	{
+		if (m_dropDownCategories[i] == ODR) magOdrIndex = i;
+		else if (m_dropDownCategories[i] == POWER) magPowerIndex = i;
+	}
+
+	uint8_t newSetting = m_newSettings[sensor_start_locations[sensor_type] + setting_type];
+
+	if (m_newSettings[ACC_START] == LSM9DS1_ACC && m_newSettings[GYR_START] == LSM9DS1_GYR)
+	{
+		//We have both an LSM9DS1 acc and gyro, which means that the ODR and Power settings of both sensors
+		//are tied together.
+		std::wstring acc_odr_text = m_uiElements[m_accFirstDropDown + accOdrIndex]->getChildren()[0]->getChildren()[1]->getText()->message;
+		lsm9ds1_update_acc_gyr_setting(m_newSettings, sensor_type, setting_type, &newSetting, setting, &acc_odr_text[0]);
+
+		//Chain drop-down text changes as necessary if the power or odr setting was altered
+		if (setting_type == ODR || setting_type == POWER)
 		{
-			//We're using both an LSM9DS1 accelerometer and gyroscope. These two sensors will have a shared
-			//ODR and power level. Furthermore, the odr and power level settings are also tied together.
-			//This means that changing any of these four settings will case the other three to update as well.
-
-			uint8_t newSetting = m_newSettings[sensor_start_locations[sensor_type] + setting_type]; //will be the same at all four locations
-
-			//calcualte and save a few variables that may come in handy down below
-			int accOdrIndex = 0, gyrOdrIndex, accPowerIndex = 0, gyrPowerIndex = 0; //figure out which dropdown menu represents the acc ODR
-			for (int i = 0; i < (m_gyrFirstDropDown - m_accFirstDropDown); i++)
-			{
-				if (m_dropDownCategories[i] == ODR) accOdrIndex = i;
-				else if (m_dropDownCategories[i] == POWER) accPowerIndex = i;
-			}
-
-			for (int i = m_gyrFirstDropDown - m_accFirstDropDown; i < (m_magFirstDropDown - m_accFirstDropDown); i++)
-			{
-				if (m_dropDownCategories[i] == ODR) gyrOdrIndex = i;
-				else if (m_dropDownCategories[i] == POWER) gyrPowerIndex = i;
-			}
-
-			uint8_t accOdr = m_newSettings[ACC_START + ODR] & 0b01110000, accPower = m_newSettings[ACC_START + ODR] & 0b01110000;
-			uint8_t gyrOdr = m_newSettings[GYR_START + ODR] & 0b00000111, gyrPower = m_newSettings[GYR_START + ODR] & 0b10000111;
-
-			//If the new setting is a power level setting
-			if (setting_type == POWER)
-			{
-				if (sensor_type == ACC_SENSOR)
-				{
-					if (setting == 0)
-					{
-						//If we're here it means we want to turn off the accelerometer. The LSM9DS1 doesn't support a gyroscope
-						//only mode so we also need to turn off the gyro here.
-						newSetting = 0;
-					}
-					else
-					{
-						//We're turning the accelerometer on. Since the gyroscope can't be on alone then it's also off.
-						//Only turn on the acc for now and give at an ODR of 50 Hz
-						newSetting |= 0b00100000;
-					}
-				}
-				else
-				{
-					//we're looking at gyroscope power. The gyroscope can either be turned off, put into low power mode, or be put into 
-					//normal operating mode.
-					if (setting == 0)
-					{
-						//If we're here it means we want to turn off the gyroscope. To do this we set bits 0, 1 and 2 to 0
-						newSetting &= 0b01111000;
-					}
-					else if (setting == 0x87)
-					{
-						//We're putting the gyroscope into low power, flip the MSB to 1. Only 3 ODR's are available in low power mode:
-						//14.9 Hz, 59.5 Hz and 119 Hz. If we aren't using one of these ODR's already then put the
-						//sensors at 59.5 Hz.
-						newSetting |= 0b10000000;
-
-						if (gyrOdr > 3 || gyrOdr == 0)
-						{
-							newSetting &= 0b11111000; //remove current gyr odr
-							gyrOdr = 0b00000010;
-							newSetting |= gyrOdr; //set current gyr odr to 59.5
-						}
-
-						//We also need to alter the acc odr to match the gyrODR (if the acc is on). The gyroscope can't be 
-						//on alone, see if the acc is off then turn it on.
-						newSetting &= 0b10001111; //remove current acc odr
-						newSetting |= (gyrOdr << 4); //set current acc odr to 59.5
-					}
-					else if (setting == 0x07)
-					{
-						//We're putting the gyroscope into normal power mode. All odr's are available at normal power mode.
-						//The only thing that we need to make sure of is that if the gyroscope was previously off we match
-						//its odr to that of the acc. 
-						if (gyrOdr == 0)
-						{
-							if (accOdr == 0)
-							{
-								//put the gyro at 59.5 Hz.
-								newSetting = 0b00100010; //the acc must be turne on as well
-							}
-							else
-							{
-								newSetting = accOdr | (accOdr >> 4);
-							}
-						}
-					}
-				}
-			}
-			else
-			{
-				if (sensor_type == ACC_SENSOR)
-				{
-					//We just changed the acc odr drop down. If the gyroscope is on then we need to change its ODR
-					//to match with a few exceptions. The acc can only be set at 10 or 50 Hz if the gyroscope is off,
-					//so if we change to one of these odrs then the gyroscope must be turned off. Also, if we set the 
-					//acc odr over a frequency of 119 Hz then the gyroscope can't be in low power mode so we need to
-					//take it out if it is. Finally, if we turn the acc off by making its odr 0 then we don't need
-					//to change anything with the gyroscope.
-					if (setting == 0)
-					{
-						//an odr reading of 0 will turn off the accelerometer. The LSM9DS1 doesn't have a gyroscope
-						//only mode so we also need to turn off the gyro here.
-						newSetting = 0;
-					}
-					else if (setting == 0x10 || setting == 0x20)
-					{
-						//both of these options have the potential to turn off the gyro, but we can't know without looking
-						//at the text in the acc odr drop down.
-						std::wstring acc_odr_text = m_uiElements[m_accFirstDropDown + accOdrIndex]->getChildren()[0]->getChildren()[1]->getText()->message;
-						if (acc_odr_text == L"10 Hz 0x10" || acc_odr_text == L"50 Hz 0x20")
-						{
-							//we need to turn off the gyroscope. Set all settings to the new setting
-							newSetting = setting;
-						}
-						else
-						{
-							//We've selected an ODR that requires the gyroscope to be on. Make the gyroscope odr
-							//match the acc one, even if we need to turn on the gyro to do it.
-							newSetting = setting | (setting >> 4);
-						}
-					}
-					else
-					{
-						//We picked one of the standard ODR's, match the gyroscope ODR (unless the gyro is off). If the ODR is above
-						//119 Hz then make sure the gyro isn't in low power mode.
-						newSetting &= 0b10001111; //remove the current acc odr setting
-						if (newSetting & 0b00000111)
-						{
-							//the gyro is on so match the odrs
-							if ((newSetting & 0b10000000) && (setting > 0x30))
-							{
-								//the gyro is in low power mode and the new odr is too high, take the gyro
-								//out of low power mode
-								newSetting &= 0b01111111;
-							}
-
-							newSetting = (newSetting & 0b10000000) | (setting >> 4);
-						}
-						newSetting |= setting;
-					}
-				}
-				else
-				{
-					//we just changed to gyroscope odr drop down menu. All we really need to do is see if
-					//this new odr will take us out of lower power mode and make sure that the acc odr matches.
-					if (setting > 3 && (newSetting & 0b10000000))
-					{
-						//we need to leave low power mode 
-						newSetting &= 0b01111111;
-					}
-
-					//make the acc and gyr odrs match (if the acc is off then turn it on because the gyroscope can't be
-					//on without the acc). If the gyroscope is off then it will turn on here
-					//and default to normal power mode.
-					newSetting = (newSetting & 0b10000000) | (setting << 4 | setting); //remove existing acc odr while maintaining low power mode if it's engaged
-					//newSetting &= 0b11111000; //remove the current gyr odr
-					newSetting |= setting;
-				}
-			}
-
-			//After making the necessaru adjustment, update the m_newSettings array and any text boxes that need it.
-			m_newSettings[ACC_START + ODR]   = newSetting;
+			m_newSettings[ACC_START + ODR] = newSetting;
 			m_newSettings[ACC_START + POWER] = newSetting;
-			m_newSettings[GYR_START + ODR]   = newSetting;
+			m_newSettings[GYR_START + ODR] = newSetting;
 			m_newSettings[GYR_START + POWER] = newSetting;
+
+			//Make necessary changes to gyroscope drop downs
+			m_uiElements[m_accFirstDropDown + gyrOdrIndex]->getChildren()[0]->getChildren()[1]->getText()->message = lsm9ds1_get_settings_string(GYR_SENSOR, ODR, newSetting);
+			m_uiElements[m_accFirstDropDown + gyrOdrIndex]->getChildren()[0]->getChildren()[1]->getText()->colorLocations.back() = m_uiElements[m_accFirstDropDown + gyrOdrIndex]->getChildren()[0]->getChildren()[1]->getText()->message.length();
+
+			m_uiElements[m_accFirstDropDown + gyrPowerIndex]->getChildren()[0]->getChildren()[1]->getText()->message = lsm9ds1_get_settings_string(GYR_SENSOR, POWER, newSetting);
+			m_uiElements[m_accFirstDropDown + gyrPowerIndex]->getChildren()[0]->getChildren()[1]->getText()->colorLocations.back() = m_uiElements[m_accFirstDropDown + gyrPowerIndex]->getChildren()[0]->getChildren()[1]->getText()->message.length();
 
 			m_uiElements[m_accFirstDropDown + accOdrIndex]->getChildren()[0]->getChildren()[1]->getText()->message = lsm9ds1_get_settings_string(ACC_SENSOR, ODR, newSetting);
 			m_uiElements[m_accFirstDropDown + accOdrIndex]->getChildren()[0]->getChildren()[1]->getText()->colorLocations.back() = m_uiElements[m_accFirstDropDown + accOdrIndex]->getChildren()[0]->getChildren()[1]->getText()->message.length();
 
 			m_uiElements[m_accFirstDropDown + accPowerIndex]->getChildren()[0]->getChildren()[1]->getText()->message = lsm9ds1_get_settings_string(ACC_SENSOR, POWER, newSetting);
 			m_uiElements[m_accFirstDropDown + accPowerIndex]->getChildren()[0]->getChildren()[1]->getText()->colorLocations.back() = m_uiElements[m_accFirstDropDown + accPowerIndex]->getChildren()[0]->getChildren()[1]->getText()->message.length();
+		}
+	}
+	else if (m_newSettings[ACC_START] == LSM9DS1_ACC)
+	{
+		//We have an LSM9DS1 acc that isn't tied to a gyro. Basically we just need to make sure that the power setting
+		//and ODR match up.
+		std::wstring acc_odr_text = m_uiElements[m_accFirstDropDown + accOdrIndex]->getChildren()[0]->getChildren()[1]->getText()->message;
+		lsm9ds1_update_acc_setting(m_newSettings, setting_type, &newSetting, setting);
+
+		//Chain drop-down text changes as necessary if the power or odr setting was altered
+		if (setting_type == ODR || setting_type == POWER)
+		{
+			m_newSettings[ACC_START + ODR] = newSetting;
+			m_newSettings[ACC_START + POWER] = newSetting;
+
+			m_uiElements[m_accFirstDropDown + accOdrIndex]->getChildren()[0]->getChildren()[1]->getText()->message = lsm9ds1_get_settings_string(ACC_SENSOR, ODR, newSetting);
+			m_uiElements[m_accFirstDropDown + accOdrIndex]->getChildren()[0]->getChildren()[1]->getText()->colorLocations.back() = m_uiElements[m_accFirstDropDown + accOdrIndex]->getChildren()[0]->getChildren()[1]->getText()->message.length();
+
+			m_uiElements[m_accFirstDropDown + accPowerIndex]->getChildren()[0]->getChildren()[1]->getText()->message = lsm9ds1_get_settings_string(ACC_SENSOR, POWER, newSetting);
+			m_uiElements[m_accFirstDropDown + accPowerIndex]->getChildren()[0]->getChildren()[1]->getText()->colorLocations.back() = m_uiElements[m_accFirstDropDown + accPowerIndex]->getChildren()[0]->getChildren()[1]->getText()->message.length();
+		}
+	}
+	else if (m_newSettings[GYR_START] == LSM9DS1_GYR)
+	{
+		//We have an LSM9DS1 acc that isn't tied to a gyro. Basically we just need to make sure that the power setting
+		//and ODR match up.
+		lsm9ds1_update_gyr_setting(m_newSettings, setting_type, &newSetting, setting);
+
+		//Chain drop-down text changes as necessary if the power or odr setting was altered
+		if (setting_type == ODR || setting_type == POWER)
+		{
+			m_newSettings[GYR_START + ODR] = newSetting;
+			m_newSettings[GYR_START + POWER] = newSetting;
 
 			m_uiElements[m_accFirstDropDown + gyrOdrIndex]->getChildren()[0]->getChildren()[1]->getText()->message = lsm9ds1_get_settings_string(GYR_SENSOR, ODR, newSetting);
 			m_uiElements[m_accFirstDropDown + gyrOdrIndex]->getChildren()[0]->getChildren()[1]->getText()->colorLocations.back() = m_uiElements[m_accFirstDropDown + gyrOdrIndex]->getChildren()[0]->getChildren()[1]->getText()->message.length();
@@ -534,74 +451,11 @@ void IMUSettingsMode::updateSetting(sensor_type_t sensor_type, sensor_settings_t
 			m_uiElements[m_accFirstDropDown + gyrPowerIndex]->getChildren()[0]->getChildren()[1]->getText()->message = lsm9ds1_get_settings_string(GYR_SENSOR, POWER, newSetting);
 			m_uiElements[m_accFirstDropDown + gyrPowerIndex]->getChildren()[0]->getChildren()[1]->getText()->colorLocations.back() = m_uiElements[m_accFirstDropDown + gyrPowerIndex]->getChildren()[0]->getChildren()[1]->getText()->message.length();
 		}
-		else
-		{
-			//We've selected a setting that doesn't affect any other settings. We just need to update the
-			//m_new settings array accordingly.
-			m_newSettings[sensor_start_locations[sensor_type] + setting_type] = setting;
-        }
 	}
-	else
+	else if (m_newSettings[MAG_START] == LSM9DS1_MAG)
 	{
-		//we're looking at the magnetometer. The ODR and power level are tied to each other so changing one will change the other.
-		//The full scale range doesn't have any carry over effects though.
-		int magOdrIndex = 0, magPowerIndex = 0; //find the indices for the mag odr and power drop down menus
-		for (int i = m_magFirstDropDown - m_accFirstDropDown; i < m_dropDownCategories.size(); i++)
-		{
-			if (m_dropDownCategories[i] == ODR) magOdrIndex = i;
-			else if (m_dropDownCategories[i] == POWER) magPowerIndex = i;
-		}
-
-		if (setting_type == ODR)
-		{
-			//Update the mag odr setting
-			m_newSettings[sensor_start_locations[sensor_type] + setting_type] &= 0xF0; //remove the current odr setting (least significant byte)
-			m_newSettings[sensor_start_locations[sensor_type] + setting_type] |= setting; //apply the new odr
-
-			//If one of the 0x08 odr options is selected it will cause the power level to change,
-			//otherwise the power level remains the same.
-			if (setting == 0x08)
-			{
-				//there are four options here, each one will causes us to go to a different power level.
-				//We look at the actual text in the drop down to figure out which power level we need.
-				m_newSettings[sensor_start_locations[sensor_type] + POWER] = 0x08; //erase the current power mode and set the second byte to 8
-
-				std::wstring mag_odr_text = m_uiElements[m_accFirstDropDown + magOdrIndex]->getChildren()[0]->getChildren()[1]->getText()->message;
-				if (mag_odr_text == L"155 Hz 0x08") m_newSettings[sensor_start_locations[sensor_type] + POWER] |= 0x30; //put the sensor into ultra high power mode
-				else if (mag_odr_text == L"300 Hz 0x08") m_newSettings[sensor_start_locations[sensor_type] + POWER] |= 0x20; //put the sensor into high power mode
-				else if (mag_odr_text == L"560 Hz 0x08") m_newSettings[sensor_start_locations[sensor_type] + POWER] |= 0x10; //put the sensor into medium power mode
-				//if none of the three if statements above gets triggered then the chip will be put into low power mode
-
-				m_newSettings[sensor_start_locations[sensor_type] + setting_type] = m_newSettings[sensor_start_locations[sensor_type] + POWER]; //update the odr setting to reflect the power setting
-			}
-			else if (setting == 0xC0)
-			{
-				//putting the odr at 0 hz will turn off the magnetometer
-				m_newSettings[sensor_start_locations[sensor_type] + ODR] = setting;
-				m_newSettings[sensor_start_locations[sensor_type] + POWER] = setting;
-			}
-			else
-			{
-				//a normal odr was chosen. If the magnetometer is off turn it on by placing it into
-				//low power mode
-				if (m_newSettings[sensor_start_locations[sensor_type] + POWER] == 0xC0)
-				{
-					m_newSettings[sensor_start_locations[sensor_type] + ODR] &= 0x0F;
-				}
-				m_newSettings[sensor_start_locations[sensor_type] + POWER] = m_newSettings[sensor_start_locations[sensor_type] + ODR];;
-			}
-		}
-		else if (setting_type == POWER)
-		{
-			//Changing the power will only effect the ODR if we're in high odr mode. This should happen automatically
-			//though, just update the settings.
-			m_newSettings[sensor_start_locations[sensor_type] + POWER] &= 0x0F; //erase the current power setting
-			m_newSettings[sensor_start_locations[sensor_type] + POWER] |= setting; //erase the current power setting
-
-			if (setting == 0xC0) m_newSettings[sensor_start_locations[sensor_type] + POWER] = setting; //turning the power off changes the whole setting
-			m_newSettings[sensor_start_locations[sensor_type] + ODR] = m_newSettings[sensor_start_locations[sensor_type] + POWER];
-		}
-		else m_newSettings[sensor_start_locations[sensor_type] + setting_type] = setting; //update the full scale range
+		std::wstring mag_odr_text = m_uiElements[m_accFirstDropDown + magOdrIndex]->getChildren()[0]->getChildren()[1]->getText()->message;
+		lsm9ds1_update_mag_setting(m_newSettings, setting_type, &newSetting, setting, &mag_odr_text[0]);
 
 		//Update the odr and power drop down menu text as neceessary
 		m_uiElements[m_accFirstDropDown + magOdrIndex]->getChildren()[0]->getChildren()[1]->getText()->message = lsm9ds1_get_settings_string(MAG_SENSOR, ODR, m_newSettings[MAG_START + ODR]);
@@ -609,10 +463,13 @@ void IMUSettingsMode::updateSetting(sensor_type_t sensor_type, sensor_settings_t
 
 		m_uiElements[m_accFirstDropDown + magPowerIndex]->getChildren()[0]->getChildren()[1]->getText()->message = lsm9ds1_get_settings_string(MAG_SENSOR, POWER, m_newSettings[MAG_START + POWER]);
 		m_uiElements[m_accFirstDropDown + magPowerIndex]->getChildren()[0]->getChildren()[1]->getText()->colorLocations.back() = m_uiElements[m_accFirstDropDown + magPowerIndex]->getChildren()[0]->getChildren()[1]->getText()->message.length();
-    }
-
-	//TODO: I should break this method up into smaller methods to make things easier to read, and some code reusable
-	//TODO: Need to tie together some other dependent settings, and make non-dependent settings actually change the settings array
+	}
+	else
+	{
+		//We've selected a setting without any special effects. We just need to update the
+		//m_new settings array accordingly.
+		m_newSettings[sensor_start_locations[sensor_type] + setting_type] = setting;
+	}
 }
 
 uint8_t IMUSettingsMode::convertStringToHex(std::wstring hexString)
