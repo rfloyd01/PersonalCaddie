@@ -6,7 +6,8 @@
 enum IMUSettingsState
 {
 	DISPLAY_SETTINGS = 1, //overwrite the active mode state
-	UPDATE_SETTINGS = 2
+	UPDATE_SETTINGS = 2,
+	GET_SETTINGS = 4
 };
 
 class IMUSettingsMode : public Mode
@@ -22,7 +23,7 @@ public:
 
 	virtual uint32_t handleUIElementStateChange(int i) override;
 
-	void getCurrentSettings(winrt::Windows::Foundation::Size windowSize, std::vector<uint8_t*> settings, std::vector<uint8_t> const& availableSensors);
+	void getCurrentSettings(winrt::Windows::Foundation::Size windowSize, std::vector<uint8_t*> settings, std::vector<uint8_t> const& availableSensors, bool use_current = false);
 	uint8_t* getNewSettings() { return m_newSettings; }
 
 	virtual TextOverlay removeAlerts() override;
@@ -31,7 +32,7 @@ public:
 
 private:
 	void initializeTextOverlay(winrt::Windows::Foundation::Size windowSize);
-	void createDropDownMenus(winrt::Windows::Foundation::Size windowSize);
+	void createDropDownMenus(winrt::Windows::Foundation::Size windowSize, bool use_current = false);
 
 	void populateDropDownText();
 

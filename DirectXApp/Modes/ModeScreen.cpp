@@ -567,6 +567,11 @@ void ModeScreen::stateUpdate()
 			//(as these aren't changed in the IMU settings menu).
 			m_personalCaddie->updateIMUSettings(((IMUSettingsMode*)m_modes[static_cast<int>(m_currentMode)].get())->getNewSettings());
 		}
+		else if (m_modes[static_cast<int>(m_currentMode)]->getModeState() & IMUSettingsState::GET_SETTINGS)
+		{
+			//A new sensor has been selected so we need to refresh the drop down menus. Just call the getCurrentSettings
+			((IMUSettingsMode*)m_modes[static_cast<int>(m_currentMode)].get())->getCurrentSettings(m_renderer->getCurrentScreenSize(), m_personalCaddie->getIMUSettings(), m_personalCaddie->getAvailableSensors(), true);
+		}
 		break;
 	}
 	}
