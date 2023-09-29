@@ -46,6 +46,10 @@ void IMUSettingsMode::uninitializeMode()
 	//out all text in the text map and color map
 	for (int i = 0; i < m_uiElements.size(); i++) m_uiElements[i] = nullptr;
 	m_uiElements.clear();
+
+	//also, clear out the available sensor vectors
+	m_internalSensors.clear();
+	m_externalSensors.clear();
 }
 
 void IMUSettingsMode::initializeTextOverlay(winrt::Windows::Foundation::Size windowSize)
@@ -228,7 +232,11 @@ void IMUSettingsMode::populateDropDownText()
 	if (m_newSettings[ACC_START] == LSM9DS1_ACC)
 		for (int i = FS_RANGE; i <= EXTRA_2; i++) m_dropDownText[ACC_SENSOR][i] = lsm9ds1_get_complete_settings_string(ACC_SENSOR, static_cast<sensor_settings_t>(i));
 	else if (m_newSettings[ACC_START] == FXOS8700_ACC)
-		for (int i = FS_RANGE; i <= EXTRA_2; i++) m_dropDownText[ACC_SENSOR][i] = fxas_fxos_get_complete_settings_string(ACC_SENSOR, static_cast<sensor_settings_t>(i));
+		for (int i = FS_RANGE; i <= EXTRA_2; i++)
+		{
+			if (i == ODR && m_newSettings[MAG_START + SENSOR_MODEL] == FXOS8700_MAG && m_newSettings[MAG_START + POWER] != 0xFF) m_dropDownText[ACC_SENSOR][i] = fxas_fxos_get_complete_settings_string(ACC_SENSOR, static_cast<sensor_settings_t>(100));
+			else m_dropDownText[ACC_SENSOR][i] = fxas_fxos_get_complete_settings_string(ACC_SENSOR, static_cast<sensor_settings_t>(i));
+		}
 
 	if (m_newSettings[GYR_START] == LSM9DS1_GYR)
 		for (int i = FS_RANGE; i <= EXTRA_2; i++) m_dropDownText[GYR_SENSOR][i] = lsm9ds1_get_complete_settings_string(GYR_SENSOR, static_cast<sensor_settings_t>(i));
@@ -238,7 +246,11 @@ void IMUSettingsMode::populateDropDownText()
 	if (m_newSettings[MAG_START] == LSM9DS1_MAG)
 		for (int i = FS_RANGE; i <= EXTRA_2; i++) m_dropDownText[MAG_SENSOR][i] = lsm9ds1_get_complete_settings_string(MAG_SENSOR, static_cast<sensor_settings_t>(i));
 	else if (m_newSettings[MAG_START] == FXOS8700_MAG)
-		for (int i = FS_RANGE; i <= EXTRA_2; i++) m_dropDownText[MAG_SENSOR][i] = fxas_fxos_get_complete_settings_string(MAG_SENSOR, static_cast<sensor_settings_t>(i));
+		for (int i = FS_RANGE; i <= EXTRA_2; i++)
+		{
+			if (i == ODR && m_newSettings[ACC_START + SENSOR_MODEL] == FXOS8700_ACC && m_newSettings[ACC_START + POWER] != 0xFF) m_dropDownText[MAG_SENSOR][i] = fxas_fxos_get_complete_settings_string(MAG_SENSOR, static_cast<sensor_settings_t>(100));
+			else m_dropDownText[MAG_SENSOR][i] = fxas_fxos_get_complete_settings_string(MAG_SENSOR, static_cast<sensor_settings_t>(i));
+		}
 }
 
 uint32_t IMUSettingsMode::handleUIElementStateChange(int i)
@@ -276,7 +288,7 @@ uint32_t IMUSettingsMode::handleUIElementStateChange(int i)
 		if (m_uiElements[i]->getChildren()[2]->getState() & UIElementState::Invisible)
 		{
 			//The drop down menu scroll box becomes invisible as soon as we select a new option
-			std::wstring selectedOption = ((FullScrollingTextBox*)m_uiElements[i]->getChildren()[2].get())->getLastSelectedText();
+			std::wstring selectedOption = ((DropDownMenu*)m_uiElements[i].get())->getSelectedOption();
 			selectedOption = selectedOption.substr(selectedOption.find(L"0x") + 2); //extract the hexadecimal at the end of the option
 			
 			//Update the new settings array
@@ -314,7 +326,7 @@ uint32_t IMUSettingsMode::handleUIElementStateChange(int i)
 				m_uiElements[0]->setState(m_uiElements[0]->getState() | UIElementState::Disabled);
 			}
 
-			if (i < m_accFirstDropDown && different)
+			if (i < m_accFirstDropDown)
 			{
 				//If we've selected a different sensor it means we need to load a new set of drop down menus.
 				//The easiest way to do this is to just remove all current drop downs and load everything
@@ -333,7 +345,6 @@ uint32_t IMUSettingsMode::handleUIElementStateChange(int i)
 				m_dropDownCategories = {};
 				for (int i = 0; i < 3; i++)
 				{
-					//m_dropDownText.push_back({});
 					for (int j = SENSOR_MODEL; j <= EXTRA_2; j++) m_dropDownText[i].push_back(L"");
 				}
 
@@ -390,7 +401,7 @@ void IMUSettingsMode::updateSetting(sensor_type_t sensor_type, sensor_settings_t
 
 	uint8_t newSetting = m_newSettings[sensor_start_locations[sensor_type] + setting_type];
 
-	if (m_newSettings[ACC_START] == LSM9DS1_ACC && m_newSettings[GYR_START] == LSM9DS1_GYR)
+	if ((sensor_type == ACC_SENSOR || sensor_type == GYR_SENSOR) && m_newSettings[ACC_START] == LSM9DS1_ACC && m_newSettings[GYR_START] == LSM9DS1_GYR)
 	{
 		//We have both an LSM9DS1 acc and gyro, which means that the ODR and Power settings of both sensors
 		//are tied together.
@@ -419,7 +430,7 @@ void IMUSettingsMode::updateSetting(sensor_type_t sensor_type, sensor_settings_t
 			m_uiElements[m_accFirstDropDown + accPowerIndex]->getChildren()[0]->getChildren()[1]->getText()->colorLocations.back() = m_uiElements[m_accFirstDropDown + accPowerIndex]->getChildren()[0]->getChildren()[1]->getText()->message.length();
 		}
 	}
-	else if (m_newSettings[ACC_START] == LSM9DS1_ACC)
+	else if (sensor_type == ACC_SENSOR && m_newSettings[ACC_START] == LSM9DS1_ACC)
 	{
 		//We have an LSM9DS1 acc that isn't tied to a gyro. Basically we just need to make sure that the power setting
 		//and ODR match up.
@@ -439,7 +450,7 @@ void IMUSettingsMode::updateSetting(sensor_type_t sensor_type, sensor_settings_t
 			m_uiElements[m_accFirstDropDown + accPowerIndex]->getChildren()[0]->getChildren()[1]->getText()->colorLocations.back() = m_uiElements[m_accFirstDropDown + accPowerIndex]->getChildren()[0]->getChildren()[1]->getText()->message.length();
 		}
 	}
-	else if (m_newSettings[GYR_START] == LSM9DS1_GYR)
+	else if (sensor_type == GYR_SENSOR && m_newSettings[GYR_START] == LSM9DS1_GYR)
 	{
 		//We have an LSM9DS1 acc that isn't tied to a gyro. Basically we just need to make sure that the power setting
 		//and ODR match up.
@@ -458,7 +469,7 @@ void IMUSettingsMode::updateSetting(sensor_type_t sensor_type, sensor_settings_t
 			m_uiElements[m_accFirstDropDown + gyrPowerIndex]->getChildren()[0]->getChildren()[1]->getText()->colorLocations.back() = m_uiElements[m_accFirstDropDown + gyrPowerIndex]->getChildren()[0]->getChildren()[1]->getText()->message.length();
 		}
 	}
-	else if (m_newSettings[MAG_START] == LSM9DS1_MAG)
+	else if (sensor_type == MAG_SENSOR && m_newSettings[MAG_START] == LSM9DS1_MAG)
 	{
 		std::wstring mag_odr_text = m_uiElements[m_accFirstDropDown + magOdrIndex]->getChildren()[0]->getChildren()[1]->getText()->message;
 		lsm9ds1_update_mag_setting(m_newSettings, setting_type, &newSetting, setting, &mag_odr_text[0]);
@@ -469,6 +480,85 @@ void IMUSettingsMode::updateSetting(sensor_type_t sensor_type, sensor_settings_t
 
 		m_uiElements[m_accFirstDropDown + magPowerIndex]->getChildren()[0]->getChildren()[1]->getText()->message = lsm9ds1_get_settings_string(MAG_SENSOR, POWER, m_newSettings[MAG_START + POWER]);
 		m_uiElements[m_accFirstDropDown + magPowerIndex]->getChildren()[0]->getChildren()[1]->getText()->colorLocations.back() = m_uiElements[m_accFirstDropDown + magPowerIndex]->getChildren()[0]->getChildren()[1]->getText()->message.length();
+	}
+	else if ((sensor_type == ACC_SENSOR || sensor_type == MAG_SENSOR) && m_newSettings[ACC_START] == FXOS8700_ACC && m_newSettings[MAG_START] == FXOS8700_MAG)
+	{
+		//We have both an FXOS8700 acc and mag, which means that the ODR and Power settings of both sensors
+		//are tied together.
+		uint8_t original_power_settings[2] = { m_newSettings[ACC_START + POWER], m_newSettings[MAG_START + POWER] };
+		fxos8700_update_acc_and_mag_setting(m_newSettings, sensor_type, setting_type, setting);
+
+		//Chain drop-down text changes as necessary if the power or odr setting was altered
+		if (setting_type == ODR || setting_type == POWER)
+		{
+			//If both sensors are turned on, we use a temp enum number to get the appropriate dropdown text
+			int combined_odr = (m_newSettings[ACC_START + POWER] != 0xFF && m_newSettings[MAG_START + POWER] != 0xFF) ? 100 : ODR;
+
+			//We also need to dynamically load the appropriate dropdown options depending on whether or not
+			//either sensor was turned on/off. If both sensors are originally on and one turns off, we need to
+			//reload the menus, or, if one sensor is off and it turns on we need to reload the options. If both
+			//sensors are off and one turns on then we don't need to reload the options
+			bool refresh = true, acc_flipped = false;
+			if ((original_power_settings[0] == 0xFF) && (m_newSettings[ACC_START + POWER] <= 0xFF)) acc_flipped = true;
+			else if ((original_power_settings[0] < 0xFF) && (m_newSettings[ACC_START + POWER] == 0xFF)) acc_flipped = true;
+
+			if ((original_power_settings[0] == 0xFF) && (original_power_settings[1] == 0xFF)) refresh = false;
+			else if ((m_newSettings[ACC_START + POWER] == 0xFF) && (m_newSettings[MAG_START + POWER] == 0xFF)) refresh = false;
+			else if (!acc_flipped && (m_newSettings[MAG_START + POWER] == original_power_settings[1])) refresh = false;
+
+			if (refresh)
+			{
+				//We need to reload the ODR drop down text boxes. To place them correctly we need to know the appropriate size for the new boxes
+				//so we just trigger all boxes to be resized/replaced
+
+				//Calling the handleUIElementStateChange() method will cause the m_newSettings array to be reset to it's default settings.
+				//Because of this we need to make a copy of it and reapply the correct settings after the method is called.
+				uint8_t settings_copy[SENSOR_SETTINGS_LENGTH];
+				for (int i = 0; i < SENSOR_SETTINGS_LENGTH; i++) settings_copy[i] = m_newSettings[i];
+				handleUIElementStateChange(m_accFirstDropDown - 3);
+				for (int i = 0; i < SENSOR_SETTINGS_LENGTH; i++) m_newSettings[i] = settings_copy[i]; //reapply original settings
+			}
+			else
+			{
+				m_uiElements[m_accFirstDropDown + accOdrIndex]->getChildren()[0]->getChildren()[1]->getText()->message = fxas_fxos_get_settings_string(ACC_SENSOR, static_cast<sensor_settings_t>(combined_odr), m_newSettings[ACC_START + ODR]);
+				m_uiElements[m_accFirstDropDown + accOdrIndex]->getChildren()[0]->getChildren()[1]->getText()->colorLocations.back() = m_uiElements[m_accFirstDropDown + accOdrIndex]->getChildren()[0]->getChildren()[1]->getText()->message.length();
+
+				m_uiElements[m_accFirstDropDown + accPowerIndex]->getChildren()[0]->getChildren()[1]->getText()->message = fxas_fxos_get_settings_string(ACC_SENSOR, POWER, m_newSettings[ACC_START + POWER]);
+				m_uiElements[m_accFirstDropDown + accPowerIndex]->getChildren()[0]->getChildren()[1]->getText()->colorLocations.back() = m_uiElements[m_accFirstDropDown + accPowerIndex]->getChildren()[0]->getChildren()[1]->getText()->message.length();
+
+				m_uiElements[m_accFirstDropDown + magOdrIndex]->getChildren()[0]->getChildren()[1]->getText()->message = fxas_fxos_get_settings_string(MAG_SENSOR, static_cast<sensor_settings_t>(combined_odr), m_newSettings[MAG_START + ODR]);
+				m_uiElements[m_accFirstDropDown + magOdrIndex]->getChildren()[0]->getChildren()[1]->getText()->colorLocations.back() = m_uiElements[m_accFirstDropDown + magOdrIndex]->getChildren()[0]->getChildren()[1]->getText()->message.length();
+
+				m_uiElements[m_accFirstDropDown + magPowerIndex]->getChildren()[0]->getChildren()[1]->getText()->message = fxas_fxos_get_settings_string(MAG_SENSOR, POWER, m_newSettings[MAG_START + POWER]);
+				m_uiElements[m_accFirstDropDown + magPowerIndex]->getChildren()[0]->getChildren()[1]->getText()->colorLocations.back() = m_uiElements[m_accFirstDropDown + magPowerIndex]->getChildren()[0]->getChildren()[1]->getText()->message.length();
+			}
+		}
+	}
+	else if ((sensor_type == ACC_SENSOR && m_newSettings[ACC_START] == FXOS8700_ACC) || (sensor_type == MAG_SENSOR && m_newSettings[MAG_START] == FXOS8700_MAG))
+	{
+		fxos8700_update_acc_or_mag_setting(m_newSettings, sensor_type, setting_type, setting);
+
+		//Chain drop-down text changes as necessary if the power or odr setting was altered
+		if (setting_type == ODR || setting_type == POWER)
+		{
+			int odrInd, powerInd;
+			if (sensor_type == ACC_SENSOR)
+			{
+				odrInd = accOdrIndex;
+				powerInd = accPowerIndex;
+			}
+			else
+			{
+				odrInd = magOdrIndex;
+				powerInd = magPowerIndex;
+			}
+
+			m_uiElements[m_accFirstDropDown + odrInd]->getChildren()[0]->getChildren()[1]->getText()->message = fxas_fxos_get_settings_string(sensor_type, ODR, m_newSettings[sensor_start_locations[sensor_type] + ODR]);
+			m_uiElements[m_accFirstDropDown + odrInd]->getChildren()[0]->getChildren()[1]->getText()->colorLocations.back() = m_uiElements[m_accFirstDropDown + accOdrIndex]->getChildren()[0]->getChildren()[1]->getText()->message.length();
+
+			m_uiElements[m_accFirstDropDown + powerInd]->getChildren()[0]->getChildren()[1]->getText()->message = fxas_fxos_get_settings_string(sensor_type, POWER, m_newSettings[sensor_start_locations[sensor_type] + POWER]);
+			m_uiElements[m_accFirstDropDown + powerInd]->getChildren()[0]->getChildren()[1]->getText()->colorLocations.back() = m_uiElements[m_accFirstDropDown + accPowerIndex]->getChildren()[0]->getChildren()[1]->getText()->message.length();
+		}
 	}
 	else
 	{
@@ -535,7 +625,7 @@ void IMUSettingsMode::update()
 		//drop box and take its button size.
 		for (int j = i; j < m_uiElements.size(); j++)
 		{
-			if (m_uiElements[j]->getChildren()[0]->getChildren()[1]->getText()->message != L"")
+			if (((DropDownMenu*)m_uiElements[j].get())->getSelectedOption() != L"")
 			{
 				marginWidth = m_uiElements[j]->getChildren()[1]->getAbsoluteSize().x * 1.0f;
 				break;
@@ -550,7 +640,7 @@ void IMUSettingsMode::update()
 		{
 			type++; //this variable is used for poulating the drop downs with the current settings from the settings array
 
-			if (m_uiElements[i]->getChildren()[0]->getChildren()[1]->getText()->message == L"")
+			if (((DropDownMenu*)m_uiElements[i].get())->getSelectedOption() == L"")
 			{
 				m_uiElements.erase(m_uiElements.begin() + i);
 
@@ -571,12 +661,19 @@ void IMUSettingsMode::update()
 					initialText = lsm9ds1_get_settings_string(static_cast<sensor_type_t>(sensor), static_cast<sensor_settings_t>(type), m_newSettings[sensor_start_locations[sensor] + type]);
 					break;
 				case FXOS8700_ACC:
-					initialText = fxas_fxos_get_settings_string(static_cast<sensor_type_t>(sensor), static_cast<sensor_settings_t>(type), m_newSettings[sensor_start_locations[sensor] + type]);
+					int other_sensor = ((sensor - 2) % 4) * -1;  //if current sensor is 2 (mag), this yields 0 (acc). If current sensors is 0 (acc) this yields 2 (mag)
+
+					//If both FXOS acc and mag are being used then we need to load their hybrid odrs
+					if ((sensor == ACC_SENSOR || sensor == MAG_SENSOR) && (type == ODR) && m_newSettings[sensor_start_locations[other_sensor] + SENSOR_MODEL] == FXOS8700_ACC
+						&& m_newSettings[sensor_start_locations[other_sensor] + POWER] != 0xFF)
+					{
+						initialText = fxas_fxos_get_settings_string(static_cast<sensor_type_t>(sensor), static_cast<sensor_settings_t>(100), m_newSettings[sensor_start_locations[sensor] + type]);
+					}
+					else initialText = fxas_fxos_get_settings_string(static_cast<sensor_type_t>(sensor), static_cast<sensor_settings_t>(type), m_newSettings[sensor_start_locations[sensor] + type]);
 					break;
 				}
 				
-				m_uiElements[i]->getChildren()[0]->getChildren()[1]->getText()->message = initialText;
-				m_uiElements[i]->getChildren()[0]->getChildren()[1]->getText()->colorLocations.back() = initialText.length();
+				((DropDownMenu*)m_uiElements[i].get())->setSelectedOption(initialText);
 				m_dropDownCategories.push_back(type);
 
 				//Then work on placing it
@@ -621,8 +718,6 @@ void IMUSettingsMode::update()
 				location += 1.0f / 3.0f;
 			}
 		}
-
-		//int x = 10;
 
 		//Once all of the drop down menus have been placed, we put labels over each of them
 		for (int i = 0; i < m_dropDownCategories.size(); i++)
@@ -679,16 +774,13 @@ void IMUSettingsMode::update()
 		//for the currently selected sensor drop down menus. Since theirs only one
 		//of these boxes per column they're automatically placed in the center.
 		std::wstring sensor_model = get_sensor_model_string(ACC_SENSOR, m_newSettings[ACC_START + SENSOR_MODEL]);
-		m_uiElements[m_accFirstDropDown - 3]->getChildren()[0]->getChildren()[1]->getText()->message = sensor_model;
-		m_uiElements[m_accFirstDropDown - 3]->getChildren()[0]->getChildren()[1]->getText()->colorLocations.back() = sensor_model.length();
+		((DropDownMenu*)m_uiElements[m_accFirstDropDown - 3].get())->setSelectedOption(sensor_model);
 
 		sensor_model = get_sensor_model_string(GYR_SENSOR, m_newSettings[GYR_START + SENSOR_MODEL]);
-		m_uiElements[m_accFirstDropDown - 2]->getChildren()[0]->getChildren()[1]->getText()->message = sensor_model;
-		m_uiElements[m_accFirstDropDown - 2]->getChildren()[0]->getChildren()[1]->getText()->colorLocations.back() = sensor_model.length();
+		((DropDownMenu*)m_uiElements[m_accFirstDropDown - 2].get())->setSelectedOption(sensor_model);
 
 		sensor_model = get_sensor_model_string(MAG_SENSOR, m_newSettings[MAG_START + SENSOR_MODEL]);
-		m_uiElements[m_accFirstDropDown - 1]->getChildren()[0]->getChildren()[1]->getText()->message = sensor_model;
-		m_uiElements[m_accFirstDropDown - 1]->getChildren()[0]->getChildren()[1]->getText()->colorLocations.back() = sensor_model.length();
+		((DropDownMenu*)m_uiElements[m_accFirstDropDown - 1].get())->setSelectedOption(sensor_model);
 
 		dropDownsSet = true;
 	}

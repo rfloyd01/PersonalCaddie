@@ -235,6 +235,7 @@ typedef enum fxos8700_power_mode
     FXOS8700_ACCEL_LOWNOISE_LOWPOWER  = 0x08,  /*!< Low Noise and Low Power Mode.*/
     FXOS8700_ACCEL_HIGHRESOLUTION     = 0x10,  /*!< High Resolution via OSR.*/
     FXOS8700_ACCEL_LOWPOWER           = 0x18,  /*!< Low Power Mode .*/
+    FXOS8700_OFF                      = 0xff,
 }fxos8700_power_mode_t;
 
 /*!
@@ -250,6 +251,7 @@ typedef enum fxos8700_odr
     FXOS8700_ODR_SINGLE_12P5_HZ     = 0x28,
     FXOS8700_ODR_SINGLE_6P25_HZ     = 0x30,
     FXOS8700_ODR_SINGLE_1P5625_HZ   = 0x38,
+    FXOS8700_ODR_SINGLE_OFF         = 0xff,
 }fxos8700_odr_t;
 
 /*!
@@ -265,6 +267,7 @@ typedef enum fxos8700_hybrid_odr
     FXOS8700_ODR_HYBRID_6P25_HZ     = 0x28,
     FXOS8700_ODR_HYBRID_3P125_HZ    = 0x30,
     FXOS8700_ODR_HYBRID_0P7813_HZ   = 0x38,
+    FXOS8700_ODR_HYBRID_OFF         = 0xff,
 }fxos8700_hybrid_odr_t;
 
 /*******************************************************************************

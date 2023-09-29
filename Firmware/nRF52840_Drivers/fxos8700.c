@@ -59,6 +59,7 @@ void fxos8700init(imu_communication_t* comm, uint8_t sensors, uint8_t* settings)
         //low power modes are only applied to the acc, not the mag, so really the only thing
         //we set here is the mag ODR.
         update_sensor_setting(p_sensor_settings + MAG_START, ODR, FXOS8700_ODR_SINGLE_100_HZ); //accelerometer ODR (100 Hz)
+        update_sensor_setting(p_sensor_settings + MAG_START, POWER, 1); //power (indicates on)
 
         //After setting default settings, attempt to read the whoAmI register
         uint8_t whoamI;
@@ -97,9 +98,13 @@ int32_t fxos8700_active_mode_enable()
         ret |= fxos8700_acc_apply_setting(HIGH_PASS_FILTER + ACC_START);
     }
 
-    if (imu_comm->sensor_model[ACC_SENSOR] == FXOS8700_ACC && imu_comm->sensor_model[MAG_SENSOR] == FXOS8700_MAG)
+    bool acc_on = true, mag_on = true;
+    if (imu_comm->sensor_model[ACC_SENSOR] != FXOS8700_ACC || p_sensor_settings[ACC_START + POWER] == FXOS8700_OFF) acc_on = false;
+    if (imu_comm->sensor_model[MAG_SENSOR] != FXOS8700_MAG || p_sensor_settings[MAG_START + POWER] == FXOS8700_OFF) mag_on = false;
+
+    if (acc_on && mag_on)
     {
-        //Both sensors are present so we need to start the chip in hybrid mode. The ODR's for the sensors
+        //Both sensors are present and on so we need to start the chip in hybrid mode. The ODR's for the sensors
         //should be set at the same value, but in the case they aren't take the lower of the two ODRs.
         //Ironically, the larger the setting number is the lower the ODR is.
         uint8_t hybrid_odr = *(p_sensor_settings + MAG_START + ODR) > *(p_sensor_settings + ACC_START + ODR) ?
@@ -107,8 +112,8 @@ int32_t fxos8700_active_mode_enable()
 
         ret |= fxos8700_configure_hybrid(&sensor_driver, hybrid_odr, FXOS8700_HYBRID_READ_POLL_MODE);
     }
-    else if (imu_comm->sensor_model[ACC_SENSOR] == FXOS8700_ACC) ret |= fxos8700_configure_accel(&sensor_driver, *(p_sensor_settings + ACC_START + ODR), FXOS8700_ACCEL_NORMAL, FXOS8700_ACCEL_14BIT_READ_POLL_MODE);
-    else if (imu_comm->sensor_model[MAG_SENSOR] == FXOS8700_MAG) ret |= fxos8700_configure_mag(&sensor_driver, *(p_sensor_settings + MAG_START + ODR), FXOS8700_MAG_READ_POLLING_MODE);
+    else if (acc_on) ret |= fxos8700_configure_accel(&sensor_driver, *(p_sensor_settings + ACC_START + ODR), FXOS8700_ACCEL_NORMAL, FXOS8700_ACCEL_14BIT_READ_POLL_MODE);
+    else if (mag_on) ret |= fxos8700_configure_mag(&sensor_driver, *(p_sensor_settings + MAG_START + ODR), FXOS8700_MAG_READ_POLLING_MODE);
 
     if (ret != 0) SEGGER_RTT_WriteString(0, "Error: FXOS8700 enabled with incorrect settings.\n");
 

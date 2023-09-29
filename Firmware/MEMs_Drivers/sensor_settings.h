@@ -97,6 +97,9 @@ float fxos_fxas_fsr_conversion(sensor_type_t sensor, uint8_t fsr_setting);
 const wchar_t* fxas_fxos_get_complete_settings_string(sensor_type_t sensor_type, sensor_settings_t setting_type);
 const wchar_t* fxas_fxos_get_settings_string(sensor_type_t sensor_type, sensor_settings_t setting_type, uint8_t setting);
 
+void fxos8700_update_acc_and_mag_setting(uint8_t* current_settings, sensor_type_t sensor_type, sensor_settings_t setting_type, uint8_t setting);
+void fxos8700_update_acc_or_mag_setting(uint8_t* current_settings, sensor_type_t sensor_type, sensor_settings_t setting_type, uint8_t setting);
+
 #ifdef __cplusplus
 }
 #endif

@@ -25,6 +25,7 @@ void fxas21002init(imu_communication_t* comm, uint8_t sensors, uint8_t* settings
         update_sensor_setting(p_sensor_settings + GYR_START, FS_RANGE, FXAS21002_RANGE_2000DPS); //gyroscope full scale range (+/- 2000 dps)
 
         update_sensor_setting(p_sensor_settings + GYR_START, ODR, FXAS21002_ODR_50_HZ); //gyroscope ODR (50 Hz)
+        update_sensor_setting(p_sensor_settings + GYR_START, POWER,  FXAS21002_POWER_READY); //gyroscope ODR (50 Hz)
 
         update_sensor_setting(p_sensor_settings + GYR_START, FILTER_SELECTION, FXAS21002_FILTER_LPF_HPF); //gyroscope filter selection (low and high pass filter active)
         update_sensor_setting(p_sensor_settings + GYR_START, LOW_PASS_FILTER, FXAS21002_LPF_STRONG); //gyroscope low pass filter frequency (16Hz at 50Hz odr)

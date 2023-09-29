@@ -141,6 +141,15 @@ void get_sensor_default_settings(uint8_t sensor_type, uint8_t sensor_model, uint
             settings_array[HIGH_PASS_FILTER] = 0;
             settings_array[EXTRA_FILTER] = LSM9DS1_50Hz;
         }
+        else if (sensor_model == FXOS8700_ACC)
+        {
+            settings_array[SENSOR_MODEL] = FXOS8700_ACC;
+            settings_array[FS_RANGE] = FXOS8700_XYZ_DATA_CFG_FS_4G_0P488;
+            settings_array[ODR] = FXOS8700_ODR_SINGLE_100_HZ;
+            settings_array[POWER] = FXOS8700_ACCEL_NORMAL;
+            settings_array[FILTER_SELECTION] = FXOS8700_XYZ_DATA_CFG_HPF_OUT_DISABLE;
+            settings_array[HIGH_PASS_FILTER] = FXOS8700_HP_FILTER_CUTOFF_SEL_DISABLE;
+        }
         break;
     }
     case GYR_SENSOR:
@@ -155,6 +164,16 @@ void get_sensor_default_settings(uint8_t sensor_type, uint8_t sensor_model, uint
             settings_array[LOW_PASS_FILTER] = 0;
             settings_array[HIGH_PASS_FILTER] = LSM9DS1_HP_MEDIUM;
         }
+        else if (sensor_model == FXAS21002_GYR)
+        {
+            settings_array[SENSOR_MODEL] = FXAS21002_GYR;
+            settings_array[FS_RANGE] = FXAS21002_RANGE_2000DPS;
+            settings_array[ODR] = FXAS21002_ODR_50_HZ;
+            settings_array[POWER] = FXAS21002_POWER_READY;
+            settings_array[FILTER_SELECTION] = FXAS21002_FILTER_LPF_HPF;
+            settings_array[LOW_PASS_FILTER] = FXAS21002_LPF_STRONG;
+            settings_array[HIGH_PASS_FILTER] = FXAS21002_HPF_STRONG;
+        }
         break;
     }
     case MAG_SENSOR:
@@ -165,6 +184,12 @@ void get_sensor_default_settings(uint8_t sensor_type, uint8_t sensor_model, uint
             settings_array[FS_RANGE] = LSM9DS1_4Ga;
             settings_array[ODR] = LSM9DS1_MAG_LP_40Hz;
             settings_array[POWER] = LSM9DS1_MAG_LP_40Hz;
+        }
+        else if (sensor_model == FXOS8700_MAG)
+        {
+            settings_array[SENSOR_MODEL] = FXOS8700_MAG;
+            settings_array[ODR] = FXOS8700_ODR_SINGLE_100_HZ;
+            settings_array[POWER] = 1; //indicates mag on
         }
         break;
     }
@@ -1191,8 +1216,8 @@ const wchar_t* fxas_fxos_get_complete_settings_string(sensor_type_t sensor_type,
         {
         case SENSOR_MODEL: return L"FXOS8700 Accelerometer 0x02";
         case FS_RANGE: return L"+/- 2 g 0x00\n+/- 4 g 0x01\n+/- 8 g 0x02";
-        case ODR: return L"1.5625 Hz 0x38\n6.25 Hz 0x30\n12.5 Hz 0x28\n50 Hz 0x20\n100 Hz 0x18\n200 Hz 0x10\n400 Hz 0x08\n800 Hz 0x00";
-        case 100: return L"0.7813 Hz 0x38\n3.125 Hz 0x30\n6.25 Hz 0x28\n25 Hz 0x20\n50 Hz 0x18\n100 Hz 0x10\n200 Hz 0x08\n400 Hz 0x00";
+        case ODR: return L"0 Hz 0xFF\n1.5625 Hz 0x38\n6.25 Hz 0x30\n12.5 Hz 0x28\n50 Hz 0x20\n100 Hz 0x18\n200 Hz 0x10\n400 Hz 0x08\n800 Hz 0x00";
+        case 100: return L"0 Hz 0xFF\n0.7813 Hz 0x38\n3.125 Hz 0x30\n6.25 Hz 0x28\n25 Hz 0x20\n50 Hz 0x18\n100 Hz 0x10\n200 Hz 0x08\n400 Hz 0x00";
         case POWER: return L"Normal 0x00\nLow Noise 0x08\nHigh Resolution 0x10\nLow Power 0x18\nOff 0xFF";
         case FILTER_SELECTION: return L"HPF Disabled 0x00\nHPF Ensabled 0x10";
         case HIGH_PASS_FILTER: return L"Cutoff Selection Disabled 0x0\nCutoff Selection Ensabled 0x1";
@@ -1215,9 +1240,9 @@ const wchar_t* fxas_fxos_get_complete_settings_string(sensor_type_t sensor_type,
         {
         case SENSOR_MODEL: return L"FXOS8700 Magnetometer 0x02";
         case FS_RANGE: return L"+/- 1200 uT";
-        case ODR: return L"1.5625 Hz 0x38\n6.25 Hz 0x30\n12.5 Hz 0x28\n50 Hz 0x20\n100 Hz 0x18\n200 Hz 0x10\n400 Hz 0x08\n800 Hz 0x00";
-        case 100: return L"0.7813 Hz 0x38\n3.125 Hz 0x30\n6.25 Hz 0x28\n25 Hz 0x20\n50 Hz 0x18\n100 Hz 0x10\n200 Hz 0x08\n400 Hz 0x00";
-        case POWER: return L"On 0x01\nOff 0x00";
+        case ODR: return L"0 Hz 0xFF\n1.5625 Hz 0x38\n6.25 Hz 0x30\n12.5 Hz 0x28\n50 Hz 0x20\n100 Hz 0x18\n200 Hz 0x10\n400 Hz 0x08\n800 Hz 0x00";
+        case 100: return L"0 Hz 0xFF\n0.7813 Hz 0x38\n3.125 Hz 0x30\n6.25 Hz 0x28\n25 Hz 0x20\n50 Hz 0x18\n100 Hz 0x10\n200 Hz 0x08\n400 Hz 0x00";
+        case POWER: return L"On 0x01\nOff 0xFF";
         default: return L"";
         }
     }
@@ -1255,6 +1280,7 @@ const wchar_t* fxas_fxos_get_settings_string(sensor_type_t sensor_type, sensor_s
             case FXOS8700_ODR_SINGLE_12P5_HZ: return L"12.5 Hz 0x28";
             case FXOS8700_ODR_SINGLE_6P25_HZ: return L"6.25 Hz 0x30";
             case FXOS8700_ODR_SINGLE_1P5625_HZ: return L"1.5625 Hz 0x38";
+            case FXOS8700_ODR_SINGLE_OFF: return L"0 Hz 0xFF";
             default: return L"";
             }
         case 100:
@@ -1271,6 +1297,7 @@ const wchar_t* fxas_fxos_get_settings_string(sensor_type_t sensor_type, sensor_s
             case FXOS8700_ODR_HYBRID_6P25_HZ: return L"6.25 Hz 0x28";
             case FXOS8700_ODR_HYBRID_3P125_HZ: return L"3.125 Hz 0x30";
             case FXOS8700_ODR_HYBRID_0P7813_HZ: return L"0.7813 Hz 0x38";
+            case FXOS8700_ODR_HYBRID_OFF: return L"0 Hz 0xFF";
             default: return L"";
             }
         case POWER:
@@ -1378,6 +1405,7 @@ const wchar_t* fxas_fxos_get_settings_string(sensor_type_t sensor_type, sensor_s
             case FXOS8700_ODR_SINGLE_12P5_HZ: return L"12.5 Hz 0x28";
             case FXOS8700_ODR_SINGLE_6P25_HZ: return L"6.25 Hz 0x30";
             case FXOS8700_ODR_SINGLE_1P5625_HZ: return L"1.5625 Hz 0x38";
+            case FXOS8700_ODR_SINGLE_OFF: return L"0Hz 0xFF";
             default: return L"";
             }
         case 100:
@@ -1394,13 +1422,14 @@ const wchar_t* fxas_fxos_get_settings_string(sensor_type_t sensor_type, sensor_s
             case FXOS8700_ODR_HYBRID_6P25_HZ: return L"6.25 Hz 0x28";
             case FXOS8700_ODR_HYBRID_3P125_HZ: return L"3.125 Hz 0x30";
             case FXOS8700_ODR_HYBRID_0P7813_HZ: return L"0.7813 Hz 0x38";
+            case FXOS8700_ODR_HYBRID_OFF: return L"0 Hz 0xFF";
             default: return L"";
             }
         case POWER:
             switch (setting)
             {
             case 1: return L"On 0x01";
-            default: return L"Off 0x00";
+            default: return L"Off 0xFF";
             }
         default: return L"";
         }
@@ -1408,3 +1437,108 @@ const wchar_t* fxas_fxos_get_settings_string(sensor_type_t sensor_type, sensor_s
     }
 }
 
+void fxos8700_update_acc_and_mag_setting(uint8_t* current_settings, sensor_type_t sensor_type, sensor_settings_t setting_type, uint8_t setting)
+{
+    //The only common functionality between the fxos accelerometer and magnetometer is their odr. Not only are the ODRs the same, but when both
+    //sensors are on the value of the ODR is actually cut in half. When the ODR is cut in half, the enum values actually stay the same though
+    //so there isn't really anything to change in code
+    int start_positions[3] = { ACC_START, 0, MAG_START };
+
+    //first apply the new setting to the proper location
+    current_settings[start_positions[sensor_type] + setting_type] = setting;
+
+    //Calculate which sensor isn't currently changing, but might be affected by the change.
+    int other_sensor = ((sensor_type - 2) % 4) * -1; //if current sensor is 2 (mag), this yields 0 (acc). If current sensors is 0 (acc) this yields 2 (mag)
+
+    if (setting_type == POWER)
+    {
+        if (setting == FXOS8700_OFF)
+        {
+            //Set the odr of the current sensor to 0
+            current_settings[start_positions[sensor_type] + ODR] = FXOS8700_ODR_SINGLE_OFF;
+        }
+        else
+        {
+            //If we're turning the sensor in question on, the ODR will need to change from 0 Hz.
+            //A default value of 50 Hz is selected. If the other sensor is (acc or mag) is of 
+            //FXOS type as well, and is currently on, then we need to pick hybrid 50 enum.
+            if (current_settings[start_positions[sensor_type] + ODR] == FXOS8700_ODR_SINGLE_OFF)
+            {
+                if (current_settings[start_positions[other_sensor] + SENSOR_MODEL] == FXOS8700_ACC) //FXOS8700_ACC and FXOS8700_MAG enums have the same value
+                {
+                    if (current_settings[start_positions[other_sensor] + POWER] != FXOS8700_ODR_SINGLE_OFF)
+                    {
+                        //Put both sensors intyo hybrid 50Hz mode
+                        current_settings[start_positions[sensor_type] + ODR] = FXOS8700_ODR_HYBRID_50_HZ;
+                        current_settings[start_positions[other_sensor] + ODR] = FXOS8700_ODR_HYBRID_50_HZ;
+                    }
+                    else current_settings[start_positions[sensor_type] + ODR] = FXOS8700_ODR_SINGLE_50_HZ; //only one sensor is on/present so put it into single 50 Hz mode
+                }
+            }
+        }
+    }
+    else if (setting_type == ODR)
+    {
+        if (setting == FXOS8700_ODR_SINGLE_OFF)
+        {
+            //Set the power of the current sensor to off
+            current_settings[start_positions[sensor_type] + POWER] = FXOS8700_OFF;
+        }
+        else
+        {
+            //We aren't setting the odr of the current sensor to 0, so we need to see if the 
+            //other sensor (acc or mag) is also a FXOS type and is turned on. If so, it's odr
+            //will need to match the new odr of the current sensor
+            if (current_settings[start_positions[other_sensor] + SENSOR_MODEL] == FXOS8700_ACC) //FXOS8700_ACC and FXOS8700_MAG enums have the same value
+            {
+                if (current_settings[start_positions[other_sensor] + POWER] != FXOS8700_ODR_SINGLE_OFF)
+                {
+                    //The other sensor is of FXOS type and is on, so change its ODR
+                    current_settings[start_positions[other_sensor] + ODR] = setting;
+                }
+            }
+        }
+    }
+}
+
+void fxos8700_update_acc_or_mag_setting(uint8_t* current_settings, sensor_type_t sensor_type, sensor_settings_t setting_type, uint8_t setting)
+{
+    int start_positions[3] = { ACC_START, 0, MAG_START };
+
+    //first apply the new setting to the proper location
+    current_settings[start_positions[sensor_type] + setting_type] = setting;
+
+    if (setting_type == POWER)
+    {
+        if (setting == FXOS8700_OFF)
+        {
+            //Set the odr of the current sensor to 0
+            current_settings[start_positions[sensor_type] + ODR] = FXOS8700_ODR_SINGLE_OFF;
+        }
+        else
+        {
+            //If we're turning the sensor in question on, the ODR will need to change from 0 Hz.
+            //A default value of 50 Hz is selected.
+            if (current_settings[start_positions[sensor_type] + ODR] == FXOS8700_ODR_SINGLE_OFF)
+            {
+                current_settings[start_positions[sensor_type] + ODR] = FXOS8700_ODR_SINGLE_50_HZ;
+            }
+        }
+    }
+    else if (setting_type == ODR)
+    {
+        if (setting == FXOS8700_ODR_SINGLE_OFF)
+        {
+            //Set the power of the current sensor to off
+            current_settings[start_positions[sensor_type] + POWER] = FXOS8700_OFF;
+        }
+        else
+        {
+            //If the sensor is currently off, turn it on
+            if (current_settings[start_positions[sensor_type] + POWER] == FXOS8700_OFF) //FXOS8700_ACC and FXOS8700_MAG enums have the same value
+            {
+                current_settings[start_positions[sensor_type] + POWER] = 1;
+            }
+        }
+    }
+}
