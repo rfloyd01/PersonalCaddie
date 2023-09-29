@@ -189,7 +189,7 @@ void get_sensor_default_settings(uint8_t sensor_type, uint8_t sensor_model, uint
         {
             settings_array[SENSOR_MODEL] = FXOS8700_MAG;
             settings_array[ODR] = FXOS8700_ODR_SINGLE_100_HZ;
-            settings_array[POWER] = 1; //indicates mag on
+            settings_array[POWER] = 0; //indicates mag on
         }
         break;
     }
@@ -1242,7 +1242,7 @@ const wchar_t* fxas_fxos_get_complete_settings_string(sensor_type_t sensor_type,
         case FS_RANGE: return L"+/- 1200 uT";
         case ODR: return L"0 Hz 0xFF\n1.5625 Hz 0x38\n6.25 Hz 0x30\n12.5 Hz 0x28\n50 Hz 0x20\n100 Hz 0x18\n200 Hz 0x10\n400 Hz 0x08\n800 Hz 0x00";
         case 100: return L"0 Hz 0xFF\n0.7813 Hz 0x38\n3.125 Hz 0x30\n6.25 Hz 0x28\n25 Hz 0x20\n50 Hz 0x18\n100 Hz 0x10\n200 Hz 0x08\n400 Hz 0x00";
-        case POWER: return L"On 0x01\nOff 0xFF";
+        case POWER: return L"On 0x00\nOff 0xFF";
         default: return L"";
         }
     }
@@ -1428,7 +1428,7 @@ const wchar_t* fxas_fxos_get_settings_string(sensor_type_t sensor_type, sensor_s
         case POWER:
             switch (setting)
             {
-            case 1: return L"On 0x01";
+            case 0: return L"On 0x00";
             default: return L"Off 0xFF";
             }
         default: return L"";
@@ -1537,7 +1537,7 @@ void fxos8700_update_acc_or_mag_setting(uint8_t* current_settings, sensor_type_t
             //If the sensor is currently off, turn it on
             if (current_settings[start_positions[sensor_type] + POWER] == FXOS8700_OFF) //FXOS8700_ACC and FXOS8700_MAG enums have the same value
             {
-                current_settings[start_positions[sensor_type] + POWER] = 1;
+                current_settings[start_positions[sensor_type] + POWER] = 0;
             }
         }
     }

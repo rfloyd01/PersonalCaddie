@@ -475,11 +475,13 @@ void IMUSettingsMode::updateSetting(sensor_type_t sensor_type, sensor_settings_t
 		lsm9ds1_update_mag_setting(m_newSettings, setting_type, &newSetting, setting, &mag_odr_text[0]);
 
 		//Update the odr and power drop down menu text as neceessary
-		m_uiElements[m_accFirstDropDown + magOdrIndex]->getChildren()[0]->getChildren()[1]->getText()->message = lsm9ds1_get_settings_string(MAG_SENSOR, ODR, m_newSettings[MAG_START + ODR]);
-		m_uiElements[m_accFirstDropDown + magOdrIndex]->getChildren()[0]->getChildren()[1]->getText()->colorLocations.back() = m_uiElements[m_accFirstDropDown + magOdrIndex]->getChildren()[0]->getChildren()[1]->getText()->message.length();
+		((DropDownMenu*)m_uiElements[m_accFirstDropDown + magOdrIndex].get())->setSelectedOption(lsm9ds1_get_settings_string(MAG_SENSOR, ODR, m_newSettings[MAG_START + ODR]));
+		//m_uiElements[m_accFirstDropDown + magOdrIndex]->getChildren()[0]->getChildren()[1]->getText()->message = lsm9ds1_get_settings_string(MAG_SENSOR, ODR, m_newSettings[MAG_START + ODR]);
+		//m_uiElements[m_accFirstDropDown + magOdrIndex]->getChildren()[0]->getChildren()[1]->getText()->colorLocations.back() = m_uiElements[m_accFirstDropDown + magOdrIndex]->getChildren()[0]->getChildren()[1]->getText()->message.length();
 
-		m_uiElements[m_accFirstDropDown + magPowerIndex]->getChildren()[0]->getChildren()[1]->getText()->message = lsm9ds1_get_settings_string(MAG_SENSOR, POWER, m_newSettings[MAG_START + POWER]);
-		m_uiElements[m_accFirstDropDown + magPowerIndex]->getChildren()[0]->getChildren()[1]->getText()->colorLocations.back() = m_uiElements[m_accFirstDropDown + magPowerIndex]->getChildren()[0]->getChildren()[1]->getText()->message.length();
+		((DropDownMenu*)m_uiElements[m_accFirstDropDown + magPowerIndex].get())->setSelectedOption(lsm9ds1_get_settings_string(MAG_SENSOR, POWER, m_newSettings[MAG_START + POWER]));
+		/*m_uiElements[m_accFirstDropDown + magPowerIndex]->getChildren()[0]->getChildren()[1]->getText()->message = lsm9ds1_get_settings_string(MAG_SENSOR, POWER, m_newSettings[MAG_START + POWER]);
+		m_uiElements[m_accFirstDropDown + magPowerIndex]->getChildren()[0]->getChildren()[1]->getText()->colorLocations.back() = m_uiElements[m_accFirstDropDown + magPowerIndex]->getChildren()[0]->getChildren()[1]->getText()->message.length();*/
 	}
 	else if ((sensor_type == ACC_SENSOR || sensor_type == MAG_SENSOR) && m_newSettings[ACC_START] == FXOS8700_ACC && m_newSettings[MAG_START] == FXOS8700_MAG)
 	{
@@ -520,17 +522,11 @@ void IMUSettingsMode::updateSetting(sensor_type_t sensor_type, sensor_settings_t
 			}
 			else
 			{
-				m_uiElements[m_accFirstDropDown + accOdrIndex]->getChildren()[0]->getChildren()[1]->getText()->message = fxas_fxos_get_settings_string(ACC_SENSOR, static_cast<sensor_settings_t>(combined_odr), m_newSettings[ACC_START + ODR]);
-				m_uiElements[m_accFirstDropDown + accOdrIndex]->getChildren()[0]->getChildren()[1]->getText()->colorLocations.back() = m_uiElements[m_accFirstDropDown + accOdrIndex]->getChildren()[0]->getChildren()[1]->getText()->message.length();
-
-				m_uiElements[m_accFirstDropDown + accPowerIndex]->getChildren()[0]->getChildren()[1]->getText()->message = fxas_fxos_get_settings_string(ACC_SENSOR, POWER, m_newSettings[ACC_START + POWER]);
-				m_uiElements[m_accFirstDropDown + accPowerIndex]->getChildren()[0]->getChildren()[1]->getText()->colorLocations.back() = m_uiElements[m_accFirstDropDown + accPowerIndex]->getChildren()[0]->getChildren()[1]->getText()->message.length();
-
-				m_uiElements[m_accFirstDropDown + magOdrIndex]->getChildren()[0]->getChildren()[1]->getText()->message = fxas_fxos_get_settings_string(MAG_SENSOR, static_cast<sensor_settings_t>(combined_odr), m_newSettings[MAG_START + ODR]);
-				m_uiElements[m_accFirstDropDown + magOdrIndex]->getChildren()[0]->getChildren()[1]->getText()->colorLocations.back() = m_uiElements[m_accFirstDropDown + magOdrIndex]->getChildren()[0]->getChildren()[1]->getText()->message.length();
-
-				m_uiElements[m_accFirstDropDown + magPowerIndex]->getChildren()[0]->getChildren()[1]->getText()->message = fxas_fxos_get_settings_string(MAG_SENSOR, POWER, m_newSettings[MAG_START + POWER]);
-				m_uiElements[m_accFirstDropDown + magPowerIndex]->getChildren()[0]->getChildren()[1]->getText()->colorLocations.back() = m_uiElements[m_accFirstDropDown + magPowerIndex]->getChildren()[0]->getChildren()[1]->getText()->message.length();
+				//Update the odr and power drop down menu text as neceessary
+				((DropDownMenu*)m_uiElements[m_accFirstDropDown + accOdrIndex].get())->setSelectedOption(fxas_fxos_get_settings_string(ACC_SENSOR, static_cast<sensor_settings_t>(combined_odr), m_newSettings[ACC_START + ODR]));
+				((DropDownMenu*)m_uiElements[m_accFirstDropDown + accPowerIndex].get())->setSelectedOption(fxas_fxos_get_settings_string(ACC_SENSOR, POWER, m_newSettings[ACC_START + POWER]));
+				((DropDownMenu*)m_uiElements[m_accFirstDropDown + magOdrIndex].get())->setSelectedOption(fxas_fxos_get_settings_string(MAG_SENSOR, static_cast<sensor_settings_t>(combined_odr), m_newSettings[MAG_START + ODR]));
+				((DropDownMenu*)m_uiElements[m_accFirstDropDown + magPowerIndex].get())->setSelectedOption(fxas_fxos_get_settings_string(MAG_SENSOR, POWER, m_newSettings[MAG_START + POWER]));
 			}
 		}
 	}
@@ -553,11 +549,8 @@ void IMUSettingsMode::updateSetting(sensor_type_t sensor_type, sensor_settings_t
 				powerInd = magPowerIndex;
 			}
 
-			m_uiElements[m_accFirstDropDown + odrInd]->getChildren()[0]->getChildren()[1]->getText()->message = fxas_fxos_get_settings_string(sensor_type, ODR, m_newSettings[sensor_start_locations[sensor_type] + ODR]);
-			m_uiElements[m_accFirstDropDown + odrInd]->getChildren()[0]->getChildren()[1]->getText()->colorLocations.back() = m_uiElements[m_accFirstDropDown + accOdrIndex]->getChildren()[0]->getChildren()[1]->getText()->message.length();
-
-			m_uiElements[m_accFirstDropDown + powerInd]->getChildren()[0]->getChildren()[1]->getText()->message = fxas_fxos_get_settings_string(sensor_type, POWER, m_newSettings[sensor_start_locations[sensor_type] + POWER]);
-			m_uiElements[m_accFirstDropDown + powerInd]->getChildren()[0]->getChildren()[1]->getText()->colorLocations.back() = m_uiElements[m_accFirstDropDown + accPowerIndex]->getChildren()[0]->getChildren()[1]->getText()->message.length();
+			((DropDownMenu*)m_uiElements[m_accFirstDropDown + odrInd].get())->setSelectedOption(fxas_fxos_get_settings_string(sensor_type, ODR, m_newSettings[sensor_start_locations[sensor_type] + ODR]));
+			((DropDownMenu*)m_uiElements[m_accFirstDropDown + powerInd].get())->setSelectedOption(fxas_fxos_get_settings_string(sensor_type, POWER, m_newSettings[sensor_start_locations[sensor_type] + POWER]));
 		}
 	}
 	else

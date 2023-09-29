@@ -26,6 +26,9 @@ void Magnetometer::setConversionRateFromSettings()
 	case LSM9DS1_MAG:
 		this->conversion_rate = lsm9ds1_fsr_conversion(MAG_SENSOR, this->settings[FS_RANGE]) / 10; //convert from mgauss to uTesla
 		break;
+	case FXOS8700_MAG:
+		this->conversion_rate = fxos_fxas_fsr_conversion(MAG_SENSOR, this->settings[FS_RANGE]) / 1000.0 * GRAVITY; //convert from mg to m/s^2
+		break;
 	default:
 		this->conversion_rate = 0;
 		break;
@@ -38,6 +41,9 @@ void Magnetometer::setCurrentODRFromSettings()
 	{
 	case LSM9DS1_MAG:
 		this->current_odr = lsm9ds1_compound_odr_calculate(0x00, this->settings[ODR]); //the 0x00 represents IMU off mode
+		break;
+	case FXOS8700_MAG:
+		this->current_odr = fxos8700_odr_calculate(0, FXOS8700_MAG, 0xFF, this->settings[ODR]); //the 0xC0 represents magnetometer off mode
 		break;
 	default:
 		this->current_odr = 0;

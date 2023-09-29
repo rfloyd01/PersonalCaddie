@@ -28,6 +28,9 @@ void Accelerometer::setConversionRateFromSettings()
 	case LSM9DS1_ACC:
 		this->conversion_rate = lsm9ds1_fsr_conversion(ACC_SENSOR, this->settings[FS_RANGE]) / 1000.0 * GRAVITY; //convert from mg to m/s^2
 		break;
+	case FXOS8700_ACC:
+		this->conversion_rate = fxos_fxas_fsr_conversion(ACC_SENSOR, this->settings[FS_RANGE]) / 1000.0 * GRAVITY; //convert from mg to m/s^2
+		break;
 	default:
 		this->conversion_rate = 0;
 		break;
@@ -41,6 +44,9 @@ void Accelerometer::setCurrentODRFromSettings()
 	{
 	case LSM9DS1_ACC:
 		this->current_odr = lsm9ds1_compound_odr_calculate(this->settings[ODR], 0xC0); //the 0xC0 represents magnetometer off mode
+		break;
+	case FXOS8700_ACC:
+		this->current_odr = fxos8700_odr_calculate(FXOS8700_ACC, 0, this->settings[ODR], 0xFF); //the 0xC0 represents magnetometer off mode
 		break;
 	default:
 		this->current_odr = 0;

@@ -155,6 +155,9 @@ void GraphMode::addData(std::vector<std::vector<std::vector<float> > > const& se
 		float y_data = sensorData[static_cast<int>(selectedDataType)][Y][i];
 		float z_data = sensorData[static_cast<int>(selectedDataType)][Z][i];
 
+		std::wstring data = std::to_wstring(x_data) + L", " + std::to_wstring(y_data) + L", " + std::to_wstring(z_data) + L"\n";
+		OutputDebugString(&data[0]);
+
 		//overwrite the local maxima and minima if necessary
 		if (x_data > m_maximalPoint.y) m_maximalPoint.y = x_data;
 		else if (x_data < m_minimalPoint.y) m_minimalPoint.y = x_data;

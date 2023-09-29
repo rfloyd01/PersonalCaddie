@@ -473,6 +473,22 @@ void ModeScreen::PersonalCaddieHandler(PersonalCaddieEventType pcEvent, void* ev
 		}
 		break;
 	}
+	case PersonalCaddieEventType::NOTIFICATIONS_TOGGLE:
+	{
+		//We've either turned data notifications on or off. If we've turned them on, then we need
+		//to put the Personal Caddie into sensor active mode to start reading these notifications. If we've
+		//turned them off then we put the Personal Caddie into sensor idle mode to stop transfering data.
+
+		//Note: Notifactions need to be enabled before data transfer starts, which is why we wait to change into 
+		//sensor active mode until this event occurs. The opposite is true when turning notifications off, we need
+		//to leave sensor active mode first, and then disable notifications. For that reason we don't leave
+		//sensor active mode in this event.
+		if (*((std::wstring*)eventArgs) == L"On") m_personalCaddie->changePowerMode(PersonalCaddiePowerMode::SENSOR_ACTIVE_MODE);
+		
+		std::wstring alertText = L"Data Notifications have been turned " + *((std::wstring*)eventArgs) + L"\n";
+		createAlert(alertText, UIColor::Blue);
+		break;
+	}
 	case PersonalCaddieEventType::DATA_READY:
 	{
 		//The imu on the personal caddie has finished taking readings and has sent the data over.
@@ -519,8 +535,8 @@ void ModeScreen::enterActiveState()
 		//power mode. Entering the active state switches the personal caddie power mode to sensor active
 		//and also enables data notifications.
 		m_modeState ^= (ModeState::PersonalCaddieSensorActiveMode | ModeState::PersonalCaddieSensorIdleMode); //swap the idle and active mode flags. We also can't transfer modes in the active state
-		m_personalCaddie->changePowerMode(PersonalCaddiePowerMode::SENSOR_ACTIVE_MODE);
 		m_personalCaddie->enableDataNotifications();
+		/*m_personalCaddie->changePowerMode(PersonalCaddiePowerMode::SENSOR_ACTIVE_MODE);*/
 		break;
 	}
 	case ModeType::IMU_SETTINGS:
@@ -593,9 +609,10 @@ void ModeScreen::leaveActiveState()
 	case ModeType::GRAPH_MODE:
 	{
 		//Leaving the active state while in graph mode causes the personal caddie to enter the sensor idle 
-		//power mode and turns off data notifications.
-		m_personalCaddie->disableDataNotifications();
+		//power mode and turns off data notifications. We must leave sensor active mode before disabling
+		//data notifications to prevent errors.
 		m_personalCaddie->changePowerMode(PersonalCaddiePowerMode::SENSOR_IDLE_MODE);
+		m_personalCaddie->disableDataNotifications();
 		break;
 	}
 	}

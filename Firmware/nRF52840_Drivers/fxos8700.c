@@ -59,7 +59,7 @@ void fxos8700init(imu_communication_t* comm, uint8_t sensors, uint8_t* settings)
         //low power modes are only applied to the acc, not the mag, so really the only thing
         //we set here is the mag ODR.
         update_sensor_setting(p_sensor_settings + MAG_START, ODR, FXOS8700_ODR_SINGLE_100_HZ); //accelerometer ODR (100 Hz)
-        update_sensor_setting(p_sensor_settings + MAG_START, POWER, 1); //power (indicates on)
+        update_sensor_setting(p_sensor_settings + MAG_START, POWER, 0); //power (indicates on)
 
         //After setting default settings, attempt to read the whoAmI register
         uint8_t whoamI;

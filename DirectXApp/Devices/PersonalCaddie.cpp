@@ -505,8 +505,9 @@ void PersonalCaddie::enableDataNotifications()
                                         }
                                         else
                                         {
-                                            std::wstring message = L"Successfully enabled data characteristic notifications.\n";
-                                            event_handler(PersonalCaddieEventType::BLE_ALERT, (void*)&message);
+                                            std::wstring message = L"On";
+                                            //event_handler(PersonalCaddieEventType::BLE_ALERT, (void*)&message);
+                                            event_handler(PersonalCaddieEventType::NOTIFICATIONS_TOGGLE, (void*)&message);
                                             return;
                                         }
                                     });
@@ -566,8 +567,9 @@ void PersonalCaddie::disableDataNotifications()
                                         }
                                         else
                                         {
-                                            std::wstring message = L"Successfully disabled data characteristic notifications.\n";
-                                            event_handler(PersonalCaddieEventType::BLE_ALERT, (void*)&message);
+                                            std::wstring message = L"Off";
+                                            //event_handler(PersonalCaddieEventType::BLE_ALERT, (void*)&message);
+                                            event_handler(PersonalCaddieEventType::NOTIFICATIONS_TOGGLE, (void*)&message);
                                             return;
                                         }
                                     });

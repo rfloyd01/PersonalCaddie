@@ -779,6 +779,7 @@ static void characteristic_update_and_notify()
     //is complete, alerting us to send out the next notification.
     m_notification_done = false;
     uint32_t ret = sd_ble_gatts_hvx(m_conn_handle, &acc_notify_params); //acc data notification
+    APP_ERROR_CHECK(ret);
     while (!m_notification_done) {}
 
     m_notification_done = false;
@@ -1322,7 +1323,7 @@ static void ble_evt_handler(ble_evt_t const * p_ble_evt, void * p_context)
 
         case BLE_GATTS_EVT_HVN_TX_COMPLETE:
             m_notification_done = true; //set the notification done bool to true to allow more notifications
-            //SEGGER_RTT_WriteString(0, "Notification complete.\n");
+            SEGGER_RTT_WriteString(0, "Notification complete.\n");
             break;
 
         default:
@@ -1696,6 +1697,7 @@ int main(void)
         //if so, send out data notifications).
         if (m_data_ready)
         {
+            SEGGER_RTT_WriteString(0, "sending notification.\n");
             characteristic_update_and_notify();
             m_data_ready = false;
         }

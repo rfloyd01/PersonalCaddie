@@ -50,7 +50,8 @@ enum class PersonalCaddieEventType
 	IMU_ALERT = 3,
 	DEVICE_WATCHER_UPDATE = 4,
 	CONNECTION_EVENT = 5,
-	DATA_READY = 6
+	NOTIFICATIONS_TOGGLE = 6,
+	DATA_READY = 7
 };
 
 enum class TextType;

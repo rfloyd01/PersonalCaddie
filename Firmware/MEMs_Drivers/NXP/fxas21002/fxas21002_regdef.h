@@ -155,15 +155,15 @@ typedef struct
 typedef enum fxas21002_odr {
 	FXAS21002_ODR_800_HZ		= 0b000,
 	FXAS21002_ODR_400_HZ		= 0b001,
-        FXAS21002_ODR_200_HZ		= 0b010,
-        FXAS21002_ODR_100_HZ		= 0b011,
-        FXAS21002_ODR_50_HZ		= 0b100,
-        FXAS21002_ODR_25_HZ		= 0b101,
-        FXAS21002_ODR_12_5_HZ		= 0b110,
+    FXAS21002_ODR_200_HZ		= 0b010,
+    FXAS21002_ODR_100_HZ		= 0b011,
+    FXAS21002_ODR_50_HZ		    = 0b100,
+    FXAS21002_ODR_25_HZ		    = 0b101,
+    FXAS21002_ODR_12_5_HZ		= 0b110,
 } fxas21002_odr_t;
 
 typedef enum {
-	FXAS21002_POWER_STANDBY		= 0b00,
+	FXAS21002_POWER_STANDBY		    = 0b00,
 	FXAS21002_POWER_READY           = 0b01,
 	FXAS21002_POWER_ACTIVE          = 0b11,
 } fxas21002_power_t;
@@ -173,7 +173,7 @@ typedef enum {
 	FXAS21002_RANGE_1000DPS		= 0b01,
 	FXAS21002_RANGE_500DPS		= 0b10,
 	FXAS21002_RANGE_250DPS		= 0b11,
-        FXAS21002_RANGE_4000DPS		= 0b10000,
+    FXAS21002_RANGE_4000DPS		= 0b10000,
 } fxas21002_fs_range_t;
 
 typedef enum {
@@ -183,8 +183,8 @@ typedef enum {
 
 typedef enum {
 	FXAS21002_LPF_STRONG		= 0b00,
-	FXAS21002_LPF_MEDIUM	        = 0b01,
-        FXAS21002_LPF_LIGHT	        = 0b10,
+	FXAS21002_LPF_MEDIUM	    = 0b01,
+    FXAS21002_LPF_LIGHT	        = 0b10,
 } fxas21002_lpf_bandwidth_t;
 
 typedef enum {
