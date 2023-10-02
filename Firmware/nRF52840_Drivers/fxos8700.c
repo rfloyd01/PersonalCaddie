@@ -40,8 +40,8 @@ void fxos8700init(imu_communication_t* comm, uint8_t sensors, uint8_t* settings)
         //After setting default settings, attempt to read the whoAmI register
         uint8_t whoamI;
         uint8_t ret = sensor_comm_read(sensor_driver.pComHandle, FXOS8700_WHO_AM_I, 1, &whoamI);
-        if (whoamI == FXOS8700_WHO_AM_I_PROD_VALUE) SEGGER_RTT_WriteString(0, "FXOS8700 Acc discovered.\n");
-        else SEGGER_RTT_WriteString(0, "Error: Couldn't find FXOS8700 Acc.\n");
+        if (whoamI == FXOS8700_WHO_AM_I_PROD_VALUE) SEGGER_RTT_WriteString(0, "FXOS8700 Acc initialized.\n");
+        else SEGGER_RTT_WriteString(0, "Error: Couldn't initialize FXOS8700 Acc.\n");
     }
 
     //initialize read/write methods, address, and default settings for mag
@@ -64,8 +64,8 @@ void fxos8700init(imu_communication_t* comm, uint8_t sensors, uint8_t* settings)
         //After setting default settings, attempt to read the whoAmI register
         uint8_t whoamI;
         uint8_t ret = sensor_comm_read(sensor_driver.pComHandle, FXOS8700_WHO_AM_I, 1, &whoamI);
-        if (whoamI == FXOS8700_WHO_AM_I_PROD_VALUE) SEGGER_RTT_WriteString(0, "FXOS8700 Mag discovered.\n");
-        else SEGGER_RTT_WriteString(0, "Error: Couldn't find FXOS8700 Mag.\n");
+        if (whoamI == FXOS8700_WHO_AM_I_PROD_VALUE) SEGGER_RTT_WriteString(0, "FXOS8700 Mag initialized.\n");
+        else SEGGER_RTT_WriteString(0, "Error: Couldn't initialize FXOS8700 Mag.\n");
     }
 }
 

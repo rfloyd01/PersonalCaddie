@@ -46,8 +46,8 @@ void lsm9ds1_init(imu_communication_t* comm, uint8_t sensors, uint8_t* settings)
 
         //After setting default settings, attempt to read the whoAmI register
         uint32_t ret = lsm9ds1_dev_id_get(NULL, &lsm9ds1_imu, &whoamI);
-        if (whoamI.imu == LSM9DS1_IMU_ID) SEGGER_RTT_WriteString(0, "LSM9DS1 Acc discovered.\n");
-        else SEGGER_RTT_WriteString(0, "Error: Couldn't find LSM9DS1 Acc.\n");
+        if (whoamI.imu == LSM9DS1_IMU_ID) SEGGER_RTT_WriteString(0, "LSM9DS1 Acc initialized.\n");
+        else SEGGER_RTT_WriteString(0, "Error: Couldn't initialize LSM9DS1 Acc.\n");
     }
 
     if (sensors & 0b010)
@@ -68,8 +68,8 @@ void lsm9ds1_init(imu_communication_t* comm, uint8_t sensors, uint8_t* settings)
 
         //After setting default settings, attempt to read the whoAmI register
         uint32_t ret = lsm9ds1_dev_id_get(NULL, &lsm9ds1_imu, &whoamI);
-        if (whoamI.imu == LSM9DS1_IMU_ID) SEGGER_RTT_WriteString(0, "LSM9DS1 Gyro discovered.\n");
-        else SEGGER_RTT_WriteString(0, "Error: Couldn't find LSM9DS1 Gyro.\n");
+        if (whoamI.imu == LSM9DS1_IMU_ID) SEGGER_RTT_WriteString(0, "LSM9DS1 Gyro initialized.\n");
+        else SEGGER_RTT_WriteString(0, "Error: Couldn't initialize LSM9DS1 Gyro.\n");
     }
 
     //initialize read/write methods, address, and default settings for mag
@@ -87,8 +87,8 @@ void lsm9ds1_init(imu_communication_t* comm, uint8_t sensors, uint8_t* settings)
 
         //After setting default settings, attempt to read the whoAmI register
         uint32_t ret = lsm9ds1_dev_id_get(&lsm9ds1_mag, NULL, &whoamI);
-        if (whoamI.mag == LSM9DS1_MAG_ID) SEGGER_RTT_WriteString(0, "LSM9DS1 Mag discovered.\n");
-        else SEGGER_RTT_WriteString(0, "Error: Couldn't find LSM9DS1 Mag.\n");
+        if (whoamI.mag == LSM9DS1_MAG_ID) SEGGER_RTT_WriteString(0, "LSM9DS1 Mag initialized.\n");
+        else SEGGER_RTT_WriteString(0, "Error: Couldn't initialize LSM9DS1 Mag.\n");
     }
 }
 

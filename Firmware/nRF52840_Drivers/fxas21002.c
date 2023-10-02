@@ -34,8 +34,8 @@ void fxas21002init(imu_communication_t* comm, uint8_t sensors, uint8_t* settings
         //After setting default settings, attempt to read the whoAmI register
         uint8_t whoamI;
         imu_comm->gyr_comm.read_register((void*)imu_comm->gyr_comm.twi_bus, imu_comm->gyr_comm.address, FXAS21002_REG_WHOAMI, &whoamI, 1);
-        if (whoamI == FXAS21002_WHO_AM_I) SEGGER_RTT_WriteString(0, "FXAS21002 Gyr discovered.\n");
-        else SEGGER_RTT_WriteString(0, "Error: Couldn't find FXAS21002 Gyr.\n");
+        if (whoamI == FXAS21002_WHO_AM_I) SEGGER_RTT_WriteString(0, "FXAS21002 Gyr initialized.\n");
+        else SEGGER_RTT_WriteString(0, "Error: Couldn't initialize FXAS21002 Gyr.\n");
     }
 }
 

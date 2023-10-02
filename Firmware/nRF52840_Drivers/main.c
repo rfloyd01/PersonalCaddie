@@ -163,8 +163,8 @@ static int m_twi_external_bus_status;                                           
 static int measurements_taken = 0;                                              /**< keeps track of how many IMU measurements have taken in the given connection interval. */
 
 //IMU Sensor Parameters
-static uint8_t default_sensors[3] = {FXOS8700_ACC, FXAS21002_GYR, FXOS8700_MAG};/**< Default sensors that are attempted to be initialized first. */
-//static uint8_t default_sensors[3] = {LSM9DS1_ACC, LSM9DS1_GYR, LSM9DS1_MAG};  /**< Default sensors that are attempted to be initialized first. */
+//static uint8_t default_sensors[3] = {FXOS8700_ACC, FXAS21002_GYR, FXOS8700_MAG};/**< Default sensors that are attempted to be initialized first. */
+static uint8_t default_sensors[3] = {LSM9DS1_ACC, LSM9DS1_GYR, LSM9DS1_MAG};  /**< Default sensors that are attempted to be initialized first. */
 static bool sensors_initialized[3] = {false, false, false};                     /**< Keep track of which sensors are currently initialized */
 static uint8_t internal_sensors[10];                                            /**< An array for holding the addresses of sensors on the internal TWI line */
 static uint8_t external_sensors[10];                                            /**< An array for holding the addresses of sensors on the external TWI line */
@@ -980,22 +980,29 @@ static void sensor_idle_mode_start()
         //before doing so we need to see if a call from the front end to use a different sensor has been made.
 
         uint8_t new_sensors = 0;
+
         if (imu_comm.sensor_model[ACC_SENSOR] != sensor_settings[ACC_START + SENSOR_MODEL])
         {
             new_sensors |= 0b001;
             default_sensors[ACC_SENSOR] = sensor_settings[ACC_START + SENSOR_MODEL];
+            sensors_initialized[ACC_SENSOR] = false;
         }
-        else if (imu_comm.sensor_model[GYR_SENSOR] != sensor_settings[GYR_START + SENSOR_MODEL])
+
+        if (imu_comm.sensor_model[GYR_SENSOR] != sensor_settings[GYR_START + SENSOR_MODEL])
         {
             new_sensors |= 0b010;
             default_sensors[GYR_SENSOR] = sensor_settings[GYR_START + SENSOR_MODEL];
+            sensors_initialized[GYR_SENSOR] = false;
         }
-        else if (imu_comm.sensor_model[MAG_SENSOR] != sensor_settings[MAG_START + SENSOR_MODEL])
+        
+        if (imu_comm.sensor_model[MAG_SENSOR] != sensor_settings[MAG_START + SENSOR_MODEL])
         {
             new_sensors |= 0b100;
             default_sensors[MAG_SENSOR] = sensor_settings[MAG_START + SENSOR_MODEL];
+            sensors_initialized[MAG_SENSOR] = false;
         }
 
+        //Initialize any new sensors that need it
         if (new_sensors) sensors_init(false);
 
         //turn on any TWI buses that are needed by the current sensors

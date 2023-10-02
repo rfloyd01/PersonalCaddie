@@ -777,6 +777,15 @@ void IMUSettingsMode::update()
 
 		dropDownsSet = true;
 	}
+	else if (m_state & IMUSettingsState::UPDATE_SETTINGS)
+	{
+		//if we reach the update method and the update_settings flag is set in the current mode state it means that
+		//we've already reached out to the Personal Caddie to update the settings on the physical chip. This is an 
+		//asynchronous action and most likely won't be done by the time this update method is called. What we do here
+		//though is remove the update_settings flag from the current state so that the next interaction with a UI element
+		//won't cause another update.
+		m_state ^= IMUSettingsState::UPDATE_SETTINGS;
+	}
 }
 
 TextOverlay IMUSettingsMode::removeAlerts()
