@@ -346,6 +346,12 @@
     <ClInclude Include="Graphics\Utilities\DirectXSample.h">
       <Filter>Graphics\Utilities</Filter>
     </ClInclude>
+    <ClInclude Include="..\Firmware\MEMs_Drivers\NXP\fxos8700\src\fxos8700_driver.h">
+      <Filter>Devices\Sensors\Drivers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Firmware\MEMs_Drivers\NXP\fxas21002\fxas21002_regdef.h">
+      <Filter>Devices\Sensors\Drivers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Assets\Wide310x150Logo.scale-200.png">

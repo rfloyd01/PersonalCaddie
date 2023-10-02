@@ -31,6 +31,7 @@ public:
 	virtual std::vector<UIText*> setTextDimension() override;
 
 	std::wstring getLastSelectedText() { return m_lastSelectedText; }
+	void setLastSelectedText(std::wstring text) { m_lastSelectedText = text; } //TODO: May want to look at all text overlays in the child array and confirm the given text actually exists
 
 protected:
 	float getCurrentTextStartingHeight();

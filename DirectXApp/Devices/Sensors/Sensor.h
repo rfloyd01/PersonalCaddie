@@ -26,6 +26,7 @@ public:
 
 	std::pair<const float*, const float**> getCalibrationNumbers();
 	void setCalibrationNumbers(float* offset, float** gain);
+	void updateODR(float new_odr) { current_odr = new_odr; }
 
 protected:
 	//An array that holds the relevant settings for the sensor. The indices of the array hold settings for the following:

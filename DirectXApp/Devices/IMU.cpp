@@ -48,6 +48,18 @@ float* IMU::getSensorConversionRates() { return this->IMU_data_sensitivity; }
 void IMU::getODRFromSensors()
 {
     //gets the odr information from each individual sensor and saves it in the IMU_sample_frequencies array
+
+    //Some sensor's ODR depend on other sensor's ODR, for example, if both the FXOS8700 acc and mag are
+    //engaged then their respective ODRs are cut in half. The sensor objects don't have access to each
+    //others ODR so we need to perform that check here.
+    uint8_t acc_model = p_acc->getCurrentSettings()[SENSOR_MODEL], gyr_model = p_gyr->getCurrentSettings()[SENSOR_MODEL], mag_model = p_mag->getCurrentSettings()[SENSOR_MODEL];
+    if ((acc_model == FXOS8700_ACC) && (mag_model == FXOS8700_MAG))
+    {
+        float real_odr = fxos8700_odr_calculate(acc_model, mag_model, p_acc->getCurrentSettings()[ODR], p_mag->getCurrentSettings()[ODR]);
+        p_acc->updateODR(real_odr);
+        p_mag->updateODR(real_odr);
+    }
+
     this->IMU_sample_frequencies[ACC_SENSOR] = this->p_acc->getCurrentODR();
     this->IMU_sample_frequencies[GYR_SENSOR] = this->p_gyr->getCurrentODR();
     this->IMU_sample_frequencies[MAG_SENSOR] = this->p_mag->getCurrentODR();

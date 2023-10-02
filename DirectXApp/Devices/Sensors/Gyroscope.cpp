@@ -26,6 +26,9 @@ void Gyroscope::setConversionRateFromSettings()
 	case LSM9DS1_GYR:
 		this->conversion_rate = lsm9ds1_fsr_conversion(GYR_SENSOR, this->settings[FS_RANGE]) / 1000.0; //convert from mdps to dps
 		break;
+	case FXAS21002_GYR:
+		this->conversion_rate = fxos_fxas_fsr_conversion(GYR_SENSOR, this->settings[FS_RANGE]) / 1000.0; //convert from mdps to dps
+		break;
 	default:
 		this->conversion_rate = 0;
 		break;
@@ -38,6 +41,9 @@ void Gyroscope::setCurrentODRFromSettings()
 	{
 	case LSM9DS1_GYR:
 		this->current_odr = lsm9ds1_compound_odr_calculate(this->settings[ODR], 0xC0); //the 0xC0 represents magnetometer off mode
+		break;
+	case FXAS21002_GYR:
+		this->current_odr = fxas21002_odr_calculate(FXAS21002_GYR, this->settings[ODR]); //the 0xC0 represents magnetometer off mode
 		break;
 	default:
 		this->current_odr = 0;

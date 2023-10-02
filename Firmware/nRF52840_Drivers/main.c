@@ -612,6 +612,14 @@ static void sensors_init(void)
     sensor_settings[GYR_START + SENSOR_MODEL] = default_sensors[1];
     sensor_settings[MAG_START + SENSOR_MODEL] = default_sensors[2];
 
+    //Then initialize the internal and external sensors arrays so that each element
+    //has a value of 0xFF. This value alerts the front end that no sensor is present.
+    for (int i = 0; i < 10; i++)
+    {
+        internal_sensors[i] = 0xff;
+        external_sensors[i] = 0xff;
+    }
+
     //Next we scan both the external and internal TWI lines to see what sensors we can find
     //Check the internal bus first
     enable_twi_bus(INTERNAL_TWI_INSTANCE_ID);
@@ -771,6 +779,7 @@ static void characteristic_update_and_notify()
     //is complete, alerting us to send out the next notification.
     m_notification_done = false;
     uint32_t ret = sd_ble_gatts_hvx(m_conn_handle, &acc_notify_params); //acc data notification
+    APP_ERROR_CHECK(ret);
     while (!m_notification_done) {}
 
     m_notification_done = false;
@@ -1319,7 +1328,7 @@ static void ble_evt_handler(ble_evt_t const * p_ble_evt, void * p_context)
 
         case BLE_GATTS_EVT_HVN_TX_COMPLETE:
             m_notification_done = true; //set the notification done bool to true to allow more notifications
-            //SEGGER_RTT_WriteString(0, "Notification complete.\n");
+            SEGGER_RTT_WriteString(0, "Notification complete.\n");
             break;
 
         default:
@@ -1693,6 +1702,7 @@ int main(void)
         //if so, send out data notifications).
         if (m_data_ready)
         {
+            SEGGER_RTT_WriteString(0, "sending notification.\n");
             characteristic_update_and_notify();
             m_data_ready = false;
         }

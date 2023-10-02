@@ -38,6 +38,16 @@ std::vector<UIText*> DropDownMenu::setTextDimension()
 	return ((FullScrollingTextBox*)p_children[2].get())->setTextDimension();
 }
 
+void DropDownMenu::setSelectedOption(std::wstring option)
+{
+	//This method gives a way to set the selected option of the drop down box without
+	//requiriug a click.
+	m_currentlySelectedOption = option;
+	getChildren()[0]->getChildren()[1]->getText()->message = option;
+	getChildren()[0]->getChildren()[1]->getText()->colorLocations.back() = getChildren()[0]->getChildren()[1]->getText()->message.length();
+	((FullScrollingTextBox*)getChildren()[2].get())->setLastSelectedText(option);
+}
+
 void DropDownMenu::repositionText()
 {
 	//When this method gets called we know the dimensions of all the text inside of the full scrolling
