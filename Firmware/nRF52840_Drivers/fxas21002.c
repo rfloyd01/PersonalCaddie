@@ -79,8 +79,9 @@ int32_t fxas21002_get_gyr_data(uint8_t* pBuff, uint8_t offset)
     //default so if we want Big-Endian then we need to swap bytes manually
     uint8_t ret = imu_comm->gyr_comm.read_register((void*)imu_comm->gyr_comm.twi_bus, imu_comm->gyr_comm.address, FXAS21002_REG_OUTXMSB, pBuff + offset, 6);
 
-    //If we want big-endian data then we need to swap bytes
-    if (__BYTE_ORDER__ != 1234)
+    //Unlike the FXOS sensors, the FXAS gives data in big-endian so it must
+    //be manually swapped to little endian
+    if (__BYTE_ORDER__ == 1234)
     {
         for (uint8_t i = 0; i < 3; i++)
         {

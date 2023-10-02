@@ -163,8 +163,8 @@ static int m_twi_external_bus_status;                                           
 static int measurements_taken = 0;                                              /**< keeps track of how many IMU measurements have taken in the given connection interval. */
 
 //IMU Sensor Parameters
-//static uint8_t default_sensors[3] = {FXOS8700_ACC, FXAS21002_GYR, FXOS8700_MAG};/**< Default sensors that are attempted to be initialized first. */
-static uint8_t default_sensors[3] = {LSM9DS1_ACC, LSM9DS1_GYR, LSM9DS1_MAG};  /**< Default sensors that are attempted to be initialized first. */
+static uint8_t default_sensors[3] = {FXOS8700_ACC, FXAS21002_GYR, FXOS8700_MAG};/**< Default sensors that are attempted to be initialized first. */
+//static uint8_t default_sensors[3] = {LSM9DS1_ACC, LSM9DS1_GYR, LSM9DS1_MAG};  /**< Default sensors that are attempted to be initialized first. */
 static bool sensors_initialized[3] = {false, false, false};                     /**< Keep track of which sensors are currently initialized */
 static uint8_t internal_sensors[10];                                            /**< An array for holding the addresses of sensors on the internal TWI line */
 static uint8_t external_sensors[10];                                            /**< An array for holding the addresses of sensors on the external TWI line */
@@ -1351,7 +1351,7 @@ static void ble_evt_handler(ble_evt_t const * p_ble_evt, void * p_context)
 
         case BLE_GATTS_EVT_HVN_TX_COMPLETE:
             m_notification_done = true; //set the notification done bool to true to allow more notifications
-            SEGGER_RTT_WriteString(0, "Notification complete.\n");
+            //SEGGER_RTT_WriteString(0, "Notification complete.\n");
             break;
 
         default:
@@ -1688,7 +1688,7 @@ static void leds_init()
 /**@brief Function for application main entry.
  */
 int main(void)
-{
+ {
     bool erase_bonds;
 
     // Initialize.
@@ -1725,7 +1725,7 @@ int main(void)
         //if so, send out data notifications).
         if (m_data_ready)
         {
-            SEGGER_RTT_WriteString(0, "sending notification.\n");
+            //SEGGER_RTT_WriteString(0, "sending notification.\n");
             characteristic_update_and_notify();
             m_data_ready = false;
         }

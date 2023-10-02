@@ -304,8 +304,8 @@ int32_t fxos8700_get_mag_data(uint8_t* pBuff, uint8_t offset)
         //so really we just copy the data as it is
         for (uint8_t i = 0; i < 3; i++)
         {
-            pBuff[2 * i + offset] = dataBuffer.accel[i] & 0xFF;
-            pBuff[2 * i + 1 + offset] = (dataBuffer.accel[i] & 0xFF00) >> 8;
+            pBuff[2 * i + offset] = dataBuffer.mag[i] & 0xFF;
+            pBuff[2 * i + 1 + offset] = (dataBuffer.mag[i] & 0xFF00) >> 8;
         }
     }
     else
@@ -315,8 +315,8 @@ int32_t fxos8700_get_mag_data(uint8_t* pBuff, uint8_t offset)
         //we need to swap bytes as they come in.
         for (uint8_t i = 0; i < 3; i++)
         {
-            pBuff[2 * i + offset] = (dataBuffer.accel[i] & 0xFF00) >> 8;;
-            pBuff[2 * i + 1 + offset] = dataBuffer.accel[i] & 0xFF;
+            pBuff[2 * i + offset] = (dataBuffer.mag[i] & 0xFF00) >> 8;;
+            pBuff[2 * i + 1 + offset] = dataBuffer.mag[i] & 0xFF;
         }
     }
 
