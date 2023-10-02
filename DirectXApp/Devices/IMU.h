@@ -77,6 +77,7 @@ public:
 
 	//Setting Altering Functions
 	void updateSensorSettings(uint8_t* imu_settings);
+	void initializeNewSensor(uint8_t sensor_type, uint8_t* sensor_settings);
 
 	//Axes Altering Functions
 	//TODO: eventually create functions that will allow for the swapping of axes to acoomodate flipping of sensors on bread board

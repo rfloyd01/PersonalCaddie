@@ -603,31 +603,56 @@ static void default_sensor_select()
  *
  * @details Initializes the LSM9DS1 accelerometer, gyroscope and magnetometer
  */
-static void sensors_init(void)
+static void sensors_init(bool discovery)
 {
-    //First reset the sensor settings array, everything goes to zero except
-    //the sensor models which are set to the default sensors.
-    for (int i = 0; i < SENSOR_SETTINGS_LENGTH; i++) sensor_settings[i] = 0;
-    sensor_settings[ACC_START + SENSOR_MODEL] = default_sensors[0];
-    sensor_settings[GYR_START + SENSOR_MODEL] = default_sensors[1];
-    sensor_settings[MAG_START + SENSOR_MODEL] = default_sensors[2];
-
-    //Then initialize the internal and external sensors arrays so that each element
-    //has a value of 0xFF. This value alerts the front end that no sensor is present.
-    for (int i = 0; i < 10; i++)
-    {
-        internal_sensors[i] = 0xff;
-        external_sensors[i] = 0xff;
-    }
-
-    //Next we scan both the external and internal TWI lines to see what sensors we can find
-    //Check the internal bus first
+    //When first turning on the Personal Caddie we need to scan both the internal
+    //and external TWI bus to see what sensors are available so we can populate some
+    //arrays with this information. Subsequent calls to this method don't require this.
+    //Regardless of whether or not we enter this method in discovery mode, both TWI buses
+    //need to be enabled.
     enable_twi_bus(INTERNAL_TWI_INSTANCE_ID);
-    twi_address_scan(internal_sensors, &internal_sensors_found, &m_twi_internal);
-
-    //Then check the external bus
     enable_twi_bus(EXTERNAL_TWI_INSTANCE_ID);
-    twi_address_scan(external_sensors, &external_sensors_found, &m_twi_external);
+    
+    if (discovery)
+    {
+        //First reset the sensor settings array, everything goes to zero except
+        //the sensor models which are set to the default sensors.
+        for (int i = 0; i < SENSOR_SETTINGS_LENGTH; i++) sensor_settings[i] = 0;
+        sensor_settings[ACC_START + SENSOR_MODEL] = default_sensors[0];
+        sensor_settings[GYR_START + SENSOR_MODEL] = default_sensors[1];
+        sensor_settings[MAG_START + SENSOR_MODEL] = default_sensors[2];
+
+        //Then initialize the internal and external sensors arrays so that each element
+        //has a value of 0xFF. This value alerts the front end that no sensor is present.
+        for (int i = 0; i < 10; i++)
+        {
+            internal_sensors[i] = 0xff;
+            external_sensors[i] = 0xff;
+        }
+
+        //Initiate the TWI bus scan, looking for sensors
+        twi_address_scan(internal_sensors, &internal_sensors_found, &m_twi_internal); //Scan the internal TWI bus
+        twi_address_scan(external_sensors, &external_sensors_found, &m_twi_external); //Then scan the external bus
+
+        //We also need to populate the available sensors characteristic with all the sensors
+        //that were found on the internal and external TWI buses. This will allow the front
+        //end application to dynamically choose which sensors to use.
+        ble_gatts_value_t internal_available_sensors, external_available_sensors;
+
+        internal_available_sensors.len = 10;
+        internal_available_sensors.p_value = internal_sensors;
+        internal_available_sensors.offset = 0;
+
+        external_available_sensors.len = 10;
+        external_available_sensors.p_value = external_sensors;
+        external_available_sensors.offset = 10;
+
+        uint32_t err_code = sd_ble_gatts_value_set(m_conn_handle, m_ss.available_handle.value_handle, &internal_available_sensors);
+        APP_ERROR_CHECK(err_code);
+
+        err_code = sd_ble_gatts_value_set(m_conn_handle, m_ss.available_handle.value_handle, &external_available_sensors);
+        APP_ERROR_CHECK(err_code);
+    }
 
     //Scan the external sensors to see if any of them match the default sensors that were
     //set in the settings array. If not, then scan the internal sensors to see if any of
@@ -721,25 +746,6 @@ static void sensors_init(void)
     settings.p_value = sensor_settings;
     settings.offset = 0;
     uint32_t err_code = sd_ble_gatts_value_set(m_conn_handle, m_ss.settings_handles.value_handle, &settings);
-    APP_ERROR_CHECK(err_code);
-
-    //We also need to populate the available sensors characteristic with all the sensors
-    //that were found on the internal and external TWI buses. This will allow the front
-    //end application to dynamically choose which sensors to use.
-    ble_gatts_value_t internal_available_sensors, external_available_sensors;
-
-    internal_available_sensors.len = 10;
-    internal_available_sensors.p_value = internal_sensors;
-    internal_available_sensors.offset = 0;
-
-    external_available_sensors.len = 10;
-    external_available_sensors.p_value = external_sensors;
-    external_available_sensors.offset = 10;
-
-    err_code = sd_ble_gatts_value_set(m_conn_handle, m_ss.available_handle.value_handle, &internal_available_sensors);
-    APP_ERROR_CHECK(err_code);
-
-    err_code = sd_ble_gatts_value_set(m_conn_handle, m_ss.available_handle.value_handle, &external_available_sensors);
     APP_ERROR_CHECK(err_code);
 }
 
@@ -943,11 +949,6 @@ static void sensor_idle_mode_start()
     //In this mode, the appropriate TWI bus(es) is active and power is going to the sensor(s) but the 
     //sensor is put into sleep mode. A red LED blinking in time with the connection 
     //interval shows when this mode is active.
-
-    //Check to see if we're currently in sensor idle mode. If we are then we don't
-    //need to turn on the TWI bus or sensors, however, if the sensor has been
-    //changed (which can happen from the front end application) we'll need to 
-    //shutdown the current sensors/twi bus and initialize the new one.
     if (current_operating_mode == SENSOR_IDLE_MODE) return; //no need to change anything if already in idle mode
 
     //swap to the red LED
@@ -973,7 +974,29 @@ static void sensor_idle_mode_start()
     else 
     {
         //If we aren't in sensor active or idle mode, it means that we arrived here from connection mode.
-        //This means that both the TWI bus and sensors need to be turned on.
+        //This means that both the TWI bus and sensors need to be turned on. There are two reasons why we'd
+        //be turning on the sensors, either we're about to take data readings, or, we want to update the
+        //sensor settings. In both cases we need to turn on the TWI bus to enable communication, but
+        //before doing so we need to see if a call from the front end to use a different sensor has been made.
+
+        uint8_t new_sensors = 0;
+        if (imu_comm.sensor_model[ACC_SENSOR] != sensor_settings[ACC_START + SENSOR_MODEL])
+        {
+            new_sensors |= 0b001;
+            default_sensors[ACC_SENSOR] = sensor_settings[ACC_START + SENSOR_MODEL];
+        }
+        else if (imu_comm.sensor_model[GYR_SENSOR] != sensor_settings[GYR_START + SENSOR_MODEL])
+        {
+            new_sensors |= 0b010;
+            default_sensors[GYR_SENSOR] = sensor_settings[GYR_START + SENSOR_MODEL];
+        }
+        else if (imu_comm.sensor_model[MAG_SENSOR] != sensor_settings[MAG_START + SENSOR_MODEL])
+        {
+            new_sensors |= 0b100;
+            default_sensors[MAG_SENSOR] = sensor_settings[MAG_START + SENSOR_MODEL];
+        }
+
+        if (new_sensors) sensors_init(false);
 
         //turn on any TWI buses that are needed by the current sensors
         enable_twi_bus(imu_comm.acc_comm.twi_bus->inst_idx);
@@ -1676,7 +1699,7 @@ int main(void)
     gatt_init();
     services_init();
     twi_init();
-    sensors_init();
+    sensors_init(true);
     gap_params_init();
     advertising_init();
     conn_params_init();

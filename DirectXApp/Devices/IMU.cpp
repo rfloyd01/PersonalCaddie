@@ -14,6 +14,7 @@ IMU::IMU(uint8_t* imu_settings)
 
     getODRFromSensors();
     getConversionRateFromSensors();
+    //TODO: Need to get calibration info
 }
 
 std::vector<uint8_t*> IMU::getSensorSettings()
@@ -40,6 +41,40 @@ void IMU::updateSensorSettings(uint8_t* imu_settings)
     p_acc->setCurrentSettings(imu_settings + ACC_START);
     p_gyr->setCurrentSettings(imu_settings + GYR_START);
     p_mag->setCurrentSettings(imu_settings + MAG_START);
+
+    //When updating the settings we also need to update the internal
+    //odr and full scale conversion rates for the IMU to make sure
+    //everything lines up correctly
+    getODRFromSensors();
+    getConversionRateFromSensors();
+}
+
+void IMU::initializeNewSensor(uint8_t sensor_type, uint8_t* sensor_settings)
+{
+    //Through the sensor settings mode we have the chance to both update sensor settings,
+    //and switch to new sensors entirely. If we switch to a new sensor we need to delete
+    //the current one and create a new sensor object from scratch. We also need to recalculate
+    //the current IMU odr, full-scale conversion rates and calibration data.
+    OutputDebugString(L"Creating a new sensor baby.\n");
+    switch (sensor_type)
+    {
+    case ACC_SENSOR:
+        p_acc = nullptr; //delete current sensor
+        p_acc = std::make_unique<Accelerometer>(sensor_settings + ACC_START);
+        break;
+    case GYR_SENSOR:
+        p_gyr = nullptr; //delete current sensor
+        p_gyr = std::make_unique<Gyroscope>(sensor_settings + GYR_START);
+        break;
+    case MAG_SENSOR:
+        p_mag = nullptr; //delete current sensor
+        p_mag = std::make_unique<Magnetometer>(sensor_settings + MAG_START);
+        break;
+    }
+
+    getODRFromSensors();
+    getConversionRateFromSensors();
+    //TODO: Need to get calibration info
 }
 
 float* IMU::getSensorODRs() { return this->IMU_sample_frequencies; }

@@ -669,6 +669,13 @@ void PersonalCaddie::updateIMUSettings(uint8_t* newSettings)
     newSettings[0] = 3; //In order to update the IMU settings, we need to go into power mode 3. This will be reset to connected mode after data transfer
     newSettings[31] = 0;
 
+    //We have the capability to change to different sensors from the sensor settings menu. Check the current
+    //sensor settings vs. the new settings array to see if a new sensor needs to be initialized.
+    auto cs = p_imu->getSensorSettings();
+    std::vector<uint8_t> current_settings{ 3 }; //need to make a copy as the above method returns a reference
+    for (int i = 0; i < 3; i++)
+        for (int j = 0; j < 10; j++) current_settings.push_back(cs[i][j]);
+
     winrt::Windows::Storage::Streams::DataWriter writer;
     writer.ByteOrder(winrt::Windows::Storage::Streams::ByteOrder::LittleEndian);
 
@@ -677,7 +684,7 @@ void PersonalCaddie::updateIMUSettings(uint8_t* newSettings)
 
     auto writeOperation = this->m_settings_characteristic.WriteValueAsync(writer.DetachBuffer());
 
-    writeOperation.Completed([this, newSettings](IAsyncOperation<GattCommunicationStatus> const& sender, AsyncStatus const asyncStatus)
+    writeOperation.Completed([this, newSettings, current_settings](IAsyncOperation<GattCommunicationStatus> const& sender, AsyncStatus const asyncStatus)
         {
             if (asyncStatus != AsyncStatus::Completed) OutputDebugString(L"Something went wrong trying to update the Personal Caddie settings characteristic.\n");
 
@@ -691,6 +698,17 @@ void PersonalCaddie::updateIMUSettings(uint8_t* newSettings)
                 //We successfully updated the settings. Make these changes in the individual sensor classes
                 //and then send out an alert with the positive resuilts
                 p_imu->updateSensorSettings(newSettings);
+
+                //DEBUG: Erase when done
+                std::vector<uint8_t> cs{ 3 }, ns;
+                for (int i = 0; i < 31; i++) cs.push_back(current_settings[i]);
+
+                for (int i = 0; i < 32; i++) ns.push_back(newSettings[i]);
+
+                //See if any of the current sensors need to be un-initialized in favor of a new sensor
+                if (current_settings[ACC_START + SENSOR_MODEL] != newSettings[ACC_START + SENSOR_MODEL]) p_imu->initializeNewSensor(ACC_SENSOR, newSettings);
+                if (current_settings[GYR_START + SENSOR_MODEL] != newSettings[GYR_START + SENSOR_MODEL]) p_imu->initializeNewSensor(GYR_SENSOR, newSettings);
+                if (current_settings[MAG_START + SENSOR_MODEL] != newSettings[MAG_START + SENSOR_MODEL]) p_imu->initializeNewSensor(MAG_SENSOR, newSettings);
 
                 //Put the Personal Caddie back into connected mode after making changes
                 changePowerMode(PersonalCaddiePowerMode::CONNECTED_MODE);
