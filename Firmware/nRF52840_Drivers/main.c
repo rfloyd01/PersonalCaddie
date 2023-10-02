@@ -163,8 +163,8 @@ static int m_twi_external_bus_status;                                           
 static int measurements_taken = 0;                                              /**< keeps track of how many IMU measurements have taken in the given connection interval. */
 
 //IMU Sensor Parameters
-static uint8_t default_sensors[3] = {FXOS8700_ACC, FXAS21002_GYR, FXOS8700_MAG};/**< Default sensors that are attempted to be initialized first. */
-//static uint8_t default_sensors[3] = {LSM9DS1_ACC, LSM9DS1_GYR, LSM9DS1_MAG};  /**< Default sensors that are attempted to be initialized first. */
+//static uint8_t default_sensors[3] = {FXOS8700_ACC, FXAS21002_GYR, FXOS8700_MAG};/**< Default sensors that are attempted to be initialized first. */
+static uint8_t default_sensors[3] = {LSM9DS1_ACC, LSM9DS1_GYR, LSM9DS1_MAG};  /**< Default sensors that are attempted to be initialized first. */
 static bool sensors_initialized[3] = {false, false, false};                     /**< Keep track of which sensors are currently initialized */
 static uint8_t internal_sensors[10];                                            /**< An array for holding the addresses of sensors on the internal TWI line */
 static uint8_t external_sensors[10];                                            /**< An array for holding the addresses of sensors on the external TWI line */
@@ -931,9 +931,14 @@ static void nrf_qwr_error_handler(uint32_t nrf_error)
 //Functions for updating sensor power modes and settings
 static void sensor_idle_mode_start()
 { 
-    //In this mode, the TWI bus is active and power is going to the LSM9DS1 but the 
+    //In this mode, the appropriate TWI bus(es) is active and power is going to the sensor(s) but the 
     //sensor is put into sleep mode. A red LED blinking in time with the connection 
     //interval shows when this mode is active.
+
+    //Check to see if we're currently in sensor idle mode. If we are then we don't
+    //need to turn on the TWI bus or sensors, however, if the sensor has been
+    //changed (which can happen from the front end application) we'll need to 
+    //shutdown the current sensors/twi bus and initialize the new one.
     if (current_operating_mode == SENSOR_IDLE_MODE) return; //no need to change anything if already in idle mode
 
     //swap to the red LED
@@ -1100,13 +1105,13 @@ static void sensor_settings_write_handler(uint16_t conn_handle, ble_sensor_servi
             sensor_idle_mode_start();
             break;
         case 3:
-            sensor_idle_mode_start();
             for (int i = 1; i < SENSOR_SETTINGS_LENGTH; i++) sensor_settings[i] = *(settings_state + i);
+            sensor_idle_mode_start();
             update_connection_interval();
             break;
         case 4:
-            sensor_idle_mode_start();
             sensor_settings[*(settings_state + 1)] = *(settings_state + 2);
+            sensor_idle_mode_start();
             break;
         case 5:
             sensor_active_mode_start();
