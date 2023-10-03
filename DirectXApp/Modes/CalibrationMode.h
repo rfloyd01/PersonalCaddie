@@ -2,18 +2,21 @@
 
 #include "Mode.h"
 
-enum DeviceDiscoveryState
+enum CalibrationModeState
 {
-	DISCOVERY = 1, //the device watcher is on and newly found device will be displayed in the scroll box
-	ATTEMPT_CONNECT = 2, //attempt to connect to the BLE Device selected in the scroll box
-	CONNECTED = 4, //we're currently connected to a BLE Device
-	DISCONNECT = 8 //disconnect from the currently connected BLE Device
+	WAITING = 1,
+	ACCELEROMETER = 2,
+	GYROSCOPE = 4,
+	MAGNETOMETER = 8,
+	READY_TO_RECORD = 16,
+	RECORDING_DATA = 32,
+	STOP_RECORD = 64
 };
 
-class DeviceDiscoveryMode : public Mode
+class CalibrationMode : public Mode
 {
 public:
-	DeviceDiscoveryMode();
+	CalibrationMode();
 
 	virtual uint32_t initializeMode(winrt::Windows::Foundation::Size windowSize, uint32_t initialState = 0) override;
 	virtual void uninitializeMode() override;
@@ -25,8 +28,24 @@ public:
 
 	virtual uint32_t handleUIElementStateChange(int i) override;
 
+	void startDataCapture();
+	void stopDataCapture();
+
 private:
 	void initializeTextOverlay(winrt::Windows::Foundation::Size windowSize);
 
+	//Methods for maneuvering through the calibrations
+	void accelerometerCalibration();
+	void gyroscopeCalibration();
+	void magnetometerCalibration();
+
+	void advanceToNextStage();
+
 	std::wstring m_currentlySelectedDeviceAddress = L"";
+	int m_currentStage; //keeps track of the current stage of the calibration
+	bool m_stageSet; //a variable used to make sure we don't keep reloading resources when we're on the same calibration stage
+
+	//timing variables
+	long long data_timer_duration, data_timer_elapsed;
+	std::chrono::steady_clock::time_point data_timer;
 };

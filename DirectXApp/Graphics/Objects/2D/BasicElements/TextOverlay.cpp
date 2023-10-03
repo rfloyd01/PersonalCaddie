@@ -18,3 +18,10 @@ TextOverlay::TextOverlay(winrt::Windows::Foundation::Size windowSize, DirectX::X
 
 	resize(windowSize);
 }
+
+void TextOverlay::updateText(std::wstring message)
+{
+	//replaces the current text of the overlay
+	m_text.message = message;
+	m_text.colorLocations.back() = message.length();
+}

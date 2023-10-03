@@ -9,6 +9,7 @@
 #include "GraphMode.h"
 #include "IMUSettingsMode.h"
 #include "MadgwickTestMode.h"
+#include "CalibrationMode.h"
 
 #include "Graphics/Rendering/MasterRenderer.h"
 
@@ -29,9 +30,10 @@ ModeScreen::ModeScreen() :
 	m_modes[static_cast<int>(ModeType::GRAPH_MODE)] = std::make_shared<GraphMode>();
 	m_modes[static_cast<int>(ModeType::IMU_SETTINGS)] = std::make_shared<IMUSettingsMode>();
 	m_modes[static_cast<int>(ModeType::MADGWICK)] = std::make_shared<MadgwickTestMode>();
+	m_modes[static_cast<int>(ModeType::CALIBRATION)] = std::make_shared<CalibrationMode>();
 
 	//Set default times for various timers (in milliseconds)
-	alert_timer_duration = 5000;
+	alert_timer_duration = 2500;
 	button_pressed_duration = 100;
 }
 
@@ -120,7 +122,7 @@ void ModeScreen::processKeyboardInput(winrt::Windows::System::VirtualKey pressed
 			{
 				changeCurrentMode(ModeType::MAIN_MENU);
 			}
-			else if (m_currentMode == ModeType::DEVICE_DISCOVERY || m_currentMode == ModeType::IMU_SETTINGS)
+			else if (m_currentMode == ModeType::DEVICE_DISCOVERY || m_currentMode == ModeType::IMU_SETTINGS || m_currentMode == ModeType::CALIBRATION)
 			{
 				changeCurrentMode(ModeType::SETTINGS_MENU);
 			}
@@ -186,9 +188,15 @@ void ModeScreen::processKeyboardInput(winrt::Windows::System::VirtualKey pressed
 				//sensor settings page
 				changeCurrentMode(ModeType::MADGWICK);
 			}
+			else if (m_currentMode == ModeType::SETTINGS_MENU)
+			{
+				//If we're on the Main Menu screen then pressing the 5 key will take us to the
+				//sensor settings page
+				changeCurrentMode(ModeType::CALIBRATION);
+			}
 		}
 		break;
-	case winrt::Windows::System::VirtualKey::Number5:
+	case winrt::Windows::System::VirtualKey::Number4:
 		if (m_modeState & ModeState::CanTransfer)
 		{
 			if (m_currentMode == ModeType::MAIN_MENU)
@@ -199,7 +207,7 @@ void ModeScreen::processKeyboardInput(winrt::Windows::System::VirtualKey pressed
 			}
 		}
 		break;
-	case winrt::Windows::System::VirtualKey::Number6:
+	case winrt::Windows::System::VirtualKey::Number5:
 		if (m_modeState & ModeState::CanTransfer)
 		{
 			if (m_currentMode == ModeType::MAIN_MENU)
@@ -446,6 +454,15 @@ void ModeScreen::PersonalCaddieHandler(PersonalCaddieEventType pcEvent, void* ev
 	{
 		std::wstring alertText = *((std::wstring*)eventArgs); //cast the eventArgs into a wide string
 		createAlert(alertText, UIColor::Yellow);
+
+		if (alertText == L"The Personal Caddie has been placed into Sensor Idle Mode")
+		{
+			if (m_currentMode == ModeType::CALIBRATION) ((CalibrationMode*)m_modes[static_cast<int>(m_currentMode)].get())->stopDataCapture();
+		}
+		else if (alertText == L"The Personal Caddie has been placed into Sensor Active Mode")
+		{
+			if (m_currentMode == ModeType::CALIBRATION) ((CalibrationMode*)m_modes[static_cast<int>(m_currentMode)].get())->startDataCapture();
+		}
 		break;
 	}
 	case PersonalCaddieEventType::IMU_ALERT:
@@ -476,14 +493,20 @@ void ModeScreen::PersonalCaddieHandler(PersonalCaddieEventType pcEvent, void* ev
 	case PersonalCaddieEventType::NOTIFICATIONS_TOGGLE:
 	{
 		//We've either turned data notifications on or off. If we've turned them on, then we need
-		//to put the Personal Caddie into sensor active mode to start reading these notifications. If we've
+		//to put the Personal Caddie into the power mode dictated by the m_modeState variable. If we've
 		//turned them off then we put the Personal Caddie into sensor idle mode to stop transfering data.
 
 		//Note: Notifactions need to be enabled before data transfer starts, which is why we wait to change into 
 		//sensor active mode until this event occurs. The opposite is true when turning notifications off, we need
 		//to leave sensor active mode first, and then disable notifications. For that reason we don't leave
 		//sensor active mode in this event.
-		if (*((std::wstring*)eventArgs) == L"On") m_personalCaddie->changePowerMode(PersonalCaddiePowerMode::SENSOR_ACTIVE_MODE);
+
+		//Enabling notifications have the ability to a
+		if (*((std::wstring*)eventArgs) == L"On")
+		{
+			if (m_modeState & ModeState::PersonalCaddieSensorIdleMode) m_personalCaddie->changePowerMode(PersonalCaddiePowerMode::SENSOR_IDLE_MODE);
+			else if (m_modeState & ModeState::PersonalCaddieSensorActiveMode) m_personalCaddie->changePowerMode(PersonalCaddiePowerMode::SENSOR_ACTIVE_MODE);
+		}
 		
 		std::wstring alertText = L"Data Notifications have been turned " + *((std::wstring*)eventArgs) + L"\n";
 		createAlert(alertText, UIColor::Blue);
@@ -536,7 +559,6 @@ void ModeScreen::enterActiveState()
 		//and also enables data notifications.
 		m_modeState ^= (ModeState::PersonalCaddieSensorActiveMode | ModeState::PersonalCaddieSensorIdleMode); //swap the idle and active mode flags. We also can't transfer modes in the active state
 		m_personalCaddie->enableDataNotifications();
-		/*m_personalCaddie->changePowerMode(PersonalCaddiePowerMode::SENSOR_ACTIVE_MODE);*/
 		break;
 	}
 	case ModeType::IMU_SETTINGS:
@@ -547,6 +569,13 @@ void ModeScreen::enterActiveState()
 
 		((IMUSettingsMode*)m_modes[static_cast<int>(m_currentMode)].get())->getCurrentSettings(m_renderer->getCurrentScreenSize(), m_personalCaddie->getIMUSettings(), m_personalCaddie->getAvailableSensors());
 		m_modeState |= ModeState::CanTransfer; //We still need the ability to leave the page after going active
+		break;
+	}
+	case ModeType::CALIBRATION:
+	{
+		//Entering the active state puts the sensors into idle mode, as well as enables data notifications
+		m_modeState |= ModeState::PersonalCaddieSensorIdleMode; //swap the idle and active mode flags. We also can't transfer modes in the active state
+		m_personalCaddie->enableDataNotifications();
 		break;
 	}
 	}
@@ -587,6 +616,21 @@ void ModeScreen::stateUpdate()
 		{
 			//A new sensor has been selected so we need to refresh the drop down menus. Just call the getCurrentSettings
 			((IMUSettingsMode*)m_modes[static_cast<int>(m_currentMode)].get())->getCurrentSettings(m_renderer->getCurrentScreenSize(), m_personalCaddie->getIMUSettings(), m_personalCaddie->getAvailableSensors(), true);
+		}
+		break;
+	}
+	case ModeType::CALIBRATION:
+	{
+		if (m_modes[static_cast<int>(m_currentMode)]->getModeState() & CalibrationModeState::READY_TO_RECORD)
+		{
+			//If the ready_to_recordflag is active it means we need to put the 
+			//Personal Caddie into sensor active mode and start recording data.
+			m_personalCaddie->changePowerMode(PersonalCaddiePowerMode::SENSOR_ACTIVE_MODE);
+		}
+		else if (m_modes[static_cast<int>(m_currentMode)]->getModeState() & CalibrationModeState::STOP_RECORD)
+		{
+			//When we've recorded all the data we need we can put the Personal Caddie back into sensor idle mode
+			m_personalCaddie->changePowerMode(PersonalCaddiePowerMode::SENSOR_IDLE_MODE);
 		}
 		break;
 	}

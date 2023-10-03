@@ -46,4 +46,10 @@ public:
 			m_text.colors[0] = UIColor::Black;
 		}
 	}
+
+	std::wstring getText()
+	{
+		//returns the text inside the button
+		return m_text.message;
+	}
 };

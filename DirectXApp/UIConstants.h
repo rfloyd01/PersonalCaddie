@@ -5,7 +5,7 @@ namespace UIConstants
     //The below values are expressed as a percentage of the full width or height
     //of the app window
     static const float WidthMargin = 0.02f;
-    static const float HeightMargin = 0.02f;
+    static const float HeightMargin = 0.015f;
 
     //TextType::TITLE constants
     static const float TitleTextPointSize = 0.10f;

@@ -41,8 +41,9 @@ void SettingsMenuMode::initializeTextOverlay(winrt::Windows::Foundation::Size wi
 	//Body information
 	std::wstring body_message_1 = L"1. Connect/Disconnect from Personal Caddie \n";
 	std::wstring body_message_2 = L"2. IMU Settings \n";
+	std::wstring body_message_3 = L"3. IMU Calibration \n";
 	TextOverlay body(windowSize, { UIConstants::BodyTextLocationX, UIConstants::BodyTextLocationY }, { UIConstants::BodyTextSizeX, UIConstants::BodyTextSizeY },
-		body_message_1 + body_message_2, UIConstants::BodyTextPointSize, { UIColor::PaleGray, UIColor::DarkGray }, { 0, (unsigned int)body_message_1.length(), (unsigned int)body_message_2.length() }, UITextJustification::UpperLeft);
+		body_message_1 + body_message_2 + body_message_3, UIConstants::BodyTextPointSize, { UIColor::PaleGray, UIColor::DarkGray, UIColor::White }, { 0, (unsigned int)body_message_1.length(), (unsigned int)body_message_2.length(), (unsigned int)body_message_3.length() }, UITextJustification::UpperLeft);
 	m_uiElements.push_back(std::make_shared<TextOverlay>(body));
 
 	//Footnote information

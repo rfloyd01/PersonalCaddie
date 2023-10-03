@@ -647,7 +647,7 @@ void PersonalCaddie::changePowerMode(PersonalCaddiePowerMode mode)
                     message += L"Sensor Idle Mode";
                     break;
                 case PersonalCaddiePowerMode::SENSOR_ACTIVE_MODE:
-                    message += L"Sensor Active Mode ";
+                    message += L"Sensor Active Mode";
                     break;
                 }
 
