@@ -55,7 +55,6 @@ void IMU::initializeNewSensor(uint8_t sensor_type, uint8_t* sensor_settings)
     //and switch to new sensors entirely. If we switch to a new sensor we need to delete
     //the current one and create a new sensor object from scratch. We also need to recalculate
     //the current IMU odr, full-scale conversion rates and calibration data.
-    OutputDebugString(L"Creating a new sensor baby.\n");
     switch (sensor_type)
     {
     case ACC_SENSOR:

@@ -757,52 +757,49 @@ static void characteristic_update_and_notify()
     memset(&gyr_notify_params, 0, sizeof(gyr_notify_params));
     memset(&mag_notify_params, 0, sizeof(mag_notify_params));
 
-    uint16_t data_characteristic_size = SENSOR_SAMPLES * SAMPLE_SIZE; //not really sure why the size needs to be passed in as a reference
+    uint16_t acc_data_characteristic_size = SENSOR_SAMPLES * SAMPLE_SIZE;
+    uint16_t gyr_data_characteristic_size = SENSOR_SAMPLES * SAMPLE_SIZE;
+    uint16_t mag_data_characteristic_size = SENSOR_SAMPLES * SAMPLE_SIZE;
 
     //Setup accelerometer notification first
     acc_notify_params.type = BLE_GATT_HVX_NOTIFICATION;
     acc_notify_params.handle = m_ss.data_handles[0].value_handle;
     acc_notify_params.p_data = acc_characteristic_data;
-    acc_notify_params.p_len  = &data_characteristic_size;
+    acc_notify_params.p_len  = &acc_data_characteristic_size;
     acc_notify_params.offset = 0;
 
     //Setup gyroscope notification second
     gyr_notify_params.type = BLE_GATT_HVX_NOTIFICATION;
     gyr_notify_params.handle = m_ss.data_handles[1].value_handle;
     gyr_notify_params.p_data = gyr_characteristic_data;
-    gyr_notify_params.p_len  = &data_characteristic_size;
+    gyr_notify_params.p_len  = &gyr_data_characteristic_size;
     gyr_notify_params.offset = 0;
 
     //Setup magnetometer notification third
     mag_notify_params.type = BLE_GATT_HVX_NOTIFICATION;
     mag_notify_params.handle = m_ss.data_handles[2].value_handle;
     mag_notify_params.p_data = mag_characteristic_data;
-    mag_notify_params.p_len  = &data_characteristic_size;
+    mag_notify_params.p_len  = &mag_data_characteristic_size;
     mag_notify_params.offset = 0;
 
     //Set the notifcation_done boolean to false and start notifications.
     //The boolean will be set to true in the BLE handler when the notification
     //is complete, alerting us to send out the next notification.
+
+
     m_notification_done = false;
     uint32_t ret = sd_ble_gatts_hvx(m_conn_handle, &acc_notify_params); //acc data notification
-    APP_ERROR_CHECK(ret);
-    while (!m_notification_done) {}
-
-    m_notification_done = false;
     ret = sd_ble_gatts_hvx(m_conn_handle, &gyr_notify_params); //gyr data notification
-    while (!m_notification_done) {}
-
-    m_notification_done = false;
     ret = sd_ble_gatts_hvx(m_conn_handle, &mag_notify_params); //mag data notification
-    while (!m_notification_done) {}
 
-    //APP_ERROR_CHECK(ret);
+    while (!m_notification_done) {} //wait for the three notifications to go out before continuing
+    //APP_ERROR_CHECK(ret); //Uncommenting this can help debug notification errors
 }
 
 static void data_reading_timer_handler(void * p_context)
 {
     //Everytime the data reading timer goes off we take sensor readings and then 
-    //update the appropriate characteristic values. The timer should go off once
+    //update the appropriate characteristic values. The timer should go off SENSOR_SAMPLES times
     //every connection interval
     imu_comm.acc_comm.get_data(acc_characteristic_data, SAMPLE_SIZE * measurements_taken);
     imu_comm.gyr_comm.get_data(gyr_characteristic_data, SAMPLE_SIZE * measurements_taken);
@@ -1022,7 +1019,9 @@ static void sensor_active_mode_start()
     //and then start the data collection timer. We also disable the LED to save on power
     app_timer_stop(m_led_timer); //disable the led by turning of it's timer
 
-    //turn on the sensors by applying the current settings in the settings array
+    //DEBUG: Turn on timer to see how offten measurements are being taken
+    //nrf_drv_timer_clear(&LED_ON_TIMER); //reset the LED-on timer
+    //nrf_drv_timer_enable(&LED_ON_TIMER); //turn on the LED_on timer, the handler for this timer will turn the LED back off
     
     //Put all sensors into idle mode, any of the sensors that are active
     //will be properly initialized
@@ -1722,6 +1721,8 @@ int main(void)
 
     advertising_start(erase_bonds);
 
+    int adv_num = 0;
+
     // Enter main loop.
     for (;;)
     {
@@ -1732,9 +1733,9 @@ int main(void)
         //if so, send out data notifications).
         if (m_data_ready)
         {
-            //SEGGER_RTT_WriteString(0, "sending notification.\n");
             characteristic_update_and_notify();
             m_data_ready = false;
+            //SEGGER_RTT_printf(0, "Sending notification %d\n", ++adv_num);
         }
     }
 }

@@ -112,6 +112,9 @@ public:
 	std::vector<std::vector<std::vector<float> > > const& getSensorData() { return sensor_data; }
 
 private:
+	//debug timer
+	std::chrono::steady_clock::time_point data_timer;
+	int adv_num = 0;
 
 	std::unique_ptr<BLE> p_ble;
 	std::unique_ptr<IMU> p_imu;

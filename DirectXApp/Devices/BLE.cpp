@@ -138,6 +138,21 @@ void BLE::deviceFoundHandler(IAsyncOperation<BluetoothLEDevice> const& sender, A
                 {
                     maintain_connection = true; //this will change to false when we manually disconnect from the device
                     state_change_handler(BLEState::Connected);
+
+                    //After making the connection, confirm that the max MTU size is correct (should be 180 bytes)
+                    auto gattSesh = winrt::Windows::Devices::Bluetooth::GenericAttributeProfile::GattSession::FromDeviceIdAsync(m_bleDevice.BluetoothDeviceId());
+                    gattSesh.Completed([this](
+                        IAsyncOperation<winrt::Windows::Devices::Bluetooth::GenericAttributeProfile::GattSession> const& sender,
+                        AsyncStatus const asyncStatus)
+                        {
+                            if (asyncStatus == AsyncStatus::Completed)
+                            {
+                                auto gatty = sender.get();
+                                auto yeet = gatty.MaxPduSize();
+                                std::wstring yote = L"Max MTU size is " + std::to_wstring(yeet) + L" bytes.\n";
+                                OutputDebugString(&yote[0]);
+                            }
+                        });
                 }
                 else
                 {
