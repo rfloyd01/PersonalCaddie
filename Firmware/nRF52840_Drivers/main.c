@@ -163,8 +163,8 @@ static int m_twi_external_bus_status;                                           
 static int measurements_taken = 0;                                              /**< keeps track of how many IMU measurements have taken in the given connection interval. */
 
 //IMU Sensor Parameters
-//static uint8_t default_sensors[3] = {FXOS8700_ACC, FXAS21002_GYR, FXOS8700_MAG};/**< Default sensors that are attempted to be initialized first. */
-static uint8_t default_sensors[3] = {LSM9DS1_ACC, LSM9DS1_GYR, LSM9DS1_MAG};  /**< Default sensors that are attempted to be initialized first. */
+static uint8_t default_sensors[3] = {FXOS8700_ACC, FXAS21002_GYR, FXOS8700_MAG};/**< Default sensors that are attempted to be initialized first. */
+//static uint8_t default_sensors[3] = {LSM9DS1_ACC, LSM9DS1_GYR, LSM9DS1_MAG};  /**< Default sensors that are attempted to be initialized first. */
 static bool sensors_initialized[3] = {false, false, false};                     /**< Keep track of which sensors are currently initialized */
 static uint8_t internal_sensors[10];                                            /**< An array for holding the addresses of sensors on the internal TWI line */
 static uint8_t external_sensors[10];                                            /**< An array for holding the addresses of sensors on the external TWI line */
@@ -201,13 +201,13 @@ static float current_sensor_odr = 59.5;         //keeps track of the current sen
 static personal_caddie_operating_mode_t current_operating_mode = ADVERTISING_MODE; /**< The chip starts in advertising mode*/
 
 //Pin Setup
-#define USE_EXTERNAL_SENSORS      false                                            /**< Let's the BLE33 know tuat external sensors are being used*/
-#define USE_EXTERNAL_LEDS         false                                            /**< Let's the BLE33 know that external LEDs are being used*/
-#define EXTERNAL_SENSOR_POWER_PIN NRF_GPIO_PIN_MAP(1, 10)                         /**< Pin used to power external sensors (mapped to D9 on BLE 33)*/
+#define USE_EXTERNAL_SENSORS      false                                           /**< Let's the BLE33 know tuat external sensors are being used*/
+#define USE_EXTERNAL_LEDS         false                                           /**< Let's the BLE33 know that external LEDs are being used*/
+#define EXTERNAL_SENSOR_POWER_PIN NRF_GPIO_PIN_MAP(1, 10)                         /**< Pin used to power external sensors (mapped to RX on BLE 33)*/
 #define EXTERNAL_SCL_PIN          NRF_GPIO_PIN_MAP(0, 21)                         /**< Pin used for external TWI clock (mapped to D8 on BLE 33) */
-#define EXTERNAL_SDA_PIN          NRF_GPIO_PIN_MAP(0, 23)                          /**< Pin used for external TWI data (mapped to D7 on BLE 33) */
-//#define EXTERNAL_SCL_PIN          NRF_GPIO_PIN_MAP(0, 26)                         /**< Pin used for external TWI clock (mapped to D8 on BLE 33) */
-//#define EXTERNAL_SDA_PIN          NRF_GPIO_PIN_MAP(0, 27)                          /**< Pin used for external TWI data (mapped to D10 on BLE 33) */
+#define EXTERNAL_SDA_PIN          NRF_GPIO_PIN_MAP(0, 23)                         /**< Pin used for external TWI data (mapped to D7 on BLE 33) */
+//#define EXTERNAL_SCL_PIN          NRF_GPIO_PIN_MAP(0, 26)                       /**< Pin used for external TWI clock (mapped to D8 on BLE 33) */
+//#define EXTERNAL_SDA_PIN          NRF_GPIO_PIN_MAP(0, 27)                       /**< Pin used for external TWI data (mapped to D10 on BLE 33) */
 #define EXTERNAL_RED_LED          NRF_GPIO_PIN_MAP(1, 15)                         /**< Pin used for powering an external red LED (mapped to D4 on BLE 33)*/
 #define EXTERNAL_BLUE_LED         NRF_GPIO_PIN_MAP(1, 13)                         /**< Pin used for powering an external blue LED (mapped to D5 on BLE 33)*/
 #define EXTERNAL_GREEN_LED        NRF_GPIO_PIN_MAP(1, 14)                         /**< Pin used for powering an external green LED (mapped to D6 on BLE 33)*/
@@ -977,6 +977,8 @@ static void sensor_idle_mode_start()
         //before doing so we need to see if a call from the front end to use a different sensor has been made.
 
         uint8_t new_sensors = 0;
+
+        SEGGER_RTT_printf(0, "Sensors in settings array: %d, %d, %d\n", sensor_settings[ACC_START + SENSOR_MODEL], sensor_settings[GYR_START + SENSOR_MODEL], sensor_settings[MAG_START + SENSOR_MODEL]);
 
         if (imu_comm.sensor_model[ACC_SENSOR] != sensor_settings[ACC_START + SENSOR_MODEL])
         {

@@ -505,7 +505,6 @@ void PersonalCaddie::enableDataNotifications()
                                         }
                                         else
                                         {
-                                            data_timer = std::chrono::steady_clock::now(); //DEBUG, remove when done
                                             std::wstring message = L"On";
                                             //event_handler(PersonalCaddieEventType::BLE_ALERT, (void*)&message);
                                             event_handler(PersonalCaddieEventType::NOTIFICATIONS_TOGGLE, (void*)&message);
@@ -805,14 +804,6 @@ void PersonalCaddie::dataUpdate()
     //Master update function, calls for Madgwick filter to be run and then uses that data to call updatePosition() which calculates current lin_acc., vel. and loc.
     if (sensor_data_updated[ACC_SENSOR] && sensor_data_updated[GYR_SENSOR] && sensor_data_updated[MAG_SENSOR])
     {
-        /*auto time_elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - data_timer).count();
-        std::wstring data_time = std::to_wstring(time_elapsed) + L"\n";
-        OutputDebugString(&data_time[0]);
-        data_timer = std::chrono::steady_clock::now();*/
-        ++adv_num;
-        std::wstring yeet = L"Receiving notification " + std::to_wstring(adv_num) + L"\n";
-        OutputDebugString(&yeet[0]);
-
         //The most recent data has been read from the BLE device and had calibration data applied to it. We can 
         //now calculate any interpreted data, such as position quaternion, euler angles, linear acceleration, etc.
         updateMadgwick(); //update orientation quaternion
