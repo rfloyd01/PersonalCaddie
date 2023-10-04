@@ -10,7 +10,8 @@ enum CalibrationModeState
 	MAGNETOMETER = 8,
 	READY_TO_RECORD = 16,
 	RECORDING_DATA = 32,
-	STOP_RECORD = 64
+	STOP_RECORD = 64,
+	UPDATE_CAL_NUMBERS = 128,
 };
 
 class CalibrationMode : public Mode
@@ -28,9 +29,13 @@ public:
 
 	virtual uint32_t handleUIElementStateChange(int i) override;
 
+	//Methods called from the Mode Screen class
 	void startDataCapture();
 	void stopDataCapture();
+	void updateComplete();
 	virtual void addData(std::vector<std::vector<std::vector<float> > > const& sensorData, float sensorODR) override;
+
+	std::pair<float*, float**> getCalibrationResults();
 
 private:
 	void initializeTextOverlay(winrt::Windows::Foundation::Size windowSize);
@@ -47,6 +52,11 @@ private:
 	void prepareRecording();
 	void displayGraph();
 
+	float integrateData(float& p1, float& p2, float t)
+	{
+		return t * ((p1 + p2) / 2);
+	}
+
 	std::wstring m_currentlySelectedDeviceAddress = L"";
 	int m_currentStage; //keeps track of the current stage of the calibration
 	bool m_stageSet; //a variable used to make sure we don't keep reloading resources when we're on the same calibration stage
@@ -61,9 +71,27 @@ private:
 	std::vector<DirectX::XMFLOAT2> m_graphDataX, m_graphDataY, m_graphDataZ;
 	float m_timeStamp;
 	float acc_cal[3][6]; //needed to isolate data from all six portions of the acc. tumble calibration: x1, x2, x3, x4, x5, x6, y1, y2... z6
+	//float gyr_cal[3][4]; //data captured in the x, y and z axes for each of the four gyroscope stages
 	int avg_count; //used for averaging accelerometer data from tumble test
 
 	//calibration variables
+	bool accept_cal;
+
 	float acc_off[3] = { 0 }; //acceleration offset values
-	float acc_gain[3][3] = { 0 }; //acceleration axis and cross axis gain values
+	float acc_gain_x[3] = { 0 }; //acceleration axis and cross axis gain values
+	float acc_gain_y[3] = { 0 }; //acceleration axis and cross axis gain values
+	float acc_gain_z[3] = { 0 }; //acceleration axis and cross axis gain values
+	float* acc_gain[3] = { acc_gain_x, acc_gain_y, acc_gain_z }; //acceleration axis and cross axis gain values
+
+	float gyr_off[3] = { 0 };
+	float gyr_gain_x[3] = { 0 };
+	float gyr_gain_y[3] = { 0 };
+	float gyr_gain_z[3] = { 0 };
+	float* gyr_gain[3] = {gyr_gain_x, gyr_gain_y, gyr_gain_z};
+
+	float mag_off[3] = { 0 };
+	float mag_gain_x[3] = { 0 };
+	float mag_gain_y[3] = { 0 };
+	float mag_gain_z[3] = { 0 };
+	float* mag_gain[3] = { mag_gain_x, mag_gain_y, mag_gain_z };
 };

@@ -17,6 +17,4 @@ private:
 
 	virtual void setConversionRateFromSettings() override;
 	virtual void setCurrentODRFromSettings() override;
-
-	virtual std::wstring convertCalNumbersToText() override;
 };

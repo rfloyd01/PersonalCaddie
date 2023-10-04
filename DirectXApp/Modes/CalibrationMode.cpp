@@ -15,12 +15,15 @@ uint32_t CalibrationMode::initializeMode(winrt::Windows::Foundation::Size window
 	std::wstring gyrButtonText = L"Gyroscope Calibration";
 	std::wstring magButtonText = L"Magnetometer Calibration";
 	std::wstring continueButtonText = L"Continue";
+	std::wstring noButtonText = L"No";
 
 	TextButton accButton(windowSize, { 0.16, 0.65 }, { 0.14, 0.1 }, accButtonText);
 	TextButton gyrButton(windowSize, { 0.5, 0.65 }, { 0.14, 0.1 }, gyrButtonText);
 	TextButton magButton(windowSize, { 0.83, 0.65 }, { 0.14, 0.1 }, magButtonText);
 	TextButton continueButton(windowSize, { 0.16, 0.85 }, { 0.14, 0.1 }, continueButtonText);
+	TextButton noButton(windowSize, { 0.32, 0.85 }, { 0.14, 0.1 }, noButtonText);
 	continueButton.setState(continueButton.getState() | UIElementState::Invisible); //this button is invisible to start off
+	noButton.setState(noButton.getState() | UIElementState::Invisible); //this button is invisible to start off
 
 	//The body and sub-title text overlays will change depending on the current mode state so they
 	//aren't declared in the initializeTextOverlay() method
@@ -41,6 +44,7 @@ uint32_t CalibrationMode::initializeMode(winrt::Windows::Foundation::Size window
 	m_uiElements.push_back(std::make_shared<TextOverlay>(body));
 	m_uiElements.push_back(std::make_shared<TextOverlay>(subTitle));
 	m_uiElements.push_back(std::make_shared<Graph>(graph));
+	m_uiElements.push_back(std::make_shared<TextButton>(noButton));
 
 	m_state = initialState;
 
@@ -83,6 +87,7 @@ void CalibrationMode::initializeCalibrationVariables()
 	m_stageSet = false;
 	m_timeStamp = 0.0f;
 	avg_count = 0;
+	accept_cal = true; //by default we choose to accept the calibration results
 	
 	for (int i = 0; i < 3; i++)
 	{
@@ -129,6 +134,19 @@ void CalibrationMode::stopDataCapture()
 	}
 }
 
+void CalibrationMode::updateComplete()
+{
+	//When we've successfully updated the calibration file in memory we use
+	//this method to remove the update_cal_numbers flag from the current state.
+	//This is called from a separate thread which is why this is necessary.
+	if (m_state & CalibrationModeState::UPDATE_CAL_NUMBERS)
+	{
+		m_state ^= CalibrationModeState::UPDATE_CAL_NUMBERS;
+		m_state &= 0xFFFFFFF0; //This will remove the active flag as well as the current sensor flag
+		initializeCalibrationVariables(); //reset calibration variables to their default values
+	}
+}
+
 uint32_t CalibrationMode::handleUIElementStateChange(int i)
 {
 	if (i <= 2)
@@ -150,7 +168,9 @@ uint32_t CalibrationMode::handleUIElementStateChange(int i)
 		case 0:
 			((TextOverlay*)m_uiElements[4].get())->updateText(L"A 6-point tumble calibration will be performed on the accelerometer. Press the continue button when ready to begin and then follow the on-screen instructions.");
 			break;
-			//TODO: add gyro and mag stuff after finishing accelerometer
+		case 1:
+			((TextOverlay*)m_uiElements[4].get())->updateText(L"Two tests will be performed to calibrate the gyroscope. The first test is easy and just involves keeping the gyroscope still. The second test is carried out in three stages. In each of these stages we rotate the gyroscope by 90 degrees about one of its axes.");
+			break;
 		}
 
 		m_state |= ModeState::Active;
@@ -158,6 +178,12 @@ uint32_t CalibrationMode::handleUIElementStateChange(int i)
 	else if (i == 3)
 	{
 		//The continue button was clicked, this has the effect of advancing the current stage by 1
+		advanceToNextStage();
+	}
+	else if (i == 7)
+	{
+		//The no button was clicked, set the accept_cal bool to false and advance to the next stage
+		accept_cal = false;
 		advanceToNextStage();
 	}
 
@@ -193,7 +219,7 @@ void CalibrationMode::addData(std::vector<std::vector<std::vector<float> > > con
 		else if (m_state & CalibrationModeState::MAGNETOMETER) calibrationType = raw_magnetic;
 
 		float timeIncrement = 1.0f / sensorODR;
-		int current_acc_stage = m_currentStage / 2 - 1;
+		int current_stage = m_currentStage / 2 - 1;
 
 		for (int i = 0; i < sensorData[calibrationType][0].size(); i++)
 		{
@@ -202,11 +228,22 @@ void CalibrationMode::addData(std::vector<std::vector<std::vector<float> > > con
 			m_graphDataY.push_back({ m_timeStamp, sensorData[calibrationType][1][i] });
 			m_graphDataZ.push_back({ m_timeStamp, sensorData[calibrationType][2][i] });
 
-			//add x, y and z data to accerlometer matrix (even if we aren't doing the accelerometer test)
-			acc_cal[0][current_acc_stage] += sensorData[calibrationType][0][i];
-			acc_cal[1][current_acc_stage] += sensorData[calibrationType][1][i];
-			acc_cal[2][current_acc_stage] += sensorData[calibrationType][2][i];
-			avg_count++;
+			if (calibrationType == raw_acceleration)
+			{
+				//add x, y and z data to accerlometer matrix
+				acc_cal[0][current_stage] += sensorData[calibrationType][0][i];
+				acc_cal[1][current_stage] += sensorData[calibrationType][1][i];
+				acc_cal[2][current_stage] += sensorData[calibrationType][2][i];
+				avg_count++;
+			}
+			//else if (calibrationType == raw_rotation)
+			//{
+			//	//add x, y and z data to accerlometer matrix (even if we aren't doing the accelerometer test)
+			//	gyr_cal[0][current_stage] += sensorData[calibrationType][0][i];
+			//	gyr_cal[1][current_stage] += sensorData[calibrationType][1][i];
+			//	gyr_cal[2][current_stage] += sensorData[calibrationType][2][i];
+			//	avg_count++;
+			//}
 
 			m_timeStamp += timeIncrement;
 		}
@@ -312,6 +349,11 @@ void CalibrationMode::accelerometerCalibration()
 					L"               [" + std::to_wstring(acc_gain[2][0]) + L", " + std::to_wstring(acc_gain[2][1]) + L", " + std::to_wstring(acc_gain[2][2]) + L"]";
 				((TextOverlay*)m_uiElements[4].get())->updateText(completionText);
 				displayGraph();
+
+				//momentarily change the text of the continue button to say "yes", also make the "no" button visible
+				m_uiElements[3]->getText()->message = L"Yes";
+				m_uiElements[7]->setState(m_uiElements[7]->getState() ^ UIElementState::Invisible);
+
 				m_stageSet = true;
 			}
 		}
@@ -319,29 +361,160 @@ void CalibrationMode::accelerometerCalibration()
 	}
 	case 14:
 	{
-		//Go back to the beginning of the calibration mode
-		m_state ^= CalibrationModeState::ACCELEROMETER;
-		m_uiElements[0]->setState(m_uiElements[0]->getState() ^ UIElementState::Invisible);
-		m_uiElements[1]->setState(m_uiElements[1]->getState() ^ UIElementState::Invisible);
-		m_uiElements[2]->setState(m_uiElements[2]->getState() ^ UIElementState::Invisible);
+		if (!m_stageSet)
+		{
+			//If the results have been accepted we add the update_cal_numbers state to alert the mode screen
+		    //that it needs to physically update the calibration numbers.
+			if (accept_cal)
+			{
+				m_state |= CalibrationModeState::UPDATE_CAL_NUMBERS;
+			}
 
-		//Update the body text
-		((TextOverlay*)m_uiElements[4].get())->updateText(L"In calibration mode we can manually calculate the offsets and cross-axis gains for the accelerometer, gyroscope and magnetometer on the Personal Caddie to get more accurate data. Select one of the sensors using the buttons below to begin the calibration process.");
+			m_uiElements[0]->setState(m_uiElements[0]->getState() ^ UIElementState::Invisible);
+			m_uiElements[1]->setState(m_uiElements[1]->getState() ^ UIElementState::Invisible);
+			m_uiElements[2]->setState(m_uiElements[2]->getState() ^ UIElementState::Invisible);
 
-		m_uiElements[3]->setState(m_uiElements[3]->getState() | UIElementState::Invisible); //make the continue button invisible
-		m_uiElements[5]->setState(m_uiElements[5]->getState() | UIElementState::Invisible); //make the sub-title invisible
-		m_uiElements[6]->setState(m_uiElements[6]->getState() ^ UIElementState::Invisible); //make the graph invisible
-		//TODO: Clear data and lines from graph here
+			//Update the body text
+			((TextOverlay*)m_uiElements[4].get())->updateText(L"In calibration mode we can manually calculate the offsets and cross-axis gains for the accelerometer, gyroscope and magnetometer on the Personal Caddie to get more accurate data. Select one of the sensors using the buttons below to begin the calibration process.");
 
-		m_currentStage = 0; //reset the current stage to 0
-		m_state ^= ModeState::Active;
+			m_uiElements[3]->getText()->message = L"Continue"; //change the text back to "Continue" for the continue button
+			m_uiElements[3]->setState(m_uiElements[3]->getState() | UIElementState::Invisible); //make the continue button invisible
+			m_uiElements[5]->setState(m_uiElements[5]->getState() | UIElementState::Invisible); //make the sub-title invisible
+			m_uiElements[6]->setState(m_uiElements[6]->getState() | UIElementState::Invisible); //make the graph invisible
+			m_uiElements[7]->setState(m_uiElements[7]->getState() | UIElementState::Invisible); //make the no button invisible
+
+			//TODO: Clear data and lines from graph here
+
+			
+			m_stageSet = true;
+		}
 	}
 	}
 }
 
 void CalibrationMode::gyroscopeCalibration()
 {
+	if (m_state & CalibrationModeState::RECORDING_DATA)
+	{
+		//We're actively recording data from the sensor, check to see if the data timer has expired,
+		//if not then no need to do anything. If the timer has expired, we leave the recording state
+		//and advnace to the next stage of the calibration.
+		data_timer_elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - data_timer).count();
+		if (data_timer_elapsed >= data_timer_duration)
+		{
+			m_state ^= (CalibrationModeState::RECORDING_DATA | CalibrationModeState::STOP_RECORD);
+			advanceToNextStage();
+			return; //since advance to next stage is called above we leave this method after it returns
+		}
+	}
 
+	switch (m_currentStage)
+	{
+	case 1:
+	{
+		if (!m_stageSet)
+		{
+			((TextOverlay*)m_uiElements[4].get())->updateText(L"Lay the gyroscope flat on the table for 5 seconds while the axes offsets are calculated. Click continue when ready.");
+			data_timer_duration = 5000; //the acceleromter needs 5 seconds of data at each stage
+			m_stageSet = true;
+		}
+
+		break;
+	}
+	case 2:
+	case 4:
+	case 6:
+	case 8:
+	{
+		prepareRecording();
+		break;
+	}
+	case 3:
+	{
+		if (!m_stageSet)
+		{
+			
+			calculateCalNumbers(); //Calculate the gyroscope axes offsets
+			((TextOverlay*)m_uiElements[4].get())->updateText(L"Data collection complete. Next, the gryoscope axis gain needs to be calculated. This is done in three stages, one for each axis. For this first stage we rotate the sensor counter-clockwise about the y-axis. Slowly rotate the sensor as close to 90 degrees as possible over the course of 5 seconds. Press continue when ready.");
+			m_stageSet = true;
+		}
+		break;
+	}
+	case 5:
+	{
+		if (!m_stageSet)
+		{
+			calculateCalNumbers(); //Calculate the gyroscope y-axis gain
+			((TextOverlay*)m_uiElements[4].get())->updateText(L"Data collection complete. We know slowly rotate the sensor 90 degrees counter-clockwise about the Z-axis over the course of 5 seconds. Press continue when ready.");
+			m_stageSet = true;
+		}
+		break;
+	}
+	case 7:
+	{
+		if (!m_stageSet)
+		{
+			calculateCalNumbers(); //Calculate the gyroscopezy-axis gain
+			((TextOverlay*)m_uiElements[4].get())->updateText(L"Data collection complete. We know slowly rotate the sensor 90 degrees counter-clockwise about the X-axis over the course of 5 seconds. Press continue when ready.");
+			m_stageSet = true;
+		}
+		break;
+	}
+	case 9:
+	{
+		if (!m_stageSet)
+		{
+			if (!(m_state & CalibrationModeState::STOP_RECORD)) //don't advance until recording has been asynchronously turned off
+			{
+				calculateCalNumbers(); //Calculate the gyroscope x-axis gain
+				std::wstring completionText = L"Calibration complete, see results below. Press continue to return to main calibration screen.\n\n\n"
+					L"Offset = [" + std::to_wstring(gyr_off[0]) + L", " + std::to_wstring(gyr_off[1]) + L", " + std::to_wstring(gyr_off[2]) + L"]\n\n"
+					L"              [" + std::to_wstring(gyr_gain[0][0]) + L"]\n"
+					L"Gains  =  [" + std::to_wstring(gyr_gain[1][1]) + L"]\n"
+					L"               [" + std::to_wstring(gyr_gain[2][2]) + L"]";
+				((TextOverlay*)m_uiElements[4].get())->updateText(completionText);
+				displayGraph();
+
+				//momentarily change the text of the continue button to say "yes", also make the "no" button visible
+				m_uiElements[3]->getText()->message = L"Yes";
+				m_uiElements[7]->setState(m_uiElements[7]->getState() ^ UIElementState::Invisible);
+
+				m_stageSet = true;
+			}
+		}
+		break;
+	}
+	case 10:
+	{
+		if (!m_stageSet)
+		{
+			//If the results have been accepted we add the update_cal_numbers state to alert the mode screen
+			//that it needs to physically update the calibration numbers.
+			if (accept_cal)
+			{
+				m_state |= CalibrationModeState::UPDATE_CAL_NUMBERS;
+			}
+
+			m_uiElements[0]->setState(m_uiElements[0]->getState() ^ UIElementState::Invisible);
+			m_uiElements[1]->setState(m_uiElements[1]->getState() ^ UIElementState::Invisible);
+			m_uiElements[2]->setState(m_uiElements[2]->getState() ^ UIElementState::Invisible);
+
+			//Update the body text
+			((TextOverlay*)m_uiElements[4].get())->updateText(L"In calibration mode we can manually calculate the offsets and cross-axis gains for the accelerometer, gyroscope and magnetometer on the Personal Caddie to get more accurate data. Select one of the sensors using the buttons below to begin the calibration process.");
+
+			m_uiElements[3]->getText()->message = L"Continue"; //change the text back to "Continue" for the continue button
+			m_uiElements[3]->setState(m_uiElements[3]->getState() | UIElementState::Invisible); //make the continue button invisible
+			m_uiElements[5]->setState(m_uiElements[5]->getState() | UIElementState::Invisible); //make the sub-title invisible
+			m_uiElements[6]->setState(m_uiElements[6]->getState() | UIElementState::Invisible); //make the graph invisible
+			m_uiElements[7]->setState(m_uiElements[7]->getState() | UIElementState::Invisible); //make the no button invisible
+
+			//TODO: Clear data and lines from graph here
+
+
+			m_stageSet = true;
+		}
+	}
+	}
 }
 
 void CalibrationMode::magnetometerCalibration()
@@ -372,6 +545,50 @@ void CalibrationMode::calculateCalNumbers()
 		acc_gain[0][2] = (acc_cal[0][2] - acc_cal[0][4]) / (2 * GRAVITY);
 		acc_gain[1][2] = (acc_cal[1][2] - acc_cal[1][4]) / (2 * GRAVITY);
 		acc_gain[2][2] = (acc_cal[2][2] - acc_cal[2][4]) / (2 * GRAVITY);
+	}
+	else if (m_state & CalibrationModeState::GYROSCOPE)
+	{
+		if (m_currentStage == 3)
+		{
+			//this stage represents the gyroscope offest calculation
+			gyr_off[0] = 0, gyr_off[1] = 0, gyr_off[2] = 0;
+			for (int i = 0; i < m_graphDataX.size(); i++)
+			{
+				gyr_off[0] += m_graphDataX[i].y;
+				gyr_off[1] += m_graphDataY[i].y;
+				gyr_off[2] += m_graphDataZ[i].y;
+			}
+
+			gyr_off[0] /= m_graphDataX.size();
+			gyr_off[1] /= m_graphDataY.size();
+			gyr_off[2] /= m_graphDataZ.size();
+		}
+		else
+		{
+			//this stage represents the gyroscope gain calculation
+			if (m_currentStage == 5)
+			{
+				for (int i = 1; i < m_graphDataY.size(); i++) gyr_gain_y[1] += integrateData(m_graphDataY[i].y, m_graphDataY[i - 1].y, m_graphDataY[i].x - m_graphDataY[i - 1].x);
+				gyr_gain_y[1] /= 90;
+			}
+			else if (m_currentStage == 7)
+			{
+				for (int i = 1; i < m_graphDataZ.size(); i++) gyr_gain_z[2] += integrateData(m_graphDataZ[i].y, m_graphDataZ[i - 1].y, m_graphDataZ[i].x - m_graphDataZ[i - 1].x);
+				gyr_gain_z[2] /= 90;
+			}
+			else if (m_currentStage == 9)
+			{
+				for (int i = 1; i < m_graphDataX.size(); i++) gyr_gain_x[0] += integrateData(m_graphDataX[i].y, m_graphDataX[i - 1].y, m_graphDataX[i].x - m_graphDataX[i - 1].x);
+				gyr_gain_x[0] /= 90;
+			}
+		}
+
+		//After utilizing the current gyro data, clear out the data vectors
+		//and reset the time stamp
+		m_graphDataX.clear();
+		m_graphDataY.clear();
+		m_graphDataZ.clear();
+		m_timeStamp = 0.0f;
 	}
 }
 
@@ -433,6 +650,15 @@ void CalibrationMode::displayGraph()
 
 		m_uiElements[6]->setState(m_uiElements[6]->getState() ^ UIElementState::Invisible); //lastly, make the graph visible
 	}
+}
+
+std::pair<float*, float**> CalibrationMode::getCalibrationResults()
+{
+	//If we like the calibration results, we use this method to get them to the IMU class
+	//and update the external calibration files for future use
+	if (m_state & CalibrationModeState::ACCELEROMETER) return { acc_off, acc_gain};
+	else if (m_state & CalibrationModeState::GYROSCOPE) return { gyr_off, gyr_gain };
+	else if (m_state & CalibrationModeState::MAGNETOMETER) return { mag_off, mag_gain };
 }
 
 void CalibrationMode::handlePersonalCaddieConnectionEvent(bool connectionStatus)

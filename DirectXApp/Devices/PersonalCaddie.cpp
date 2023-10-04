@@ -439,6 +439,13 @@ std::pair<const float*, const float**> PersonalCaddie::getSensorCalibrationNumbe
     else return { nullptr, nullptr };
 }
 
+void PersonalCaddie::updateSensorCalibrationNumbers(sensor_type_t sensor, std::pair<float*, float**> cal_numbers)
+{
+    this->p_imu->setCalibrationNumbers(sensor, cal_numbers);
+    std::wstring message = L"Updated Calibration Info";
+    event_handler(PersonalCaddieEventType::IMU_ALERT, (void*)&message);
+}
+
 void PersonalCaddie::startDataTransfer()
 {
     //Calling this method will put the Personal Caddie into the appropriate power mode

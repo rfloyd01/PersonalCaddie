@@ -23,7 +23,25 @@ std::pair<const float*, const float**> Sensor::getCalibrationNumbers()
 
 void Sensor::setCalibrationNumbers(float* offset, float** gain)
 {
+	//Takes the input calibration numbers and updates the local variables,
+	//as well as the text file which gets persisted
+	calibration_offsets[0] = *offset;
+	calibration_offsets[1] = *(offset + 1);
+	calibration_offsets[2] = *(offset + 2);
 
+	calibration_gain_x[0] = *(*gain);
+	calibration_gain_x[1] = *((*gain) + 1);
+	calibration_gain_x[2] = *((*gain) + 2);
+
+	calibration_gain_y[0] = *(*(gain + 1));
+	calibration_gain_y[1] = *((*(gain + 1)) + 1);
+	calibration_gain_y[2] = *((*(gain + 1)) + 2);
+
+	calibration_gain_z[0] = *(*(gain + 2));
+	calibration_gain_z[1] = *((*(gain + 2)) + 1);
+	calibration_gain_z[2] = *((*(gain + 2)) + 2);
+
+	setCalibrationNumbersInTextFile();
 }
 
 void Sensor::getCalibrationNumbersFromTextFile()
@@ -162,6 +180,28 @@ void Sensor::setCalibrationNumbersInTextFile()
 float Sensor::getConversionRate() { return this->conversion_rate; }
 float Sensor::getCurrentODR() { return this->current_odr; }
 
+std::wstring Sensor::convertCalNumbersToText()
+{
+	std::wstring calText = L"";
+
+	//First add the offsets
+	calText += std::to_wstring(calibration_offsets[0]) + L"\n";
+	calText += std::to_wstring(calibration_offsets[1]) + L"\n";
+	calText += std::to_wstring(calibration_offsets[2]) + L"\n\n";
+
+	//Then the gains
+	calText += std::to_wstring(calibration_gain_x[0]) + L"\n";
+	calText += std::to_wstring(calibration_gain_x[1]) + L"\n";
+	calText += std::to_wstring(calibration_gain_x[2]) + L"\n";
+	calText += std::to_wstring(calibration_gain_y[0]) + L"\n";
+	calText += std::to_wstring(calibration_gain_y[1]) + L"\n";
+	calText += std::to_wstring(calibration_gain_y[2]) + L"\n";
+	calText += std::to_wstring(calibration_gain_z[0]) + L"\n";
+	calText += std::to_wstring(calibration_gain_z[1]) + L"\n";
+	calText += std::to_wstring(calibration_gain_z[2]) + L"\n";
+
+	return calText;
+}
 void Sensor::convertTextToCalNumbers(winrt::hstring calInfo)
 {
 	//Convert the hstring to a wstring for ease of manipulation

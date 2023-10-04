@@ -54,7 +54,7 @@ protected:
 	//PRIVATE FUNCTIONS
 	void getCalibrationNumbersFromTextFile();
 	void setCalibrationNumbersInTextFile();
-	virtual std::wstring convertCalNumbersToText() = 0;
+	std::wstring convertCalNumbersToText();
 	void convertTextToCalNumbers(winrt::hstring calInfo);
 
 	virtual void setConversionRateFromSettings() = 0;

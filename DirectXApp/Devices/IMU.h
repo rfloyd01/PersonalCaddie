@@ -67,13 +67,12 @@ public:
 	float getMaxODR();
 	float getConversionRate(sensor_type_t sensor);
 
+	//Calibration Methods
 	std::pair<const float*, const float**> getAccelerometerCalibrationNumbers();
 	std::pair<const float*, const float**> getGyroscopeCalibrationNumbers();
 	std::pair<const float*, const float**> getMagnetometerCalibrationNumbers();
 
-	void updateAccelerometerCalibrationNumbers(float* offset, float** gain);
-	void updateGyroscopeCalibrationNumbers(float* offset, float** gain);
-	void updateMagnetometerCalibrationNumbers(float* offset, float** gain);
+	void setCalibrationNumbers(sensor_type_t sensor, std::pair<float*, float**> cal_numbers);
 
 	//Setting Altering Functions
 	void updateSensorSettings(uint8_t* imu_settings);

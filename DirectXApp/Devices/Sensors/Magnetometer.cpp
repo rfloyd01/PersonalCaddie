@@ -57,26 +57,3 @@ void Magnetometer::setCurrentODRFromSettings()
 		break;
 	}
 }
-
-std::wstring Magnetometer::convertCalNumbersToText()
-{
-	std::wstring calText = L"";
-
-	//First add the offsets
-	calText += std::to_wstring(calibration_offsets[0]) + L"\n";
-	calText += std::to_wstring(calibration_offsets[1]) + L"\n";
-	calText += std::to_wstring(calibration_offsets[2]) + L"\n\n";
-
-	//Then the gains
-	calText += std::to_wstring(calibration_gain_x[0]) + L"\n";
-	calText += std::to_wstring(calibration_gain_x[1]) + L"\n";
-	calText += std::to_wstring(calibration_gain_x[2]) + L"\n";
-	calText += std::to_wstring(calibration_gain_y[0]) + L"\n";
-	calText += std::to_wstring(calibration_gain_y[1]) + L"\n";
-	calText += std::to_wstring(calibration_gain_y[2]) + L"\n";
-	calText += std::to_wstring(calibration_gain_z[0]) + L"\n";
-	calText += std::to_wstring(calibration_gain_z[1]) + L"\n";
-	calText += std::to_wstring(calibration_gain_z[2]) + L"\n";
-
-	return calText;
-}

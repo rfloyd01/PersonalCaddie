@@ -494,6 +494,15 @@ void ModeScreen::PersonalCaddieHandler(PersonalCaddieEventType pcEvent, void* ev
 	{
 		std::wstring alertText = *((std::wstring*)eventArgs); //cast the eventArgs into a wide string
 		createAlert(alertText, UIColor::Green);
+
+		if (alertText == L"Updated Calibration Info")
+		{
+			if (m_currentMode == ModeType::CALIBRATION)
+			{
+				((CalibrationMode*)m_modes[static_cast<int>(m_currentMode)].get())->updateComplete();
+				m_modeState ^= ModeState::Active; //completing the update causes us to leave active mode
+			}
+		}
 		break;
 	}
 	case PersonalCaddieEventType::DEVICE_WATCHER_UPDATE:
@@ -663,6 +672,15 @@ void ModeScreen::stateUpdate()
 			//When we've recorded all the data we need we can put the Personal Caddie back into sensor idle mode
 			m_personalCaddie->changePowerMode(PersonalCaddiePowerMode::SENSOR_IDLE_MODE);
 			m_modeState ^= ModeState::Active; //temporarily leave the active state to make sure we don't change the power mode multiple times
+		}
+		else if (m_modes[static_cast<int>(m_currentMode)]->getModeState() & CalibrationModeState::UPDATE_CAL_NUMBERS)
+		{
+			//We've carried out a successful calibration so we need to update the appropriate calibration text file
+			sensor_type_t current_sensor;
+			if (m_modes[static_cast<int>(m_currentMode)]->getModeState() & CalibrationModeState::ACCELEROMETER) current_sensor = ACC_SENSOR;
+			else if (m_modes[static_cast<int>(m_currentMode)]->getModeState() & CalibrationModeState::GYROSCOPE) current_sensor = GYR_SENSOR;
+			else if (m_modes[static_cast<int>(m_currentMode)]->getModeState() & CalibrationModeState::MAGNETOMETER) current_sensor = MAG_SENSOR;
+			m_personalCaddie->updateSensorCalibrationNumbers(current_sensor, ((CalibrationMode*)m_modes[static_cast<int>(m_currentMode)].get())->getCalibrationResults());
 		}
 		break;
 	}
