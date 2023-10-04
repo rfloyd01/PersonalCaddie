@@ -46,12 +46,6 @@ void GraphMode::initializeTextOverlay(winrt::Windows::Foundation::Size windowSiz
 		title_message, UIConstants::TitleTextPointSize, { UIColor::White }, { 0,  (unsigned int)title_message.length() }, UITextJustification::CenterCenter);
 	m_uiElements.push_back(std::make_shared<TextOverlay>(title));
 
-	////Sub-Title information
-	//std::wstring subtitle_message = L"Record Data from a connected device and display it in graph form";
-	//TextOverlay subtitle(windowSize, { UIConstants::SubTitleTextLocationX, UIConstants::SubTitleTextLocationY }, { UIConstants::SubTitleTextSizeX, UIConstants::SubTitleTextSizeY },
-	//	subtitle_message, UIConstants::SubTitleTextPointSize, { UIColor::White }, { 0,  (unsigned int)subtitle_message.length() }, UITextJustification::CenterCenter);
-	//m_uiElements.push_back(std::make_shared<TextOverlay>(subtitle));
-
 	//Footnote information
 	std::wstring footnote_message = L"Press Esc. to return to main menu";
 	TextOverlay footnote(windowSize, { UIConstants::FootNoteTextLocationX, UIConstants::FootNoteTextLocationY }, { UIConstants::FootNoteTextSizeX, UIConstants::FootNoteTextSizeY },

@@ -37,7 +37,10 @@ enum ModeState
 	NeedTextUpdate = 8,
 	PersonalCaddieSensorIdleMode = 16,
 	PersonalCaddieSensorActiveMode = 32,
-	NeedMaterial = 64
+	NeedMaterial = 64,
+	Enter_Active = 128,
+	State_Update = 256,
+	Leave_Active = 512
 };
 
 //Class definition
@@ -70,6 +73,8 @@ public:
 	virtual TextOverlay removeAlerts(); //some modes need to maintain a specific order for elements and removing alerts can change this. This method is virtual so those modes can override this one.
 
 	virtual uint32_t handleUIElementStateChange(int i) = 0;
+
+	virtual void addData(std::vector<std::vector<std::vector<float> > > const& sensorData, float sensorODR) {} //A method that modes can overwrite when they need data from the Personal Caddie
 
 	bool m_needsCamera = false; //Modes that require 3D rendering will set this variable to true to let the ModeScreen know that its camera is needed
 

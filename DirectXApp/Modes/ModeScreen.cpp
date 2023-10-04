@@ -91,8 +91,25 @@ void ModeScreen::update()
 		m_modeState ^= ModeState::NeedMaterial; //TODO: Not a safe call as materials may not actually be loaded when this get's called the first time
 	}
 
-	//after all input, events and timers have been handled defer to the current mode
-	//to update its state if necessary. This only occurs when in the Active ModeState
+	//After all input, events and timers have been handled we check to see if there's anything
+	//the current mode needs from the mode state class (i.e. putting the Personal Caddie into sensor active
+	//mode). When that check is complete we then defer to the current mode
+	//to update its own state if necessary. This only occurs when in the Active ModeState
+	if (m_modeState & ModeState::Enter_Active)
+	{
+		enterActiveState();
+		m_modeState ^= ModeState::Enter_Active;
+	}
+	else if (m_modeState & ModeState::Leave_Active)
+	{
+		leaveActiveState();
+		m_modeState ^= ModeState::Leave_Active;
+	}
+	else if (m_modeState & ModeState::Active)
+	{
+		stateUpdate();
+	}
+
 	if (m_modeState & ModeState::Active) m_modes[static_cast<int>(m_currentMode)]->update();
 }
 
@@ -251,13 +268,13 @@ void ModeScreen::processMouseInput(InputState* inputState)
 			//See if the button press forced us into or out of active mode
 			if (m_modeState & ModeState::Active)
 			{
-				if (!(new_state & ModeState::Active)) leaveActiveState();
-				else stateUpdate();
+				if (!(new_state & ModeState::Active)) m_modeState |= ModeState::Leave_Active; //leaveActiveState();
+				//else m_modeState |= ModeState::State_Update; //stateUpdate();
 			}
 			else if (!(m_modeState & ModeState::Active))
 			{
-				if (new_state & ModeState::Active) enterActiveState();
-				else stateUpdate();
+				if (new_state & ModeState::Active) m_modeState |= ModeState::Enter_Active; //enterActiveState();
+				//else m_modeState |= ModeState::State_Update; //stateUpdate();
 			}
 
 			break;
@@ -457,11 +474,19 @@ void ModeScreen::PersonalCaddieHandler(PersonalCaddieEventType pcEvent, void* ev
 
 		if (alertText == L"The Personal Caddie has been placed into Sensor Idle Mode")
 		{
-			if (m_currentMode == ModeType::CALIBRATION) ((CalibrationMode*)m_modes[static_cast<int>(m_currentMode)].get())->stopDataCapture();
+			if (m_currentMode == ModeType::CALIBRATION)
+			{
+				((CalibrationMode*)m_modes[static_cast<int>(m_currentMode)].get())->stopDataCapture();
+				m_modeState ^= ModeState::Active; //re-enter the active state to resume updates
+			}
 		}
 		else if (alertText == L"The Personal Caddie has been placed into Sensor Active Mode")
 		{
-			if (m_currentMode == ModeType::CALIBRATION) ((CalibrationMode*)m_modes[static_cast<int>(m_currentMode)].get())->startDataCapture();
+			if (m_currentMode == ModeType::CALIBRATION)
+			{
+				((CalibrationMode*)m_modes[static_cast<int>(m_currentMode)].get())->startDataCapture();
+				m_modeState ^= ModeState::Active; //re-enter the active state to resume updates
+			}
 		}
 		break;
 	}
@@ -516,10 +541,15 @@ void ModeScreen::PersonalCaddieHandler(PersonalCaddieEventType pcEvent, void* ev
 	{
 		//The imu on the personal caddie has finished taking readings and has sent the data over.
 		//Send the data to the current mode if it needs it.
-		if (m_currentMode == ModeType::GRAPH_MODE)
+		m_modes[static_cast<int>(m_currentMode)]->addData(m_personalCaddie->getSensorData(), m_personalCaddie->getMaxODR());
+		/*if (m_currentMode == ModeType::GRAPH_MODE)
 		{
 			((GraphMode*)m_modes[static_cast<int>(ModeType::GRAPH_MODE)].get())->addData(m_personalCaddie->getSensorData(), m_personalCaddie->getMaxODR());
 		}
+		else if (m_currentMode == ModeType::CALIBRATION)
+		{
+			((CalibrationMode*)m_modes[static_cast<int>(ModeType::GRAPH_MODE)].get())->addData(m_personalCaddie->getSensorData(), m_personalCaddie->getMaxODR());
+		}*/
 		break;
 	}
 	}
@@ -557,7 +587,7 @@ void ModeScreen::enterActiveState()
 		//When we first enter graph mode the personal caddie is automatically put into the sensor idle
 		//power mode. Entering the active state switches the personal caddie power mode to sensor active
 		//and also enables data notifications.
-		m_modeState ^= (ModeState::PersonalCaddieSensorActiveMode | ModeState::PersonalCaddieSensorIdleMode); //swap the idle and active mode flags. We also can't transfer modes in the active state
+		m_modeState ^= (ModeState::PersonalCaddieSensorActiveMode | ModeState::PersonalCaddieSensorIdleMode);
 		m_personalCaddie->enableDataNotifications();
 		break;
 	}
@@ -574,7 +604,7 @@ void ModeScreen::enterActiveState()
 	case ModeType::CALIBRATION:
 	{
 		//Entering the active state puts the sensors into idle mode, as well as enables data notifications
-		m_modeState |= ModeState::PersonalCaddieSensorIdleMode; //swap the idle and active mode flags. We also can't transfer modes in the active state
+		m_modeState |= ModeState::PersonalCaddieSensorIdleMode;
 		m_personalCaddie->enableDataNotifications();
 		break;
 	}
@@ -626,11 +656,13 @@ void ModeScreen::stateUpdate()
 			//If the ready_to_recordflag is active it means we need to put the 
 			//Personal Caddie into sensor active mode and start recording data.
 			m_personalCaddie->changePowerMode(PersonalCaddiePowerMode::SENSOR_ACTIVE_MODE);
+			m_modeState ^= ModeState::Active; //temporarily leave the active state to make sure we don't change the power mode multiple times
 		}
 		else if (m_modes[static_cast<int>(m_currentMode)]->getModeState() & CalibrationModeState::STOP_RECORD)
 		{
 			//When we've recorded all the data we need we can put the Personal Caddie back into sensor idle mode
 			m_personalCaddie->changePowerMode(PersonalCaddiePowerMode::SENSOR_IDLE_MODE);
+			m_modeState ^= ModeState::Active; //temporarily leave the active state to make sure we don't change the power mode multiple times
 		}
 		break;
 	}
@@ -655,6 +687,7 @@ void ModeScreen::leaveActiveState()
 		//Leaving the active state while in graph mode causes the personal caddie to enter the sensor idle 
 		//power mode and turns off data notifications. We must leave sensor active mode before disabling
 		//data notifications to prevent errors.
+		m_modeState ^= (ModeState::PersonalCaddieSensorActiveMode | ModeState::PersonalCaddieSensorIdleMode); //swap the sensor idle and active states
 		m_personalCaddie->changePowerMode(PersonalCaddiePowerMode::SENSOR_IDLE_MODE);
 		m_personalCaddie->disableDataNotifications();
 		break;

@@ -18,7 +18,7 @@ public:
 
 	virtual uint32_t handleUIElementStateChange(int i) override;
 
-	void addData(std::vector<std::vector<std::vector<float> > > const& sensorData, float sensorODR);
+	virtual void addData(std::vector<std::vector<std::vector<float> > > const& sensorData, float sensorODR) override;
 
 private:
 	void initializeTextOverlay(winrt::Windows::Foundation::Size windowSize);

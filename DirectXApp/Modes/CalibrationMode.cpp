@@ -29,6 +29,10 @@ uint32_t CalibrationMode::initializeMode(winrt::Windows::Foundation::Size window
 	TextOverlay subTitle(windowSize, { UIConstants::SubTitleTextLocationX, UIConstants::SubTitleTextLocationY - 0.025f }, { UIConstants::SubTitleTextSizeX, UIConstants::SubTitleTextSizeY },
 		L"Fill", 1.05f * UIConstants::SubTitleTextPointSize, {UIColor::White}, {0, 4}, UITextJustification::UpperCenter);
 	subTitle.setState(subTitle.getState() | UIElementState::Invisible); ///the sub-title starts off invisible
+
+	//Create a graph ui element, it will stay invisible until after individual calibrations are complete
+	Graph graph(windowSize, { 0.5, 0.65 }, { 0.9, 0.6 });
+	graph.setState(graph.getState() | UIElementState::Invisible);
 	
 	m_uiElements.push_back(std::make_shared<TextButton>(accButton));
 	m_uiElements.push_back(std::make_shared<TextButton>(gyrButton));
@@ -36,10 +40,12 @@ uint32_t CalibrationMode::initializeMode(winrt::Windows::Foundation::Size window
 	m_uiElements.push_back(std::make_shared<TextButton>(continueButton));
 	m_uiElements.push_back(std::make_shared<TextOverlay>(body));
 	m_uiElements.push_back(std::make_shared<TextOverlay>(subTitle));
+	m_uiElements.push_back(std::make_shared<Graph>(graph));
 
 	m_state = initialState;
 	m_currentStage = 0;
 	m_stageSet = false;
+	m_timeStamp = 0.0f;
 
 	//Initialize any unchanging text
 	initializeTextOverlay(windowSize);
@@ -80,6 +86,10 @@ void CalibrationMode::startDataCapture()
 	//the sensors to actually record data.
 	if (m_state & CalibrationModeState::READY_TO_RECORD)
 	{
+		//Wait a moment to let the sensor warm up
+		auto start = std::chrono::steady_clock::now();
+		while (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start).count() < 750) {}
+
 		m_state ^= (CalibrationModeState::READY_TO_RECORD | CalibrationModeState::RECORDING_DATA);
 		data_timer = std::chrono::steady_clock::now();
 	}
@@ -92,7 +102,7 @@ void CalibrationMode::stopDataCapture()
 	if (m_state & CalibrationModeState::STOP_RECORD)
 	{
 		m_state ^= CalibrationModeState::STOP_RECORD;
-		advanceToNextStage(); //when recording is over we advance to the next stage of the calibration
+		//advanceToNextStage(); //when recording is over we advance to the next stage of the calibration
 	}
 }
 
@@ -147,6 +157,31 @@ void CalibrationMode::update()
 	else if (m_state & CalibrationModeState::MAGNETOMETER) magnetometerCalibration();
 }
 
+void CalibrationMode::addData(std::vector<std::vector<std::vector<float> > > const& sensorData, float sensorODR)
+{
+	//This method gets called asynchronously whenever new data is ready. We simply iterate over the appropriate
+	//data (given the current calibration we're doing) and add it to the internal data vector.
+
+	if (m_state & CalibrationModeState::RECORDING_DATA) //only add date if we're actively recording
+	{
+		int calibrationType;
+		if (m_state & CalibrationModeState::ACCELEROMETER) calibrationType = raw_acceleration;
+		else if (m_state & CalibrationModeState::GYROSCOPE) calibrationType = raw_rotation;
+		else if (m_state & CalibrationModeState::MAGNETOMETER) calibrationType = raw_magnetic;
+
+		float timeIncrement = 1.0f / sensorODR;
+
+		for (int i = 0; i < sensorData[calibrationType][0].size(); i++)
+		{
+			m_graphDataX.push_back({ m_timeStamp, sensorData[calibrationType][0][i] });
+			m_graphDataY.push_back({ m_timeStamp, sensorData[calibrationType][1][i] });
+			m_graphDataZ.push_back({ m_timeStamp, sensorData[calibrationType][2][i] });
+
+			m_timeStamp += timeIncrement;
+		}
+	}
+}
+
 void CalibrationMode::accelerometerCalibration()
 {
 	if (m_state & CalibrationModeState::RECORDING_DATA)
@@ -159,6 +194,7 @@ void CalibrationMode::accelerometerCalibration()
 		{
 			m_state ^= (CalibrationModeState::RECORDING_DATA | CalibrationModeState::STOP_RECORD);
 			advanceToNextStage();
+			return; //since advance to next stage is called above we leave this method after it returns
 		}
 	}
 
@@ -169,7 +205,7 @@ void CalibrationMode::accelerometerCalibration()
 		if (!m_stageSet)
 		{
 			((TextOverlay*)m_uiElements[4].get())->updateText(L"Lay the sensor flat on the table with the +Y axis pointing upwards like shown in the image. Leave the sensor stationary like this for 5 seconds as it collects data. Press the continue button when ready.");
-			data_timer_duration = 5000; //set the data timer for 5 seconds
+			data_timer_duration = 5000; //the acceleromter needs 5 seconds of data at each stage
 			m_stageSet = true;
 		}
 		
@@ -177,16 +213,7 @@ void CalibrationMode::accelerometerCalibration()
 	}
 	case 2:
 	{
-		if (!m_stageSet)
-		{
-			m_state |= CalibrationModeState::READY_TO_RECORD; //This will initiae data recording
-			m_stageSet = true;
-		}
-		else if (m_state & CalibrationModeState::RECORDING_DATA)
-		{
-			std::wstring message = L"Recording Data, hold sensor steady for " + std::to_wstring((float)(data_timer_duration - data_timer_elapsed) / 1000.0f) + L" more seconds.";
-			((TextOverlay*)m_uiElements[4].get())->updateText(message);
-		}
+		prepareRecording();
 		break;
 	}
 	case 3:
@@ -194,14 +221,23 @@ void CalibrationMode::accelerometerCalibration()
 		if (!m_stageSet)
 		{
 			((TextOverlay*)m_uiElements[4].get())->updateText(L"Data collection complete. Rotate the sensor so that the +X axis is pointing down as shown in the image. When ready, press the continue button. Make sure to keep the sensor as still as possible until the timer runs out.");
-			m_state |= CalibrationModeState::READY_TO_RECORD;
 			m_stageSet = true;
-			break;
 		}
+		break;
 	}
 	case 4:
 	{
-		
+		prepareRecording();
+		break;
+	}
+	case 5:
+	{
+		if (!m_stageSet)
+		{
+			//((TextOverlay*)m_uiElements[4].get())->updateText(L"Data collection complete. Rotate the sensor so that the +X axis is pointing down as shown in the image. When ready, press the continue button. Make sure to keep the sensor as still as possible until the timer runs out.");
+			displayGraph();
+			m_stageSet = true;
+		}
 		break;
 	}
 	}
@@ -215,6 +251,66 @@ void CalibrationMode::gyroscopeCalibration()
 void CalibrationMode::magnetometerCalibration()
 {
 
+}
+
+void CalibrationMode::prepareRecording()
+{
+	//We end up doing the same actions a lot right before we begin recording data,
+	//so it's more efficient to just create a method to carry the actions out
+	if (!m_stageSet)
+	{
+		m_state |= CalibrationModeState::READY_TO_RECORD; //This will initiae data recording
+		m_stageSet = true;
+	}
+	else if (m_state & CalibrationModeState::RECORDING_DATA)
+	{
+		std::wstring message = L"Recording Data, hold sensor steady for " + std::to_wstring((float)(data_timer_duration - data_timer_elapsed) / 1000.0f) + L" more seconds.";
+		((TextOverlay*)m_uiElements[4].get())->updateText(message);
+	}
+}
+
+void CalibrationMode::displayGraph()
+{
+	//Although not necessary for the calibration process it's useful to look at a graphical
+	//representation of the accumulated data to make sure that things look correct. This
+	//method get's called after all calibration data has been gathered.
+
+	if (m_graphDataX.size() >= 2)
+	{
+		//set the min and max data values for the graph, this value will change depending on which 
+		//calibration is being carried out.
+		//TODO: Add gyro and mag stuff when I get there
+		//add a few axis lines to the graph
+		float centerLineLocation, upperLineLocation, lowerLineLocation;
+
+		if (m_state & CalibrationModeState::ACCELEROMETER)
+		{
+			((Graph*)m_uiElements[6].get())->setAxisMaxAndMins({ 0,  -12.0 }, { m_graphDataX.back().x, 12.0 });
+			//add a few axis lines to the graph
+			centerLineLocation = 0.0f; //The average of the highest and lowest data point
+			upperLineLocation = GRAVITY; //95% of the highest data point
+			lowerLineLocation = -GRAVITY; //95% of the lowest data point
+		}
+
+		((Graph*)m_uiElements[6].get())->addDataSet(m_graphDataX, UIColor::Red);
+		((Graph*)m_uiElements[6].get())->addDataSet(m_graphDataY, UIColor::Blue);
+		((Graph*)m_uiElements[6].get())->addDataSet(m_graphDataZ, UIColor::Green);
+
+		((Graph*)m_uiElements[6].get())->addAxisLine(0, centerLineLocation);
+		((Graph*)m_uiElements[6].get())->addAxisLine(0, upperLineLocation);
+		((Graph*)m_uiElements[6].get())->addAxisLine(0, lowerLineLocation);
+
+		std::wstring axisText = std::to_wstring(centerLineLocation);
+		((Graph*)m_uiElements[6].get())->addAxisLabel(axisText, centerLineLocation);
+
+		axisText = std::to_wstring(upperLineLocation);
+		((Graph*)m_uiElements[6].get())->addAxisLabel(axisText, upperLineLocation);
+
+		axisText = std::to_wstring(lowerLineLocation);
+		((Graph*)m_uiElements[6].get())->addAxisLabel(axisText, lowerLineLocation);
+
+		m_uiElements[6]->setState(m_uiElements[6]->getState() ^ UIElementState::Invisible); //lastly, make the graph visible
+	}
 }
 
 void CalibrationMode::handlePersonalCaddieConnectionEvent(bool connectionStatus)
