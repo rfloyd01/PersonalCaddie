@@ -13,10 +13,18 @@ Accelerometer::Accelerometer(uint8_t* current_settings)
 
 	setCurrentSettings(current_settings);
 	
-	//set up calibration info
-	this->cal_offset_number = 3; //accelerometers need 3 axis offset values
-	this->cal_gains_number = 9; //accelerometers need 9 cross-axis gain values
-	this->calibrationFile = "Resources/Calibration_Files/accelerometer_calibration.txt";
+	//set the calibration file
+	switch (acc_model)
+	{
+	case LSM9DS1_ACC:
+		this->calibrationFile = L"lsm9ds1_acc_calibration.txt";
+		break;
+	case FXOS8700_ACC:
+		this->calibrationFile = L"fxos8700_acc_calibration.txt";
+		break;
+	}
+
+	//Then attempt to override the default values using the text file
 	getCalibrationNumbersFromTextFile();
 }
 
@@ -54,62 +62,25 @@ void Accelerometer::setCurrentODRFromSettings()
 	}
 }
 
-//void Accelerometer::getCalibrationNumbersFromTextFile()
-//{
-//	//this method takes calibration numbers that were obtained in a previous session (if they exist) and updates the 
-//	//local calibration variables with them. If no previous calibration numbers exist then default values are used.
-//	std::vector<float> offsets, cross_axis_gains;
-//
-//	//open the external calibration file, if it can't be found then use default calibration numbers
-//	try
-//	{
-//		int line_count = 0;
-//		std::fstream inFile;
-//		inFile.open("Resources/accelerometer_calibration.txt");
-//		char cal_value[256];
-//
-//		//the three offset values come first in the calibration file
-//		while (offsets.size() < 3 && !inFile.eof())
-//		{
-//			inFile.getline(cal_value, 256);
-//
-//			//the calibration file has both text and float values so check to see if the next float value has been encountered
-//			try { offsets.push_back(std::stof(cal_value)); }
-//			catch(...) {}//intentionally left blank
-//		}
-//
-//		//followed by the nine cross-axis gain values
-//		while (cross_axis_gains.size() < 9 && !inFile.eof())
-//		{
-//			inFile.getline(cal_value, 256);
-//
-//			//the calibration file has both text and float values so check to see if the next float value has been encountered
-//			try { cross_axis_gains.push_back(std::stof(cal_value)); }
-//			catch (...) {}//intentionally left blank
-//		}
-//
-//		if (offsets.size() < 3 || cross_axis_gains.size() < 9)
-//		{
-//			std::cout << "Some calibration information wasn't updated, using default accelerometer calibration values." << std::endl;
-//			offsets = { 0, 0, 0 };
-//			cross_axis_gains = { 1, 0, 0, 0, 1, 0, 0, 0, 1 };
-//		}
-//
-//		inFile.close();
-//	}
-//	catch (...)
-//	{
-//		std::cout << "Couldn't find the calibration file, using default accelerometer calibration values." << std::endl;
-//		offsets = { 0, 0, 0 };
-//		cross_axis_gains = { 1, 0, 0, 0, 1, 0, 0, 0, 1 };
-//	}
-//
-//	//After reading the calibration numbers create const arrays on the heap. This is done so that no other 
-//	//class can alter these numbers accidentally.
-//	this->p_calibration_offset = new const float[3]{ offsets[0], offsets[1], offsets[2] };
-//
-//	const float* x_gain = new float[3]{ cross_axis_gains[0], cross_axis_gains[1], cross_axis_gains[2] };
-//	const float* y_gain = new float[3]{ cross_axis_gains[3], cross_axis_gains[4], cross_axis_gains[5] };
-//	const float* z_gain = new float[3]{ cross_axis_gains[6], cross_axis_gains[7], cross_axis_gains[8] };
-//	this->p_calibration_gain = new const float*[3]{ x_gain, y_gain, z_gain };
-//}
+std::wstring Accelerometer::convertCalNumbersToText()
+{
+	std::wstring calText = L"";
+
+	//First add the offsets
+	calText += std::to_wstring(calibration_offsets[0]) + L"\n";
+	calText += std::to_wstring(calibration_offsets[1]) + L"\n";
+	calText += std::to_wstring(calibration_offsets[2]) + L"\n\n";
+
+	//Then the gains
+	calText += std::to_wstring(calibration_gain_x[0]) + L"\n";
+	calText += std::to_wstring(calibration_gain_x[1]) + L"\n";
+	calText += std::to_wstring(calibration_gain_x[2]) + L"\n";
+	calText += std::to_wstring(calibration_gain_y[0]) + L"\n";
+	calText += std::to_wstring(calibration_gain_y[1]) + L"\n";
+	calText += std::to_wstring(calibration_gain_y[2]) + L"\n";
+	calText += std::to_wstring(calibration_gain_z[0]) + L"\n";
+	calText += std::to_wstring(calibration_gain_z[1]) + L"\n";
+	calText += std::to_wstring(calibration_gain_z[2]) + L"\n";
+
+	return calText;
+}

@@ -34,11 +34,14 @@ public:
 
 private:
 	void initializeTextOverlay(winrt::Windows::Foundation::Size windowSize);
+	void initializeCalibrationVariables();
 
 	//Methods for maneuvering through the calibrations
 	void accelerometerCalibration();
 	void gyroscopeCalibration();
 	void magnetometerCalibration();
+
+	void calculateCalNumbers();
 
 	void advanceToNextStage();
 	void prepareRecording();
@@ -57,4 +60,10 @@ private:
 	//data variables
 	std::vector<DirectX::XMFLOAT2> m_graphDataX, m_graphDataY, m_graphDataZ;
 	float m_timeStamp;
+	float acc_cal[3][6]; //needed to isolate data from all six portions of the acc. tumble calibration: x1, x2, x3, x4, x5, x6, y1, y2... z6
+	int avg_count; //used for averaging accelerometer data from tumble test
+
+	//calibration variables
+	float acc_off[3] = { 0 }; //acceleration offset values
+	float acc_gain[3][3] = { 0 }; //acceleration axis and cross axis gain values
 };

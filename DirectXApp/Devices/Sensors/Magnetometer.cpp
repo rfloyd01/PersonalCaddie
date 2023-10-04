@@ -12,10 +12,17 @@ Magnetometer::Magnetometer(uint8_t* current_settings)
 
 	setCurrentSettings(current_settings);
 
-	//set up calibration info
-	this->cal_offset_number = 3; //magnetometers need 3 axis offset values
-	this->cal_gains_number = 9; //magnetometers need 9 cross-axis gain values
-	this->calibrationFile = "Resources/Calibration_Files/magnetometer_calibration.txt";
+	//set the calibration file
+	switch (mag_model)
+	{
+	case LSM9DS1_MAG:
+		this->calibrationFile = L"lsm9ds1_mag_calibration.txt";
+		break;
+	case FXOS8700_MAG:
+		this->calibrationFile = L"fxos8700_mag_calibration.txt";
+		break;
+	}
+	
 	getCalibrationNumbersFromTextFile();
 }
 
@@ -49,4 +56,27 @@ void Magnetometer::setCurrentODRFromSettings()
 		this->current_odr = 0;
 		break;
 	}
+}
+
+std::wstring Magnetometer::convertCalNumbersToText()
+{
+	std::wstring calText = L"";
+
+	//First add the offsets
+	calText += std::to_wstring(calibration_offsets[0]) + L"\n";
+	calText += std::to_wstring(calibration_offsets[1]) + L"\n";
+	calText += std::to_wstring(calibration_offsets[2]) + L"\n\n";
+
+	//Then the gains
+	calText += std::to_wstring(calibration_gain_x[0]) + L"\n";
+	calText += std::to_wstring(calibration_gain_x[1]) + L"\n";
+	calText += std::to_wstring(calibration_gain_x[2]) + L"\n";
+	calText += std::to_wstring(calibration_gain_y[0]) + L"\n";
+	calText += std::to_wstring(calibration_gain_y[1]) + L"\n";
+	calText += std::to_wstring(calibration_gain_y[2]) + L"\n";
+	calText += std::to_wstring(calibration_gain_z[0]) + L"\n";
+	calText += std::to_wstring(calibration_gain_z[1]) + L"\n";
+	calText += std::to_wstring(calibration_gain_z[2]) + L"\n";
+
+	return calText;
 }

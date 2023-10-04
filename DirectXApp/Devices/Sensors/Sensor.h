@@ -46,15 +46,16 @@ protected:
 	float current_odr;
 
 	//calibration variables
-	int cal_offset_number, cal_gains_number; //holds the number of calibration offsets and gains the sensor has
-	std::string calibrationFile; //the location and name of the calibration file for the sensor
-	float calibration_offsets[3]; //points to axis offset numbers from calibration
-	float calibration_gain_x[3], calibration_gain_y[3], calibration_gain_z[3]; //individual axis gains for calibration
-	const float* calibration_gains[3] = { calibration_gain_x, calibration_gain_y, calibration_gain_z }; //combines the axis gain data into a single array
+	std::wstring calibrationFile; //the location and name of the calibration file for the sensor
+	float calibration_offsets[3] = { 0, 0, 0 }; //points to axis offset numbers from calibration
+	float calibration_gain_x[3] = { 1, 0, 0 }, calibration_gain_y[3] = { 0, 1, 0 }, calibration_gain_z[3] = { 0, 0, 1 }; //individual axis gains for calibration
+	const float* calibration_gains[3] = { calibration_gain_x, calibration_gain_y, calibration_gain_z }; //combines the axis gain data into a single array, used by other classes
 
 	//PRIVATE FUNCTIONS
 	void getCalibrationNumbersFromTextFile();
 	void setCalibrationNumbersInTextFile();
+	virtual std::wstring convertCalNumbersToText() = 0;
+	void convertTextToCalNumbers(winrt::hstring calInfo);
 
 	virtual void setConversionRateFromSettings() = 0;
 	virtual void setCurrentODRFromSettings() = 0;

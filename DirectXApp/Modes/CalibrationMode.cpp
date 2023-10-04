@@ -31,7 +31,7 @@ uint32_t CalibrationMode::initializeMode(winrt::Windows::Foundation::Size window
 	subTitle.setState(subTitle.getState() | UIElementState::Invisible); ///the sub-title starts off invisible
 
 	//Create a graph ui element, it will stay invisible until after individual calibrations are complete
-	Graph graph(windowSize, { 0.5, 0.65 }, { 0.9, 0.6 });
+	Graph graph(windowSize, { 0.7, 0.65 }, { 0.5, 0.5 });
 	graph.setState(graph.getState() | UIElementState::Invisible);
 	
 	m_uiElements.push_back(std::make_shared<TextButton>(accButton));
@@ -43,9 +43,9 @@ uint32_t CalibrationMode::initializeMode(winrt::Windows::Foundation::Size window
 	m_uiElements.push_back(std::make_shared<Graph>(graph));
 
 	m_state = initialState;
-	m_currentStage = 0;
-	m_stageSet = false;
-	m_timeStamp = 0.0f;
+
+	//Initialize calibration variables
+	initializeCalibrationVariables();
 
 	//Initialize any unchanging text
 	initializeTextOverlay(windowSize);
@@ -77,6 +77,19 @@ void CalibrationMode::initializeTextOverlay(winrt::Windows::Foundation::Size win
 	m_uiElements.push_back(std::make_shared<TextOverlay>(footnote));
 }
 
+void CalibrationMode::initializeCalibrationVariables()
+{
+	m_currentStage = 0;
+	m_stageSet = false;
+	m_timeStamp = 0.0f;
+	avg_count = 0;
+	
+	for (int i = 0; i < 3; i++)
+	{
+		for (int j = 0; j < 6; j++) acc_cal[i][j] = 0.0f;
+	}
+}
+
 void CalibrationMode::startDataCapture()
 {
 	//We can't start data capture until the Personal Caddie has been placed into active mode, which happens asynchronously.
@@ -102,7 +115,17 @@ void CalibrationMode::stopDataCapture()
 	if (m_state & CalibrationModeState::STOP_RECORD)
 	{
 		m_state ^= CalibrationModeState::STOP_RECORD;
-		//advanceToNextStage(); //when recording is over we advance to the next stage of the calibration
+		
+		if (m_state & CalibrationModeState::ACCELEROMETER)
+		{
+			//At the end of each accelerometer calibration stage we need to take an average
+			//of that stage's data
+			int current_acc_stage = m_currentStage / 2 - 1;
+			acc_cal[0][current_acc_stage] /= avg_count;
+			acc_cal[1][current_acc_stage] /= avg_count;
+			acc_cal[2][current_acc_stage] /= avg_count;
+			avg_count = 0;
+		}
 	}
 }
 
@@ -170,12 +193,20 @@ void CalibrationMode::addData(std::vector<std::vector<std::vector<float> > > con
 		else if (m_state & CalibrationModeState::MAGNETOMETER) calibrationType = raw_magnetic;
 
 		float timeIncrement = 1.0f / sensorODR;
+		int current_acc_stage = m_currentStage / 2 - 1;
 
 		for (int i = 0; i < sensorData[calibrationType][0].size(); i++)
 		{
+			//x, y and z data gets added to the overall data vectors
 			m_graphDataX.push_back({ m_timeStamp, sensorData[calibrationType][0][i] });
 			m_graphDataY.push_back({ m_timeStamp, sensorData[calibrationType][1][i] });
 			m_graphDataZ.push_back({ m_timeStamp, sensorData[calibrationType][2][i] });
+
+			//add x, y and z data to accerlometer matrix (even if we aren't doing the accelerometer test)
+			acc_cal[0][current_acc_stage] += sensorData[calibrationType][0][i];
+			acc_cal[1][current_acc_stage] += sensorData[calibrationType][1][i];
+			acc_cal[2][current_acc_stage] += sensorData[calibrationType][2][i];
+			avg_count++;
 
 			m_timeStamp += timeIncrement;
 		}
@@ -205,13 +236,18 @@ void CalibrationMode::accelerometerCalibration()
 		if (!m_stageSet)
 		{
 			((TextOverlay*)m_uiElements[4].get())->updateText(L"Lay the sensor flat on the table with the +Y axis pointing upwards like shown in the image. Leave the sensor stationary like this for 5 seconds as it collects data. Press the continue button when ready.");
-			data_timer_duration = 5000; //the acceleromter needs 5 seconds of data at each stage
+			data_timer_duration = 1000; //the acceleromter needs 5 seconds of data at each stage
 			m_stageSet = true;
 		}
 		
 		break;
 	}
 	case 2:
+	case 4:
+	case 6:
+	case 8:
+	case 10:
+	case 12:
 	{
 		prepareRecording();
 		break;
@@ -225,20 +261,80 @@ void CalibrationMode::accelerometerCalibration()
 		}
 		break;
 	}
-	case 4:
-	{
-		prepareRecording();
-		break;
-	}
 	case 5:
 	{
 		if (!m_stageSet)
 		{
-			//((TextOverlay*)m_uiElements[4].get())->updateText(L"Data collection complete. Rotate the sensor so that the +X axis is pointing down as shown in the image. When ready, press the continue button. Make sure to keep the sensor as still as possible until the timer runs out.");
-			displayGraph();
+			((TextOverlay*)m_uiElements[4].get())->updateText(L"Data collection complete. Rotate sensor 90 degrees so that the positive Z-axis is pointing up as shown in the image. When ready, press the continue button. Make sure to keep the sensor as still as possible until the timer runs out.");
 			m_stageSet = true;
 		}
 		break;
+	}
+	case 7:
+	{
+		if (!m_stageSet)
+		{
+			((TextOverlay*)m_uiElements[4].get())->updateText(L"Data collection complete. Rotate sensor 90 degrees so that the positive X-axis is pointing up as shown in the image. When ready, press the continue button. Make sure to keep the sensor as still as possible until the timer runs out.");
+			m_stageSet = true;
+		}
+		break;
+	}
+	case 9:
+	{
+		if (!m_stageSet)
+		{
+			((TextOverlay*)m_uiElements[4].get())->updateText(L"Data collection complete. Rotate sensor 90 degrees so that the positive Z-axis is pointing down as shown in the image. When ready, press the continue button. Make sure to keep the sensor as still as possible until the timer runs out.");
+			m_stageSet = true;
+		}
+		break;
+	}
+	case 11:
+	{
+		if (!m_stageSet)
+		{
+			((TextOverlay*)m_uiElements[4].get())->updateText(L"Data collection complete. Rotate sensor 90 degrees so that the positive Y-axis is pointing down as shown in the image. When ready, press the continue button. Make sure to keep the sensor as still as possible until the timer runs out.");
+			m_stageSet = true;
+		}
+		break;
+	}
+	case 13:
+	{
+		if (!m_stageSet)
+		{
+			if (!(m_state & CalibrationModeState::STOP_RECORD)) //don't advance until recording has been asynchronously turned off
+			{
+				//The tumble calibration is complete, use the recorded data to calculate the offset and gain values for the accelerometer
+				calculateCalNumbers();
+				std::wstring completionText = L"Calibration complete, see results below. Press continue to return to main calibration screen.\n\n\n"
+					L"Offset = [" + std::to_wstring(acc_off[0]) + L", " + std::to_wstring(acc_off[1]) + L", " + std::to_wstring(acc_off[2]) + L"]\n\n"
+					L"              [" + std::to_wstring(acc_gain[0][0]) + L", " + std::to_wstring(acc_gain[0][1]) + L", " + std::to_wstring(acc_gain[0][2]) + L"]\n"
+					L"Gains  =  [" + std::to_wstring(acc_gain[1][0]) + L", " + std::to_wstring(acc_gain[1][1]) + L", " + std::to_wstring(acc_gain[1][2]) + L"]\n"
+					L"               [" + std::to_wstring(acc_gain[2][0]) + L", " + std::to_wstring(acc_gain[2][1]) + L", " + std::to_wstring(acc_gain[2][2]) + L"]";
+				((TextOverlay*)m_uiElements[4].get())->updateText(completionText);
+				displayGraph();
+				m_stageSet = true;
+			}
+		}
+		break;
+	}
+	case 14:
+	{
+		//Go back to the beginning of the calibration mode
+		m_state ^= CalibrationModeState::ACCELEROMETER;
+		m_uiElements[0]->setState(m_uiElements[0]->getState() ^ UIElementState::Invisible);
+		m_uiElements[1]->setState(m_uiElements[1]->getState() ^ UIElementState::Invisible);
+		m_uiElements[2]->setState(m_uiElements[2]->getState() ^ UIElementState::Invisible);
+
+		//Update the body text
+		((TextOverlay*)m_uiElements[4].get())->updateText(L"In calibration mode we can manually calculate the offsets and cross-axis gains for the accelerometer, gyroscope and magnetometer on the Personal Caddie to get more accurate data. Select one of the sensors using the buttons below to begin the calibration process.");
+
+		m_uiElements[3]->setState(m_uiElements[3]->getState() | UIElementState::Invisible); //make the continue button invisible
+		m_uiElements[5]->setState(m_uiElements[5]->getState() | UIElementState::Invisible); //make the sub-title invisible
+		m_uiElements[6]->setState(m_uiElements[6]->getState() ^ UIElementState::Invisible); //make the graph invisible
+		//TODO: Clear data and lines from graph here
+
+		m_currentStage = 0; //reset the current stage to 0
+		m_state ^= ModeState::Active;
 	}
 	}
 }
@@ -251,6 +347,32 @@ void CalibrationMode::gyroscopeCalibration()
 void CalibrationMode::magnetometerCalibration()
 {
 
+}
+
+void CalibrationMode::calculateCalNumbers()
+{
+	if (m_state & CalibrationModeState::ACCELEROMETER)
+	{
+		//The axis order for the tumble calibration is: [+Y, -X, +Z, +X, -Z, -Y]
+		//Order of tumble point text is [+Y, -X, +Z, +X, -Z, -Y]
+		acc_off[0] = (acc_cal[0][1] + acc_cal[0][3]) / 2.0;
+		acc_off[1] = (acc_cal[1][0] + acc_cal[1][5]) / 2.0;
+		acc_off[2] = (acc_cal[2][2] + acc_cal[2][4]) / 2.0;
+
+		//Calculate Gain Matrix
+		//(positive_reading - negative_reading) / 2G
+		acc_gain[0][0] = (acc_cal[0][3] - acc_cal[0][1]) / (2 * GRAVITY);
+		acc_gain[1][0] = (acc_cal[1][3] - acc_cal[1][1]) / (2 * GRAVITY);
+		acc_gain[2][0] = (acc_cal[2][3] - acc_cal[2][1]) / (2 * GRAVITY);
+
+		acc_gain[0][1] = (acc_cal[0][0] - acc_cal[0][5]) / (2 * GRAVITY);
+		acc_gain[1][1] = (acc_cal[1][0] - acc_cal[1][5]) / (2 * GRAVITY);
+		acc_gain[2][1] = (acc_cal[2][0] - acc_cal[2][5]) / (2 * GRAVITY);
+
+		acc_gain[0][2] = (acc_cal[0][2] - acc_cal[0][4]) / (2 * GRAVITY);
+		acc_gain[1][2] = (acc_cal[1][2] - acc_cal[1][4]) / (2 * GRAVITY);
+		acc_gain[2][2] = (acc_cal[2][2] - acc_cal[2][4]) / (2 * GRAVITY);
+	}
 }
 
 void CalibrationMode::prepareRecording()
