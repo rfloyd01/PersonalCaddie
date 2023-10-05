@@ -56,10 +56,12 @@ private:
 	{
 		return t * ((p1 + p2) / 2);
 	}
+	void invertAccMatrix();
 
 	std::wstring m_currentlySelectedDeviceAddress = L"";
 	int m_currentStage; //keeps track of the current stage of the calibration
 	bool m_stageSet; //a variable used to make sure we don't keep reloading resources when we're on the same calibration stage
+	bool m_useCalibratedData; //use calibrated data to benchmark current calibration numbers
 
 	int raw_acceleration = 3, raw_rotation = 4, raw_magnetic = 5; //these variables match the DataType enumclass. Trying to use that enumclass here causes a circular reference
 

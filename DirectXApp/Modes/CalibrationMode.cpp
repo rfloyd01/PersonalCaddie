@@ -10,18 +10,20 @@ CalibrationMode::CalibrationMode()
 uint32_t CalibrationMode::initializeMode(winrt::Windows::Foundation::Size windowSize, uint32_t initialState)
 {
 	//Create UI Elements on the page
-	std::wstring introMessage = L"In calibration mode we can manually calculate the offsets and cross-axis gains for the accelerometer, gyroscope and magnetometer on the Personal Caddie to get more accurate data. Select one of the sensors using the buttons below to begin the calibration process.";
+	std::wstring introMessage = L"In calibration mode we can manually calculate the offsets and cross-axis gains for the accelerometer, gyroscope and magnetometer on the Personal Caddie to get more accurate data. Select one of the sensors using the buttons below to begin the calibration process. Before carrying out a calibration it's important to make sure that low and high pass filters for each sensor are turned off as they can effect calibration results (these can be deactivated in the IMU settings menu).";
 	std::wstring accButtonText = L"Accelerometer Calibration";
 	std::wstring gyrButtonText = L"Gyroscope Calibration";
 	std::wstring magButtonText = L"Magnetometer Calibration";
 	std::wstring continueButtonText = L"Continue";
 	std::wstring noButtonText = L"No";
+	std::wstring toggleButtonText = L"Use Calibrated Data";
 
 	TextButton accButton(windowSize, { 0.16, 0.65 }, { 0.14, 0.1 }, accButtonText);
 	TextButton gyrButton(windowSize, { 0.5, 0.65 }, { 0.14, 0.1 }, gyrButtonText);
 	TextButton magButton(windowSize, { 0.83, 0.65 }, { 0.14, 0.1 }, magButtonText);
 	TextButton continueButton(windowSize, { 0.16, 0.85 }, { 0.14, 0.1 }, continueButtonText);
 	TextButton noButton(windowSize, { 0.32, 0.85 }, { 0.14, 0.1 }, noButtonText);
+	TextButton toggleButton(windowSize, { 0.5, 0.85 }, { 0.14, 0.1 }, toggleButtonText);
 	continueButton.setState(continueButton.getState() | UIElementState::Invisible); //this button is invisible to start off
 	noButton.setState(noButton.getState() | UIElementState::Invisible); //this button is invisible to start off
 
@@ -45,8 +47,10 @@ uint32_t CalibrationMode::initializeMode(winrt::Windows::Foundation::Size window
 	m_uiElements.push_back(std::make_shared<TextOverlay>(subTitle));
 	m_uiElements.push_back(std::make_shared<Graph>(graph));
 	m_uiElements.push_back(std::make_shared<TextButton>(noButton));
+	m_uiElements.push_back(std::make_shared<TextButton>(toggleButton));
 
 	m_state = initialState;
+	m_useCalibratedData = false;
 
 	//Initialize calibration variables
 	initializeCalibrationVariables();
@@ -163,6 +167,8 @@ uint32_t CalibrationMode::handleUIElementStateChange(int i)
 
 		((TextOverlay*)m_uiElements[5].get())->updateText(((TextButton*)m_uiElements[i].get())->getText()); //update the sub-title text
 
+		m_uiElements[8]->setState(m_uiElements[8]->getState() | UIElementState::Invisible); //make the data toggle switch invisible
+
 		switch (i)
 		{
 		case 0:
@@ -185,6 +191,14 @@ uint32_t CalibrationMode::handleUIElementStateChange(int i)
 		//The no button was clicked, set the accept_cal bool to false and advance to the next stage
 		accept_cal = false;
 		advanceToNextStage();
+	}
+	else if (i == 8)
+	{
+		//Toggles whether or not we use raw or calibrated data during the calibration. The point of using
+		//already calibrated data is to benchmark how good the current calibration numbers are.
+		if (!m_useCalibratedData) m_uiElements[8]->getText()->message = L"Use Raw Data";
+		else m_uiElements[8]->getText()->message = L"Use Calibrated Data";
+		m_useCalibratedData = !m_useCalibratedData;
 	}
 
 	return m_state;
@@ -214,9 +228,21 @@ void CalibrationMode::addData(std::vector<std::vector<std::vector<float> > > con
 	if (m_state & CalibrationModeState::RECORDING_DATA) //only add date if we're actively recording
 	{
 		int calibrationType;
-		if (m_state & CalibrationModeState::ACCELEROMETER) calibrationType = raw_acceleration;
-		else if (m_state & CalibrationModeState::GYROSCOPE) calibrationType = raw_rotation;
-		else if (m_state & CalibrationModeState::MAGNETOMETER) calibrationType = raw_magnetic;
+		if (m_state & CalibrationModeState::ACCELEROMETER)
+		{
+			if (m_useCalibratedData) calibrationType = 0;
+			else calibrationType = raw_acceleration;
+		}
+		else if (m_state & CalibrationModeState::GYROSCOPE)
+		{
+			if (m_useCalibratedData) calibrationType = 1;
+		    else calibrationType = raw_rotation;
+		}
+		else if (m_state & CalibrationModeState::MAGNETOMETER)
+		{
+			if (m_useCalibratedData) calibrationType = 2;
+		    else calibrationType = raw_magnetic;
+		}
 
 		float timeIncrement = 1.0f / sensorODR;
 		int current_stage = m_currentStage / 2 - 1;
@@ -228,7 +254,7 @@ void CalibrationMode::addData(std::vector<std::vector<std::vector<float> > > con
 			m_graphDataY.push_back({ m_timeStamp, sensorData[calibrationType][1][i] });
 			m_graphDataZ.push_back({ m_timeStamp, sensorData[calibrationType][2][i] });
 
-			if (calibrationType == raw_acceleration)
+			if (calibrationType == raw_acceleration || calibrationType == 0)
 			{
 				//add x, y and z data to accerlometer matrix
 				acc_cal[0][current_stage] += sensorData[calibrationType][0][i];
@@ -236,14 +262,6 @@ void CalibrationMode::addData(std::vector<std::vector<std::vector<float> > > con
 				acc_cal[2][current_stage] += sensorData[calibrationType][2][i];
 				avg_count++;
 			}
-			//else if (calibrationType == raw_rotation)
-			//{
-			//	//add x, y and z data to accerlometer matrix (even if we aren't doing the accelerometer test)
-			//	gyr_cal[0][current_stage] += sensorData[calibrationType][0][i];
-			//	gyr_cal[1][current_stage] += sensorData[calibrationType][1][i];
-			//	gyr_cal[2][current_stage] += sensorData[calibrationType][2][i];
-			//	avg_count++;
-			//}
 
 			m_timeStamp += timeIncrement;
 		}
@@ -382,6 +400,7 @@ void CalibrationMode::accelerometerCalibration()
 			m_uiElements[5]->setState(m_uiElements[5]->getState() | UIElementState::Invisible); //make the sub-title invisible
 			m_uiElements[6]->setState(m_uiElements[6]->getState() | UIElementState::Invisible); //make the graph invisible
 			m_uiElements[7]->setState(m_uiElements[7]->getState() | UIElementState::Invisible); //make the no button invisible
+			m_uiElements[8]->setState(m_uiElements[8]->getState() ^ UIElementState::Invisible); //make the data toggle switch visible
 
 			//TODO: Clear data and lines from graph here
 
@@ -526,14 +545,17 @@ void CalibrationMode::calculateCalNumbers()
 {
 	if (m_state & CalibrationModeState::ACCELEROMETER)
 	{
-		//The axis order for the tumble calibration is: [+Y, -X, +Z, +X, -Z, -Y]
-		//Order of tumble point text is [+Y, -X, +Z, +X, -Z, -Y]
-		acc_off[0] = (acc_cal[0][1] + acc_cal[0][3]) / 2.0;
-		acc_off[1] = (acc_cal[1][0] + acc_cal[1][5]) / 2.0;
-		acc_off[2] = (acc_cal[2][2] + acc_cal[2][4]) / 2.0;
+		//For reference, the axis order for the tumble calibration is: [+Y, -X, +Z, +X, -Z, -Y]
 
-		//Calculate Gain Matrix
-		//(positive_reading - negative_reading) / 2G
+		//Calculate the axis offsets by averaging the axis values during the positive and negative tests
+		//for each individual axis (i.e. x-offset = ((-Xx + Xx)/2 + (-Yx + Yx)/2 + (-Zx + Zx)/2) / 3
+		acc_off[0] = (((acc_cal[0][1] + acc_cal[0][3]) / 2.0f) + ((acc_cal[0][0] + acc_cal[0][5]) / 2.0f) + ((acc_cal[0][2] + acc_cal[0][4]) / 2.0f)) / 3.0f;
+		acc_off[1] = (((acc_cal[1][0] + acc_cal[1][5]) / 2.0f) + ((acc_cal[1][1] + acc_cal[1][3]) / 2.0f) + ((acc_cal[1][2] + acc_cal[1][4]) / 2.0f)) / 3.0f;
+		acc_off[2] = (((acc_cal[2][2] + acc_cal[2][4]) / 2.0f) + ((acc_cal[2][1] + acc_cal[2][3]) / 2.0f) + ((acc_cal[2][0] + acc_cal[2][5]) / 2.0f)) / 3.0f;
+
+		//Calculate Gain Matrix using the offsets above. We take the average gain for both 
+		//positive and negative tests of each axis, which actually causes the offset terms
+		//to cancel out so each gain is found by (+reading - -reading) / 2G
 		acc_gain[0][0] = (acc_cal[0][3] - acc_cal[0][1]) / (2 * GRAVITY);
 		acc_gain[1][0] = (acc_cal[1][3] - acc_cal[1][1]) / (2 * GRAVITY);
 		acc_gain[2][0] = (acc_cal[2][3] - acc_cal[2][1]) / (2 * GRAVITY);
@@ -545,6 +567,21 @@ void CalibrationMode::calculateCalNumbers()
 		acc_gain[0][2] = (acc_cal[0][2] - acc_cal[0][4]) / (2 * GRAVITY);
 		acc_gain[1][2] = (acc_cal[1][2] - acc_cal[1][4]) / (2 * GRAVITY);
 		acc_gain[2][2] = (acc_cal[2][2] - acc_cal[2][4]) / (2 * GRAVITY);
+
+		invertAccMatrix(); //invert the matrix
+
+		//Calcs when using only a single reading for gain
+		/*acc_gain[0][0] = (acc_cal[0][3] - acc_off[0]) / GRAVITY;
+		acc_gain[0][1] = (acc_cal[0][0] - acc_off[0]) / GRAVITY;
+		acc_gain[0][2] = (acc_cal[0][2] - acc_off[0]) / GRAVITY;
+
+		acc_gain[1][0] = (acc_cal[1][3] - acc_off[1]) / GRAVITY;
+		acc_gain[1][1] = (acc_cal[1][0] - acc_off[1]) / GRAVITY;
+		acc_gain[1][2] = (acc_cal[1][2] - acc_off[1]) / GRAVITY;
+
+		acc_gain[2][0] = (acc_cal[2][3] - acc_off[2]) / GRAVITY;
+		acc_gain[2][1] = (acc_cal[2][0] - acc_off[2]) / GRAVITY;
+		acc_gain[2][2] = (acc_cal[2][2] - acc_off[2]) / GRAVITY;*/
 	}
 	else if (m_state & CalibrationModeState::GYROSCOPE)
 	{
@@ -670,5 +707,66 @@ void CalibrationMode::handlePersonalCaddieConnectionEvent(bool connectionStatus)
 	else
 	{
 
+	}
+}
+
+void CalibrationMode::invertAccMatrix()
+{
+	//inverts the calculated Acc Gain matrix
+	float determinant = acc_gain[0][0] * (acc_gain[1][1] * acc_gain[2][2] - acc_gain[1][2] * acc_gain[2][1]) - acc_gain[0][1] * (acc_gain[1][0] * acc_gain[2][2] - acc_gain[1][2] * acc_gain[2][0]) + acc_gain[0][2] * (acc_gain[1][0] * acc_gain[2][1] - acc_gain[1][1] * acc_gain[2][0]);
+	for (int i = 0; i < 3; i++)
+	{
+		//Transpose the original matrix
+		for (int j = i + 1; j < 3; j++)
+		{
+			float temp = acc_gain[i][j];
+			acc_gain[i][j] = acc_gain[j][i];
+			acc_gain[j][i] = temp;
+		}
+	}
+
+	//Get determinants of 2x2 minor matrices
+	float new_nums[3][3];
+	for (int i = 0; i < 3; i++)
+	{
+		for (int j = 0; j < 3; j++)
+		{
+			int row1, row2, col1, col2;
+			if (i == 0)
+			{
+				row1 = 1; row2 = 2;
+			}
+			if (i == 1)
+			{
+				row1 = 0; row2 = 2;
+			}
+			if (i == 2)
+			{
+				row1 = 0; row2 = 1;
+			}
+			if (j == 0)
+			{
+				col1 = 1; col2 = 2;
+			}
+			if (j == 1)
+			{
+				col1 = 0; col2 = 2;
+			}
+			if (j == 2)
+			{
+				col1 = 0; col2 = 1;
+			}
+			float num = acc_gain[row1][col1] * acc_gain[row2][col2] - acc_gain[row1][col2] * acc_gain[row2][col1];
+			if ((i + j) % 2 == 1) num *= -1;
+			new_nums[i][j] = num;
+		}
+	}
+
+	for (int i = 0; i < 3; i++)
+	{
+		for (int j = 0; j < 3; j++)
+		{
+			acc_gain[i][j] = new_nums[i][j] / determinant;
+		}
 	}
 }
