@@ -184,6 +184,12 @@ void UIElementRenderer::renderShape(const UIShape* shape)
         break;
     case UIShapeType::LINE:
         d2dContext->DrawLine({ shape->m_rectangle.left, shape->m_rectangle.top }, { shape->m_rectangle.right, shape->m_rectangle.bottom }, m_solidColorBrushes[static_cast<int>(shape->m_color)].get(), shape->m_lineWidth);
+        break;
+    case UIShapeType::ELLIPSE:
+        const D2D1_ELLIPSE ell = { {shape->m_rectangle.left, shape->m_rectangle.top}, shape->m_rectangle.right, shape->m_rectangle.bottom }; //create an ellipse with the variables saved in the shape's rectangle struct
+        if (shape->m_fillType == UIShapeFillType::NoFill) d2dContext->DrawEllipse(ell, m_solidColorBrushes[static_cast<int>(shape->m_color)].get(), shape->m_lineWidth);
+        else d2dContext->FillEllipse(ell, m_solidColorBrushes[static_cast<int>(shape->m_color)].get());
+        break;
     }
 }
 

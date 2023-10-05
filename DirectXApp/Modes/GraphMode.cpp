@@ -12,10 +12,10 @@ uint32_t GraphMode::initializeMode(winrt::Windows::Foundation::Size windowSize, 
 	//Create a button that will generate a sin graph
 	TextButton recordButton(windowSize, { 0.1, 0.2 }, { 0.12, 0.1 }, L"Start Recording Data");
 
-	std::wstring options = L"Acceleration\nAngular Velocity\nMagnetic Field";
+	std::wstring options = L"Acceleration\nAngular Velocity\nMagnetic Field\nRaw Acceleration\nRaw Angular Velocity\nRaw Magnetic Field";
 	DropDownMenu dataSelection(windowSize, { 0.9, 0.2 }, { 0.2, 0.1 }, options, 0.025, 5, false);
 
-	Graph graph(windowSize, { 0.5, 0.65 }, { 0.9, 0.6 });
+	Graph graph(windowSize, { 0.5, 0.65 }, { 0.9, 0.6 }, false);
 
 	m_uiElements.push_back(std::make_shared<TextButton>(recordButton));
 	m_uiElements.push_back(std::make_shared<DropDownMenu>(dataSelection));
@@ -174,8 +174,11 @@ void GraphMode::addData(std::vector<std::vector<std::vector<float> > > const& se
 DataType GraphMode::getCurrentlySelectedDataType(std::wstring dropDownSelection)
 {
 	//TODO: Use raw data only until calibration files get created
-	if (dropDownSelection == L"Acceleration") return DataType::RAW_ACCELERATION;
-	else if (dropDownSelection == L"Angular Velocity") return DataType::RAW_ROTATION;
-	else if (dropDownSelection == L"Magnetic Field") return DataType::RAW_MAGNETIC;
+	if (dropDownSelection == L"Acceleration") return DataType::ACCELERATION;
+	else if (dropDownSelection == L"Angular Velocity") return DataType::ROTATION;
+	else if (dropDownSelection == L"Magnetic Field") return DataType::MAGNETIC;
+	else if (dropDownSelection == L"Raw Acceleration") return DataType::RAW_ACCELERATION;
+	else if (dropDownSelection == L"Raw Angular Velocity") return DataType::RAW_ROTATION;
+	else if (dropDownSelection == L"Raw Magnetic Field") return DataType::RAW_MAGNETIC;
 	else return DataType::ACCELERATION; //default to acceleration
 }

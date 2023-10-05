@@ -2,6 +2,7 @@
 
 #include "Graphics/Objects/2D/BasicElements/Line.h"
 #include "Graphics/Objects/2D/BasicElements/OutlinedBox.h"
+#include "Graphics/Objects/2D/BasicElements/Ellipse.h"
 
 //The basic text box consists of two children UI Elements. There's a shadowed
 //box which is meant as the background for text (default color is white) and
@@ -13,7 +14,7 @@
 class Graph : public UIElement
 {
 public:
-	Graph(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, UIColor fillColor = UIColor::White, UIColor outlineColor = UIColor::Black);
+	Graph(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, bool line = true, UIColor fillColor = UIColor::White, UIColor outlineColor = UIColor::Black);
 
 	void addDataSet(std::vector<DirectX::XMFLOAT2> const& dataPoints, UIColor lineColor);
 
@@ -27,6 +28,7 @@ public:
 protected:
 	DirectX::XMFLOAT2 m_minimalAbsolutePoint, m_maximalAbsolutePoint; //these variables hold the absolute locations for the x and y min/maxes in the graph
 	DirectX::XMFLOAT2 m_minimalDataPoint, m_maximalDataPoint; //these variables hold the actual data locations for the x and y min/maxes in the graph
+	bool m_lineGraph; //true if lines should be drawn between successive data points, otherwise the graph will just be a scatterplot
 
 	DirectX::XMFLOAT2 convertUnitsToAbsolute(DirectX::XMFLOAT2 coordinates);
 };

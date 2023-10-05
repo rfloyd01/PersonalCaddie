@@ -177,6 +177,9 @@ uint32_t CalibrationMode::handleUIElementStateChange(int i)
 		case 1:
 			((TextOverlay*)m_uiElements[4].get())->updateText(L"Two tests will be performed to calibrate the gyroscope. The first test is easy and just involves keeping the gyroscope still. The second test is carried out in three stages. In each of these stages we rotate the gyroscope by 90 degrees about one of its axes.");
 			break;
+		case 2:
+			((TextOverlay*)m_uiElements[4].get())->updateText(L"To calibrate the magnetometer we need to take sources of interference into account. These include both the hard and soft iron deposits (large scale deviations in magnetic field, like large iron deposits in the ground, and small scale deviations in magnetic field, such as from nearby metal like a golf club shaft).");
+			break;
 		}
 
 		m_state |= ModeState::Active;
@@ -538,7 +541,48 @@ void CalibrationMode::gyroscopeCalibration()
 
 void CalibrationMode::magnetometerCalibration()
 {
+	if (m_state & CalibrationModeState::RECORDING_DATA)
+	{
+		//We're actively recording data from the sensor, check to see if the data timer has expired,
+		//if not then no need to do anything. If the timer has expired, we leave the recording state
+		//and advnace to the next stage of the calibration.
+		data_timer_elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - data_timer).count();
+		if (data_timer_elapsed >= data_timer_duration)
+		{
+			m_state ^= (CalibrationModeState::RECORDING_DATA | CalibrationModeState::STOP_RECORD);
+			advanceToNextStage();
+			return; //since advance to next stage is called above we leave this method after it returns
+		}
+	}
 
+	switch (m_currentStage)
+	{
+	case 1:
+	{
+		if (!m_stageSet)
+		{
+			((TextOverlay*)m_uiElements[4].get())->updateText(L"Take the sensor in your hand and rotate it along all three axes in figure-8 patterns for 10 seconds. Imaging the sensor is inside a sphere and you're trying to make the front of the sensor point at as many locations in the sphere as possible. Press the continue button when ready.");
+			data_timer_duration = 10000; //the acceleromter needs 5 seconds of data at each stage
+			m_stageSet = true;
+		}
+
+		break;
+	}
+	case 2:
+	{
+		prepareRecording();
+		break;
+	}
+	case 3:
+	{
+		if (!m_stageSet)
+		{
+			((TextOverlay*)m_uiElements[4].get())->updateText(L"Data collection is complete. The three graphs repsent the calibrated data (green) and uncalibrated data (red) as seen from the XY, XZ and YZ planes.");
+			m_stageSet = true;
+		}
+		break;
+	}
+	}
 }
 
 void CalibrationMode::calculateCalNumbers()
@@ -602,20 +646,21 @@ void CalibrationMode::calculateCalNumbers()
 		}
 		else
 		{
-			//this stage represents the gyroscope gain calculation
+			//this stage represents the gyroscope gain calculation. We subtract the zero-offset bias
+			//(calculated in the first stage of the calibration) before integrating the data.
 			if (m_currentStage == 5)
 			{
-				for (int i = 1; i < m_graphDataY.size(); i++) gyr_gain_y[1] += integrateData(m_graphDataY[i].y, m_graphDataY[i - 1].y, m_graphDataY[i].x - m_graphDataY[i - 1].x);
+				for (int i = 1; i < m_graphDataY.size(); i++) gyr_gain_y[1] += integrateData(m_graphDataY[i].y - gyr_off[1], m_graphDataY[i - 1].y - gyr_off[1], m_graphDataY[i].x - m_graphDataY[i - 1].x);
 				gyr_gain_y[1] /= 90;
 			}
 			else if (m_currentStage == 7)
 			{
-				for (int i = 1; i < m_graphDataZ.size(); i++) gyr_gain_z[2] += integrateData(m_graphDataZ[i].y, m_graphDataZ[i - 1].y, m_graphDataZ[i].x - m_graphDataZ[i - 1].x);
+				for (int i = 1; i < m_graphDataZ.size(); i++) gyr_gain_z[2] += integrateData(m_graphDataZ[i].y - gyr_off[2], m_graphDataZ[i - 1].y - gyr_off[2], m_graphDataZ[i].x - m_graphDataZ[i - 1].x);
 				gyr_gain_z[2] /= 90;
 			}
 			else if (m_currentStage == 9)
 			{
-				for (int i = 1; i < m_graphDataX.size(); i++) gyr_gain_x[0] += integrateData(m_graphDataX[i].y, m_graphDataX[i - 1].y, m_graphDataX[i].x - m_graphDataX[i - 1].x);
+				for (int i = 1; i < m_graphDataX.size(); i++) gyr_gain_x[0] += integrateData(m_graphDataX[i].y - gyr_off[0], m_graphDataX[i - 1].y - gyr_off[0], m_graphDataX[i].x - m_graphDataX[i - 1].x);
 				gyr_gain_x[0] /= 90;
 			}
 		}

@@ -148,6 +148,10 @@
     <ClCompile Include="Graphics\Utilities\DDSTextureLoader.cpp">
       <Filter>Graphics\Utilities</Filter>
     </ClCompile>
+    <ClCompile Include="Modes\CalibrationMode.cpp" />
+    <ClCompile Include="Graphics\Objects\2D\BasicElements\Ellipse.cpp">
+      <Filter>Graphics\Objects\2D\BasicElements</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -351,6 +355,10 @@
     </ClInclude>
     <ClInclude Include="..\Firmware\MEMs_Drivers\NXP\fxas21002\fxas21002_regdef.h">
       <Filter>Devices\Sensors\Drivers</Filter>
+    </ClInclude>
+    <ClInclude Include="Modes\CalibrationMode.h" />
+    <ClInclude Include="Graphics\Objects\2D\BasicElements\Ellipse.h">
+      <Filter>Graphics\Objects\2D\BasicElements</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

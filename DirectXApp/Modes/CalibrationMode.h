@@ -52,7 +52,7 @@ private:
 	void prepareRecording();
 	void displayGraph();
 
-	float integrateData(float& p1, float& p2, float t)
+	float integrateData(float p1, float p2, float t)
 	{
 		return t * ((p1 + p2) / 2);
 	}

@@ -2,7 +2,7 @@
 #include "Graph.h"
 #include "Graphics/Objects/2D/BasicElements/TextOverlay.h"
 
-Graph::Graph(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, UIColor fillColor, UIColor outlineColor)
+Graph::Graph(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, bool line,  UIColor fillColor, UIColor outlineColor)
 {
 	//Simply create the background of the graph. Normally the background for the graph is white, although it
 	//can be changed.
@@ -20,6 +20,8 @@ Graph::Graph(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 loca
 	//being seen if the min and max aren't set by the user.
 	m_minimalDataPoint = { -100, -100 };
 	m_maximalDataPoint = { 100, 100 };
+
+	m_lineGraph = line;
 }
 
 void Graph::setAxisMaxAndMins(DirectX::XMFLOAT2 axis_minimums, DirectX::XMFLOAT2 axis_maximums)
@@ -63,13 +65,28 @@ void Graph::addDataSet(std::vector<DirectX::XMFLOAT2> const& dataPoints, UIColor
 	DirectX::XMFLOAT2 difference = { m_maximalDataPoint.x - m_minimalDataPoint.x, m_maximalDataPoint.y - m_minimalDataPoint.y };
 	DirectX::XMFLOAT2 absoluteDifference = { m_maximalAbsolutePoint.x - m_minimalAbsolutePoint.x, m_maximalAbsolutePoint.y - m_minimalAbsolutePoint.y };
 	DirectX::XMFLOAT2 previousPoint = { absoluteDifference.x * ((dataPoints[0].x - m_minimalDataPoint.x) / difference.x) + m_minimalAbsolutePoint.x, -1 * (absoluteDifference.y * ((dataPoints[0].y - m_minimalDataPoint.y) / difference.y) - m_maximalAbsolutePoint.y) }, currentPoint = { 0, 0 };
-	for (int i = 0; i < dataPoints.size(); i++)
+	
+	if (m_lineGraph)
 	{
-		currentPoint = {absoluteDifference.x * ((dataPoints[i].x - m_minimalDataPoint.x) / difference.x) + m_minimalAbsolutePoint.x, -1 * (absoluteDifference.y * ((dataPoints[i].y - m_minimalDataPoint.y) / difference.y) - m_maximalAbsolutePoint.y) };
-		Line line(currentWindowSize, currentPoint, previousPoint, lineColor);
-		p_children.push_back(std::make_shared<Line>(line));
-		previousPoint = currentPoint;
+		for (int i = 0; i < dataPoints.size(); i++)
+		{
+			currentPoint = { absoluteDifference.x * ((dataPoints[i].x - m_minimalDataPoint.x) / difference.x) + m_minimalAbsolutePoint.x, -1 * (absoluteDifference.y * ((dataPoints[i].y - m_minimalDataPoint.y) / difference.y) - m_maximalAbsolutePoint.y) };
+			Line line(currentWindowSize, currentPoint, previousPoint, lineColor);
+			p_children.push_back(std::make_shared<Line>(line));
+			previousPoint = currentPoint;
+		}
 	}
+	else
+	{
+		for (int i = 0; i < dataPoints.size(); i++)
+		{
+			currentPoint = { absoluteDifference.x * ((dataPoints[i].x - m_minimalDataPoint.x) / difference.x) + m_minimalAbsolutePoint.x, -1 * (absoluteDifference.y * ((dataPoints[i].y - m_minimalDataPoint.y) / difference.y) - m_maximalAbsolutePoint.y) };
+			Ellipse ell(currentWindowSize, currentPoint, { 0.0025f, 0.0025f }, true, lineColor);
+			p_children.push_back(std::make_shared<Ellipse>(ell));
+			previousPoint = currentPoint;
+		}
+	}
+	
 }
 
 void Graph::addLine(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 point1, DirectX::XMFLOAT2 point2)
