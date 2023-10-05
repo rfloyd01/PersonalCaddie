@@ -710,6 +710,14 @@ void ModeScreen::leaveActiveState()
 		m_personalCaddie->disableDataNotifications();
 		break;
 	}
+	case ModeType::CALIBRATION:
+	{
+		//Entering the active state puts the sensors into idle mode, as well as enables data notifications
+		m_modeState ^= ModeState::PersonalCaddieSensorIdleMode; //swap the sensor idle and active states
+		m_personalCaddie->changePowerMode(PersonalCaddiePowerMode::CONNECTED_MODE);
+		m_personalCaddie->disableDataNotifications();
+		break;
+	}
 	}
 }
 

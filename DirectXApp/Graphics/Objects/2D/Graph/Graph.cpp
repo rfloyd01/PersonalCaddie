@@ -81,7 +81,7 @@ void Graph::addDataSet(std::vector<DirectX::XMFLOAT2> const& dataPoints, UIColor
 		for (int i = 0; i < dataPoints.size(); i++)
 		{
 			currentPoint = { absoluteDifference.x * ((dataPoints[i].x - m_minimalDataPoint.x) / difference.x) + m_minimalAbsolutePoint.x, -1 * (absoluteDifference.y * ((dataPoints[i].y - m_minimalDataPoint.y) / difference.y) - m_maximalAbsolutePoint.y) };
-			Ellipse ell(currentWindowSize, currentPoint, { 0.0025f, 0.0025f }, true, lineColor);
+			Ellipse ell(currentWindowSize, currentPoint, { 0.0033f * m_size.y, 0.0033f * m_size.y }, true, lineColor);
 			p_children.push_back(std::make_shared<Ellipse>(ell));
 			previousPoint = currentPoint;
 		}

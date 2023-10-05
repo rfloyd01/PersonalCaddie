@@ -186,6 +186,8 @@
     <ClInclude Include="Graphics\Utilities\UIElementColors.h" />
     <ClInclude Include="Input\InputProcessor.h" />
     <ClInclude Include="Main.h" />
+    <ClInclude Include="Math\eigen.h" />
+    <ClInclude Include="Math\ellipse_math.h" />
     <ClInclude Include="Math\glm.h" />
     <ClInclude Include="Math\quaternion_functions.h" />
     <ClInclude Include="Math\sensor_fusion.h" />
@@ -275,6 +277,7 @@
     <ClCompile Include="Graphics\Utilities\UIElementColors.cpp" />
     <ClCompile Include="Input\InputProcessor.cpp" />
     <ClCompile Include="Main.cpp" />
+    <ClCompile Include="Math\ellipse_math.cpp" />
     <ClCompile Include="Math\quaternion_functions.cpp" />
     <ClCompile Include="Math\sensor_fusion.cpp" />
     <ClCompile Include="Modes\CalibrationMode.cpp" />

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Mode.h"
+#include "Math/ellipse_math.h"
 
 enum CalibrationModeState
 {
@@ -52,6 +53,8 @@ private:
 	void prepareRecording();
 	void displayGraph();
 
+	void updateEllipsePoints(std::vector<float>& x, std::vector<float>& y, std::vector<float>& z, Eigen::MatrixXf& b);
+
 	float integrateData(float p1, float p2, float t)
 	{
 		return t * ((p1 + p2) / 2);
@@ -73,7 +76,7 @@ private:
 	std::vector<DirectX::XMFLOAT2> m_graphDataX, m_graphDataY, m_graphDataZ;
 	float m_timeStamp;
 	float acc_cal[3][6]; //needed to isolate data from all six portions of the acc. tumble calibration: x1, x2, x3, x4, x5, x6, y1, y2... z6
-	//float gyr_cal[3][4]; //data captured in the x, y and z axes for each of the four gyroscope stages
+	std::vector<float> mx, my, mz; //holds calibrated magnetometer data
 	int avg_count; //used for averaging accelerometer data from tumble test
 
 	//calibration variables

@@ -34,7 +34,7 @@ void Magnetometer::setConversionRateFromSettings()
 		this->conversion_rate = lsm9ds1_fsr_conversion(MAG_SENSOR, this->settings[FS_RANGE]) / 10; //convert from mgauss to uTesla
 		break;
 	case FXOS8700_MAG:
-		this->conversion_rate = fxos_fxas_fsr_conversion(MAG_SENSOR, this->settings[FS_RANGE]) / 1000.0 * GRAVITY; //convert from mg to m/s^2
+		this->conversion_rate = fxos_fxas_fsr_conversion(MAG_SENSOR, this->settings[FS_RANGE]); //uTesla
 		break;
 	default:
 		this->conversion_rate = 0;

@@ -35,9 +35,15 @@ uint32_t CalibrationMode::initializeMode(winrt::Windows::Foundation::Size window
 		L"Fill", 1.05f * UIConstants::SubTitleTextPointSize, {UIColor::White}, {0, 4}, UITextJustification::UpperCenter);
 	subTitle.setState(subTitle.getState() | UIElementState::Invisible); ///the sub-title starts off invisible
 
-	//Create a graph ui element, it will stay invisible until after individual calibrations are complete
-	Graph graph(windowSize, { 0.7, 0.65 }, { 0.5, 0.5 });
-	graph.setState(graph.getState() | UIElementState::Invisible);
+	//Create a few graph ui elements, they will stay invisible until after individual calibrations are complete
+	Graph accGraph(windowSize, { 0.7, 0.65 }, { 0.5, 0.5 });
+	Graph magGraph1(windowSize, { 0.55, 0.8 }, { 0.25, 0.25 }, false);
+	Graph magGraph2(windowSize, { 0.85, 0.5 }, { 0.25, 0.25 }, false);
+	Graph magGraph3(windowSize, { 0.85, 0.8 }, { 0.25, 0.25 }, false);
+	accGraph.setState(accGraph.getState() | UIElementState::Invisible);
+	magGraph1.setState(magGraph1.getState() | UIElementState::Invisible);
+	magGraph2.setState(magGraph2.getState() | UIElementState::Invisible);
+	magGraph3.setState(magGraph3.getState() | UIElementState::Invisible);
 	
 	m_uiElements.push_back(std::make_shared<TextButton>(accButton));
 	m_uiElements.push_back(std::make_shared<TextButton>(gyrButton));
@@ -45,9 +51,12 @@ uint32_t CalibrationMode::initializeMode(winrt::Windows::Foundation::Size window
 	m_uiElements.push_back(std::make_shared<TextButton>(continueButton));
 	m_uiElements.push_back(std::make_shared<TextOverlay>(body));
 	m_uiElements.push_back(std::make_shared<TextOverlay>(subTitle));
-	m_uiElements.push_back(std::make_shared<Graph>(graph));
+	m_uiElements.push_back(std::make_shared<Graph>(accGraph));
 	m_uiElements.push_back(std::make_shared<TextButton>(noButton));
 	m_uiElements.push_back(std::make_shared<TextButton>(toggleButton));
+	m_uiElements.push_back(std::make_shared<Graph>(magGraph1));
+	m_uiElements.push_back(std::make_shared<Graph>(magGraph2));
+	m_uiElements.push_back(std::make_shared<Graph>(magGraph3));
 
 	m_state = initialState;
 	m_useCalibratedData = false;
@@ -96,6 +105,21 @@ void CalibrationMode::initializeCalibrationVariables()
 	for (int i = 0; i < 3; i++)
 	{
 		for (int j = 0; j < 6; j++) acc_cal[i][j] = 0.0f;
+
+		acc_off[i] = 0.0f;
+		acc_gain_x[i] = 0.0f;
+		acc_gain_y[i] = 0.0f;
+		acc_gain_z[i] = 0.0f;
+
+		gyr_off[i] = 0.0f;
+		gyr_gain_x[i] = 0.0f;
+		gyr_gain_y[i] = 0.0f;
+		gyr_gain_z[i] = 0.0f;
+
+		mag_off[i] = 0.0f;
+		mag_gain_x[i] = 0.0f;
+		mag_gain_y[i] = 0.0f;
+		mag_gain_z[i] = 0.0f;
 	}
 }
 
@@ -143,12 +167,11 @@ void CalibrationMode::updateComplete()
 	//When we've successfully updated the calibration file in memory we use
 	//this method to remove the update_cal_numbers flag from the current state.
 	//This is called from a separate thread which is why this is necessary.
-	if (m_state & CalibrationModeState::UPDATE_CAL_NUMBERS)
-	{
-		m_state ^= CalibrationModeState::UPDATE_CAL_NUMBERS;
-		m_state &= 0xFFFFFFF0; //This will remove the active flag as well as the current sensor flag
-		initializeCalibrationVariables(); //reset calibration variables to their default values
-	}
+	if (m_state & CalibrationModeState::UPDATE_CAL_NUMBERS) m_state ^= CalibrationModeState::UPDATE_CAL_NUMBERS;
+	if (m_state & ModeState::Active) m_state ^= ModeState::Active;
+
+	m_state &= 0xFFFFFFF0; //This will remove the active flag as well as the current sensor flag
+	initializeCalibrationVariables(); //reset calibration variables to their default values
 }
 
 uint32_t CalibrationMode::handleUIElementStateChange(int i)
@@ -294,7 +317,7 @@ void CalibrationMode::accelerometerCalibration()
 		if (!m_stageSet)
 		{
 			((TextOverlay*)m_uiElements[4].get())->updateText(L"Lay the sensor flat on the table with the +Y axis pointing upwards like shown in the image. Leave the sensor stationary like this for 5 seconds as it collects data. Press the continue button when ready.");
-			data_timer_duration = 1000; //the acceleromter needs 5 seconds of data at each stage
+			data_timer_duration = 5000; //the acceleromter needs 5 seconds of data at each stage
 			m_stageSet = true;
 		}
 		
@@ -405,11 +428,12 @@ void CalibrationMode::accelerometerCalibration()
 			m_uiElements[7]->setState(m_uiElements[7]->getState() | UIElementState::Invisible); //make the no button invisible
 			m_uiElements[8]->setState(m_uiElements[8]->getState() ^ UIElementState::Invisible); //make the data toggle switch visible
 
-			//TODO: Clear data and lines from graph here
+			((Graph*)m_uiElements[6].get())->removeAllLines(); //clear everything out from the graph when done viewing it
 
-			
 			m_stageSet = true;
 		}
+
+		if (!accept_cal) updateComplete();
 	}
 	}
 }
@@ -530,11 +554,10 @@ void CalibrationMode::gyroscopeCalibration()
 			m_uiElements[6]->setState(m_uiElements[6]->getState() | UIElementState::Invisible); //make the graph invisible
 			m_uiElements[7]->setState(m_uiElements[7]->getState() | UIElementState::Invisible); //make the no button invisible
 
-			//TODO: Clear data and lines from graph here
-
-
 			m_stageSet = true;
 		}
+
+		if (!accept_cal) updateComplete();
 	}
 	}
 }
@@ -561,8 +584,8 @@ void CalibrationMode::magnetometerCalibration()
 	{
 		if (!m_stageSet)
 		{
-			((TextOverlay*)m_uiElements[4].get())->updateText(L"Take the sensor in your hand and rotate it along all three axes in figure-8 patterns for 10 seconds. Imaging the sensor is inside a sphere and you're trying to make the front of the sensor point at as many locations in the sphere as possible. Press the continue button when ready.");
-			data_timer_duration = 10000; //the acceleromter needs 5 seconds of data at each stage
+			((TextOverlay*)m_uiElements[4].get())->updateText(L"Take the sensor in your hand and rotate it along all three axes in figure-8 patterns for 20 seconds. Imaging the sensor is inside a sphere and you're trying to make the front of the sensor point at as many locations in the sphere as possible. Press the continue button when ready.");
+			data_timer_duration = 20000; //the acceleromter needs 5 seconds of data at each stage
 			m_stageSet = true;
 		}
 
@@ -577,10 +600,59 @@ void CalibrationMode::magnetometerCalibration()
 	{
 		if (!m_stageSet)
 		{
-			((TextOverlay*)m_uiElements[4].get())->updateText(L"Data collection is complete. The three graphs repsent the calibrated data (green) and uncalibrated data (red) as seen from the XY, XZ and YZ planes.");
+			calculateCalNumbers();
+			std::wstring completionText = L"Data collection is complete. The three graphs repsent the calibrated data (green) and uncalibrated data (red) as seen from the XY, XZ and YZ planes.\n\n\n"
+				L"Offset = [" + std::to_wstring(mag_off[0]) + L", " + std::to_wstring(mag_off[1]) + L", " + std::to_wstring(mag_off[2]) + L"]\n\n"
+				L"              [" + std::to_wstring(mag_gain[0][0]) + L", " + std::to_wstring(mag_gain[0][1]) + L", " + std::to_wstring(mag_gain[0][2]) + L"]\n"
+				L"Gains  =  [" + std::to_wstring(mag_gain[1][0]) + L", " + std::to_wstring(mag_gain[1][1]) + L", " + std::to_wstring(mag_gain[1][2]) + L"]\n"
+				L"               [" + std::to_wstring(mag_gain[2][0]) + L", " + std::to_wstring(mag_gain[2][1]) + L", " + std::to_wstring(mag_gain[2][2]) + L"]";
+			((TextOverlay*)m_uiElements[4].get())->updateText(completionText);
+			displayGraph();
+
+			//momentarily change the text of the continue button to say "yes", also make the "no" button visible
+			m_uiElements[3]->getText()->message = L"Yes";
+			m_uiElements[7]->setState(m_uiElements[7]->getState() ^ UIElementState::Invisible);
+
 			m_stageSet = true;
 		}
 		break;
+	}
+	case 4:
+	{
+		if (!m_stageSet)
+		{
+			//If the results have been accepted we add the update_cal_numbers state to alert the mode screen
+			//that it needs to physically update the calibration numbers.
+			if (accept_cal)
+			{
+				m_state |= CalibrationModeState::UPDATE_CAL_NUMBERS;
+			}
+
+			m_uiElements[0]->setState(m_uiElements[0]->getState() ^ UIElementState::Invisible);
+			m_uiElements[1]->setState(m_uiElements[1]->getState() ^ UIElementState::Invisible);
+			m_uiElements[2]->setState(m_uiElements[2]->getState() ^ UIElementState::Invisible);
+
+			//Update the body text
+			((TextOverlay*)m_uiElements[4].get())->updateText(L"In calibration mode we can manually calculate the offsets and cross-axis gains for the accelerometer, gyroscope and magnetometer on the Personal Caddie to get more accurate data. Select one of the sensors using the buttons below to begin the calibration process.");
+
+			m_uiElements[3]->getText()->message = L"Continue"; //change the text back to "Continue" for the continue button
+			m_uiElements[3]->setState(m_uiElements[3]->getState() | UIElementState::Invisible); //make the continue button invisible
+			m_uiElements[5]->setState(m_uiElements[5]->getState() | UIElementState::Invisible); //make the sub-title invisible
+			m_uiElements[7]->setState(m_uiElements[7]->getState() | UIElementState::Invisible); //make the no button invisible
+			m_uiElements[8]->setState(m_uiElements[8]->getState() ^ UIElementState::Invisible); //make the data toggle switch visible
+			m_uiElements[9]->setState(m_uiElements[9]->getState() | UIElementState::Invisible); //make the graph invisible
+			m_uiElements[10]->setState(m_uiElements[10]->getState() | UIElementState::Invisible); //make the graph invisible
+			m_uiElements[11]->setState(m_uiElements[11]->getState() | UIElementState::Invisible); //make the graph invisible
+
+			//Clear everything out from the graphs when done viewing them
+			((Graph*)m_uiElements[9].get())->removeAllLines();
+			((Graph*)m_uiElements[10].get())->removeAllLines();
+			((Graph*)m_uiElements[11].get())->removeAllLines();
+
+			m_stageSet = true;
+		}
+
+		if (!accept_cal) updateComplete();
 	}
 	}
 }
@@ -672,6 +744,73 @@ void CalibrationMode::calculateCalNumbers()
 		m_graphDataZ.clear();
 		m_timeStamp = 0.0f;
 	}
+	else if (m_state & CalibrationModeState::MAGNETOMETER)
+	{
+		//Get the minimum and maximum values for each of the principle axes. Also
+		//add data points without timestamps to calibrated data vectors.
+		float mag_min[3] = { m_graphDataX[0].y, m_graphDataY[0].y , m_graphDataZ[0].y };
+		float mag_max[3] = { m_graphDataX[0].y, m_graphDataY[0].y , m_graphDataZ[0].y };
+
+		mx.clear();
+		my.clear();
+		mz.clear();
+
+		for (int i = 0; i < m_graphDataX.size(); i++)
+		{
+			if (m_graphDataX[i].y < mag_min[0]) mag_min[0] = m_graphDataX[i].y;
+			if (m_graphDataY[i].y < mag_min[1]) mag_min[1] = m_graphDataY[i].y;
+			if (m_graphDataZ[i].y < mag_min[2]) mag_min[2] = m_graphDataZ[i].y;
+
+			if (m_graphDataX[i].y > mag_max[0]) mag_max[0] = m_graphDataX[i].y;
+			if (m_graphDataY[i].y > mag_max[1]) mag_max[1] = m_graphDataY[i].y;
+			if (m_graphDataZ[i].y > mag_max[2]) mag_max[2] = m_graphDataZ[i].y;
+
+			mx.push_back(m_graphDataX[i].y);
+			my.push_back(m_graphDataY[i].y);
+			mz.push_back(m_graphDataZ[i].y);
+		}
+
+		//Set the offset values
+		mag_off[0] = (mag_max[0] + mag_min[0]) / 2.0;
+		mag_off[1] = (mag_max[1] + mag_min[1]) / 2.0;
+		mag_off[2] = (mag_max[2] + mag_min[2]) / 2.0;
+
+		float og_x_off = mag_off[0], og_y_off = mag_off[1], og_z_off = mag_off[2]; //use these variables to reset data back to original location before applying new cal numbers
+
+		//correct hard iron so data points can be used in best fit algorithm
+		for (int i = 0; i < mx.size(); i++)
+		{
+			mx[i] -= mag_off[0];
+			my[i] -= mag_off[1];
+			mz[i] -= mag_off[2];
+		}
+
+		//convert each data point to spherical coordinates and add to RUV array
+		//TODO: This can most likely be taken out
+		std::vector<std::vector<double> > RUV;
+		for (int i = 0; i < mx.size(); i++)
+		{
+			std::vector<double> ruv;
+			float xi = mx[i];
+			float yi = my[i];
+			float zi = mz[i];
+			ruv.push_back(sqrt(xi * xi + yi * yi + zi * zi)); //r
+			ruv.push_back(atan2(yi, xi)); //u
+			ruv.push_back(atan2(sqrt(xi * xi + yi * yi), zi)); //v
+			RUV.push_back(ruv);
+		}
+
+		//figure out best fit ellipse for data set and calculate soft-iron gain from it, also slightly changes location of hard iron when best fit ellipse isn't at origin
+		ellipseBestFit(mx, my, mz, RUV, &mag_off[0], &mag_gain[0][0]);
+
+		//put data points back to original location
+		for (int i = 0; i < mx.size(); i++)
+		{
+			mx[i] += og_x_off;
+			my[i] += og_y_off;
+			mz[i] += og_z_off;
+		}
+	}
 }
 
 void CalibrationMode::prepareRecording()
@@ -696,22 +835,17 @@ void CalibrationMode::displayGraph()
 	//representation of the accumulated data to make sure that things look correct. This
 	//method get's called after all calibration data has been gathered.
 
-	if (m_graphDataX.size() >= 2)
+	if (m_state & CalibrationModeState::ACCELEROMETER)
 	{
 		//set the min and max data values for the graph, this value will change depending on which 
 		//calibration is being carried out.
-		//TODO: Add gyro and mag stuff when I get there
-		//add a few axis lines to the graph
 		float centerLineLocation, upperLineLocation, lowerLineLocation;
 
-		if (m_state & CalibrationModeState::ACCELEROMETER)
-		{
-			((Graph*)m_uiElements[6].get())->setAxisMaxAndMins({ 0,  -12.0 }, { m_graphDataX.back().x, 12.0 });
-			//add a few axis lines to the graph
-			centerLineLocation = 0.0f; //The average of the highest and lowest data point
-			upperLineLocation = GRAVITY; //95% of the highest data point
-			lowerLineLocation = -GRAVITY; //95% of the lowest data point
-		}
+		((Graph*)m_uiElements[6].get())->setAxisMaxAndMins({ 0,  -12.0 }, { m_graphDataX.back().x, 12.0 });
+		//add a few axis lines to the graph
+		centerLineLocation = 0.0f; //The average of the highest and lowest data point
+		upperLineLocation = GRAVITY; //95% of the highest data point
+		lowerLineLocation = -GRAVITY; //95% of the lowest data point
 
 		((Graph*)m_uiElements[6].get())->addDataSet(m_graphDataX, UIColor::Red);
 		((Graph*)m_uiElements[6].get())->addDataSet(m_graphDataY, UIColor::Blue);
@@ -731,6 +865,56 @@ void CalibrationMode::displayGraph()
 		((Graph*)m_uiElements[6].get())->addAxisLabel(axisText, lowerLineLocation);
 
 		m_uiElements[6]->setState(m_uiElements[6]->getState() ^ UIElementState::Invisible); //lastly, make the graph visible
+	}
+	else if (m_state & CalibrationModeState::MAGNETOMETER)
+	{
+		//The magnetometer calibration has three different graphs associated with it. On in the XY plane, the
+		//XZ pland and the YZ plane. We need to create new vectors with the appropriate information.
+		std::vector<DirectX::XMFLOAT2> xy, xz, yz, xyc, xzc, yzc;
+
+		for (int i = 0; i < m_graphDataX.size(); i++)
+		{
+			xy.push_back({ m_graphDataX[i].y, m_graphDataY[i].y });
+			xz.push_back({ m_graphDataX[i].y, m_graphDataZ[i].y });
+			yz.push_back({ m_graphDataY[i].y, m_graphDataZ[i].y });
+		}
+
+		//We also add the calibrated values for a comparison
+		for (int i = 0; i < mx.size(); i++)
+		{
+			mx[i] = (mag_gain[0][0] * (m_graphDataX[i].y - mag_off[0])) + (mag_gain[0][1] * (m_graphDataY[i].y - mag_off[1])) + (mag_gain[0][2] * (m_graphDataZ[i].y - mag_off[2]));
+			my[i] = (mag_gain[1][0] * (m_graphDataX[i].y - mag_off[0])) + (mag_gain[1][1] * (m_graphDataY[i].y - mag_off[1])) + (mag_gain[1][2] * (m_graphDataZ[i].y - mag_off[2]));
+			mz[i] = (mag_gain[2][0] * (m_graphDataX[i].y - mag_off[0])) + (mag_gain[2][1] * (m_graphDataY[i].y - mag_off[1])) + (mag_gain[2][2] * (m_graphDataZ[i].y - mag_off[2]));
+
+			xyc.push_back({ mx[i], my[i] });
+			xzc.push_back({ mx[i], mz[i] });
+			yzc.push_back({ my[i], mz[i] });
+		}
+
+		((Graph*)m_uiElements[9].get())->setAxisMaxAndMins({ -125.0f,  -125.0f }, { 125.0f, 125.0f });
+		((Graph*)m_uiElements[9].get())->addDataSet(xy, UIColor::Red);
+		((Graph*)m_uiElements[9].get())->addDataSet(xyc, UIColor::Green);
+		((Graph*)m_uiElements[9].get())->addAxisLine(0, 0);
+		((Graph*)m_uiElements[9].get())->addAxisLine(1, 0);
+		
+		((Graph*)m_uiElements[10].get())->setAxisMaxAndMins({ -125.0f,  -125.0f }, { 125.0f, 125.0f });
+		((Graph*)m_uiElements[10].get())->addDataSet(xz, UIColor::Blue);
+		((Graph*)m_uiElements[10].get())->addDataSet(xzc, UIColor::Green);
+		((Graph*)m_uiElements[10].get())->addAxisLine(0, 0);
+		((Graph*)m_uiElements[10].get())->addAxisLine(1, 0);
+
+		((Graph*)m_uiElements[11].get())->setAxisMaxAndMins({ -125.0f,  -125.0f }, { 125.0f, 125.0f });
+		((Graph*)m_uiElements[11].get())->addDataSet(yz, UIColor::Yellow);
+		((Graph*)m_uiElements[11].get())->addDataSet(yzc, UIColor::Green);
+		((Graph*)m_uiElements[11].get())->addAxisLine(0, 0);
+		((Graph*)m_uiElements[11].get())->addAxisLine(1, 0);
+
+		//TODO: add axis lines
+
+		//lastly, make the graphs visible
+		m_uiElements[9]->setState(m_uiElements[9]->getState() ^ UIElementState::Invisible); 
+		m_uiElements[10]->setState(m_uiElements[10]->getState() ^ UIElementState::Invisible);
+		m_uiElements[11]->setState(m_uiElements[11]->getState() ^ UIElementState::Invisible);
 	}
 }
 
