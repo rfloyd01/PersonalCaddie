@@ -4,6 +4,8 @@
 #include "Graphics/Objects/3D/Elements/VolumeElement.h"
 #include "Graphics/Rendering/Material.h"
 #include "Input/InputProcessor.h"
+#include "Math/glm.h"
+
 #include <string>
 
 
@@ -75,6 +77,7 @@ public:
 	virtual uint32_t handleUIElementStateChange(int i) = 0;
 
 	virtual void addData(std::vector<std::vector<std::vector<float> > > const& sensorData, float sensorODR) {} //A method that modes can overwrite when they need data from the Personal Caddie
+	virtual void addQuaternions(std::vector<glm::quat> const& quaternions) {} //A method that modes can overwrite when they need data from the Personal Caddie
 
 	bool m_needsCamera = false; //Modes that require 3D rendering will set this variable to true to let the ModeScreen know that its camera is needed
 

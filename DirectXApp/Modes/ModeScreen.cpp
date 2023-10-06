@@ -576,6 +576,7 @@ void ModeScreen::PersonalCaddieHandler(PersonalCaddieEventType pcEvent, void* ev
 		else if (m_currentMode == ModeType::MADGWICK)
 		{
 			//TODO: Add quaternion getting method here
+			m_modes[static_cast<int>(m_currentMode)]->addQuaternions(m_personalCaddie->getQuaterninos());
 		}
 		break;
 	}

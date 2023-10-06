@@ -43,6 +43,12 @@ uint32_t MadgwickTestMode::initializeMode(winrt::Windows::Foundation::Size windo
 
 	m_currentRotation = 0.0f;
 	m_currentDegree = PI / 2.0f;
+	m_currentQuaternion = 0;
+
+	current_time = std::chrono::steady_clock::now();
+
+	//Load the quaternion vector with default quaternions
+	for (int i = 0; i < 10; i++) m_quaternions.push_back({ 1.0f, 0.0f, 0.0f, 0.0f });
 
 	//The NeedMaterial modeState lets the mode screen know that it needs to pass
 	//a list of materials to this mode that it can use to initialize 3d objects
@@ -85,17 +91,22 @@ uint32_t MadgwickTestMode::handleUIElementStateChange(int i)
 	return 0;
 }
 
+void MadgwickTestMode::addQuaternions(std::vector<glm::quat> const& quaternions)
+{
+	m_currentQuaternion = 0; //reset the current quaternion to be rendered
+	m_quaternions.clear(); //clear out existing quaternions
+	for (int i = 0; i < quaternions.size(); i++) m_quaternions.push_back(quaternions[i]);
+}
+
 void MadgwickTestMode::update()
 {
-	//for now, rotate the sensor by a small amount
-	//auto rando_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-	DirectX::XMVECTOR q({ 0.0f, sinf(PI / 4.0f), 0.0f, cosf(PI / 4.0f) });
+	//Animate the current rotation quaternion obtained from the Personal Caddie
+	DirectX::XMVECTOR q({ m_quaternions[m_currentQuaternion].x, m_quaternions[m_currentQuaternion].y, m_quaternions[m_currentQuaternion].z, m_quaternions[m_currentQuaternion].w });
 
-	for (int i = 0; i < m_volumeElements.size(); i++)
-	{
-		//((Face*)m_volumeElements[i].get())->translateAndRotateFace({ sinf(m_currentDegree), 0.0f, 1.0f}, {1.0f, 1.0f, 0.0f}, m_currentDegree);
-		((Face*)m_volumeElements[i].get())->translateAndRotateFace({ 0.0f, 0.0f, 1.0f }, q);
-	}
-
-	m_currentDegree += PI / 180.0f;
+	//Rotate each face according to the given quaternion
+	for (int i = 0; i < m_volumeElements.size(); i++) ((Face*)m_volumeElements[i].get())->translateAndRotateFace({ 0.0f, 0.0f, 1.0f }, q);
+	
+	//Move to the next quaternion. If we've reached the end of the current 
+	//set of quaternions just keep rendering the last one in the set
+	if (m_currentQuaternion < m_quaternions.size() - 1) m_currentQuaternion++;
 }

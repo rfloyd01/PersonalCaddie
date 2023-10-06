@@ -85,7 +85,7 @@ public:
 	void updateSensorCalibrationNumbers(sensor_type_t sensor, std::pair<float*, float**> cal_numbers);
 
 	int getNumberOfSamples() { return this->number_of_samples; }
-	float getMaxODR() { return this->p_imu->getMaxODR(); } //TODO: Should put a nullptr check here
+	float getMaxODR() { return this->p_imu->getMaxODR(); }
 
 	void connectToDevice(uint64_t deviceAddress);
 	void disconnectFromDevice();
@@ -111,6 +111,7 @@ public:
 
 	std::set<DeviceInfoDisplay>* getScannedDevices() { return p_ble->getScannedDevices(); }
 	std::vector<std::vector<std::vector<float> > > const& getSensorData() { return sensor_data; }
+	std::vector<glm::quat> const& getQuaterninos() { return orientation_quaternions; }
 
 private:
 	std::unique_ptr<BLE> p_ble;
@@ -191,4 +192,16 @@ private:
 	//Madgwick items
 	float sampleFreq, beta = 0.1; //beta changes how reliant the Madgwick filter is on acc and mag data, good value is 0.035
 	float bx = -8, by = 40, bz = 15; //consider setting these values to the value of current location by default. Currently set to Conshohocken values
+
+	//Axis Swapping variables
+	//The axes for the sensors don't typically line up with the axes that DirectX uses, so these variables allow a seemless
+	//swap. TODO: Need some methods to manually manipulate these variables
+	Axis acc_axes_swap[3] = {Y, Z, X};
+	int acc_axes_invert[3] = { -1, 1, 1 };
+
+	Axis gyr_axes_swap[3] = { Y, Z, X };
+	int gyr_axes_invert[3] = { -1, 1, 1 };
+
+	Axis mag_axes_swap[3] = { Y, Z, X };
+	int mag_axes_invert[3] = { -1, 1, 1 };
 };

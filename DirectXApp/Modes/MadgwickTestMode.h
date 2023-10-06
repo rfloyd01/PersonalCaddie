@@ -13,10 +13,16 @@ public:
 	virtual uint32_t handleUIElementStateChange(int i) override;
 
 	virtual void update() override;
+	virtual void addQuaternions(std::vector<glm::quat> const& quaternions) override;
 
 private:
 	void initializeTextOverlay(winrt::Windows::Foundation::Size windowSize);
 
 	float m_currentRotation;
 	float m_currentDegree;
+
+	std::chrono::steady_clock::time_point current_time;
+
+	int m_currentQuaternion;
+	std::vector<glm::quat> m_quaternions;
 };
