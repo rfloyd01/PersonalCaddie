@@ -26,6 +26,7 @@ public:
     void rotateFaceAboutVector(DirectX::XMVECTOR axis, float degrees);
     void translateFace(DirectX::XMFLOAT3 location);
     void translateAndRotateFace(DirectX::XMFLOAT3 location, DirectX::XMVECTOR axis, float degrees);
+    void translateAndRotateFace(DirectX::XMFLOAT3 location, DirectX::XMVECTOR quat);
 
     /*void setRotation(DirectX::XMFLOAT4X4 rotation);
     void setRotation(DirectX::XMMATRIX rotation);*/

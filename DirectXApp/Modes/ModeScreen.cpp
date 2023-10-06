@@ -360,10 +360,11 @@ void ModeScreen::changeCurrentMode(ModeType mt)
 	//Check to see if the current mode is in the active state, if so then take it out
 	//of that state. Then uninitialize the mode.
 	if (m_modeState & ModeState::Active) leaveActiveState();
-	if ((m_modeState & ModeState::PersonalCaddieSensorIdleMode) || (m_modeState & ModeState::PersonalCaddieSensorIdleMode))
-	{
-		m_personalCaddie->changePowerMode(PersonalCaddiePowerMode::CONNECTED_MODE);
-	}
+
+	//If we're in sensor active mode, we need to first enter sensor idle mode, and then connected mode
+	if (m_modeState & ModeState::PersonalCaddieSensorIdleMode) m_personalCaddie->changePowerMode(PersonalCaddiePowerMode::CONNECTED_MODE);
+	else if (m_modeState & ModeState::PersonalCaddieSensorActiveMode) m_personalCaddie->changePowerMode(PersonalCaddiePowerMode::SENSOR_IDLE_MODE);
+
 	m_modeState = 0;
 	m_modes[static_cast<int>(m_currentMode)]->uninitializeMode();
 
@@ -474,10 +475,22 @@ void ModeScreen::PersonalCaddieHandler(PersonalCaddieEventType pcEvent, void* ev
 
 		if (alertText == L"The Personal Caddie has been placed into Sensor Idle Mode")
 		{
-			if (m_currentMode == ModeType::CALIBRATION)
+			if (!(m_modeState & (ModeState::PersonalCaddieSensorIdleMode | ModeState::PersonalCaddieSensorActiveMode)))
+			{
+				//If we're being put into sensor idle mode, and neither the idle mode or active mode flags are
+				//active, it means we're trying to get from active mode to connected mode
+				m_personalCaddie->changePowerMode(PersonalCaddiePowerMode::CONNECTED_MODE);
+			}
+			else if (m_currentMode == ModeType::CALIBRATION)
 			{
 				((CalibrationMode*)m_modes[static_cast<int>(m_currentMode)].get())->stopDataCapture();
 				m_modeState ^= ModeState::Active; //re-enter the active state to resume updates
+			}
+			else if (m_currentMode == ModeType::MADGWICK)
+			{
+				//In Madwick testing mode we go straight into sensor idle mode upon entering
+				m_modeState ^= (ModeState::PersonalCaddieSensorIdleMode | ModeState::PersonalCaddieSensorActiveMode);
+				m_personalCaddie->enableDataNotifications();
 			}
 		}
 		else if (alertText == L"The Personal Caddie has been placed into Sensor Active Mode")
@@ -487,6 +500,11 @@ void ModeScreen::PersonalCaddieHandler(PersonalCaddieEventType pcEvent, void* ev
 				((CalibrationMode*)m_modes[static_cast<int>(m_currentMode)].get())->startDataCapture();
 				m_modeState ^= ModeState::Active; //re-enter the active state to resume updates
 			}
+		}
+		else if (alertText == L"The Personal Caddie has been placed into Connected Mode")
+		{
+			//When entering connected mode, we make sure that data notifications are turned off
+			m_personalCaddie->disableDataNotifications();
 		}
 		break;
 	}
@@ -550,15 +568,15 @@ void ModeScreen::PersonalCaddieHandler(PersonalCaddieEventType pcEvent, void* ev
 	{
 		//The imu on the personal caddie has finished taking readings and has sent the data over.
 		//Send the data to the current mode if it needs it.
-		m_modes[static_cast<int>(m_currentMode)]->addData(m_personalCaddie->getSensorData(), m_personalCaddie->getMaxODR());
-		/*if (m_currentMode == ModeType::GRAPH_MODE)
+		
+		if (m_currentMode == ModeType::GRAPH_MODE || m_currentMode == ModeType::CALIBRATION)
 		{
-			((GraphMode*)m_modes[static_cast<int>(ModeType::GRAPH_MODE)].get())->addData(m_personalCaddie->getSensorData(), m_personalCaddie->getMaxODR());
+			m_modes[static_cast<int>(m_currentMode)]->addData(m_personalCaddie->getSensorData(), m_personalCaddie->getMaxODR());
 		}
-		else if (m_currentMode == ModeType::CALIBRATION)
+		else if (m_currentMode == ModeType::MADGWICK)
 		{
-			((CalibrationMode*)m_modes[static_cast<int>(ModeType::GRAPH_MODE)].get())->addData(m_personalCaddie->getSensorData(), m_personalCaddie->getMaxODR());
-		}*/
+			//TODO: Add quaternion getting method here
+		}
 		break;
 	}
 	}
@@ -617,6 +635,14 @@ void ModeScreen::enterActiveState()
 		m_personalCaddie->enableDataNotifications();
 		break;
 	}
+	//case ModeType::MADGWICK:
+	//{
+	//	//When entering Madgwick testing mode, we put the sensor directly into active mode to start taking readings. This of course
+	//	//requires entering sensor idle mode first.
+	//	m_modeState |= ModeState::PersonalCaddieSensorIdleMode;
+	//	m_personalCaddie->enableDataNotifications();
+	//	break;
+	//}
 	}
 }
 

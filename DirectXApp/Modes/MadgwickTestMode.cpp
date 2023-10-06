@@ -46,7 +46,7 @@ uint32_t MadgwickTestMode::initializeMode(winrt::Windows::Foundation::Size windo
 
 	//The NeedMaterial modeState lets the mode screen know that it needs to pass
 	//a list of materials to this mode that it can use to initialize 3d objects
-	return (ModeState::CanTransfer | ModeState::NeedMaterial | ModeState::Active);
+	return (ModeState::CanTransfer | ModeState::NeedMaterial | ModeState::Active | ModeState::PersonalCaddieSensorIdleMode);
 }
 
 void MadgwickTestMode::uninitializeMode()
@@ -89,12 +89,12 @@ void MadgwickTestMode::update()
 {
 	//for now, rotate the sensor by a small amount
 	//auto rando_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+	DirectX::XMVECTOR q({ 0.0f, sinf(PI / 4.0f), 0.0f, cosf(PI / 4.0f) });
 
 	for (int i = 0; i < m_volumeElements.size(); i++)
 	{
-		//((Face*)m_volumeElements[i].get())->translateFace({ sin(m_currentDegree) / 70.0f, 0.0f, 0.0f });
-		((Face*)m_volumeElements[i].get())->translateAndRotateFace({ sinf(m_currentDegree), 0.0f, 1.0f}, {1.0f, 1.0f, 0.0f}, m_currentDegree);
-		//((Face*)m_volumeElements[i].get())->rotateFaceAboutVector({ 0.0f, 1.0f, 0.0f }, PI / 60.0f);
+		//((Face*)m_volumeElements[i].get())->translateAndRotateFace({ sinf(m_currentDegree), 0.0f, 1.0f}, {1.0f, 1.0f, 0.0f}, m_currentDegree);
+		((Face*)m_volumeElements[i].get())->translateAndRotateFace({ 0.0f, 0.0f, 1.0f }, q);
 	}
 
 	m_currentDegree += PI / 180.0f;
