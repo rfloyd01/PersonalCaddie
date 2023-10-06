@@ -17,27 +17,12 @@ uint32_t MadgwickTestMode::initializeMode(winrt::Windows::Foundation::Size windo
 
 	float sensorHeight = 0.5f, sensorLength = 0.3f, sensorWidth = 0.052f;
 
-	std::shared_ptr<Face> sensorTop = std::make_shared<Face>(DirectX::XMFLOAT3(-0.15f, -0.25f, 1.0f), DirectX::XMFLOAT3(0.15f, -0.25f, 1.0f), DirectX::XMFLOAT3(-0.15f, 0.25f, 1.0f));
-	std::shared_ptr<Face> sensorLongSideOne = std::make_shared<Face>(DirectX::XMFLOAT3(-0.026f, -0.25f, 1.0f), DirectX::XMFLOAT3(0.026f, -0.25f, 1.0f), DirectX::XMFLOAT3(-0.026f, 0.25f, 1.0f));
-	std::shared_ptr<Face> sensorLongSideTwo = std::make_shared<Face>(DirectX::XMFLOAT3(-0.026f, -0.25f, 1.0f), DirectX::XMFLOAT3(0.026f, -0.25f, 1.0f), DirectX::XMFLOAT3(-0.026f, 0.25f, 1.0f));
-	std::shared_ptr<Face> sensorShortSideOne = std::make_shared<Face>(DirectX::XMFLOAT3(-0.15f, -0.026f, 1.0f), DirectX::XMFLOAT3(0.15f, -0.026f, 1.0f), DirectX::XMFLOAT3(-0.15f, 0.026f, 1.0f));
-	std::shared_ptr<Face> sensorShortSideTwo = std::make_shared<Face>(DirectX::XMFLOAT3(-0.15f, -0.026f, 1.0f), DirectX::XMFLOAT3(0.15f, -0.026f, 1.0f), DirectX::XMFLOAT3(-0.15f, 0.026f, 1.0f));
-	std::shared_ptr<Face> sensorBottom = std::make_shared<Face>(DirectX::XMFLOAT3(-0.15f, -0.25f, 1.0f), DirectX::XMFLOAT3(0.15f, -0.25f, 1.0f), DirectX::XMFLOAT3(-0.15f, 0.25f, 1.0f));
-
-	sensorLongSideOne->rotateFaceAboutVector({ 0.0f, 1.0f, 0.0f }, PI / 2.0f);
-	sensorLongSideOne->translateFace({ -0.15f, 0.0f, 0.026f });
-
-	sensorLongSideTwo->rotateFaceAboutVector({ 0.0f, 1.0f, 0.0f }, PI / 2.0f);
-	sensorLongSideTwo->translateFace({ 0.15f, 0.0f, 0.026f });
-
-	sensorShortSideOne->rotateFaceAboutVector({ 1.0f, 0.0f, 0.0f }, PI / 2.0f);
-	sensorShortSideOne->translateFace({ 0.0f, -0.25f, 0.026f });
-
-	sensorShortSideTwo->rotateFaceAboutVector({ 1.0f, 0.0f, 0.0f }, PI / 2.0f);
-	sensorShortSideTwo->translateFace({ 0.0f, 0.25f, 0.026f });
-
-	sensorBottom->rotateFaceAboutVector({ 0.0f, 1.0f, 0.0f }, PI);
-	sensorBottom->translateFace({ 0.0f, 0.0f, 0.052f });
+	std::shared_ptr<Face> sensorTop = std::make_shared<Face>(DirectX::XMFLOAT3(-0.15f, -0.25f, -0.026f), DirectX::XMFLOAT3(0.15f, -0.25f, -0.026f), DirectX::XMFLOAT3(-0.15f, 0.25f, -0.026f));
+	std::shared_ptr<Face> sensorLongSideOne = std::make_shared<Face>(DirectX::XMFLOAT3(-0.15f, -0.25f, 0.026f ), DirectX::XMFLOAT3(-0.15f, -0.25f, -0.026f ), DirectX::XMFLOAT3(-0.15f, 0.25f, 0.026f));
+	std::shared_ptr<Face> sensorLongSideTwo = std::make_shared<Face>(DirectX::XMFLOAT3(0.15f, -0.25f, -0.026f), DirectX::XMFLOAT3(0.15f, -0.25f, 0.026f), DirectX::XMFLOAT3(0.15f, 0.25f, -0.026f));
+	std::shared_ptr<Face> sensorShortSideOne = std::make_shared<Face>(DirectX::XMFLOAT3(-0.15f, 0.25f, -0.026f), DirectX::XMFLOAT3(0.15f, 0.25f, -0.026f), DirectX::XMFLOAT3(-0.15f, 0.25f, 0.026f));
+	std::shared_ptr<Face> sensorShortSideTwo = std::make_shared<Face>(DirectX::XMFLOAT3(-0.15f, -0.25f, 0.026f), DirectX::XMFLOAT3(0.15f, -0.25f, 0.026), DirectX::XMFLOAT3(-0.15f, -0.25f, -0.026f));
+	std::shared_ptr<Face> sensorBottom = std::make_shared<Face>(DirectX::XMFLOAT3(-0.15f, -0.25f, 0.026f), DirectX::XMFLOAT3(0.15f, -0.25f, 0.026f), DirectX::XMFLOAT3(-0.15f, 0.25f, 0.026f));
 
 	m_volumeElements.push_back(sensorTop);
 	m_volumeElements.push_back(sensorLongSideOne);
@@ -57,6 +42,7 @@ uint32_t MadgwickTestMode::initializeMode(winrt::Windows::Foundation::Size windo
 	m_materialTypes.push_back(MaterialType::SENSOR_BOTTOM);
 
 	m_currentRotation = 0.0f;
+	m_currentDegree = PI / 2.0f;
 
 	//The NeedMaterial modeState lets the mode screen know that it needs to pass
 	//a list of materials to this mode that it can use to initialize 3d objects
@@ -102,6 +88,14 @@ uint32_t MadgwickTestMode::handleUIElementStateChange(int i)
 void MadgwickTestMode::update()
 {
 	//for now, rotate the sensor by a small amount
+	//auto rando_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+
 	for (int i = 0; i < m_volumeElements.size(); i++)
-		((Face*)m_volumeElements[i].get())->rotateFaceAboutVector({ 1.0f, 1.0f, 2.0f }, PI / 60.0f);
+	{
+		//((Face*)m_volumeElements[i].get())->translateFace({ sin(m_currentDegree) / 70.0f, 0.0f, 0.0f });
+		((Face*)m_volumeElements[i].get())->translateAndRotateFace({ sinf(m_currentDegree), 0.0f, 1.0f}, {1.0f, 1.0f, 0.0f}, m_currentDegree);
+		//((Face*)m_volumeElements[i].get())->rotateFaceAboutVector({ 0.0f, 1.0f, 0.0f }, PI / 60.0f);
+	}
+
+	m_currentDegree += PI / 180.0f;
 }

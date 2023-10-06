@@ -18,4 +18,5 @@ private:
 	void initializeTextOverlay(winrt::Windows::Foundation::Size windowSize);
 
 	float m_currentRotation;
+	float m_currentDegree;
 };

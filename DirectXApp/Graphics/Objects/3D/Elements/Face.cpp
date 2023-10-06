@@ -28,6 +28,7 @@ void Face::SetPlane(
     )
 {
     m_position = origin;
+    m_location = {(origin.x + p1.x) / 2.0f, (origin.y + p2.y) / 2.0f, (p1.z + p2.z) / 2.0f }; //m_location represents the exact center of the face
     XMStoreFloat3(&m_widthVector, XMLoadFloat3(&p1) - XMLoadFloat3(&origin));
     XMStoreFloat3(&m_heightVector, XMLoadFloat3(&p2) - XMLoadFloat3(&origin));
 
@@ -210,7 +211,8 @@ void Face::rotateFaceAboutVector(DirectX::XMVECTOR axis, float degrees)
     //face it must be translated back into the x-y plane at the screen. We then carry out 
     //the appropriate rotation before translating it back to its correct location.
 
-    translateFace({ 0.0f, 0.0f, -m_position.z }); //first move the face back to the x-y plane
+    translateFace({ -m_location.x, -m_location.y, -m_location.z }); //move back to the origin
+    //translateFace({ 0, 0, -m_location.z }); //move back to the origin
 
     //then carry out the rotation
     auto currentModel = XMLoadFloat4x4(&m_modelMatrix);
@@ -220,17 +222,43 @@ void Face::rotateFaceAboutVector(DirectX::XMVECTOR axis, float degrees)
         XMMatrixRotationAxis(axis, degrees)
     );
 
-    translateFace({ 0.0f, 0.0f, m_position.z }); //and finally move the Face back to the correct location
+    translateFace({ m_location.x, m_location.y, m_location.z }); //and finally move the Face back to the correct location
+    //translateFace({ 0, 0, m_location.z }); //move back to the origin
 }
 
 void Face::translateFace(DirectX::XMFLOAT3 location)
 {
     //Translates the face in space by the amount dictated in the location vector
     auto currentModel = XMLoadFloat4x4(&m_modelMatrix);
+    /*m_location.x += location.x;
+    m_location.y += location.y;
+    m_location.z += location.z;*/
 
-    XMStoreFloat4x4(
+    /*XMStoreFloat4x4(
         &m_modelMatrix,
         currentModel *
+        XMMatrixTranslation(location.x, location.y, location.z)
+    );*/
+
+    //Add new translation on top of existing one
+    XMStoreFloat4x4(
+        &m_modelMatrix,
+        XMMatrixScaling(m_width, m_height, 1.0f) *
+        XMLoadFloat4x4(&m_rotationMatrix) *
+        XMMatrixTranslation(m_position.x, m_position.y, m_position.z) *
+        XMMatrixTranslation(location.x, location.y, location.z)
+    );
+}
+
+void Face::translateAndRotateFace(DirectX::XMFLOAT3 location, DirectX::XMVECTOR axis, float degrees)
+{
+    //Add new translation and rotatino on top of existing ones
+    XMStoreFloat4x4(
+        &m_modelMatrix,
+        XMMatrixScaling(m_width, m_height, 1.0f) *
+        XMLoadFloat4x4(&m_rotationMatrix) *
+        XMMatrixTranslation(m_location.x, m_location.y, m_location.z ) * 
+        XMMatrixRotationAxis(axis, degrees) *
         XMMatrixTranslation(location.x, location.y, location.z)
     );
 }
