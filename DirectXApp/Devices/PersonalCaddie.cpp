@@ -854,14 +854,22 @@ void PersonalCaddie::updateMadgwick()
 
         //TODO: Look into just sending references to the data instead of creating copies, not sure if this is really a huge time hit here but it can't hurt
         int cs = current_sample; //this is only here because it became annoying to keep writing out current_sample
-        float acc_x = getDataPoint(DataType::ACCELERATION, acc_axes_swap[X], cs) * acc_axes_invert[X], acc_y = getDataPoint(DataType::ACCELERATION, acc_axes_swap[Y], cs) * acc_axes_invert[Y], acc_z = getDataPoint(DataType::ACCELERATION, acc_axes_swap[Z], cs) * acc_axes_invert[Z];
+        /*float acc_x = getDataPoint(DataType::ACCELERATION, acc_axes_swap[X], cs) * acc_axes_invert[X], acc_y = getDataPoint(DataType::ACCELERATION, acc_axes_swap[Y], cs) * acc_axes_invert[Y], acc_z = getDataPoint(DataType::ACCELERATION, acc_axes_swap[Z], cs) * acc_axes_invert[Z];
         float gyr_x = getDataPoint(DataType::ROTATION, gyr_axes_swap[X], cs) * gyr_axes_invert[X], gyr_y = getDataPoint(DataType::ROTATION, gyr_axes_swap[Y], cs) * gyr_axes_invert[Y], gyr_z = getDataPoint(DataType::ROTATION, gyr_axes_swap[Z], cs) * gyr_axes_invert[Z];
-        float mag_x = getDataPoint(DataType::MAGNETIC, mag_axes_swap[X], cs) * mag_axes_invert[X], mag_y = getDataPoint(DataType::MAGNETIC, mag_axes_swap[Y], cs) * mag_axes_invert[Y], mag_z = getDataPoint(DataType::MAGNETIC, mag_axes_swap[Z], cs) * mag_axes_invert[Z];
+        float mag_x = getDataPoint(DataType::MAGNETIC, mag_axes_swap[X], cs) * mag_axes_invert[X], mag_y = getDataPoint(DataType::MAGNETIC, mag_axes_swap[Y], cs) * mag_axes_invert[Y], mag_z = getDataPoint(DataType::MAGNETIC, mag_axes_swap[Z], cs) * mag_axes_invert[Z];*/
+
+        float acc_x = getDataPoint(DataType::ACCELERATION, X, cs), acc_y = getDataPoint(DataType::ACCELERATION, Y, cs), acc_z = getDataPoint(DataType::ACCELERATION, Z, cs);
+        float gyr_x = getDataPoint(DataType::ROTATION, X, cs), gyr_y = getDataPoint(DataType::ROTATION, Y, cs), gyr_z = getDataPoint(DataType::ROTATION, Z, cs);
+        float mag_x = getDataPoint(DataType::MAGNETIC, X, cs), mag_y = getDataPoint(DataType::MAGNETIC, Y, cs), mag_z = getDataPoint(DataType::MAGNETIC, Z, cs);
+        
 
         //the first rotation quaternion of the new data set must build from the last rotation quaternion of the previous set. The rest can build off of
         //earlier samples from the current set
-        if (i == 0) orientation_quaternions[i] = Madgwick(orientation_quaternions[number_of_samples - 1], gyr_x, gyr_y, gyr_z, acc_x, acc_y, acc_z, mag_x, mag_y, mag_z, delta_t, beta);
-        else orientation_quaternions[i] = Madgwick(orientation_quaternions[i - 1], gyr_x, gyr_y, gyr_z, acc_x, acc_y, acc_z, mag_x, mag_y, mag_z, delta_t, beta);
+        //if (i == 0) orientation_quaternions[i] = MadgwickVerticalY(orientation_quaternions[number_of_samples - 1], gyr_x, gyr_y, gyr_z, acc_x, acc_y, acc_z, mag_x, mag_y, mag_z, delta_t, beta);
+        //else orientation_quaternions[i] = MadgwickVerticalY(orientation_quaternions[i - 1], gyr_x, gyr_y, gyr_z, acc_x, acc_y, acc_z, mag_x, mag_y, mag_z, delta_t, beta);
+
+        if (i == 0) MadgwickAHRSupdate(orientation_quaternions[number_of_samples - 1], orientation_quaternions[i], gyr_x, gyr_y, gyr_z, acc_x, acc_y, acc_z, mag_x, mag_y, mag_z, this->p_imu->getMaxODR(), 0.1f);
+        else MadgwickAHRSupdate(orientation_quaternions[i - 1], orientation_quaternions[i], gyr_x, gyr_y, gyr_z, acc_x, acc_y, acc_z, mag_x, mag_y, mag_z, this->p_imu->getMaxODR(), 0.1f);
 
         if (isinf(orientation_quaternions[i].w))
         {

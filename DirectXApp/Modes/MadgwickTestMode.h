@@ -14,6 +14,7 @@ public:
 
 	virtual void update() override;
 	virtual void addQuaternions(std::vector<glm::quat> const& quaternions) override;
+	void setODR(float odr);
 
 private:
 	void initializeTextOverlay(winrt::Windows::Foundation::Size windowSize);
@@ -23,6 +24,8 @@ private:
 
 	std::chrono::steady_clock::time_point current_time;
 
-	int m_currentQuaternion;
+	volatile int m_currentQuaternion;
+	DirectX::XMVECTOR m_renderQuaternion; //the current quaternion to be applied on screen
 	std::vector<glm::quat> m_quaternions;
+	std::vector<float> m_timeStamps;
 };

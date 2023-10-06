@@ -490,6 +490,7 @@ void ModeScreen::PersonalCaddieHandler(PersonalCaddieEventType pcEvent, void* ev
 			{
 				//In Madwick testing mode we go straight into sensor idle mode upon entering
 				m_modeState ^= (ModeState::PersonalCaddieSensorIdleMode | ModeState::PersonalCaddieSensorActiveMode);
+				((MadgwickTestMode*)m_modes[static_cast<int>(m_currentMode)].get())->setODR(m_personalCaddie->getMaxODR());
 				m_personalCaddie->enableDataNotifications();
 			}
 		}

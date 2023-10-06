@@ -44,15 +44,35 @@ uint32_t MadgwickTestMode::initializeMode(winrt::Windows::Foundation::Size windo
 	m_currentRotation = 0.0f;
 	m_currentDegree = PI / 2.0f;
 	m_currentQuaternion = 0;
+	m_timeStamps.clear();
 
 	current_time = std::chrono::steady_clock::now();
 
-	//Load the quaternion vector with default quaternions
-	for (int i = 0; i < 10; i++) m_quaternions.push_back({ 1.0f, 0.0f, 0.0f, 0.0f });
+	//Load the quaternion vector with default quaternions and the 
+	//time stamp vector with default times. TODO: Shouldn't use a 
+	//loop to 10, should instead use the SENSOR_READINGS variable
+	for (int i = 0; i < 10; i++)
+	{
+		m_quaternions.push_back({ 1.0f, 0.0f, 0.0f, 0.0f });
+		m_timeStamps.push_back(0.0f);
+	}
+	m_renderQuaternion = { m_quaternions[0].x, m_quaternions[0].y, m_quaternions[0].z, m_quaternions[0].w };
 
 	//The NeedMaterial modeState lets the mode screen know that it needs to pass
 	//a list of materials to this mode that it can use to initialize 3d objects
 	return (ModeState::CanTransfer | ModeState::NeedMaterial | ModeState::Active | ModeState::PersonalCaddieSensorIdleMode);
+}
+
+void MadgwickTestMode::setODR(float odr)
+{
+	//TODO: Don't use 10, should be using sensor samples here
+	float time = 1.0f / odr;
+	m_timeStamps.clear();
+	for (int i = 0; i < 10; i++)
+	{
+		m_timeStamps.push_back(time);
+		time += 1.0f / odr;
+	}
 }
 
 void MadgwickTestMode::uninitializeMode()
@@ -96,15 +116,38 @@ void MadgwickTestMode::addQuaternions(std::vector<glm::quat> const& quaternions)
 	m_currentQuaternion = 0; //reset the current quaternion to be rendered
 	m_quaternions.clear(); //clear out existing quaternions
 	for (int i = 0; i < quaternions.size(); i++) m_quaternions.push_back(quaternions[i]);
+
+	current_time = std::chrono::steady_clock::now(); //set the time when the data came in
+	/*;
+	
+
+	std::wstring time_yo = std::to_wstring(time_elapsed) + L" milliseconds since last quaternion update.\n";
+	OutputDebugString(&time_yo[0]);*/
 }
 
 void MadgwickTestMode::update()
 {
-	//Animate the current rotation quaternion obtained from the Personal Caddie
-	DirectX::XMVECTOR q({ m_quaternions[m_currentQuaternion].x, m_quaternions[m_currentQuaternion].y, m_quaternions[m_currentQuaternion].z, m_quaternions[m_currentQuaternion].w });
+	//Animate the current rotation quaternion obtained from the Personal Caddie. We need to look at the 
+	//time stamp to figure out which quaternion is correct. We do this since the ODR of the sensors won't always
+	//match up with the frame rate of the current screen.
+	float time_elapsed_since_data_update = (float)std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - current_time).count() / 1000000000.0f;
+
+	for (int i = m_currentQuaternion; i < m_quaternions.size(); i++)
+	{
+		if (time_elapsed_since_data_update < m_timeStamps[i])
+		{
+			m_renderQuaternion = { m_quaternions[m_currentQuaternion].x, m_quaternions[m_currentQuaternion].y, m_quaternions[m_currentQuaternion].z, m_quaternions[m_currentQuaternion].w };
+			m_currentQuaternion = i;
+			std::wstring displayed = L"Displayed quaterion " + std::to_wstring(i) + L".\n";
+			displayed += L"Current Time Stamp: " + std::to_wstring(time_elapsed_since_data_update) + L".\n";
+			displayed += L"ODR Time Stamp: " + std::to_wstring(m_timeStamps[i]) + L".\n\n";
+			OutputDebugString(&displayed[0]);
+			break;
+		}
+	}
 
 	//Rotate each face according to the given quaternion
-	for (int i = 0; i < m_volumeElements.size(); i++) ((Face*)m_volumeElements[i].get())->translateAndRotateFace({ 0.0f, 0.0f, 1.0f }, q);
+	for (int i = 0; i < m_volumeElements.size(); i++) ((Face*)m_volumeElements[i].get())->translateAndRotateFace({ 0.0f, 0.0f, 1.0f }, m_renderQuaternion);
 	
 	//Move to the next quaternion. If we've reached the end of the current 
 	//set of quaternions just keep rendering the last one in the set
