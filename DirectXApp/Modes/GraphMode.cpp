@@ -15,7 +15,7 @@ uint32_t GraphMode::initializeMode(winrt::Windows::Foundation::Size windowSize, 
 	std::wstring options = L"Acceleration\nAngular Velocity\nMagnetic Field\nRaw Acceleration\nRaw Angular Velocity\nRaw Magnetic Field";
 	DropDownMenu dataSelection(windowSize, { 0.9, 0.2 }, { 0.2, 0.1 }, options, 0.025, 5, false);
 
-	Graph graph(windowSize, { 0.5, 0.65 }, { 0.9, 0.6 }, false);
+	Graph graph(windowSize, { 0.5, 0.65 }, { 0.9, 0.6 });
 
 	m_uiElements.push_back(std::make_shared<TextButton>(recordButton));
 	m_uiElements.push_back(std::make_shared<DropDownMenu>(dataSelection));
@@ -90,16 +90,23 @@ uint32_t GraphMode::handleUIElementStateChange(int i)
 			//session
 			m_uiElements[0]->getText()->message = L"Start Recording Data";
 
-			//Update the first element of each data set to have a matching y value as the second element.
-			//The first piece of data was only created to start the time axis at 0.
 			if (m_graphDataX.size() >= 2)
 			{
-				m_graphDataX[0].y = m_graphDataX[1].y;
+				/*m_graphDataX[0].y = m_graphDataX[1].y;
 				m_graphDataY[0].y = m_graphDataY[1].y;
-				m_graphDataZ[0].y = m_graphDataZ[1].y;
+				m_graphDataZ[0].y = m_graphDataZ[1].y;*/
+
+				//Data collection starts as soon as the sensor is turned on, which means that
+				//the first half second or so of data will be junk (this is the nature of 
+				//IMU readings before they warm up). Because of this, drop the first 25
+				//data points. This corresponds to 0.5 seconds of data at 50Hz ODR and 0.25
+				//seconds of data at 100Hz ODR.
+				m_graphDataX.erase(m_graphDataX.begin(), m_graphDataX.begin() + 25);
+				m_graphDataY.erase(m_graphDataY.begin(), m_graphDataY.begin() + 25);
+				m_graphDataZ.erase(m_graphDataZ.begin(), m_graphDataZ.begin() + 25);
 
 				//set the min and max data values for the graph
-				((Graph*)m_uiElements[2].get())->setAxisMaxAndMins({ 0,  m_minimalPoint.y }, { m_graphDataX.back().x, m_maximalPoint.y });
+				((Graph*)m_uiElements[2].get())->setAxisMaxAndMins({ m_graphDataX[0].x,  m_minimalPoint.y}, {m_graphDataX.back().x, m_maximalPoint.y});
 
 				((Graph*)m_uiElements[2].get())->addDataSet(m_graphDataX, UIColor::Red);
 				((Graph*)m_uiElements[2].get())->addDataSet(m_graphDataY, UIColor::Blue);

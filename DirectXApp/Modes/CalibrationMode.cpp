@@ -553,6 +553,7 @@ void CalibrationMode::gyroscopeCalibration()
 			m_uiElements[5]->setState(m_uiElements[5]->getState() | UIElementState::Invisible); //make the sub-title invisible
 			m_uiElements[6]->setState(m_uiElements[6]->getState() | UIElementState::Invisible); //make the graph invisible
 			m_uiElements[7]->setState(m_uiElements[7]->getState() | UIElementState::Invisible); //make the no button invisible
+			m_uiElements[8]->setState(m_uiElements[8]->getState() ^ UIElementState::Invisible); //make the data toggle switch visible
 
 			m_stageSet = true;
 		}
@@ -723,17 +724,17 @@ void CalibrationMode::calculateCalNumbers()
 			if (m_currentStage == 5)
 			{
 				for (int i = 1; i < m_graphDataY.size(); i++) gyr_gain_y[1] += integrateData(m_graphDataY[i].y - gyr_off[1], m_graphDataY[i - 1].y - gyr_off[1], m_graphDataY[i].x - m_graphDataY[i - 1].x);
-				gyr_gain_y[1] /= 90;
+				gyr_gain_y[1] = 90 / gyr_gain_y[1];
 			}
 			else if (m_currentStage == 7)
 			{
 				for (int i = 1; i < m_graphDataZ.size(); i++) gyr_gain_z[2] += integrateData(m_graphDataZ[i].y - gyr_off[2], m_graphDataZ[i - 1].y - gyr_off[2], m_graphDataZ[i].x - m_graphDataZ[i - 1].x);
-				gyr_gain_z[2] /= 90;
+				gyr_gain_z[2] = 90 / gyr_gain_z[2];
 			}
 			else if (m_currentStage == 9)
 			{
 				for (int i = 1; i < m_graphDataX.size(); i++) gyr_gain_x[0] += integrateData(m_graphDataX[i].y - gyr_off[0], m_graphDataX[i - 1].y - gyr_off[0], m_graphDataX[i].x - m_graphDataX[i - 1].x);
-				gyr_gain_x[0] /= 90;
+				gyr_gain_x[0] = 90 / gyr_gain_x[0];
 			}
 		}
 

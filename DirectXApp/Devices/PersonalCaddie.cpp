@@ -63,7 +63,8 @@ PersonalCaddie::PersonalCaddie(std::function<void(PersonalCaddieEventType, void*
     //initialize all orientation quaternions to the starting position
     for (int i = 0; i < number_of_samples; i++)
     {
-        glm::quat q = { 1, 0, 0, 0 };
+        //glm::quat q = { 1, 0, 0, 0 };
+        glm::quat q = { 0.372859f, 0.000669f, 0.007263f, 0.914294f };
         orientation_quaternions.push_back(q);
     }
 
@@ -862,7 +863,6 @@ void PersonalCaddie::updateMadgwick()
         float gyr_x = getDataPoint(DataType::ROTATION, X, cs), gyr_y = getDataPoint(DataType::ROTATION, Y, cs), gyr_z = getDataPoint(DataType::ROTATION, Z, cs);
         float mag_x = getDataPoint(DataType::MAGNETIC, X, cs), mag_y = getDataPoint(DataType::MAGNETIC, Y, cs), mag_z = getDataPoint(DataType::MAGNETIC, Z, cs);
         
-
         //the first rotation quaternion of the new data set must build from the last rotation quaternion of the previous set. The rest can build off of
         //earlier samples from the current set
         //if (i == 0) orientation_quaternions[i] = MadgwickVerticalY(orientation_quaternions[number_of_samples - 1], gyr_x, gyr_y, gyr_z, acc_x, acc_y, acc_z, mag_x, mag_y, mag_z, delta_t, beta);

@@ -27,5 +27,11 @@ private:
 	volatile int m_currentQuaternion;
 	DirectX::XMVECTOR m_renderQuaternion; //the current quaternion to be applied on screen
 	std::vector<glm::quat> m_quaternions;
+	glm::quat m_offsetQuaternion = { 0.372859f, 0.000669f, 0.007263f, 0.914294f };
 	std::vector<float> m_timeStamps;
+
+	//Swap and invert axes as normal to get from world coordinates to DirectX coordinates
+	int axes_swap[3] = { 1, 2, 0 };
+	int axes_invert[3] = { 1, -1, -1 }; //FXOS/FXAS Numbers
+	//int axes_invert[3] = { 1, -1, -1 }; //LSM9DS1 Numbers
 };

@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "MadgwickTestMode.h"
 #include "Graphics/Objects/3D/Elements/Face.h"
+#include "Math/quaternion_functions.h"
 
 MadgwickTestMode::MadgwickTestMode()
 {
@@ -17,18 +18,19 @@ uint32_t MadgwickTestMode::initializeMode(winrt::Windows::Foundation::Size windo
 
 	float sensorHeight = 0.5f, sensorLength = 0.3f, sensorWidth = 0.052f;
 
-	std::shared_ptr<Face> sensorTop = std::make_shared<Face>(DirectX::XMFLOAT3(-0.15f, -0.25f, -0.026f), DirectX::XMFLOAT3(0.15f, -0.25f, -0.026f), DirectX::XMFLOAT3(-0.15f, 0.25f, -0.026f));
-	std::shared_ptr<Face> sensorLongSideOne = std::make_shared<Face>(DirectX::XMFLOAT3(-0.15f, -0.25f, 0.026f ), DirectX::XMFLOAT3(-0.15f, -0.25f, -0.026f ), DirectX::XMFLOAT3(-0.15f, 0.25f, 0.026f));
-	std::shared_ptr<Face> sensorLongSideTwo = std::make_shared<Face>(DirectX::XMFLOAT3(0.15f, -0.25f, -0.026f), DirectX::XMFLOAT3(0.15f, -0.25f, 0.026f), DirectX::XMFLOAT3(0.15f, 0.25f, -0.026f));
-	std::shared_ptr<Face> sensorShortSideOne = std::make_shared<Face>(DirectX::XMFLOAT3(-0.15f, 0.25f, -0.026f), DirectX::XMFLOAT3(0.15f, 0.25f, -0.026f), DirectX::XMFLOAT3(-0.15f, 0.25f, 0.026f));
-	std::shared_ptr<Face> sensorShortSideTwo = std::make_shared<Face>(DirectX::XMFLOAT3(-0.15f, -0.25f, 0.026f), DirectX::XMFLOAT3(0.15f, -0.25f, 0.026), DirectX::XMFLOAT3(-0.15f, -0.25f, -0.026f));
-	std::shared_ptr<Face> sensorBottom = std::make_shared<Face>(DirectX::XMFLOAT3(-0.15f, -0.25f, 0.026f), DirectX::XMFLOAT3(0.15f, -0.25f, 0.026f), DirectX::XMFLOAT3(-0.15f, 0.25f, 0.026f));
+	std::shared_ptr<Face> sensorTop = std::make_shared<Face>(DirectX::XMFLOAT3(-0.15f, 0.026f, -0.25f), DirectX::XMFLOAT3(0.15f, 0.026f, -0.25f), DirectX::XMFLOAT3(-0.15f, 0.026f, 0.25f));
+	std::shared_ptr<Face> sensorLeft = std::make_shared<Face>(DirectX::XMFLOAT3(-0.15f, 0.0f, -0.25f), DirectX::XMFLOAT3(-0.15f, -0.052f, -0.25f), DirectX::XMFLOAT3(-0.15f, 0.0f, 0.25f));
+	std::shared_ptr<Face> sensorRight = std::make_shared<Face>(DirectX::XMFLOAT3(0.15f, 0.0f, -0.25f), DirectX::XMFLOAT3(0.15f, -0.052f, -0.25f), DirectX::XMFLOAT3(0.15f, 0.0f, 0.25f));
+	std::shared_ptr<Face> sensorFront = std::make_shared<Face>(DirectX::XMFLOAT3(0.15f, -0.026f, 0.25f), DirectX::XMFLOAT3(-0.15f, -0.026f, 0.25f), DirectX::XMFLOAT3(0.15f, 0.026f,0.25f));
+	std::shared_ptr<Face> sensorBack = std::make_shared<Face>(DirectX::XMFLOAT3(-0.15f, -0.026f, -0.25f), DirectX::XMFLOAT3(0.15f, -0.026f, -0.25f), DirectX::XMFLOAT3(-0.15f, 0.026f, -0.25f));
+	std::shared_ptr<Face> sensorBottom = std::make_shared<Face>(DirectX::XMFLOAT3(0.15f, -0.026, -0.25f), DirectX::XMFLOAT3(-0.15f, -0.026f, -0.25f), DirectX::XMFLOAT3(0.15f, -0.026f, 0.25f));
+	//note* - the left and right face don't seem to be in the right spot to me, but the sensor is rendered correctly so I'm leaving it
 
 	m_volumeElements.push_back(sensorTop);
-	m_volumeElements.push_back(sensorLongSideOne);
-	m_volumeElements.push_back(sensorLongSideTwo);
-	m_volumeElements.push_back(sensorShortSideOne);
-	m_volumeElements.push_back(sensorShortSideTwo);
+	m_volumeElements.push_back(sensorLeft);
+	m_volumeElements.push_back(sensorRight);
+	m_volumeElements.push_back(sensorFront);
+	m_volumeElements.push_back(sensorBack);
 	m_volumeElements.push_back(sensorBottom);
 
 	//After creating the faces of the sensor, add the appropriate material types for each face.
@@ -44,6 +46,8 @@ uint32_t MadgwickTestMode::initializeMode(winrt::Windows::Foundation::Size windo
 	m_currentRotation = 0.0f;
 	m_currentDegree = PI / 2.0f;
 	m_currentQuaternion = 0;
+
+	m_quaternions.clear();
 	m_timeStamps.clear();
 
 	current_time = std::chrono::steady_clock::now();
@@ -132,15 +136,31 @@ void MadgwickTestMode::update()
 	//match up with the frame rate of the current screen.
 	float time_elapsed_since_data_update = (float)std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - current_time).count() / 1000000000.0f;
 
+	float quat[3];
+
 	for (int i = m_currentQuaternion; i < m_quaternions.size(); i++)
 	{
 		if (time_elapsed_since_data_update < m_timeStamps[i])
 		{
-			m_renderQuaternion = { m_quaternions[m_currentQuaternion].x, m_quaternions[m_currentQuaternion].y, m_quaternions[m_currentQuaternion].z, m_quaternions[m_currentQuaternion].w };
+			glm::quat correctedQuaternion = QuaternionMultiply(m_offsetQuaternion, m_quaternions[m_currentQuaternion]);
+			correctedQuaternion = QuaternionMultiply({ 0.7071f, 0.0f, 0.0f, 0.7071f }, correctedQuaternion);
+
+			quat[0] = correctedQuaternion.x;
+			quat[1] = correctedQuaternion.y;
+			quat[2] = correctedQuaternion.z;
+
+			m_renderQuaternion = { quat[axes_swap[0]] * axes_invert[0], quat[axes_swap[1]] * axes_invert[1], quat[axes_swap[2]] * axes_invert[2], correctedQuaternion.w};
 			m_currentQuaternion = i;
-			std::wstring displayed = L"Displayed quaterion " + std::to_wstring(i) + L".\n";
+			/*std::wstring displayed = L"Displayed quaterion " + std::to_wstring(i) + L".\n";
 			displayed += L"Current Time Stamp: " + std::to_wstring(time_elapsed_since_data_update) + L".\n";
 			displayed += L"ODR Time Stamp: " + std::to_wstring(m_timeStamps[i]) + L".\n\n";
+			OutputDebugString(&displayed[0]);*/
+
+			std::wstring displayed = L"Displayed quaterion: [" + std::to_wstring(quat[axes_swap[0]] * axes_invert[0]) + L", " + std::to_wstring(quat[axes_swap[1]] * axes_invert[1]) + L", "
+				+ std::to_wstring(quat[axes_swap[2]] * axes_invert[2]) + L", " + std::to_wstring(correctedQuaternion.w) + L"].\n";
+
+			displayed += L"Actual quaterion: [" + std::to_wstring(m_quaternions[m_currentQuaternion].x) + L", " + std::to_wstring(m_quaternions[m_currentQuaternion].y) + L", "
+				+ std::to_wstring(m_quaternions[m_currentQuaternion].z) + L", " + std::to_wstring(m_quaternions[m_currentQuaternion].w) + L"].\n\n";
 			OutputDebugString(&displayed[0]);
 			break;
 		}

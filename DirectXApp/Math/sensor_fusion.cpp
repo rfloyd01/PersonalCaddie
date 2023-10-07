@@ -378,7 +378,6 @@ glm::quat MadgwickVerticalY(glm::quat q, float gx, float gy, float gz, float ax,
     return q;
 }
 
-
 glm::quat MadgwickIMU(glm::quat q, float gx, float gy, float gz, float ax, float ay, float az, float delta_t, float beta)
 {
     float recipNorm;
@@ -603,6 +602,9 @@ void MadgwickAHRSupdate(glm::quat& q_first, glm::quat& q_second, float gx, float
         _2bz = -_2q0mx * q2 + _2q0my * q1 + mz * q0q0 + _2q1mx * q3 - mz * q1q1 + _2q2 * my * q3 - mz * q2q2 + mz * q3q3;
         _4bx = 2.0f * _2bx;
         _4bz = 2.0f * _2bz;
+
+        /*std::wstring mag_field = L"Calculated Magnetic Field: [" + std::to_wstring(_2bx / 2.0f) + L", 0, " + std::to_wstring(_2bz / 2.0f) + L"]\n";
+        OutputDebugString(&mag_field[0]);*/
 
         // Gradient decent algorithm corrective step
         s0 = -_2q2 * (2.0f * q1q3 - _2q0q2 - ax) + _2q1 * (2.0f * q0q1 + _2q2q3 - ay) - _2bz * q2 * (_2bx * (0.5f - q2q2 - q3q3) + _2bz * (q1q3 - q0q2) - mx) + (-_2bx * q3 + _2bz * q1) * (_2bx * (q1q2 - q0q3) + _2bz * (q0q1 + q2q3) - my) + _2bx * q2 * (_2bx * (q0q2 + q1q3) + _2bz * (0.5f - q1q1 - q2q2) - mz);
