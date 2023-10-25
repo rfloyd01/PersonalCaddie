@@ -52,7 +52,6 @@
       <file file_name="$(IncludeDir)/$(SDKVer)/components/libraries/scheduler/app_scheduler.c" />
       <file file_name="$(IncludeDir)/$(SDKVer)/components/libraries/timer/app_timer2.c" />
       <file file_name="$(IncludeDir)/$(SDKVer)/components/libraries/util/app_util_platform.c" />
-      <file file_name="$(IncludeDir)/$(SDKVer)/components/libraries/crc16/crc16.c" />
       <file file_name="$(IncludeDir)/$(SDKVer)/components/libraries/timer/drv_rtc.c" />
       <file file_name="$(IncludeDir)/$(SDKVer)/components/libraries/fds/fds.c" />
       <file file_name="$(IncludeDir)/$(SDKVer)/components/libraries/hardfault/hardfault_implementation.c" />
@@ -71,8 +70,6 @@
       <file file_name="$(IncludeDir)/$(SDKVer)/components/libraries/experimental_section_vars/nrf_section_iter.c" />
       <file file_name="$(IncludeDir)/$(SDKVer)/components/libraries/sortlist/nrf_sortlist.c" />
       <file file_name="$(IncludeDir)/$(SDKVer)/components/libraries/strerror/nrf_strerror.c" />
-      <file file_name="$(IncludeDir)/$(SDKVer)/components/libraries/sensorsim/sensorsim.c" />
-      <file file_name="$(IncludeDir)/$(SDKVer)/components/libraries/button/app_button.c" />
     </folder>
     <folder Name="None">
       <file file_name="$(IncludeDir)/$(SDKVer)/modules/nrfx/mdk/ses_startup_nrf52840.s" />
@@ -84,13 +81,10 @@
     </folder>
     <folder Name="nRF_Drivers">
       <file file_name="$(IncludeDir)/$(SDKVer)/integration/nrfx/legacy/nrf_drv_clock.c" />
-      <file file_name="$(IncludeDir)/$(SDKVer)/integration/nrfx/legacy/nrf_drv_uart.c" />
       <file file_name="$(IncludeDir)/$(SDKVer)/modules/nrfx/soc/nrfx_atomic.c" />
       <file file_name="$(IncludeDir)/$(SDKVer)/modules/nrfx/drivers/src/nrfx_clock.c" />
       <file file_name="$(IncludeDir)/$(SDKVer)/modules/nrfx/drivers/src/nrfx_gpiote.c" />
       <file file_name="$(IncludeDir)/$(SDKVer)/modules/nrfx/drivers/src/prs/nrfx_prs.c" />
-      <file file_name="$(IncludeDir)/$(SDKVer)/modules/nrfx/drivers/src/nrfx_uart.c" />
-      <file file_name="$(IncludeDir)/$(SDKVer)/modules/nrfx/drivers/src/nrfx_uarte.c" />
       <file file_name="C:/Users/Bobby/Documents/Coding/BLE/nRFSDK17.0.2/integration/nrfx/legacy/nrf_drv_twi.c" />
       <file file_name="C:/Users/Bobby/Documents/Coding/BLE/nRFSDK17.0.2/modules/nrfx/drivers/src/nrfx_twi.c" />
       <file file_name="C:/Users/Bobby/Documents/Coding/BLE/nRFSDK17.0.2/modules/nrfx/drivers/src/nrfx_twim.c" />
@@ -104,10 +98,15 @@
       <file file_name="main.c" />
       <file file_name="config/sdk_config.h" />
       <file file_name="ble_sensor_service.c" />
-      <file file_name="lsm9ds1.c" />
-      <file file_name="../MEMs_Drivers/sensor_settings.c" />
-      <file file_name="fxos8700.c" />
-      <file file_name="fxas21002.c" />
+      <folder Name="Sensor Drivers">
+        <file file_name="fxas21002.c" />
+        <file file_name="fxos8700.c" />
+        <file file_name="lsm9ds1.c" />
+        <file file_name="../MEMs_Drivers/sensor_settings.c" />
+      </folder>
+      <folder Name="nRF Implementations">
+        <file file_name="nRF_Implementations/pc_twi.c" />
+      </folder>
     </folder>
     <folder Name="nRF_Segger_RTT">
       <file file_name="$(IncludeDir)/$(SDKVer)/external/segger_rtt/SEGGER_RTT.c" />
@@ -115,7 +114,6 @@
       <file file_name="$(IncludeDir)/$(SDKVer)/external/segger_rtt/SEGGER_RTT_printf.c" />
     </folder>
     <folder Name="nRF_BLE">
-      <file file_name="$(IncludeDir)/$(SDKVer)/components/ble/peer_manager/auth_status_tracker.c" />
       <file file_name="$(IncludeDir)/$(SDKVer)/components/ble/common/ble_advdata.c" />
       <file file_name="$(IncludeDir)/$(SDKVer)/components/ble/ble_advertising/ble_advertising.c" />
       <file file_name="$(IncludeDir)/$(SDKVer)/components/ble/common/ble_conn_params.c" />
