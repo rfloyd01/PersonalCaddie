@@ -82,6 +82,9 @@ uint32_t GraphMode::handleUIElementStateChange(int i)
 			//to be overwritten.
 			m_minimalPoint = { 5000.0f, 5000.0f }; //max reading should be from gyroscope at +/-2000 dps
 			m_maximalPoint = { -5000.0f, -5000.0f };
+
+			//initialize the data collection clock
+			data_collection_start = std::chrono::steady_clock::now();
 		}
 		else
 		{
@@ -117,6 +120,9 @@ uint32_t GraphMode::handleUIElementStateChange(int i)
 				float upperLineLocation = m_maximalPoint.y - 0.05f * (m_maximalPoint.y - m_minimalPoint.y); //95% of the highest data point
 				float lowerLineLocation = m_minimalPoint.y + 0.05f * (m_maximalPoint.y - m_minimalPoint.y); //95% of the lowest data point
 
+				float totalRotation = 0.0f;
+				for (int i = 1; i < m_graphDataZ.size(); i++) totalRotation += testIntegrateData(m_graphDataZ[i].y, m_graphDataZ[i - 1].y, m_graphDataZ[i].x - m_graphDataZ[i - 1].x);
+
 				((Graph*)m_uiElements[2].get())->addAxisLine(X, centerLineLocation);
 				((Graph*)m_uiElements[2].get())->addAxisLine(X, upperLineLocation);
 				((Graph*)m_uiElements[2].get())->addAxisLine(X, lowerLineLocation);
@@ -148,7 +154,7 @@ void GraphMode::addData(std::vector<std::vector<std::vector<float> > > const& se
 
 	std::wstring dataType = ((DropDownMenu*)m_uiElements[1].get())->getSelectedOption();
 	DataType selectedDataType = getCurrentlySelectedDataType(dataType);
-	float time_increment = 1.0 / sensorODR;
+	float time_increment = 1.0 / sensorODR, current_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - data_collection_start).count() / 1000000000.0f;
 
 	for (int i = 0; i < sensorData[0][0].size(); i++)
 	{
@@ -172,9 +178,14 @@ void GraphMode::addData(std::vector<std::vector<std::vector<float> > > const& se
 
 		//TODO: Every now and then one of these push_back calls leads to a crash,
 		//need to investigate why this is the case.
-		m_graphDataX.push_back({ m_graphDataX.back().x + time_increment, x_data });
+		/*m_graphDataX.push_back({ m_graphDataX.back().x + time_increment, x_data });
 		m_graphDataY.push_back({ m_graphDataY.back().x + time_increment, y_data });
-		m_graphDataZ.push_back({ m_graphDataZ.back().x + time_increment, z_data });
+		m_graphDataZ.push_back({ m_graphDataZ.back().x + time_increment, z_data });*/
+		m_graphDataX.push_back({ current_time, x_data });
+		m_graphDataY.push_back({ current_time, y_data });
+		m_graphDataZ.push_back({ current_time, z_data });
+
+		current_time += time_increment;
 	}
 }
 
@@ -188,4 +199,9 @@ DataType GraphMode::getCurrentlySelectedDataType(std::wstring dropDownSelection)
 	else if (dropDownSelection == L"Raw Angular Velocity") return DataType::RAW_ROTATION;
 	else if (dropDownSelection == L"Raw Magnetic Field") return DataType::RAW_MAGNETIC;
 	else return DataType::ACCELERATION; //default to acceleration
+}
+
+float GraphMode::testIntegrateData(float p1, float p2, float t)
+{
+	return t * ((p1 + p2) / 2);
 }

@@ -265,6 +265,9 @@ void ModeScreen::processMouseInput(InputState* inputState)
 			button_pressed = true;
 			button_pressed_timer = std::chrono::steady_clock::now();
 
+			//TODO: This is too specific for the calibration mode, I really need to revamp mode states
+			if (new_state & CalibrationModeState::ODR_ERROR) createAlert(L"There's an ODR discrepancy, go to settings to fix it.\n", UIColor::Red);
+
 			//See if the button press forced us into or out of active mode
 			if (m_modeState & ModeState::Active)
 			{

@@ -23,6 +23,9 @@ public:
 private:
 	void initializeTextOverlay(winrt::Windows::Foundation::Size windowSize);
 	DataType getCurrentlySelectedDataType(std::wstring dropDownSelection);
+	float testIntegrateData(float p1, float p2, float t);
+
+	std::chrono::steady_clock::time_point data_collection_start, data_receieved;
 
 	std::vector<DirectX::XMFLOAT2> m_graphDataX, m_graphDataY, m_graphDataZ;
 	DirectX::XMFLOAT2 m_minimalPoint, m_maximalPoint; //used for scaling of the graph

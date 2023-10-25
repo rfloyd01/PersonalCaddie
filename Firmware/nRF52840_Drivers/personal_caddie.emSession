@@ -65,8 +65,11 @@
   <Watches active="0" update="Never"/>
  </Watch4>
  <Files>
-  <SessionOpenFile windowGroup="DockEditLeft" x="72" y="209" useTextEdit="1" openedFrom="D:/Coding/PersonalCaddie/Firmware/MEMs_Drivers/NXP/fxos8700/src/common/sensor_comm.c" useBinaryEdit="0" left="0" path="main.c" selected="1" top="189" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="58" y="1044" useTextEdit="1" openedFrom="D:/Coding/PersonalCaddie/Firmware/MEMs_Drivers/NXP/fxos8700/src/common/sensor_comm.c" useBinaryEdit="0" left="0" path="main.c" selected="1" top="1012" codecName="Default"/>
   <SessionOpenFile windowGroup="DockEditLeft" x="0" y="11438" useTextEdit="1" openedFrom="" useBinaryEdit="0" left="0" path="config/sdk_config.h" selected="0" top="11406" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="109" y="1987" useTextEdit="1" openedFrom="C:/Users/Bobby/Documents/Coding/BLE/nRFSDK17.0.2/components/ble/common/ble_conn_params.c" useBinaryEdit="0" left="0" path="C:/Users/Bobby/Documents/Coding/BLE/nRFSDK17.0.2/components/softdevice/s140/headers/ble_gap.h" selected="0" top="1952" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="557" useTextEdit="1" openedFrom="D:/Coding/PersonalCaddie/Firmware/nRF52840_Drivers/main.c" useBinaryEdit="0" left="0" path="C:/Users/Bobby/Documents/Coding/BLE/nRFSDK17.0.2/components/ble/common/ble_conn_params.c" selected="0" top="528" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="78" useTextEdit="1" openedFrom="C:/Users/Bobby/Documents/Coding/BLE/nRFSDK17.0.2/components/softdevice/s140/headers/ble_gap.h" useBinaryEdit="0" left="0" path="C:/Users/Bobby/Documents/Coding/BLE/nRFSDK17.0.2/components/softdevice/s140/headers/nrf_error.h" selected="0" top="50" codecName="Default"/>
  </Files>
  <ARMCrossStudioWindow activeProject="personal_caddie" fileDialogDefaultFilter="*.c;*.cpp;*.cxx;*.cc;*.h;*.hpp;*.hxx" autoConnectTarget="J-Link" buildConfiguration="Debug" sessionSettings="" debugSearchFileMap="" fileDialogInitialDirectory="D:/Coding/PersonalCaddie/Firmware/MEMs_Drivers/NXP/fxos8700/src" debugSearchPath="" autoConnectCapabilities="3711"/>
 </session>

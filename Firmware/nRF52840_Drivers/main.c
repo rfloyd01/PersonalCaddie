@@ -909,8 +909,10 @@ static void gap_params_init(void)
     int mir_125 = minimum_interval_required / 5;
     mir_125 *= 4;
 
-    gap_conn_params.min_conn_interval = mir_125;
-    gap_conn_params.max_conn_interval = mir_125 + 12; //must be 15 ms (or 12 in 1.25ms units) greater at a minimum
+    //gap_conn_params.min_conn_interval = mir_125;
+    //gap_conn_params.max_conn_interval = mir_125 + 12; //must be 15 ms (or 12 in 1.25ms units) greater at a minimum
+    gap_conn_params.min_conn_interval = 0x30;
+    gap_conn_params.max_conn_interval = 0x3c;
     gap_conn_params.slave_latency     = SLAVE_LATENCY;
     gap_conn_params.conn_sup_timeout  = SENSOR_CONN_SUP_TIMEOUT;
 
@@ -1114,14 +1116,36 @@ void update_connection_interval()
         ble_gap_conn_params_t new_params;
 
         new_params.min_conn_interval = mir_125;
-        new_params.max_conn_interval = mir_125 + 12; //must be 15 ms (or 12 in 1.25ms units) greater at a minimum
+        new_params.max_conn_interval = mir_125 + 12; //must be 15 ms (or 12 in 1.25ms units) greater at a minimum to work with Apple Prodcuts
         new_params.slave_latency = SLAVE_LATENCY;
         new_params.conn_sup_timeout = SENSOR_CONN_SUP_TIMEOUT;
 
+        //It's possible that the new parameters won't be applied as the Soft Device
+        //is busy doing other stuff. In this case we need to wait until it's no longer
+        //busy to apply the update.
         err_code = ble_conn_params_change_conn_params(m_conn_handle, &new_params);
+        while (err_code == NRF_ERROR_BUSY)
+        {
+            err_code = ble_conn_params_change_conn_params(m_conn_handle, &new_params);
+            SEGGER_RTT_WriteString(0, "SoftDevice Busy, retrying connection interval update.\n");
+        }
 
-        if (err_code != NRF_SUCCESS) SEGGER_RTT_WriteString(0, "Couldn't update connection interval.\n");
+        if (err_code != NRF_SUCCESS)
+        {
+            SEGGER_RTT_WriteString(0, "Couldn't update connection interval.\n");
+        }
         else current_sensor_odr = sensor_odr;
+
+        //We also need to update the preferred connection parameters, this will ensure that
+        //we use the connection interval as specified in the sensor settings array in the case
+        //that the connection is lost and re-established.
+       
+        //TODO: For some reason, the below call to ppcp_set() is working, however,
+        //the desired connection interval isn't applied upon reconnection, the 
+        //initial connection interval is. Why is this the case? To get around this,
+        //just make a call to this update method inside the connection event
+        err_code = sd_ble_gap_ppcp_set(&new_params);
+        APP_ERROR_CHECK(err_code);
     }
 }
 
@@ -1283,7 +1307,7 @@ static void on_adv_evt(ble_adv_evt_t ble_adv_evt)
     switch (ble_adv_evt)
     {
         case BLE_ADV_EVT_FAST:
-            SEGGER_RTT_WriteString(0, "Fast advertising.");
+            SEGGER_RTT_WriteString(0, "Advertising Started (fast).\n");
             //err_code = bsp_indication_set(BSP_INDICATE_ADVERTISING); //turn off LED indication for now
             //APP_ERROR_CHECK(err_code);
             break;
@@ -1321,7 +1345,12 @@ static void ble_evt_handler(ble_evt_t const * p_ble_evt, void * p_context)
             err_code = nrf_ble_qwr_conn_handle_assign(&m_qwr, m_conn_handle);
             APP_ERROR_CHECK(err_code);
             connected_mode_start();
+            update_connection_interval(); //confirm that the correct connection interval is being used
             SEGGER_RTT_WriteString(0, "Connected to the Personal Caddie.\n");
+
+            //Make sure that preferred parameters have been applied
+            //ble_gap_conn_params_t preferred_params;
+            //sd_ble_gap_ppcp_get(&preferred_params);
             break;
 
         case BLE_GAP_EVT_PHY_UPDATE_REQUEST:

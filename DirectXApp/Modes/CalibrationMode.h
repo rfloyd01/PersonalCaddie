@@ -13,6 +13,7 @@ enum CalibrationModeState
 	RECORDING_DATA = 32,
 	STOP_RECORD = 64,
 	UPDATE_CAL_NUMBERS = 128,
+	ODR_ERROR = 256
 };
 
 class CalibrationMode : public Mode
@@ -69,6 +70,8 @@ private:
 	int raw_acceleration = 3, raw_rotation = 4, raw_magnetic = 5; //these variables match the DataType enumclass. Trying to use that enumclass here causes a circular reference
 
 	//timing variables
+	std::vector<float> data_time_stamps;
+	float m_sensorODR;
 	long long data_timer_duration, data_timer_elapsed;
 	std::chrono::steady_clock::time_point data_timer;
 

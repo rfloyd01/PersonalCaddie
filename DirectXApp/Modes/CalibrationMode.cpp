@@ -101,6 +101,7 @@ void CalibrationMode::initializeCalibrationVariables()
 	m_timeStamp = 0.0f;
 	avg_count = 0;
 	accept_cal = true; //by default we choose to accept the calibration results
+	data_time_stamps.clear();
 	
 	for (int i = 0; i < 3; i++)
 	{
@@ -250,9 +251,15 @@ void CalibrationMode::addData(std::vector<std::vector<std::vector<float> > > con
 {
 	//This method gets called asynchronously whenever new data is ready. We simply iterate over the appropriate
 	//data (given the current calibration we're doing) and add it to the internal data vector.
+	m_sensorODR = sensorODR; //this value won't change, I just couldn't think of anywhere better to set it for right now
 
 	if (m_state & CalibrationModeState::RECORDING_DATA) //only add date if we're actively recording
 	{
+		m_timeStamp = (float)std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - data_timer).count() / 1000000000.0;
+		data_time_stamps.push_back(m_timeStamp);
+		std::wstring time_debug = L"Add data called at " + std::to_wstring(m_timeStamp) + L"\n";
+		OutputDebugString(&time_debug[0]);
+
 		int calibrationType;
 		if (m_state & CalibrationModeState::ACCELEROMETER)
 		{
@@ -702,6 +709,25 @@ void CalibrationMode::calculateCalNumbers()
 	}
 	else if (m_state & CalibrationModeState::GYROSCOPE)
 	{
+		//If the odr doesn't appear accurate we add the odr error state to the
+		//current mode state. The next time we click a button in this mode the 
+		//mode screen class will be alerted of the discrepancy and flash an
+		//error message on screen. This is necessary for the gyroscope calibration
+		//due to the integration step. If the time interval between data points
+		//isn't correct then it will throw off the gyroscope gain calculation.
+		//The calculated ODR will never be 100% accurate due to differences in 
+		//ODR and connection interval. Because of this, only eggregious differences
+		//will be noticed. A calculated ODR of 0.5 or 2.0 x the expected (or worse)
+		//will flag the error.
+		float calculated_odr = 0.0f, odr_error = 1.0f;
+		for (int i = 1; i < data_time_stamps.size(); i++) calculated_odr += (data_time_stamps[i] - data_time_stamps[i - 1]);
+		calculated_odr = (10.0f * data_time_stamps.size() - 1) / calculated_odr; //TODO: instead of using 10 here I should be using the SENSOR_SAMPLES variable
+
+		odr_error = calculated_odr / m_sensorODR;
+		data_time_stamps.clear();
+
+		if (odr_error < 0.5f || odr_error > 2.0f) m_state |= CalibrationModeState::ODR_ERROR;
+
 		if (m_currentStage == 3)
 		{
 			//this stage represents the gyroscope offest calculation

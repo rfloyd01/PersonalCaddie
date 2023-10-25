@@ -98,7 +98,6 @@ uint32_t DeviceDiscoveryMode::handleUIElementStateChange(int i)
 
 			//since we're clearing the text, nothing is selected so disable the connect button
 			m_uiElements[2]->setState(m_uiElements[2]->getState() | UIElementState::Disabled);
-			//return ModeState::Active;
 		}
 		else if (m_state & DeviceDiscoveryState::DISCOVERY)
 		{
