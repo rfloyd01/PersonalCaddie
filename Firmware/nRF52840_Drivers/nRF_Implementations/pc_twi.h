@@ -10,6 +10,13 @@
 extern "C" {
 #endif
 
+/*
+The PersonalCaddie_twi files hold all information necessary for communication 
+over the TWI peripheral of the nRF52840. This includes initialization and 
+turning on/off of two TWI buses, methods for reading/writing IMU sensors, handler 
+methods, as well as a method for scanning both TWI buses for connected sensors.
+*/
+
 //Handler methods
 void twi_handler(nrf_drv_twi_evt_t const * p_event, void * p_context, uint8_t twi_bus);
 void internal_twi_handler(nrf_drv_twi_evt_t const * p_event, void * p_context);
