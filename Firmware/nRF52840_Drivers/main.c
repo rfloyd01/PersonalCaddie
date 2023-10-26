@@ -29,6 +29,7 @@
 #include "personal_caddie_operating_modes.h"
 #include "nRF_Implementations/pc_twi.h"
 #include "nRF_Implementations/pc_ble.h"
+#include "nRF_Implementations/pc_timer.h"
 
 //Bluetooth Parameters
 #define MANUFACTURER_NAME               "FloydInc."                             /**< Manufacturer. Will be passed to Device Information Service. */
@@ -44,8 +45,6 @@ uint16_t m_conn_handle = BLE_CONN_HANDLE_INVALID;                               
 volatile bool m_data_ready  = false;        //Indicates when all characteristics have been filled with new data and we're ready to send it to the client
 volatile bool m_notification_done = false;  //Indicates when the current data notification has complete
 
-static int measurements_taken = 0;                                              /**< keeps track of how many IMU measurements have taken in the given connection interval. */
-
 //IMU Sensor Parameters
 static uint8_t default_sensors[3] = {FXOS8700_ACC, FXAS21002_GYR, FXOS8700_MAG};/**< Default sensors that are attempted to be initialized first. */
 //static uint8_t default_sensors[3] = {LSM9DS1_ACC, LSM9DS1_GYR, LSM9DS1_MAG};  /**< Default sensors that are attempted to be initialized first. */
@@ -58,12 +57,6 @@ static uint8_t external_sensors_found = 0;
 
 static stmdev_ctx_t lsm9ds1_imu;                                                /**< LSM9DS1 accelerometer/gyroscope instance. */
 static stmdev_ctx_t lsm9ds1_mag;                                                /**< LSM9DS1 magnetometer instance. */
-
-APP_TIMER_DEF(m_data_reading_timer);                                            /**< A timer used for collecting data from the LSM9DS1 (interrupts are disabled so a timer is needed). */
-APP_TIMER_DEF(m_led_timer);                                                     /**< A timer used for LED timing */
-#define NEXT_MEASUREMENT_DELAY          APP_TIMER_TICKS(1500)                   /**< Defines the delay between Sensor Measurments (1500 milliseconds). */
-#define LED_DELAY                       APP_TIMER_TICKS(2000)                   /**< Defines the delay between LED blinks */
-const nrf_drv_timer_t LED_ON_TIMER =    NRF_DRV_TIMER_INSTANCE(1);              /**< Timer to keep track of how long LEDs are turned on during a blink */
 
 static uint8_t acc_characteristic_data[SENSOR_SAMPLES * SAMPLE_SIZE];
 static uint8_t gyr_characteristic_data[SENSOR_SAMPLES * SAMPLE_SIZE];
@@ -85,7 +78,7 @@ static personal_caddie_operating_mode_t current_operating_mode = ADVERTISING_MOD
 #define RED_LED            NRF_GPIO_PIN_MAP(0, 24)                         /**< Red LED Indicator on BLE 33 sense*/
 #define BLUE_LED           NRF_GPIO_PIN_MAP(0, 6)                          /**< Blue LED Indicator on BLE 33 sense*/
 #define GREEN_LED          NRF_GPIO_PIN_MAP(0, 16)                         /**< Green LED Indicator on BLE 33 sense*/
-static volatile uint8_t active_led = BLUE_LED;                             /**< Variable used to keep track of which color LED to turn on/off*/
+volatile uint8_t active_led = BLUE_LED;                                   /**< Variable used to keep track of which color LED to turn on/off*/
 
 imu_communication_t imu_comm;                                                          /**< Holds information on how to communicate with each sensor*/
 
@@ -471,6 +464,7 @@ static void sensors_init(bool discovery)
     //Update the global sensor ODR. This variable is used for setting the connection interval
     //of the BLE connection to be equal to the fastest ODR between the three sensors.
     current_sensor_odr = sensor_odr_calculate();
+    update_data_read_timer(1000.0 / current_sensor_odr); //set the data reading timer based on the sensor odr
 
     //After all sensors have been initialized, update the sensor settings characteristic to 
     //reflect the sensor settings array. Furthermore, we also set the connection interval 
@@ -527,7 +521,7 @@ static void characteristic_update_and_notify()
     //APP_ERROR_CHECK(ret); //Uncommenting this can help debug notification errors
 }
 
-static void data_reading_timer_handler(void * p_context)
+void data_read_handler(int measurements_taken)
 {
     //Everytime the data reading timer goes off we take sensor readings and then 
     //update the appropriate characteristic values. The timer should go off SENSOR_SAMPLES times
@@ -535,71 +529,6 @@ static void data_reading_timer_handler(void * p_context)
     imu_comm.acc_comm.get_data(acc_characteristic_data, SAMPLE_SIZE * measurements_taken);
     imu_comm.gyr_comm.get_data(gyr_characteristic_data, SAMPLE_SIZE * measurements_taken);
     imu_comm.mag_comm.get_data(mag_characteristic_data, SAMPLE_SIZE * measurements_taken);
-    
-    measurements_taken++;
-
-    //after all the samples are read, update the characteristics and notify
-    if ( measurements_taken == SENSOR_SAMPLES)
-    {
-        //SEGGER_RTT_WriteString(0, "Sending the following bytes to GYR characteristic:\n");
-        //for (int i = 0; i < SENSOR_SAMPLES; i++)
-        //{
-        //    for (int j = 0; j < SAMPLE_SIZE; j++)
-        //    {
-        //        SEGGER_RTT_printf(0, "0x%#01x ", *(gyr_characteristic_data + i * SAMPLE_SIZE + j));
-        //    }
-        //    SEGGER_RTT_WriteString(0, "\n");
-        //}
-        //SEGGER_RTT_WriteString(0, "\n");
-
-        m_data_ready = true; //flags the main loop to broadcast data notifications
-        measurements_taken = 0; //reset the data counter
-    }
-}
-
-static void led_timer_handler(void * p_context)
-{
-    //This timer causes the currently active LED to light up. A separate timer is used to 
-    //turn the LED back off after a set time period.
-    nrf_gpio_pin_clear(active_led); //The LEDs must be pulled low to turn on
-
-    nrf_drv_timer_clear(&LED_ON_TIMER); //reset the LED-on timer
-    nrf_drv_timer_enable(&LED_ON_TIMER); //turn on the LED_on timer, the handler for this timer will turn the LED back off
-    //uint32_t timer_val = nrf_drv_timer_capture(&LED_ON_TIMER, NRF_TIMER_CC_CHANNEL1);
-}
-
-void led_on_timer_handler(nrf_timer_event_t event_type, void* p_context)
-{
-    //This handler gets called when an LED is turned to the active state. Simply turn the 
-    //LED back off when this handler is called and then turn the LED-on timer off.
-    nrf_gpio_pin_set(active_led); //The LEDs must be set high to turn off
-    nrf_drv_timer_disable(&LED_ON_TIMER);
-}
-
-/**@brief Function for the Timer initialization.
- *
- * @details Initializes the timer module. This creates and starts application timers.
- */
-static void timers_init(void)
-{
-    // Initialize timer module.
-    ret_code_t err_code = app_timer_init();
-    APP_ERROR_CHECK(err_code);
-
-    // Create a non-ble timer to help keep track of LED on time
-    nrf_drv_timer_config_t timer_cfg = NRF_DRV_TIMER_DEFAULT_CONFIG;
-    timer_cfg.frequency = NRF_TIMER_FREQ_16MHz;
-    timer_cfg.bit_width = NRF_TIMER_BIT_WIDTH_32;
-
-    err_code = nrf_drv_timer_init(&LED_ON_TIMER, &timer_cfg, led_on_timer_handler);
-    APP_ERROR_CHECK(err_code);
-
-    uint32_t led_on_time = nrf_drv_timer_ms_to_ticks(&LED_ON_TIMER, 5); //the LEDs will only be on for 2 milliseconds while blinking
-    nrf_drv_timer_extended_compare(&LED_ON_TIMER, NRF_TIMER_CC_CHANNEL0, led_on_time, NRF_TIMER_SHORT_COMPARE0_CLEAR_MASK, true); //calls the led_on_timer_handler
-
-    // Create custom timers.
-    app_timer_create(&m_data_reading_timer, APP_TIMER_MODE_REPEATED, data_reading_timer_handler);
-    app_timer_create(&m_led_timer, APP_TIMER_MODE_REPEATED, led_timer_handler);
 }
 
 
@@ -622,7 +551,8 @@ static void sensor_idle_mode_start()
     {
         //If we're transitioning from active to idle mode we need to stop the data collection timer
         //and then put the sensor into sleep mode.
-        err_code = app_timer_stop(m_data_reading_timer); //Even if the timer isn't actively on it's ok to call this method
+        //err_code = app_timer_stop(m_data_reading_timer); //Even if the timer isn't actively on it's ok to call this method
+        data_timers_stop();
         
         //Put all sensors into idle mode, any of the sensors that are active
         //will be properly initialized
@@ -631,7 +561,8 @@ static void sensor_idle_mode_start()
         fxas21002_idle_mode_enable();
 
         //the LED is deactivated during data collection so turn it back on
-        err_code = app_timer_start(m_led_timer, LED_DELAY, NULL); //Even if the timer is already on it's ok to call this method
+        //err_code = app_timer_start(m_led_timer, LED_DELAY, NULL); //Even if the timer is already on it's ok to call this method
+        led_timers_start();
     }
     else 
     {
@@ -685,7 +616,8 @@ static void sensor_active_mode_start()
 
     //All of the settings for the sensor should have been set already, we just need to activate them
     //and then start the data collection timer. We also disable the LED to save on power
-    app_timer_stop(m_led_timer); //disable the led by turning of it's timer
+    //app_timer_stop(m_led_timer); //disable the led by turning of it's timer
+    led_timers_stop();
 
     //DEBUG: Turn on timer to see how offten measurements are being taken
     //nrf_drv_timer_clear(&LED_ON_TIMER); //reset the LED-on timer
@@ -700,13 +632,14 @@ static void sensor_active_mode_start()
     //start data acquisition by turning on the data timer The timer needs to be converted from ms
     //to 'ticks' which match the frequency of the app timer. Normally this is done with a Macro but
     //that can't be accessed here so the macro code is copied here
-    float sensor_odr = sensor_odr_calculate();
-    int reading_timer_milliseconds = 1000.0 / sensor_odr + 1; //this is how often (in milliseconds) we need to take a sensor reading
+    //float sensor_odr = sensor_odr_calculate();
+    //int reading_timer_milliseconds = 1000.0 / sensor_odr + 1; //this is how often (in milliseconds) we need to take a sensor reading
 
-    uint64_t A = reading_timer_milliseconds * (uint64_t)APP_TIMER_CLOCK_FREQ;
-    uint64_t B = 1000 * (APP_TIMER_CONFIG_RTC_FREQUENCY + 1);
-    uint32_t data_timer_delay = (((A) + ((B) / 2)) / (B));
-    app_timer_start(m_data_reading_timer, data_timer_delay, NULL);
+    //uint64_t A = reading_timer_milliseconds * (uint64_t)APP_TIMER_CLOCK_FREQ;
+    //uint64_t B = 1000 * (APP_TIMER_CONFIG_RTC_FREQUENCY + 1);
+    //uint32_t data_timer_delay = (((A) + ((B) / 2)) / (B));
+    //app_timer_start(m_data_reading_timer, data_timer_delay, NULL);
+    data_timers_start();
     
     current_operating_mode = SENSOR_ACTIVE_MODE; //set the current operating mode to idle
 }
@@ -792,7 +725,15 @@ static void sensor_settings_write_handler(uint16_t conn_handle, ble_sensor_servi
             if (new_sensor_odr != current_sensor_odr)
             {
                 if (update_connection_interval(new_sensor_odr) != NRF_SUCCESS) SEGGER_RTT_WriteString(0, "Couldn't update connection interval.\n");
-                else current_sensor_odr = new_sensor_odr;
+                else
+                {
+                    //If the change was successful we update the sensor_odr variable.
+                    current_sensor_odr = new_sensor_odr;
+
+                    //We also need to update the data aquisition timer to reflect this
+                    //new odr
+                    update_data_read_timer(1000.0 / current_sensor_odr);
+                }
             }
             break;
         case 4:
@@ -823,15 +764,6 @@ static void services_init(void)
 }
 
 
-/**@brief Function for starting timers.
- */
-static void application_timers_start(void)
-{
-    //a timer that let's us know when to read the next data sample from the Sensor
-    //app_timer_start(m_data_reading_timer, NEXT_MEASUREMENT_DELAY, NULL);
-    app_timer_start(m_led_timer, LED_DELAY, NULL); //blinks the green led along with the advertising interval
-}
-
 void on_gap_connection_handler()
 {
     //This handler method gets called every time a new connection is initiated
@@ -840,7 +772,15 @@ void on_gap_connection_handler()
     if (new_sensor_odr != current_sensor_odr)
     {
         if (update_connection_interval(new_sensor_odr) != NRF_SUCCESS) SEGGER_RTT_WriteString(0, "Couldn't update connection interval.\n");
-        else current_sensor_odr = new_sensor_odr;
+        else
+        {
+            //If the change was successful we update the sensor_odr variable.
+            current_sensor_odr = new_sensor_odr;
+
+            //We also need to update the data aquisition timer to reflect this
+            //new odr
+            update_data_read_timer(1000.0 / current_sensor_odr);
+        }
     }
 }
 
@@ -905,14 +845,20 @@ int main(void)
  {
     bool erase_bonds;
 
-    //Create a structure for BLE handler methods
+    //Create a structures for handler methods
     ble_event_handler_t ble_handlers;
     ble_handlers.gap_connected_handler = on_gap_connection_handler;
     ble_handlers.gap_disconnected_handler = on_gap_disconnection_handler;
 
+    timer_handlers_t timer_handlers;
+    timer_handlers.data_read_handler = data_read_handler;
+
+    //TEMP - erase when sensor_samples bug is addressed
+    uint8_t total_sensor_samples = SENSOR_SAMPLES;
+
     //Initialize.
     log_init();
-    timers_init();
+    timers_init(&active_led, &m_data_ready, &total_sensor_samples, &timer_handlers);
     power_management_init();
     ble_stack_init(&ble_handlers, &m_conn_handle, &m_notification_done);
     gatt_init();
@@ -926,7 +872,7 @@ int main(void)
     leds_init();
 
     //Start execution.
-    application_timers_start();
+    led_timers_start();
     advertising_start(erase_bonds);
 
     //Enter main loop.
@@ -941,7 +887,6 @@ int main(void)
         {
             characteristic_update_and_notify();
             m_data_ready = false;
-            //SEGGER_RTT_printf(0, "Sending notification %d\n", ++adv_num);
         }
     }
 }

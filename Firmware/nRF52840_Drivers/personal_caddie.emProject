@@ -107,6 +107,7 @@
       <folder Name="nRF Implementations">
         <file file_name="nRF_Implementations/pc_twi.c" />
         <file file_name="nRF_Implementations/pc_ble.c" />
+        <file file_name="nRF_Implementations/pc_timer.c" />
       </folder>
     </folder>
     <folder Name="nRF_Segger_RTT">
