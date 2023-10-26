@@ -12,6 +12,7 @@
 #include "nrf_sdh.h"
 #include "nrf_ble_qwr.h"
 #include "ble_conn_params.h"
+#include "nrf_ble_gatt.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -51,6 +52,7 @@ static void delete_bonds(void);
 
 //GAP and GATT Methods
 void gap_params_init(float current_sensor_odr);
+void gatt_init(void);
 
 //Handlers
 static void on_adv_evt(ble_adv_evt_t ble_adv_evt);

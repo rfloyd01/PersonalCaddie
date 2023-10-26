@@ -15,6 +15,7 @@ static uint16_t sensor_connection_interval;                                     
 
 BLE_ADVERTISING_DEF(m_advertising);                                             /**< Advertising module instance. */
 NRF_BLE_QWR_DEF(m_qwr);                                                         /**< Context for the Queued Write module.*/
+NRF_BLE_GATT_DEF(m_gatt);                                                       /**< GATT module instance. */  
 
 //Security Parameters
 #define SEC_PARAM_BOND                  1                                       /**< Perform bonding. */
@@ -270,6 +271,12 @@ void gap_params_init(float current_sensor_odr)
     gap_conn_params.conn_sup_timeout  = SENSOR_CONN_SUP_TIMEOUT;
 
     err_code = sd_ble_gap_ppcp_set(&gap_conn_params);
+    APP_ERROR_CHECK(err_code);
+}
+
+void gatt_init(void)
+{
+    ret_code_t err_code = nrf_ble_gatt_init(&m_gatt, NULL);
     APP_ERROR_CHECK(err_code);
 }
 

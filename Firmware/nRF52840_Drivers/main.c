@@ -14,7 +14,6 @@
 #include "fds.h"
 #include "bsp_btn_ble.h" //includes the nrf_gpio_pin_map() macro
 #include "ble_conn_state.h"
-#include "nrf_ble_gatt.h"
 #include "nrf_pwr_mgmt.h"
 #include "nrf_drv_timer.h"
 
@@ -37,8 +36,7 @@
 static uint16_t sensor_connection_interval;                                     /**< Variable that holds the desired connection interval (in milliseconds) */
 
 #define DEAD_BEEF                       0xDEADBEEF                              /**< Value used as error code on stack dump, can be used to identify stack location on stack unwind. */
-
-NRF_BLE_GATT_DEF(m_gatt);                                                       /**< GATT module instance. */                                                       /**< Context for the Queued Write module.*/
+                                                    /**< Context for the Queued Write module.*/
 BLE_SENSOR_SERVICE_DEF(m_ss);                                                   /**< Sensor Service instance. */
 
 uint16_t m_conn_handle = BLE_CONN_HANDLE_INVALID;                               /**< Handle of the current connection. */
@@ -487,7 +485,6 @@ static void sensors_init(bool discovery)
 
 static void characteristic_update_and_notify()
 {
-    
     ble_gatts_hvx_params_t acc_notify_params, gyr_notify_params, mag_notify_params;
     memset(&acc_notify_params, 0, sizeof(acc_notify_params));
     memset(&gyr_notify_params, 0, sizeof(gyr_notify_params));
@@ -521,8 +518,6 @@ static void characteristic_update_and_notify()
     //Set the notifcation_done boolean to false and start notifications.
     //The boolean will be set to true in the BLE handler when the notification
     //is complete, alerting us to send out the next notification.
-
-
     m_notification_done = false;
     uint32_t ret = sd_ble_gatts_hvx(m_conn_handle, &acc_notify_params); //acc data notification
     ret = sd_ble_gatts_hvx(m_conn_handle, &gyr_notify_params); //gyr data notification
@@ -607,14 +602,6 @@ static void timers_init(void)
     app_timer_create(&m_led_timer, APP_TIMER_MODE_REPEATED, led_timer_handler);
 }
 
-
-/**@brief Function for initializing the GATT module.
- */
-static void gatt_init(void)
-{
-    ret_code_t err_code = nrf_ble_gatt_init(&m_gatt, NULL);
-    APP_ERROR_CHECK(err_code);
-}
 
 //Functions for updating sensor power modes and settings
 static void sensor_idle_mode_start()
@@ -826,52 +813,13 @@ static void sensor_settings_write_handler(uint16_t conn_handle, ble_sensor_servi
 static void services_init(void)
 {
     ret_code_t                err_code;
-    //nrf_ble_qwr_init_t        qwr_init = {0};
     ble_sensor_service_init_t init  = {0};
-
-    // Initialize Queued Write Module.
-    //qwr_init.error_handler = nrf_qwr_error_handler;
-
-    //err_code = nrf_ble_qwr_init(&m_qwr, &qwr_init);
-    //APP_ERROR_CHECK(err_code);
 
     // Initialize sensor service
     init.setting_write_handler = sensor_settings_write_handler;
 
     err_code = ble_sensor_service_init(&m_ss, &init, SENSOR_SETTINGS_LENGTH);
     APP_ERROR_CHECK(err_code);
-}
-
-
-/**@brief Function for handling the Connection Parameters Module.
- *
- * @details This function will be called for all events in the Connection Parameters Module which
- *          are passed to the application.
- *          @note All this function does is to disconnect. This could have been done by simply
- *                setting the disconnect_on_fail config parameter, but instead we use the event
- *                handler mechanism to demonstrate its use.
- *
- * @param[in] p_evt  Event received from the Connection Parameters Module.
- */
-static void on_conn_params_evt(ble_conn_params_evt_t * p_evt)
-{
-    ret_code_t err_code;
-
-    if (p_evt->evt_type == BLE_CONN_PARAMS_EVT_FAILED)
-    {
-        err_code = sd_ble_gap_disconnect(m_conn_handle, BLE_HCI_CONN_INTERVAL_UNACCEPTABLE);
-        APP_ERROR_CHECK(err_code);
-    }
-}
-
-
-/**@brief Function for handling a Connection Parameters error.
- *
- * @param[in] nrf_error  Error code containing information about what went wrong.
- */
-static void conn_params_error_handler(uint32_t nrf_error)
-{
-    APP_ERROR_HANDLER(nrf_error);
 }
 
 
@@ -901,6 +849,7 @@ void on_gap_disconnection_handler()
     //This handler method gets called when a connection is lost
     advertising_mode_start();
 }
+
 
 /**@brief Function for initializing the nrf log module.
  */

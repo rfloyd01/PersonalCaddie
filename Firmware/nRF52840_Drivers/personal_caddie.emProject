@@ -118,7 +118,6 @@
       <file file_name="$(IncludeDir)/$(SDKVer)/components/ble/common/ble_advdata.c" />
       <file file_name="$(IncludeDir)/$(SDKVer)/components/ble/ble_advertising/ble_advertising.c" />
       <file file_name="$(IncludeDir)/$(SDKVer)/components/ble/common/ble_conn_params.c" />
-      <file file_name="$(IncludeDir)/$(SDKVer)/components/ble/common/ble_conn_state.c" />
       <file file_name="$(IncludeDir)/$(SDKVer)/components/ble/common/ble_srv_common.c" />
       <file file_name="$(IncludeDir)/$(SDKVer)/components/ble/peer_manager/gatt_cache_manager.c" />
       <file file_name="$(IncludeDir)/$(SDKVer)/components/ble/peer_manager/gatts_cache_manager.c" />
@@ -133,6 +132,7 @@
       <file file_name="$(IncludeDir)/$(SDKVer)/components/ble/peer_manager/pm_buffer.c" />
       <file file_name="$(IncludeDir)/$(SDKVer)/components/ble/peer_manager/security_dispatcher.c" />
       <file file_name="$(IncludeDir)/$(SDKVer)/components/ble/peer_manager/security_manager.c" />
+      <file file_name="$(IncludeDir)/$(SDKVer)/components/ble/common/ble_conn_state.c" />
     </folder>
     <folder Name="UTF8/UTF16 converter">
       <file file_name="$(IncludeDir)/$(SDKVer)/external/utf_converter/utf.c" />
