@@ -50,8 +50,11 @@ ble_event_handler_t m_ble_event_handlers;
 uint16_t*           p_conn_handle; //A pointer to the connection handle for the active connection
 volatile bool*      p_notification_done; //A pointer to a bool which lets us know when notification is complete
 static uint8_t* p_total_sensor_samples;  //The connection interval needs to change to match the current number of samples we're collecting
+uint16_t* p_minimum_connection_interval;  //The current desired minimum connection interval (in ms)
+uint16_t* p_maximum_connection_interval;  //The current desired maximum connection interval (in ms)
 
-void ble_stack_init(ble_event_handler_t* handler_methods, uint16_t* connection_handle, volatile bool* notifications_done, uint8_t* sensor_samples)
+void ble_stack_init(ble_event_handler_t* handler_methods, uint16_t* connection_handle, volatile bool* notifications_done,
+                    uint8_t* sensor_samples, uint16_t* min_conn_int, uint16_t* max_conn_int)
 {
     ret_code_t err_code;
 
@@ -62,6 +65,8 @@ void ble_stack_init(ble_event_handler_t* handler_methods, uint16_t* connection_h
     //into this method
     m_ble_event_handlers.gap_connected_handler = handler_methods->gap_connected_handler;
     m_ble_event_handlers.gap_disconnected_handler = handler_methods->gap_disconnected_handler;
+    m_ble_event_handlers.gap_connection_interval_handler = handler_methods->gap_connection_interval_handler;
+    m_ble_event_handlers.gap_update_sensor_samples = handler_methods->gap_update_sensor_samples;
 
     //Set a reference to the connection handle (the physical variable is in main.c
     //as there are other modules that need access to it)
@@ -71,6 +76,9 @@ void ble_stack_init(ble_event_handler_t* handler_methods, uint16_t* connection_h
     //handle, there are other modules that reference this variable so we only keep 
     //a pointer to it
     p_notification_done = notifications_done;
+    p_total_sensor_samples = sensor_samples;
+    p_minimum_connection_interval = min_conn_int;
+    p_maximum_connection_interval = max_conn_int;
 
     // Initialize Queued Write Module.
     nrf_ble_qwr_init_t        qwr_init = {0};
@@ -158,26 +166,19 @@ void conn_params_init(void)
     APP_ERROR_CHECK(err_code);
 }
 
-uint32_t update_connection_interval(float sensor_odr)
+uint32_t update_connection_interval()
 {
     //We use this method to dynamically update the connection interval. This will get
-    //called if the ODR of the sensors changes
-
-    //TODO: This method should return an integer which represents the optimal
-    //number of samples to store in the data characteristics
-    int minimum_interval_required = 1000.0 / sensor_odr * (*p_total_sensor_samples) + 1; //this is in milliseconds, hence the 1000
-    minimum_interval_required += (15 - minimum_interval_required % 15); //round up to the nearest 15th millisecond (this is necessary for iOS)
-
-    //Convert from milliseconds to 1.25 millisecond units by dividing by 1.25 (same multiplying by 4/5)
-    int mir_125 = minimum_interval_required / 5;
-    mir_125 *= 4;
+    //called if the ODR of the sensors changes. A separate method is used to calculate
+    //the ideal connection interval based on the current sensor odr.
+    m_ble_event_handlers.gap_connection_interval_handler();
 
     //Now make the connection interval change request
     ret_code_t err_code = BLE_ERROR_INVALID_CONN_HANDLE;
     ble_gap_conn_params_t new_params;
 
-    new_params.min_conn_interval = mir_125;
-    new_params.max_conn_interval = mir_125 + 12; //must be 15 ms (or 12 in 1.25ms units) greater at a minimum to work with Apple Prodcuts
+    new_params.min_conn_interval = *p_minimum_connection_interval * 4 / 5; //convert from milliseconds to 1.25 ms units
+    new_params.max_conn_interval = *p_maximum_connection_interval * 4 / 5; //convert from milliseconds to 1.25 ms units
     new_params.slave_latency = SLAVE_LATENCY;
     new_params.conn_sup_timeout = SENSOR_CONN_SUP_TIMEOUT;
 
@@ -259,16 +260,11 @@ void gap_params_init(float current_sensor_odr)
                                           strlen(DEVICE_NAME));
     APP_ERROR_CHECK(err_code);
 
-    //calculate the connection interval based on the ODR of the sensor
-    int minimum_interval_required = 1000.0 / current_sensor_odr * (*p_total_sensor_samples) + 1; //this is in milliseconds, hence the 1000
-    minimum_interval_required += (15 - minimum_interval_required % 15); //round up to the nearest 15th millisecond
+    //calculate the connection interval based on the ODR of the sensor (this is handled elsewhere)
+    m_ble_event_handlers.gap_connection_interval_handler();
 
-    //Convert from milliseconds to 1.25 millisecond units by dividing by 1.25 (same multiplying by 4/5)
-    int mir_125 = minimum_interval_required / 5;
-    mir_125 *= 4;
-
-    gap_conn_params.min_conn_interval = mir_125;
-    gap_conn_params.max_conn_interval = mir_125 + 12; //must be 15 ms (or 12 in 1.25ms units) greater at a minimum
+    gap_conn_params.min_conn_interval = *p_minimum_connection_interval * 4 / 5; //convert from milliseconds to 1.25 ms units
+    gap_conn_params.max_conn_interval = *p_maximum_connection_interval * 4 / 5; //convert from milliseconds to 1.25 ms units
     gap_conn_params.slave_latency     = SLAVE_LATENCY;
     gap_conn_params.conn_sup_timeout  = SENSOR_CONN_SUP_TIMEOUT;
 
@@ -336,7 +332,8 @@ static void ble_evt_handler(ble_evt_t const * p_ble_evt, void * p_context)
             //connected_mode_start();
             //update_connection_interval(); //confirm that the correct connection interval is being used
             m_ble_event_handlers.gap_connected_handler();
-            SEGGER_RTT_WriteString(0, "Connected to the Personal Caddie.\n");
+            SEGGER_RTT_printf(0, "Connected to the Personal Caddie with a connection interval of %u milliseconds.\n",
+                              p_ble_evt->evt.gap_evt.params.connected.conn_params.max_conn_interval * 5 / 4);
             break;
 
         case BLE_GAP_EVT_PHY_UPDATE_REQUEST:
@@ -352,6 +349,8 @@ static void ble_evt_handler(ble_evt_t const * p_ble_evt, void * p_context)
 
         case BLE_GAP_EVT_CONN_PARAM_UPDATE:
             sensor_connection_interval = p_ble_evt->evt.gap_evt.params.conn_param_update.conn_params.min_conn_interval * 5 / 4;
+            //update the number of samples we collect based on the connection interval negotiated
+            m_ble_event_handlers.gap_update_sensor_samples(sensor_connection_interval);
             SEGGER_RTT_printf(0, "Connection Interval updated to : %u milliseconds.\n", sensor_connection_interval);
             break;
 

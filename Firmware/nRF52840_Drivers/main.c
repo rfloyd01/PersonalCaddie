@@ -65,6 +65,7 @@ static uint8_t mag_characteristic_data[5 + MAX_SENSOR_SAMPLES * SAMPLE_SIZE];
 uint8_t sensor_settings[SENSOR_SETTINGS_LENGTH];                               /**< An array represnting the IMU sensor settings */
 uint8_t m_current_sensor_samples = 10;  //The number of sensor samples currently being put into the acc,gy and mag characteristics (must be less than MAX_SENSOR_SAMPLES
 uint32_t m_time_stamp; //Keeps track of the time that each data set is read at (this is measured in ticks of a 16MHz clock, i.e. 1 LSB = 1/16000000s = 62.5ns)
+uint16_t desired_minimum_connection_interval, desired_maximum_connection_interval; //The desired min and max connection interval
 
 static int32_t write_imu(void *handle, uint8_t reg, const uint8_t *bufp, uint16_t len);
 static int32_t read_imu(void *handle, uint8_t reg, uint8_t *bufp, uint16_t len);
@@ -538,6 +539,137 @@ static void characteristic_update_and_notify()
     //APP_ERROR_CHECK(ret); //Uncommenting this can help debug notification errors
 }
 
+uint64_t findGCD(uint64_t a, uint64_t b)
+{
+    if (b == 0) return a;
+    return findGCD(b, a % b);
+}
+
+uint64_t findLCM(uint64_t a, uint64_t b)
+{
+    return (a * b) / findGCD(a, b);
+}
+
+float findDecimalLCM(float a, float b)
+{
+    return findLCM(a * 1000000, b * 1000000) / 1000000.0;
+}
+
+void calculate_samples_and_connection_interval()
+{
+    //This method is used to select the appropriate number of sensor samples to collect
+    //and the min-max connection interval to select to minimize data loss.
+
+    //This method is necessary as a consequence of not being able to set a specific 
+    //connection interval, the interval must be negotiated between two devices and thus
+    //is prone to not be exactly what we want. On iOS devices, for example, the minimumn
+    //and maximum requested connection interval must be at least 15 milliseconds apart. 
+    //Depending on the current sensor ODR 15 milliseconds can be anywhere from 0.75 sensor
+    //sample at an ODR of 50 Hz to 6 samples at 400 Hz. Basically, depending on what the 
+    //negotiated connection interval is, it may make sense to collect more or less samples
+    //at a time from the sensors.
+
+    //Since we won't know what the actual connection interval will be until after it's
+    //negotiated, we attempt to pick a min and max interval that will maximize our chances
+    //of having low data loss.
+
+    float minimum_connection_interval[MAX_SENSOR_SAMPLES + 1]; //in milliseconds
+    float expected_data_loss[MAX_SENSOR_SAMPLES + 1]; //in milliseconds
+    float lowest_expected_data_loss = 18 * MAX_SENSOR_SAMPLES; //start high, losing all data
+    int lowest_loss_index = 0;
+
+    for (int i = 1; i <= MAX_SENSOR_SAMPLES; i++)
+    {
+        //We look at all the possiblities for the number of samples we can collect
+        //(anywhere from 1 to MAX_SENSOR_SAMPLES) and look at the necessary minimum
+        //connection intervals needed to calculate each one. As mentioned above, to work
+        //with iOS the min and max intervals must be divisible by 15 ms, so we round the 
+        //minimum interval up to the nearest 15th millisecond.
+        minimum_connection_interval[i] = ceil(1000.0 * i / current_sensor_odr);
+        minimum_connection_interval[i] += (15 - (int)minimum_connection_interval[i] % 15);
+        expected_data_loss[i] = 0; //initialize the expected data loss for each sample amount
+
+        float data_loss_per_connection_interval[13];
+        for (int j = 0; j <= 12; j++)
+        {
+            //In theory the connection interval can be set anywhere between the min and max
+            //connection interval (inclusive) in steps of 1.25ms. We need look at all of these
+            //possibilites
+            float current_connection_interval = minimum_connection_interval[i] + (float)j * 5.0 / 4.0; //convert from 1.25 ms units to ms
+
+            //Given the current connection interval we calculate how many complete cycles it takes
+            //for sensor odr * sensor samples to fall back to an even connection interval. We can use
+            //this ratio of data_cycles/conntion_intervals to get an idea of how much data we lose. For example,,
+            //with a connection interval of 45ms, an ODR of 400 Hz and 10 data samples, every 5 connection
+            //events (45ms * 5 = 225ms) we will gather 9 complete data sets (10/400 * 9 = 225ms). Only 1 complete 
+            //data set goes out every connection interval so we effectively lose 4/9 of our data every
+            //225 milliseconds (which is obviously terrible).
+            float connection_cycle_length = findDecimalLCM(current_connection_interval, 1000 * i / current_sensor_odr);
+
+            float connection_intervals_per_cycle = connection_cycle_length / current_connection_interval;
+            float total_data_packets = connection_cycle_length / (1000 * i / current_sensor_odr);
+            float total_data_loss_per_cycle = (total_data_packets - connection_intervals_per_cycle) / total_data_packets * i * 18.0; //bytes in a complete sensor reading
+
+            data_loss_per_connection_interval[j] = total_data_loss_per_cycle / connection_intervals_per_cycle;
+        }
+
+        //At this stage we have an array with the expected data loss (in bytes) for each possibility
+        //for the connection interval from min to max. From a statistics standpoint, we can turn this
+        //into an expected value given the odds of getting each one of these connection intervals. In 
+        //theory there should be an equal probability of any of these, however, in my experience the
+        //maximum interval is chosen the vast majority of the time, the minimum interval the next most
+        //frequent, and something in between is rare. This may need to be altered in the future but 
+        //I'd say the odds are as follows: max_interval = 95%, min_interval = 4%, inbetween = 1%
+        expected_data_loss[i] += data_loss_per_connection_interval[0] * 0.04;
+        expected_data_loss[i] += data_loss_per_connection_interval[12] * 0.95;
+        for (int j = 1; j < 12; j++) expected_data_loss[i] += data_loss_per_connection_interval[j] * .01 / 11.0;
+
+        if (expected_data_loss[i] < lowest_expected_data_loss)
+        {
+            lowest_expected_data_loss = expected_data_loss[i];
+            lowest_loss_index = i;
+
+            //Update the global variables for desired min and max connection interval
+            desired_minimum_connection_interval = minimum_connection_interval[i];
+            desired_maximum_connection_interval = 15 + desired_minimum_connection_interval;
+        }
+    }
+    
+    //At the end of the algorithm, we select the sensor sample amount and min-max connection interval
+    //that gives us the lowest expected data loss.
+    m_current_sensor_samples = lowest_loss_index;
+}
+
+void set_sensor_samples(int actual_connection_interval)
+{
+    //As mentioned above in the alcualte_samples_and_connection_interval() method,
+    //there's no guarantee as to what the connection interval is going to be set at.
+    //Once the interval has been established we update the sample amount so that
+    //sensor odr * sample amount is as close to the connection interval (without
+    //exceeding it) as possible.
+    for (int i = MAX_SENSOR_SAMPLES; i >= 0; i--)
+    {
+        if ((1000.0 * i / current_sensor_odr) < actual_connection_interval)
+        {
+            SEGGER_RTT_printf(0, "%d sensor samples selected.\n", i);
+            m_current_sensor_samples = i;
+
+            //Not 100% necesary here, however, it may be handy for debugging.
+            //Print out the expected data loss per connection interval to 
+            //confirm our selection was ok. Ideally this number would be a good
+            //deal under 1 byte.
+            float connection_cycle_length = findDecimalLCM(actual_connection_interval, 1000 * i / current_sensor_odr);
+
+            float connection_intervals_per_cycle = connection_cycle_length / actual_connection_interval;
+            float total_data_packets = connection_cycle_length / (1000 * i / current_sensor_odr);
+            float total_data_loss_per_cycle = (total_data_packets - connection_intervals_per_cycle) / total_data_packets * i * 18.0; //bytes in a complete sensor reading
+
+            SEGGER_RTT_printf(0, "Expected data loss per connection interval (bytes): %d/%d\n", total_data_loss_per_cycle, connection_intervals_per_cycle);
+            break;
+        }
+    }
+}
+
 void data_read_handler(int measurements_taken)
 {
     //Everytime the data reading timer goes off we take sensor readings and then 
@@ -741,14 +873,17 @@ static void sensor_settings_write_handler(uint16_t conn_handle, ble_sensor_servi
             //update connection interval if necessary
             if (new_sensor_odr != current_sensor_odr)
             {
-                if (update_connection_interval(new_sensor_odr) != NRF_SUCCESS) SEGGER_RTT_WriteString(0, "Couldn't update connection interval.\n");
+                float temp = current_sensor_odr; //save the original odr in case something goes wrong
+                current_sensor_odr = new_sensor_odr;
+                if (update_connection_interval(new_sensor_odr) != NRF_SUCCESS)
+                {
+                    current_sensor_odr = temp; //reset the sensor odr as it wasn't actually updated
+                    SEGGER_RTT_WriteString(0, "Couldn't update connection interval.\n");
+                }
                 else
                 {
-                    //If the change was successful we update the sensor_odr variable.
-                    current_sensor_odr = new_sensor_odr;
-
-                    //We also need to update the data aquisition timer to reflect this
-                    //new odr
+                    //If the change was successful we also need to update the data
+                    //aquisition timer to reflect this new odr
                     update_data_read_timer(1000.0 / current_sensor_odr);
                 }
             }
@@ -788,14 +923,17 @@ void on_gap_connection_handler()
     float new_sensor_odr = sensor_odr_calculate();
     if (new_sensor_odr != current_sensor_odr)
     {
-        if (update_connection_interval(new_sensor_odr) != NRF_SUCCESS) SEGGER_RTT_WriteString(0, "Couldn't update connection interval.\n");
+        float temp = current_sensor_odr; //save the original odr in case something goes wrong
+        current_sensor_odr = new_sensor_odr;
+        if (update_connection_interval(new_sensor_odr) != NRF_SUCCESS)
+        {
+            current_sensor_odr = temp; //reset the sensor odr as it wasn't actually updated
+            SEGGER_RTT_WriteString(0, "Couldn't update connection interval.\n");
+        }
         else
         {
-            //If the change was successful we update the sensor_odr variable.
-            current_sensor_odr = new_sensor_odr;
-
-            //We also need to update the data aquisition timer to reflect this
-            //new odr
+            //If the change was successful we also need to update the data
+            //aquisition timer to reflect this new odr
             update_data_read_timer(1000.0 / current_sensor_odr);
         }
     }
@@ -866,6 +1004,8 @@ int main(void)
     ble_event_handler_t ble_handlers;
     ble_handlers.gap_connected_handler = on_gap_connection_handler;
     ble_handlers.gap_disconnected_handler = on_gap_disconnection_handler;
+    ble_handlers.gap_connection_interval_handler = calculate_samples_and_connection_interval;
+    ble_handlers.gap_update_sensor_samples = set_sensor_samples;
 
     timer_handlers_t timer_handlers;
     timer_handlers.data_read_handler = data_read_handler;
@@ -874,7 +1014,7 @@ int main(void)
     log_init();
     timers_init(&active_led, &m_data_ready, &m_current_sensor_samples, &m_time_stamp, &timer_handlers);
     power_management_init();
-    ble_stack_init(&ble_handlers, &m_conn_handle, &m_notification_done, &m_current_sensor_samples);
+    ble_stack_init(&ble_handlers, &m_conn_handle, &m_notification_done, &m_current_sensor_samples, &desired_minimum_connection_interval, &desired_maximum_connection_interval);
     gatt_init();
     services_init();
     twi_init();

@@ -28,23 +28,28 @@ reduce clutter in main.c
 // Forward declaration of the ble_event_handler_t type.
 typedef struct ble_event_handler_s ble_event_handler_t;
 
-typedef void (*pc_handler_t) (void); //Function pointer for methods to be passed to BLE handler
+typedef void (*pc_ble_handler_t) (void); //Function pointer for methods to be passed to BLE handler
+typedef void (*pc_ble_handler_i_t) (int); //Function pointer for methods to be passed to BLE handler (takes an integer parameter)
+
 
 //Struct to hold function pointers for BLE Event handler
 struct ble_event_handler_s
 {
-    pc_handler_t gap_connected_handler;   /**< This method will get called when a connection is first made. */
-    pc_handler_t gap_disconnected_handler;   /**< This method will get called when a connection is lost. */
+    pc_ble_handler_t gap_connected_handler;   /**< This method will get called when a connection is first made. */
+    pc_ble_handler_t gap_disconnected_handler;   /**< This method will get called when a connection is lost. */
+    pc_ble_handler_t gap_connection_interval_handler;   /**< This method will get called when the connection interval needs to be updated */
+    pc_ble_handler_i_t gap_update_sensor_samples;  /**<this method updates the number of samples to collect after the connection interval is updated */
 };
 
 //BLE Stack Methods
-void ble_stack_init(ble_event_handler_t* handler_methods, uint16_t* connection_handle, volatile bool* notifications_done, uint8_t* sensor_samples);
+void ble_stack_init(ble_event_handler_t* handler_methods, uint16_t* connection_handle, volatile bool* notifications_done,
+                    uint8_t* sensor_samples, uint16_t* min_conn_int, uint16_t* max_conn_int);
 
 //Advertising/Connection Methods
 void advertising_init(void);
 void advertising_start(bool erase_bonds);
 void conn_params_init(void);
-uint32_t update_connection_interval(float sensor_odr);
+uint32_t update_connection_interval();
 
 //Peer/Bonding Methods
 void peer_manager_init(void);
