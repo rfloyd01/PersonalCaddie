@@ -562,82 +562,67 @@ void calculate_samples_and_connection_interval()
 
     //This method is necessary as a consequence of not being able to set a specific 
     //connection interval, the interval must be negotiated between two devices and thus
-    //is prone to not be exactly what we want. On iOS devices, for example, the minimumn
+    //is prone to not be exactly what we want. On iOS devices, in particular, the minimumn
     //and maximum requested connection interval must be at least 15 milliseconds apart. 
     //Depending on the current sensor ODR 15 milliseconds can be anywhere from 0.75 sensor
-    //sample at an ODR of 50 Hz to 6 samples at 400 Hz. Basically, depending on what the 
+    //samples at an ODR of 50 Hz to 6 samples at 400 Hz. Basically, depending on what the 
     //negotiated connection interval is, it may make sense to collect more or less samples
-    //at a time from the sensors.
+    //at a time from the sensors in order to minimize data being overwritten.
 
     //Since we won't know what the actual connection interval will be until after it's
     //negotiated, we attempt to pick a min and max interval that will maximize our chances
     //of having low data loss.
+    int minimum_time = ceil(1000.0 / current_sensor_odr);
+    minimum_time += (15 - minimum_time % 15);
 
-    float minimum_connection_interval[MAX_SENSOR_SAMPLES + 1]; //in milliseconds
-    float expected_data_loss[MAX_SENSOR_SAMPLES + 1]; //in milliseconds
-    float lowest_expected_data_loss = 18 * MAX_SENSOR_SAMPLES; //start high, losing all data
-    int lowest_loss_index = 0;
+    int maximum_time = ceil(MAX_SENSOR_SAMPLES * 1000.0 / current_sensor_odr);
+    maximum_time += (15 - maximum_time % 15);
 
-    for (int i = 1; i <= MAX_SENSOR_SAMPLES; i++)
+    float current_expected_loss = 1.0, current_best_loss = 1.0; //at 0 samples read we expect to lose all data
+    int current_time = minimum_time, best_minimum_interval = 0;
+
+    for (; current_time <= maximum_time; current_time += 15)
     {
-        //We look at all the possiblities for the number of samples we can collect
-        //(anywhere from 1 to MAX_SENSOR_SAMPLES) and look at the necessary minimum
-        //connection intervals needed to calculate each one. As mentioned above, to work
-        //with iOS the min and max intervals must be divisible by 15 ms, so we round the 
-        //minimum interval up to the nearest 15th millisecond.
-        minimum_connection_interval[i] = ceil(1000.0 * i / current_sensor_odr);
-        minimum_connection_interval[i] += (15 - (int)minimum_connection_interval[i] % 15);
-        expected_data_loss[i] = 0; //initialize the expected data loss for each sample amount
-
-        float data_loss_per_connection_interval[13];
-        for (int j = 0; j <= 12; j++)
+        //For each time interval we calcualte the expected data loss for choosing 1 - MAX_SENSOR_SAMPLES
+        //number of samples. If the time needed to collect the samples is longer than the current_time
+        //limit we stop iterating (we never want our data collection time to be longer than the connection
+        //interval or the data will start to lag).
+        float best_data_loss_percentage = 1.0; 
+        for (int i = 1; i <= MAX_SENSOR_SAMPLES; i++)
         {
-            //In theory the connection interval can be set anywhere between the min and max
-            //connection interval (inclusive) in steps of 1.25ms. We need look at all of these
-            //possibilites
-            float current_connection_interval = minimum_connection_interval[i] + (float)j * 5.0 / 4.0; //convert from 1.25 ms units to ms
+            float data_collection_time = i * 1000.0 / current_sensor_odr;
 
-            //Given the current connection interval we calculate how many complete cycles it takes
-            //for sensor odr * sensor samples to fall back to an even connection interval. We can use
-            //this ratio of data_cycles/conntion_intervals to get an idea of how much data we lose. For example,,
-            //with a connection interval of 45ms, an ODR of 400 Hz and 10 data samples, every 5 connection
-            //events (45ms * 5 = 225ms) we will gather 9 complete data sets (10/400 * 9 = 225ms). Only 1 complete 
-            //data set goes out every connection interval so we effectively lose 4/9 of our data every
-            //225 milliseconds (which is obviously terrible).
-            float connection_cycle_length = findDecimalLCM(current_connection_interval, 1000 * i / current_sensor_odr);
+            //we assume that if the data collection time = the connection interval we will slowly fall behind. So 
+            //only carry out the calculation when the data collection time is less than the connection interval
+            if (data_collection_time >= current_time) break;
 
-            float connection_intervals_per_cycle = connection_cycle_length / current_connection_interval;
-            float total_data_packets = connection_cycle_length / (1000 * i / current_sensor_odr);
-            float total_data_loss_per_cycle = (total_data_packets - connection_intervals_per_cycle) / total_data_packets * i * 18.0; //bytes in a complete sensor reading
+            //Calculate the expected data loss with current data_collection_time and connection interval
+            float connection_cycle_length = findDecimalLCM(current_time, data_collection_time);
 
-            data_loss_per_connection_interval[j] = total_data_loss_per_cycle / connection_intervals_per_cycle;
+            float total_connection_intervals = connection_cycle_length / current_time;
+            float total_data_packets = connection_cycle_length / data_collection_time;
+            float data_loss_percentage = (total_data_packets - total_connection_intervals) / total_data_packets;
+
+            if (data_loss_percentage < best_data_loss_percentage) best_data_loss_percentage = data_loss_percentage;
         }
 
-        //At this stage we have an array with the expected data loss (in bytes) for each possibility
-        //for the connection interval from min to max. From a statistics standpoint, we can turn this
-        //into an expected value given the odds of getting each one of these connection intervals. In 
-        //theory there should be an equal probability of any of these, however, in my experience the
-        //maximum interval is chosen the vast majority of the time, the minimum interval the next most
-        //frequent, and something in between is rare. This may need to be altered in the future but 
-        //I'd say the odds are as follows: max_interval = 95%, min_interval = 4%, inbetween = 1%
-        expected_data_loss[i] += data_loss_per_connection_interval[0] * 0.04;
-        expected_data_loss[i] += data_loss_per_connection_interval[12] * 0.95;
-        for (int j = 1; j < 12; j++) expected_data_loss[i] += data_loss_per_connection_interval[j] * .01 / 11.0;
-
-        if (expected_data_loss[i] < lowest_expected_data_loss)
+        //We now assume that we choose the lower of the two current connection intervals
+        //being compared. We expect to get the higher connection interval 90% of the time
+        //and the lower interval only 10% of the time.
+        float expected_data_loss = 0.1 * current_expected_loss + 0.9 * best_data_loss_percentage;
+        if (expected_data_loss < current_best_loss)
         {
-            lowest_expected_data_loss = expected_data_loss[i];
-            lowest_loss_index = i;
-
-            //Update the global variables for desired min and max connection interval
-            desired_minimum_connection_interval = minimum_connection_interval[i];
-            desired_maximum_connection_interval = 15 + desired_minimum_connection_interval;
+            current_best_loss = expected_data_loss;
+            best_minimum_interval = current_time - 15;
         }
+
+        current_expected_loss = best_data_loss_percentage;
     }
     
-    //At the end of the algorithm, we select the sensor sample amount and min-max connection interval
-    //that gives us the lowest expected data loss.
-    m_current_sensor_samples = lowest_loss_index;
+    //Once all calculations are done, set the desired minimum and maximum connection
+    //intervals based on the best_minimum_interval variable
+    desired_minimum_connection_interval = best_minimum_interval;
+    desired_maximum_connection_interval = desired_minimum_connection_interval + 15;
 }
 
 void set_sensor_samples(int actual_connection_interval)
@@ -662,9 +647,9 @@ void set_sensor_samples(int actual_connection_interval)
 
             float connection_intervals_per_cycle = connection_cycle_length / actual_connection_interval;
             float total_data_packets = connection_cycle_length / (1000 * i / current_sensor_odr);
-            float total_data_loss_per_cycle = (total_data_packets - connection_intervals_per_cycle) / total_data_packets * i * 18.0; //bytes in a complete sensor reading
+            float total_data_loss_percent = (total_data_packets - connection_intervals_per_cycle) / total_data_packets; //bytes in a complete sensor reading
 
-            SEGGER_RTT_printf(0, "Expected data loss per connection interval (bytes): %d/%d\n", total_data_loss_per_cycle, connection_intervals_per_cycle);
+            SEGGER_RTT_printf(0, "Expected data loss is ~: %d%%\n", (uint32_t)(100 * total_data_loss_percent));
             break;
         }
     }
@@ -1024,6 +1009,10 @@ int main(void)
     conn_params_init();
     peer_manager_init();
     leds_init();
+
+    //TEST:
+    //current_sensor_odr = 25.0;
+    //calculate_samples_and_connection_interval();
 
     //Start execution.
     led_timers_start();
