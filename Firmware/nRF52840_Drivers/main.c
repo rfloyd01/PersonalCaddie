@@ -58,10 +58,13 @@ static uint8_t external_sensors_found = 0;
 static stmdev_ctx_t lsm9ds1_imu;                                                /**< LSM9DS1 accelerometer/gyroscope instance. */
 static stmdev_ctx_t lsm9ds1_mag;                                                /**< LSM9DS1 magnetometer instance. */
 
-static uint8_t acc_characteristic_data[SENSOR_SAMPLES * SAMPLE_SIZE];
-static uint8_t gyr_characteristic_data[SENSOR_SAMPLES * SAMPLE_SIZE];
-static uint8_t mag_characteristic_data[SENSOR_SAMPLES * SAMPLE_SIZE];
+//Sensor Data Parameters
+static uint8_t acc_characteristic_data[5 + MAX_SENSOR_SAMPLES * SAMPLE_SIZE];
+static uint8_t gyr_characteristic_data[5 + MAX_SENSOR_SAMPLES * SAMPLE_SIZE];
+static uint8_t mag_characteristic_data[5 + MAX_SENSOR_SAMPLES * SAMPLE_SIZE];
 uint8_t sensor_settings[SENSOR_SETTINGS_LENGTH];                               /**< An array represnting the IMU sensor settings */
+uint8_t m_current_sensor_samples = 10;  //The number of sensor samples currently being put into the acc,gy and mag characteristics (must be less than MAX_SENSOR_SAMPLES
+uint32_t m_time_stamp; //Keeps track of the time that each data set is read at (this is measured in ticks of a 16MHz clock, i.e. 1 LSB = 1/16000000s = 62.5ns)
 
 static int32_t write_imu(void *handle, uint8_t reg, const uint8_t *bufp, uint16_t len);
 static int32_t read_imu(void *handle, uint8_t reg, uint8_t *bufp, uint16_t len);
@@ -484,9 +487,23 @@ static void characteristic_update_and_notify()
     memset(&gyr_notify_params, 0, sizeof(gyr_notify_params));
     memset(&mag_notify_params, 0, sizeof(mag_notify_params));
 
-    uint16_t acc_data_characteristic_size = SENSOR_SAMPLES * SAMPLE_SIZE;
-    uint16_t gyr_data_characteristic_size = SENSOR_SAMPLES * SAMPLE_SIZE;
-    uint16_t mag_data_characteristic_size = SENSOR_SAMPLES * SAMPLE_SIZE;
+    uint16_t acc_data_characteristic_size = 5 + MAX_SENSOR_SAMPLES * SAMPLE_SIZE;
+    uint16_t gyr_data_characteristic_size = 5 + MAX_SENSOR_SAMPLES * SAMPLE_SIZE;
+    uint16_t mag_data_characteristic_size = 5 + MAX_SENSOR_SAMPLES * SAMPLE_SIZE;
+
+    //Add the time stamp for the current data set and current number of 
+    //samples to the end of each of the data characteristics.
+    for (int i = 0; i < 4; i++)
+    {
+        uint8_t* time_start = (uint8_t*)&m_time_stamp; //cast the float to a 32-bit integer to take up 4 array slots
+
+        acc_characteristic_data[MAX_SENSOR_SAMPLES * SAMPLE_SIZE + i] = *(time_start + i);
+        gyr_characteristic_data[MAX_SENSOR_SAMPLES * SAMPLE_SIZE + i] = *(time_start + i);
+        mag_characteristic_data[MAX_SENSOR_SAMPLES * SAMPLE_SIZE + i] = *(time_start + i);
+    }
+    acc_characteristic_data[MAX_SENSOR_SAMPLES * SAMPLE_SIZE + 4] = m_current_sensor_samples;
+    gyr_characteristic_data[MAX_SENSOR_SAMPLES * SAMPLE_SIZE + 4] = m_current_sensor_samples;
+    mag_characteristic_data[MAX_SENSOR_SAMPLES * SAMPLE_SIZE + 4] = m_current_sensor_samples;
 
     //Setup accelerometer notification first
     acc_notify_params.type = BLE_GATT_HVX_NOTIFICATION;
@@ -845,7 +862,7 @@ int main(void)
  {
     bool erase_bonds;
 
-    //Create a structures for handler methods
+    //Create structures for handler methods
     ble_event_handler_t ble_handlers;
     ble_handlers.gap_connected_handler = on_gap_connection_handler;
     ble_handlers.gap_disconnected_handler = on_gap_disconnection_handler;
@@ -853,14 +870,11 @@ int main(void)
     timer_handlers_t timer_handlers;
     timer_handlers.data_read_handler = data_read_handler;
 
-    //TEMP - erase when sensor_samples bug is addressed
-    uint8_t total_sensor_samples = SENSOR_SAMPLES;
-
     //Initialize.
     log_init();
-    timers_init(&active_led, &m_data_ready, &total_sensor_samples, &timer_handlers);
+    timers_init(&active_led, &m_data_ready, &m_current_sensor_samples, &m_time_stamp, &timer_handlers);
     power_management_init();
-    ble_stack_init(&ble_handlers, &m_conn_handle, &m_notification_done);
+    ble_stack_init(&ble_handlers, &m_conn_handle, &m_notification_done, &m_current_sensor_samples);
     gatt_init();
     services_init();
     twi_init();

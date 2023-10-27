@@ -113,12 +113,19 @@ uint32_t ble_sensor_service_data_char_add(ble_sensor_service_t * p_ss)
 {
     ble_add_char_params_t add_acc_char_params, add_gyr_char_params, add_mag_char_params;
 
+    //Each characteristic will be 5 + SAMPLE_SIZE * MAX_SENSOR_SAMPLES bytes in length.
+    //The first SAMPLE_SIZE * MAX_SENSOR_SAMPLES bytes are for storing sensor data while
+    //the last 5 bytes are for storing a float which represents the time at which the 
+    //first data sample was recorded, as well as the number of samples currently in the 
+    //characteristic (to maximize data throughput it may be optimal to use less than
+    //MAX_SENSOR_SAMPLES based on the current connection interval and sensor ODR).
+
     // Add Accelerometer Data characteristic.
     memset(&add_acc_char_params, 0, sizeof(add_acc_char_params));
     add_acc_char_params.uuid              = ACC_DATA_CHARACTERISTIC_UUID;
     add_acc_char_params.uuid_type         = p_ss->uuid_type;
-    add_acc_char_params.init_len          = SAMPLE_SIZE * SENSOR_SAMPLES * sizeof(uint8_t);
-    add_acc_char_params.max_len           = SAMPLE_SIZE * SENSOR_SAMPLES * sizeof(uint8_t);
+    add_acc_char_params.init_len          = (5 + SAMPLE_SIZE * MAX_SENSOR_SAMPLES) * sizeof(uint8_t); 
+    add_acc_char_params.max_len           = (5 + SAMPLE_SIZE * MAX_SENSOR_SAMPLES) * sizeof(uint8_t);
     add_acc_char_params.char_props.read   = 1;
     add_acc_char_params.char_props.notify = 1;
 
@@ -137,8 +144,8 @@ uint32_t ble_sensor_service_data_char_add(ble_sensor_service_t * p_ss)
     memset(&add_gyr_char_params, 0, sizeof(add_gyr_char_params));
     add_gyr_char_params.uuid              = GYR_DATA_CHARACTERISTIC_UUID;
     add_gyr_char_params.uuid_type         = p_ss->uuid_type;
-    add_gyr_char_params.init_len          = SAMPLE_SIZE * SENSOR_SAMPLES * sizeof(uint8_t);
-    add_gyr_char_params.max_len           = SAMPLE_SIZE * SENSOR_SAMPLES * sizeof(uint8_t);
+    add_gyr_char_params.init_len          = (5 + SAMPLE_SIZE * MAX_SENSOR_SAMPLES) * sizeof(uint8_t);
+    add_gyr_char_params.max_len           = (5 + SAMPLE_SIZE * MAX_SENSOR_SAMPLES) * sizeof(uint8_t);
     add_gyr_char_params.char_props.read   = 1;
     add_gyr_char_params.char_props.notify = 1;
 
@@ -157,8 +164,8 @@ uint32_t ble_sensor_service_data_char_add(ble_sensor_service_t * p_ss)
     memset(&add_mag_char_params, 0, sizeof(add_mag_char_params));
     add_mag_char_params.uuid              = MAG_DATA_CHARACTERISTIC_UUID;
     add_mag_char_params.uuid_type         = p_ss->uuid_type;
-    add_mag_char_params.init_len          = SAMPLE_SIZE * SENSOR_SAMPLES * sizeof(uint8_t);
-    add_mag_char_params.max_len           = SAMPLE_SIZE * SENSOR_SAMPLES * sizeof(uint8_t);
+    add_mag_char_params.init_len          = (5 + SAMPLE_SIZE * MAX_SENSOR_SAMPLES) * sizeof(uint8_t);
+    add_mag_char_params.max_len           = (5 + SAMPLE_SIZE * MAX_SENSOR_SAMPLES) * sizeof(uint8_t);
     add_mag_char_params.char_props.read   = 1;
     add_mag_char_params.char_props.notify = 1;
 

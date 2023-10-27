@@ -31,7 +31,7 @@ NRF_SDH_BLE_OBSERVER(_name ## _obs,                                             
 #define MAG_DATA_CHARACTERISTIC_UUID      0xBF38
 #define AVAILABLE_SENSORS_CHAR_UUID       0xBF39
 
-#define SENSOR_SAMPLES 10                    /**< The number of full sensor samples to read into data characteristics */
+#define MAX_SENSOR_SAMPLES 12                /**< The max number of sensor samples we can put into a characteristic*/
 #define SAMPLE_SIZE     6                    /**< The size (in bytes) of a full sensor sample reading (includes x, y and z axes) */
 
 // Forward declaration of the ble_sensor_service_t type.

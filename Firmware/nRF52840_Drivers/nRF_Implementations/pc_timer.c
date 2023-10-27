@@ -4,23 +4,21 @@
 #include "nrf_gpio.h"
 
 //Global Timer Variables
-//APP_TIMER_DEF(m_data_read_timer);                                               /**< A timer used for collecting data from the LSM9DS1 (interrupts are disabled so a timer is needed). */
-//#define NEXT_MEASUREMENT_DELAY          APP_TIMER_TICKS(1500)                   /**< Defines the delay between Sensor Measurments (1500 milliseconds). */
-//#define LED_DELAY                       APP_TIMER_TICKS(2000)                   /**< Defines the delay between LED blinks */
 const nrf_drv_timer_t m_data_read_timer = NRF_DRV_TIMER_INSTANCE(1);         /**< This timer goes off every time we need to read data from the sensors */
-const nrf_drv_timer_t m_data_start_timer = NRF_DRV_TIMER_INSTANCE(2);         /**< This timer starts as soon as we take our first data reading, it gives us the absolute time for data reads */
-APP_TIMER_DEF(m_led_on_timer);                                                     /**< A timer used for turning on LEDs */
-APP_TIMER_DEF(m_led_off_timer);                                                        /**< A timer used for turning off LEDs */
+const nrf_drv_timer_t m_data_start_timer = NRF_DRV_TIMER_INSTANCE(2);        /**< This timer starts as soon as we take our first data reading, it gives us the absolute time for data reads */
+APP_TIMER_DEF(m_led_on_timer);                                               /**< A timer used for turning on LEDs */
+APP_TIMER_DEF(m_led_off_timer);                                              /**< A timer used for turning off LEDs */
 
 //Pointers
-uint8_t* p_total_sensor_samples;  //As the application runs the number of samples to collect from the IMU sensors is subject to change
+static uint8_t* p_total_sensor_samples;  //As the application runs the number of samples to collect from the IMU sensors is subject to change
 volatile uint8_t* p_active_led; //Keeps track of which led needs to be turned on and off when the timers go off
 volatile bool* p_data_ready; //Once this bool is set to true all data in the data characteristics is sent out via notification
+uint32_t* p_current_time_stamp; //Holds the time stamp for the first data reading of each set
 timer_handlers_t m_timer_handlers; //Structure to hold function pointers needed by the timers
 
 int measurements_taken = 0;                                              /**< keeps track of how many IMU measurements have taken in the given connection interval. */
 
-void timers_init(volatile uint8_t* led, volatile bool* data_ready, uint8_t* sensor_samples, timer_handlers_t* handlers)
+void timers_init(volatile uint8_t* led, volatile bool* data_ready, uint8_t* sensor_samples, uint32_t* time_stamp, timer_handlers_t* handlers)
 {
     //There are four separate timers that get initialized here. Two
     //timers for tunring LEDs on and off, and two timers for reading data
@@ -38,6 +36,7 @@ void timers_init(volatile uint8_t* led, volatile bool* data_ready, uint8_t* sens
     p_total_sensor_samples = sensor_samples;
     p_active_led = led;
     p_data_ready = data_ready;
+    p_current_time_stamp = time_stamp;
     m_timer_handlers.data_read_handler = handlers->data_read_handler;
 
     //Create the data reading timers using the nrf_drv_timer library
@@ -103,6 +102,7 @@ static void data_read_timer_handler(nrf_timer_event_t event_type, void* p_contex
         //We record the time stamp for the first measurement of each data set. This helps
         //keep everything in order in the front end application
         uint32_t time_stamp = nrf_drv_timer_capture(&m_data_start_timer, NRF_TIMER_CC_CHANNEL0);
+        *p_current_time_stamp = time_stamp;
         //SEGGER_RTT_printf(0, "Data set begins at time (in ticks) %d\n", time_stamp);
     }
     else if ( measurements_taken == *p_total_sensor_samples)

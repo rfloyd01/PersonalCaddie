@@ -45,11 +45,13 @@ static ble_uuid_t m_sr_uuids[] =                                               /
     {SENSOR_SERVICE_UUID, BLE_UUID_TYPE_VENDOR_BEGIN}
 };
 
+//Pointers
 ble_event_handler_t m_ble_event_handlers;
 uint16_t*           p_conn_handle; //A pointer to the connection handle for the active connection
 volatile bool*      p_notification_done; //A pointer to a bool which lets us know when notification is complete
+static uint8_t* p_total_sensor_samples;  //The connection interval needs to change to match the current number of samples we're collecting
 
-void ble_stack_init(ble_event_handler_t* handler_methods, uint16_t* connection_handle, volatile bool* notifications_done)
+void ble_stack_init(ble_event_handler_t* handler_methods, uint16_t* connection_handle, volatile bool* notifications_done, uint8_t* sensor_samples)
 {
     ret_code_t err_code;
 
@@ -163,7 +165,7 @@ uint32_t update_connection_interval(float sensor_odr)
 
     //TODO: This method should return an integer which represents the optimal
     //number of samples to store in the data characteristics
-    int minimum_interval_required = 1000.0 / sensor_odr * SENSOR_SAMPLES + 1; //this is in milliseconds, hence the 1000
+    int minimum_interval_required = 1000.0 / sensor_odr * (*p_total_sensor_samples) + 1; //this is in milliseconds, hence the 1000
     minimum_interval_required += (15 - minimum_interval_required % 15); //round up to the nearest 15th millisecond (this is necessary for iOS)
 
     //Convert from milliseconds to 1.25 millisecond units by dividing by 1.25 (same multiplying by 4/5)
@@ -258,7 +260,7 @@ void gap_params_init(float current_sensor_odr)
     APP_ERROR_CHECK(err_code);
 
     //calculate the connection interval based on the ODR of the sensor
-    int minimum_interval_required = 1000.0 / current_sensor_odr * SENSOR_SAMPLES + 1; //this is in milliseconds, hence the 1000
+    int minimum_interval_required = 1000.0 / current_sensor_odr * (*p_total_sensor_samples) + 1; //this is in milliseconds, hence the 1000
     minimum_interval_required += (15 - minimum_interval_required % 15); //round up to the nearest 15th millisecond
 
     //Convert from milliseconds to 1.25 millisecond units by dividing by 1.25 (same multiplying by 4/5)

@@ -29,7 +29,7 @@ struct timer_handlers_s
 };
 
 //Init methods
-void timers_init(volatile uint8_t* led, volatile bool* data_ready, uint8_t* sensor_samples, timer_handlers_t* handlers);
+void timers_init(volatile uint8_t* led, volatile bool* data_ready, uint8_t* sensor_samples, uint32_t* time_stamp, timer_handlers_t* handlers);
 
 //Timer Update Methods
 void update_data_read_timer(int milliseconds);

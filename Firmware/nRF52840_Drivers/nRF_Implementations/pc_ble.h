@@ -38,7 +38,7 @@ struct ble_event_handler_s
 };
 
 //BLE Stack Methods
-void ble_stack_init(ble_event_handler_t* handler_methods, uint16_t* connection_handle, volatile bool* notifications_done);
+void ble_stack_init(ble_event_handler_t* handler_methods, uint16_t* connection_handle, volatile bool* notifications_done, uint8_t* sensor_samples);
 
 //Advertising/Connection Methods
 void advertising_init(void);
