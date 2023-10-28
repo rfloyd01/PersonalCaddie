@@ -10,12 +10,9 @@
 #include "nrf_delay.h"
 #include "nrf_sdh_soc.h"
 #include "nrf_sdh_ble.h"
-#include "app_timer.h"
 #include "fds.h"
 #include "bsp_btn_ble.h" //includes the nrf_gpio_pin_map() macro
-#include "ble_conn_state.h"
 #include "nrf_pwr_mgmt.h"
-#include "nrf_drv_timer.h"
 
 #include "nrf_log.h"
 #include "nrf_log_ctrl.h"
@@ -31,60 +28,43 @@
 #include "nRF_Implementations/pc_ble.h"
 #include "nRF_Implementations/pc_timer.h"
 
-//Bluetooth Parameters
-#define MANUFACTURER_NAME               "FloydInc."                             /**< Manufacturer. Will be passed to Device Information Service. */
-
-static uint16_t sensor_connection_interval;                                     /**< Variable that holds the desired connection interval (in milliseconds) */
-
-#define DEAD_BEEF                       0xDEADBEEF                              /**< Value used as error code on stack dump, can be used to identify stack location on stack unwind. */
-                                                    /**< Context for the Queued Write module.*/
-BLE_SENSOR_SERVICE_DEF(m_ss);                                                   /**< Sensor Service instance. */
-
-uint16_t m_conn_handle = BLE_CONN_HANDLE_INVALID;                               /**< Handle of the current connection. */
-
-volatile bool m_data_ready  = false;        //Indicates when all characteristics have been filled with new data and we're ready to send it to the client
-volatile bool m_notification_done = false;  //Indicates when the current data notification has complete
+//Soft Device Parameters
+#define DEAD_BEEF                       0xDEADBEEF                                /**< Value used as error code on stack dump, can be used to identify stack location on stack unwind. */
+BLE_SENSOR_SERVICE_DEF(m_ss);                                                     /**< IMU Sensor Service instance. */
+uint16_t m_conn_handle = BLE_CONN_HANDLE_INVALID;                                 /**< Handle of the current connection. */
 
 //IMU Sensor Parameters
-static uint8_t default_sensors[3] = {FXOS8700_ACC, FXAS21002_GYR, FXOS8700_MAG};/**< Default sensors that are attempted to be initialized first. */
-//static uint8_t default_sensors[3] = {LSM9DS1_ACC, LSM9DS1_GYR, LSM9DS1_MAG};  /**< Default sensors that are attempted to be initialized first. */
-static bool sensors_initialized[3] = {false, false, false};                     /**< Keep track of which sensors are currently initialized */
-static uint8_t internal_sensors[10];                                            /**< An array for holding the addresses of sensors on the internal TWI line */
-static uint8_t external_sensors[10];                                            /**< An array for holding the addresses of sensors on the external TWI line */
-
+static uint8_t default_sensors[3] = {FXOS8700_ACC, FXAS21002_GYR, FXOS8700_MAG};  /**< Default sensors that are attempted to be initialized first. */
+static bool sensors_initialized[3] = {false, false, false};                       /**< Keep track of which sensors are currently initialized */
+static uint8_t internal_sensors[10];                                              /**< An array for holding the addresses of sensors on the internal TWI line */
+static uint8_t external_sensors[10];                                              /**< An array for holding the addresses of sensors on the external TWI line */
 static uint8_t internal_sensors_found = 0;
 static uint8_t external_sensors_found = 0;
 
-static stmdev_ctx_t lsm9ds1_imu;                                                /**< LSM9DS1 accelerometer/gyroscope instance. */
-static stmdev_ctx_t lsm9ds1_mag;                                                /**< LSM9DS1 magnetometer instance. */
+//IMU Sensor Data Parameters
+static uint8_t acc_characteristic_data[5 + MAX_SENSOR_SAMPLES * SAMPLE_SIZE];      /**< An array for holding current accelerometer readings */
+static uint8_t gyr_characteristic_data[5 + MAX_SENSOR_SAMPLES * SAMPLE_SIZE];      /**< An array for holding current gyroscope readings */
+static uint8_t mag_characteristic_data[5 + MAX_SENSOR_SAMPLES * SAMPLE_SIZE];      /**< An array for holding current magnetometer readings */
+uint8_t sensor_settings[SENSOR_SETTINGS_LENGTH];                                   /**< An array represnting the IMU sensor settings */
+uint8_t m_current_sensor_samples = 10;                                             /**< The number of sensor samples currently being put into the acc,gy and mag characteristics (must be less than MAX_SENSOR_SAMPLES */
+uint32_t m_time_stamp;                                                             /**< Keeps track of the time that each data set is read at (this is measured in ticks of a 16MHz clock, i.e. 1 LSB = 1/16000000s = 62.5ns) */
+volatile bool m_data_ready  = false;                                               /**< Indicates when all characteristics have been filled with new data and we're ready to send it to the client  */
+volatile bool m_notification_done = false;                                         /**< Indicates when the current data notification has complete  */
 
-//Sensor Data Parameters
-static uint8_t acc_characteristic_data[5 + MAX_SENSOR_SAMPLES * SAMPLE_SIZE];
-static uint8_t gyr_characteristic_data[5 + MAX_SENSOR_SAMPLES * SAMPLE_SIZE];
-static uint8_t mag_characteristic_data[5 + MAX_SENSOR_SAMPLES * SAMPLE_SIZE];
-uint8_t sensor_settings[SENSOR_SETTINGS_LENGTH];                               /**< An array represnting the IMU sensor settings */
-uint8_t m_current_sensor_samples = 10;  //The number of sensor samples currently being put into the acc,gy and mag characteristics (must be less than MAX_SENSOR_SAMPLES
-uint32_t m_time_stamp; //Keeps track of the time that each data set is read at (this is measured in ticks of a 16MHz clock, i.e. 1 LSB = 1/16000000s = 62.5ns)
-uint16_t desired_minimum_connection_interval, desired_maximum_connection_interval; //The desired min and max connection interval
+//IMU Sensor Communication Parameters
+imu_communication_t imu_comm;                                                      /**< Structure that Holds information on how to communicate with each sensor */
+uint16_t desired_minimum_connection_interval, desired_maximum_connection_interval; /**< The desired min and max connection interval */
+static float current_sensor_odr = 59.5;                                            /**< Keeps track of the current sensor ODR, connection interval is set based on this variable */
 
-static int32_t write_imu(void *handle, uint8_t reg, const uint8_t *bufp, uint16_t len);
-static int32_t read_imu(void *handle, uint8_t reg, uint8_t *bufp, uint16_t len);
-static int32_t write_mag(void *handle, uint8_t reg, const uint8_t *bufp, uint16_t len);
-static int32_t read_mag(void *handle, uint8_t reg, uint8_t *bufp, uint16_t len);
-static void tx_com( uint8_t *tx_buffer, uint16_t len );
-static int32_t get_IMU_data(uint8_t offset);
-static int32_t get_MAG_data(uint8_t offset);
-static float current_sensor_odr = 59.5;         //keeps track of the current sensor ODR to let us know if we need to update the connection interval
+//LED Pin Parameters
+#define RED_LED            NRF_GPIO_PIN_MAP(0, 24)                                 /**< Red LED Indicator on BLE 33 sense*/
+#define BLUE_LED           NRF_GPIO_PIN_MAP(0, 6)                                  /**< Blue LED Indicator on BLE 33 sense*/
+#define GREEN_LED          NRF_GPIO_PIN_MAP(0, 16)                                 /**< Green LED Indicator on BLE 33 sense*/
+volatile uint8_t active_led = BLUE_LED;                                            /**< Variable used to keep track of which color LED to turn on/off*/
 
+//Personal Caddie Parameters
 static personal_caddie_operating_mode_t current_operating_mode = ADVERTISING_MODE; /**< The chip starts in advertising mode*/
 
-//Pin Setup
-#define RED_LED            NRF_GPIO_PIN_MAP(0, 24)                         /**< Red LED Indicator on BLE 33 sense*/
-#define BLUE_LED           NRF_GPIO_PIN_MAP(0, 6)                          /**< Blue LED Indicator on BLE 33 sense*/
-#define GREEN_LED          NRF_GPIO_PIN_MAP(0, 16)                         /**< Green LED Indicator on BLE 33 sense*/
-volatile uint8_t active_led = BLUE_LED;                                   /**< Variable used to keep track of which color LED to turn on/off*/
-
-imu_communication_t imu_comm;                                                          /**< Holds information on how to communicate with each sensor*/
 
 /**@brief Callback function for asserts in the SoftDevice.
  *
@@ -99,11 +79,18 @@ imu_communication_t imu_comm;                                                   
  */
 void assert_nrf_callback(uint16_t line_num, const uint8_t * p_file_name)
 {
+    //TODO: Need some kind of custom error handling here, any time this
+    //method gets called it results in a crash
     app_error_handler(DEAD_BEEF, line_num, p_file_name);
 }
 
 static void sensor_communication_init(sensor_type_t type, uint8_t model, uint8_t address, nrf_drv_twi_t const * bus)
 {
+    //This method is used for setting up function pointers for communicating with sensors. Each sensor
+    //has slightly different methods for reading and writing (defined in their drivers) so we use the
+    //function pointers stored in the imu_comm structure for communication. The imu_comm strucutre also
+    //holds other info for communication, such as the address of the sensor and the TWI bus that it's located
+    //on.
     switch (type)
     {
         case ACC_SENSOR:
@@ -228,7 +215,7 @@ static void default_sensor_select()
                     secondary_stop = internal_sensors_found;
                 }
 
-                //NOTE: In the below loops, we can only initialize sensor i using sensor j's model number
+                //In the below loops, we can only initialize sensor i using sensor j's model number
                 //because currently all sensor manufacturers I use have an acc, gyr and
                 //mag so the model numbers line up (i.e. lsm9ds1_acc = 0, lsm9ds1_gyr = 0).
                 //If I start using chips that don't have all three sensors then the 
@@ -564,7 +551,7 @@ void calculate_samples_and_connection_interval()
     //connection interval, the interval must be negotiated between two devices and thus
     //is prone to not be exactly what we want. On iOS devices, in particular, the minimumn
     //and maximum requested connection interval must be at least 15 milliseconds apart. 
-    //Depending on the current sensor ODR 15 milliseconds can be anywhere from 0.75 sensor
+    //Depending on the current sensor ODR, 15 milliseconds can be anywhere from 0.75 sensor
     //samples at an ODR of 50 Hz to 6 samples at 400 Hz. Basically, depending on what the 
     //negotiated connection interval is, it may make sense to collect more or less samples
     //at a time from the sensors in order to minimize data being overwritten.
@@ -669,9 +656,8 @@ void data_read_handler(int measurements_taken)
 //Functions for updating sensor power modes and settings
 static void sensor_idle_mode_start()
 { 
-    //In this mode, the appropriate TWI bus(es) is active and power is going to the sensor(s) but the 
-    //sensor is put into sleep mode. A red LED blinking in time with the connection 
-    //interval shows when this mode is active.
+    //In this mode, the appropriate TWI bus(es) is active and power is going to the sensors but the 
+    //sensors are put into sleep mode. A red LED on the board blinks during this mode
     if (current_operating_mode == SENSOR_IDLE_MODE) return; //no need to change anything if already in idle mode
 
     //swap to the red LED, also make sure that the blue and green LEDs are off
@@ -685,7 +671,6 @@ static void sensor_idle_mode_start()
     {
         //If we're transitioning from active to idle mode we need to stop the data collection timer
         //and then put the sensor into sleep mode.
-        //err_code = app_timer_stop(m_data_reading_timer); //Even if the timer isn't actively on it's ok to call this method
         data_timers_stop();
         
         //Put all sensors into idle mode, any of the sensors that are active
@@ -695,7 +680,6 @@ static void sensor_idle_mode_start()
         fxas21002_idle_mode_enable();
 
         //the LED is deactivated during data collection so turn it back on
-        //err_code = app_timer_start(m_led_timer, LED_DELAY, NULL); //Even if the timer is already on it's ok to call this method
         led_timers_start();
     }
     else 
@@ -705,10 +689,7 @@ static void sensor_idle_mode_start()
         //be turning on the sensors, either we're about to take data readings, or, we want to update the
         //sensor settings. In both cases we need to turn on the TWI bus to enable communication, but
         //before doing so we need to see if a call from the front end to use a different sensor has been made.
-
         uint8_t new_sensors = 0;
-
-        SEGGER_RTT_printf(0, "Sensors in settings array: %d, %d, %d\n", sensor_settings[ACC_START + SENSOR_MODEL], sensor_settings[GYR_START + SENSOR_MODEL], sensor_settings[MAG_START + SENSOR_MODEL]);
 
         if (imu_comm.sensor_model[ACC_SENSOR] != sensor_settings[ACC_START + SENSOR_MODEL])
         {
@@ -750,32 +731,17 @@ static void sensor_active_mode_start()
 
     //All of the settings for the sensor should have been set already, we just need to activate them
     //and then start the data collection timer. We also disable the LED to save on power
-    //app_timer_stop(m_led_timer); //disable the led by turning of it's timer
     led_timers_stop();
-
-    //DEBUG: Turn on timer to see how offten measurements are being taken
-    //nrf_drv_timer_clear(&LED_ON_TIMER); //reset the LED-on timer
-    //nrf_drv_timer_enable(&LED_ON_TIMER); //turn on the LED_on timer, the handler for this timer will turn the LED back off
     
-    //Put all sensors into idle mode, any of the sensors that are active
-    //will be properly initialized
+    //Put all initialized sensors into active mode
     lsm9ds1_active_mode_enable();
     fxos8700_active_mode_enable();
     fxas21002_active_mode_enable();
 
-    //start data acquisition by turning on the data timer The timer needs to be converted from ms
-    //to 'ticks' which match the frequency of the app timer. Normally this is done with a Macro but
-    //that can't be accessed here so the macro code is copied here
-    //float sensor_odr = sensor_odr_calculate();
-    //int reading_timer_milliseconds = 1000.0 / sensor_odr + 1; //this is how often (in milliseconds) we need to take a sensor reading
-
-    //uint64_t A = reading_timer_milliseconds * (uint64_t)APP_TIMER_CLOCK_FREQ;
-    //uint64_t B = 1000 * (APP_TIMER_CONFIG_RTC_FREQUENCY + 1);
-    //uint32_t data_timer_delay = (((A) + ((B) / 2)) / (B));
-    //app_timer_start(m_data_reading_timer, data_timer_delay, NULL);
+    //start data acquisition by turning on the data timers
     data_timers_start();
     
-    current_operating_mode = SENSOR_ACTIVE_MODE; //set the current operating mode to idle
+    current_operating_mode = SENSOR_ACTIVE_MODE; //set the current operating mode to active
 }
 
 static void connected_mode_start()
@@ -880,10 +846,7 @@ static void sensor_settings_write_handler(uint16_t conn_handle, ble_sensor_servi
         case 5:
             sensor_active_mode_start();
             break;
-    }
-
-    //SEGGER_RTT_printf(0, "Byte %u = 0x%x\n", i, *(settings_state + i));
-    
+    }    
 }
 
 /**@brief Function for initializing services that will be used by the application.
@@ -1009,10 +972,6 @@ int main(void)
     conn_params_init();
     peer_manager_init();
     leds_init();
-
-    //TEST:
-    //current_sensor_odr = 25.0;
-    //calculate_samples_and_connection_interval();
 
     //Start execution.
     led_timers_start();
