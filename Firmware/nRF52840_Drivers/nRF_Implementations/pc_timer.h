@@ -40,6 +40,9 @@ void led_timers_stop(void);
 void data_timers_start(void);
 void data_timers_stop(void);
 
+//Get Methods
+uint32_t get_current_data_time();
+
 //Handlers
 static void data_read_timer_handler(nrf_timer_event_t event_type, void* p_context);
 static void data_start_timer_handler(nrf_timer_event_t event_type, void* p_context);

@@ -82,6 +82,19 @@ void data_timers_stop(void)
 
     nrf_drv_timer_disable(&m_data_start_timer);
     nrf_drv_timer_clear(&m_data_start_timer);
+
+    //Set the data ready bool to false, this will prevent
+    //notifying old characteristic data the next time the 
+    //data timer starts
+    *p_data_ready = false;
+    measurements_taken = 0; //also reset the measurements taken variable
+}
+
+uint32_t get_current_data_time()
+{
+    //If the data timers are currently on, this method returns
+    //the current value (in ticks) of the data start timer.
+    return nrf_drv_timer_capture(&m_data_start_timer, NRF_TIMER_CC_CHANNEL2);
 }
 
 void update_data_read_timer(int milliseconds)

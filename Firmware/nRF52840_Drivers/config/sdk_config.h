@@ -11408,9 +11408,9 @@
 
 
 // <i> Requested BLE GAP data length to be negotiated.
-
+//GAP data length includes the MTU packet as well as a 4 byte header, so its length should be MAX_MTU + 4
 #ifndef NRF_SDH_BLE_GAP_DATA_LENGTH
-#define NRF_SDH_BLE_GAP_DATA_LENGTH 235 //was initially set at 27 -->184
+#define NRF_SDH_BLE_GAP_DATA_LENGTH 246
 #endif
 
 // <o> NRF_SDH_BLE_PERIPHERAL_LINK_COUNT - Maximum number of peripheral links. 
@@ -11434,12 +11434,13 @@
 // <i> The time set aside for this connection on every connection interval in 1.25 ms units.
 
 #ifndef NRF_SDH_BLE_GAP_EVENT_LENGTH
-#define NRF_SDH_BLE_GAP_EVENT_LENGTH 5
+#define NRF_SDH_BLE_GAP_EVENT_LENGTH 10
 #endif
 
-// <o> NRF_SDH_BLE_GATT_MAX_MTU_SIZE - Static maximum MTU size. 
+// <o> NRF_SDH_BLE_GATT_MAX_MTU_SIZE - Static maximum MTU size.
+//The MTU needs 3 bytes for a header, so the maximum raw data per packet is MAX_MTU - 3
 #ifndef NRF_SDH_BLE_GATT_MAX_MTU_SIZE
-#define NRF_SDH_BLE_GATT_MAX_MTU_SIZE 231 //Initially was set at 23 --> 180
+#define NRF_SDH_BLE_GATT_MAX_MTU_SIZE 242
 #endif
 
 // <o> NRF_SDH_BLE_GATTS_ATTR_TAB_SIZE - Attribute Table size in bytes. The size must be a multiple of 4. 

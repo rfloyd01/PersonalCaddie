@@ -48,12 +48,12 @@ static ble_uuid_t m_sr_uuids[] =                                               /
 //Pointers
 ble_event_handler_t m_ble_event_handlers;
 uint16_t*           p_conn_handle; //A pointer to the connection handle for the active connection
-volatile bool*      p_notification_done; //A pointer to a bool which lets us know when notification is complete
+volatile int*       p_notifications_done; //A pointer to an integer which lets us know how many notification are complete
 static uint8_t* p_total_sensor_samples;  //The connection interval needs to change to match the current number of samples we're collecting
 uint16_t* p_minimum_connection_interval;  //The current desired minimum connection interval (in ms)
 uint16_t* p_maximum_connection_interval;  //The current desired maximum connection interval (in ms)
 
-void ble_stack_init(ble_event_handler_t* handler_methods, uint16_t* connection_handle, volatile bool* notifications_done,
+void ble_stack_init(ble_event_handler_t* handler_methods, uint16_t* connection_handle, volatile int* notifications_done,
                     uint8_t* sensor_samples, uint16_t* min_conn_int, uint16_t* max_conn_int)
 {
     ret_code_t err_code;
@@ -75,7 +75,7 @@ void ble_stack_init(ble_event_handler_t* handler_methods, uint16_t* connection_h
     //Set a referene to the notification done boolean in main.c Like the connection
     //handle, there are other modules that reference this variable so we only keep 
     //a pointer to it
-    p_notification_done = notifications_done;
+    p_notifications_done = notifications_done;
     p_total_sensor_samples = sensor_samples;
     p_minimum_connection_interval = min_conn_int;
     p_maximum_connection_interval = max_conn_int;
@@ -88,10 +88,20 @@ void ble_stack_init(ble_event_handler_t* handler_methods, uint16_t* connection_h
     err_code = nrf_ble_qwr_init(&m_qwr, &qwr_init);
     APP_ERROR_CHECK(err_code);
 
-    // Configure the BLE stack using the default settings.
-    // Fetch the start address of the application RAM.
+    //Configure the BLE stack using the default settings.
+    //Fetch the start address of the application RAM.
     uint32_t ram_start = 0;
     err_code = nrf_sdh_ble_default_cfg_set(APP_BLE_CONN_CFG_TAG, &ram_start);
+    APP_ERROR_CHECK(err_code);
+
+    //TEST: Before enabling the ble stack change the notification queue size
+    //to 3 (this should hopefully allow 3 notifications in one connection interval)
+    ble_cfg_t ble_cfg;
+    memset(&ble_cfg, 0, sizeof(ble_cfg));
+
+    ble_cfg.conn_cfg.conn_cfg_tag = APP_BLE_CONN_CFG_TAG;
+    ble_cfg.conn_cfg.params.gatts_conn_cfg.hvn_tx_queue_size = 3; //looking at this variable in the defult_cfg_set() method above and it has a value of 231 which is the max mtu size
+    err_code = sd_ble_cfg_set(BLE_CONN_CFG_GATTS, &ble_cfg, ram_start);
     APP_ERROR_CHECK(err_code);
 
     // Enable BLE stack.
@@ -369,7 +379,9 @@ static void ble_evt_handler(ble_evt_t const * p_ble_evt, void * p_context)
             break;
 
         case BLE_GATTS_EVT_HVN_TX_COMPLETE:
-            *p_notification_done = true; //set the notification done bool to true to allow more notifications
+            //SEGGER_RTT_printf(0, "Compledted %d notifications.\n", p_ble_evt->evt.gatts_evt.params.hvn_tx_complete.count);
+            //*p_notification_done = true; //set the notification done bool to true to allow more notifications
+            *p_notifications_done = *p_notifications_done + 1; //increment the notifications complete
             break;
 
         default:

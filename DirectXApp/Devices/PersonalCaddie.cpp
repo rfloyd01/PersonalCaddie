@@ -53,7 +53,7 @@ PersonalCaddie::PersonalCaddie(std::function<void(PersonalCaddieEventType, void*
 
         for (int axis = X; axis <= Z; axis++)
         {
-            std::vector<float> data_type_axis(this->number_of_samples, 0);
+            std::vector<float> data_type_axis(MAX_SENSOR_SAMPLES, 0);
             data_type.push_back(data_type_axis);
         }
 
@@ -61,7 +61,7 @@ PersonalCaddie::PersonalCaddie(std::function<void(PersonalCaddieEventType, void*
     }
     
     //initialize all orientation quaternions to the starting position
-    for (int i = 0; i < number_of_samples; i++)
+    for (int i = 0; i < MAX_SENSOR_SAMPLES; i++)
     {
         //glm::quat q = { 1, 0, 0, 0 };
         glm::quat q = { 0.372859f, 0.000669f, 0.007263f, 0.914294f };
@@ -400,9 +400,13 @@ void PersonalCaddie::dataCharacteristicEventHandler(Bluetooth::GenericAttributeP
     //Transfer the data in 16-bit chunks to the appropriate data array. A single reading of the sensor is comprised of 6 bytes, 2 each 
     //for each axes so the data in the read_buffer looks like so: [XL0, XH0, YL0, YH0, ZL0, ZH0, XL1, XH1, YL1, YH1, ...]. Since the 
     //data is little endian the least significant byte comes before the most significant.
-
-    for (int i = 0; i < this->number_of_samples; i++)
+    for (int i = 0; i < MAX_SENSOR_SAMPLES; i++)
     {
+        //Each characteristic has a length of MAX_SENSOR_SAMPLES + 5 bytes. The first MAX_SENSOR_SAMPLES bytes contain actual 
+        //sensor data, the next 4 bytes contain a time stamp of when the first bit of data was recorded and the final byte holds
+        //the number of actual samples. The number of actual data samples in the characteritic
+        //isn't constant (it can change based on the sensor odr and bluetooth connection interval), however, we must read the 
+        //whole characteristic to get the time stamp and useful data byte.
         for (int axis = X; axis <= Z; axis++)
         {
             int16_t axis_reading = read_buffer.ReadInt16();
@@ -410,8 +414,27 @@ void PersonalCaddie::dataCharacteristicEventHandler(Bluetooth::GenericAttributeP
         }
     }
 
+    //After reading the sensor samples, extract the time stamp from the characteristic (this value is the same in all three data
+    //characteristics so it will get overwritten with the same value twice, but currently there's no good way around this)
+    uint32_t timer_ticks = read_buffer.ReadUInt32();
+    m_first_data_time_stamp = convertTicksToSeconds(timer_ticks);
+
     //once the raw data has been read update it with the appropriate calibration numbers for each sensor
     updateRawDataWithCalibrationNumbers(rdt, dt, sensor_type, calibration_data.first, calibration_data.second);
+
+    //The last byte holds the number of relevent data samples, update the number_of_samples variable to reflect
+    //this amount. Like with the time stamp, this will get overwritten twice
+    number_of_samples = read_buffer.ReadByte();
+
+    //Check to see if the length of the data vectors matches the number_of_samples
+    
+}
+
+float PersonalCaddie::convertTicksToSeconds(uint32_t timer_ticks)
+{
+    //Looks at the current clock ticks stored in the data characteristics and converts it to seconds. The clock
+    //on board the Personal Caddie device uses a frequency of 16 MHz so each tick represents 62.5 ns.
+    return (float)timer_ticks / 16000000.0f;
 }
 
 void PersonalCaddie::updateRawDataWithCalibrationNumbers(DataType rdt, DataType dt, sensor_type_t sensor_type, const float* offset_cal, const float** gain_cal)
@@ -578,6 +601,11 @@ void PersonalCaddie::disableDataNotifications()
                                             std::wstring message = L"Off";
                                             //event_handler(PersonalCaddieEventType::BLE_ALERT, (void*)&message);
                                             event_handler(PersonalCaddieEventType::NOTIFICATIONS_TOGGLE, (void*)&message);
+
+                                            //reset the data updated booleans
+                                            sensor_data_updated[ACC_SENSOR] = false;
+                                            sensor_data_updated[GYR_SENSOR] = false;
+                                            sensor_data_updated[MAG_SENSOR] = false;
                                             return;
                                         }
                                     });
@@ -822,6 +850,10 @@ void PersonalCaddie::dataUpdate()
         //all data from the last set will actually have been rendered but this is ok since each piece of data is on 
         //the scale of 10 milliseconds apart (at the most).
         current_sample = 0;
+
+        //DEBUG: Making sure that time stamps are working
+        std::wstring timer_test = L"Data reading at: " + std::to_wstring(m_first_data_time_stamp) + L" seconds.\n";
+        OutputDebugString(&timer_test[0]);
 
         //reset the data_updated variables to false. doing this means this method will instead increment the current
         //sample variable for the graphics module.

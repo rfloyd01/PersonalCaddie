@@ -35,7 +35,7 @@ public:
 	void startDataCapture();
 	void stopDataCapture();
 	void updateComplete();
-	virtual void addData(std::vector<std::vector<std::vector<float> > > const& sensorData, float sensorODR) override;
+	virtual void addData(std::vector<std::vector<std::vector<float> > > const& sensorData, float sensorODR, float timeStamp, int totalSamples) override;
 
 	std::pair<float*, float**> getCalibrationResults();
 

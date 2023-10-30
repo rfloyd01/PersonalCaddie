@@ -18,6 +18,7 @@ using namespace Windows::Devices;
 #define GYR_DATA_CHARACTERISTIC_UUID           0xBF37
 #define MAG_DATA_CHARACTERISTIC_UUID           0xBF38
 #define AVAILABLE_SENSORS_CHARACTERISTIC_UUID  0xBF39
+#define MAX_SENSOR_SAMPLES                     39 //at most we can hold 39 sensor readings in a single characteristic and send out the notification in a single packet
 
 //enums and structs used by the Personal Caddie class
 enum PersonalCaddiePowerMode
@@ -86,6 +87,7 @@ public:
 
 	int getNumberOfSamples() { return this->number_of_samples; }
 	float getMaxODR() { return this->p_imu->getMaxODR(); }
+	float getDataTimeStamp() { return this->m_first_data_time_stamp; }
 
 	void connectToDevice(uint64_t deviceAddress);
 	void disconnectFromDevice();
@@ -130,6 +132,7 @@ private:
 	//Data Gathering/Manipulation
 	void updateRawDataWithCalibrationNumbers(DataType rdt, DataType dt, sensor_type_t sensor_type, const float* offset_cal, const float** gain_cal);
 	void updateMostRecentDeviceAddress(uint64_t address);
+	float convertTicksToSeconds(uint32_t timer_ticks);
 	
 	PersonalCaddiePowerMode current_power_mode;
 	bool dataNotificationsOn;
@@ -159,7 +162,7 @@ private:
 
 	float integrate(float one, float two, float dt);
 
-	const int number_of_samples = 10; //number of sensor samples stored in the BLE characteristic at a given time. Due to the time associated with reading BLE broadcasts, its more efficient to store multiple data points at a single time then try to read each individual point
+	int number_of_samples = 10; //number of sensor samples stored in the BLE characteristic at a given time. Due to the time associated with reading BLE broadcasts, its more efficient to store multiple data points at a single time then try to read each individual point
 	int current_sample = 0; //when updating rotation quaternion with Madgwick filter, need to know which data point is currently being looked at
 
 	//glm::quat Quaternion = { 1, 0, 0, 0 }; //represents the current orientation of the sensor
@@ -188,6 +191,7 @@ private:
 	double position_timer = 0, end_timer = 0; //used for tracking start and stop times of accerleation events, to known if the club should actually move or not
 	float time_stamp = 0; //the time in milliseconds from when the program connected to the BLE device, can be reset to 0 when looking at graphs
 	float last_time_stamp = 0; //holds the time of the last measured sample, used to find delta_t for integration purposes
+	float m_first_data_time_stamp = 0; //represents the point in time (from when sensors first start recording data) that the first bit of data in the current set was recorded
 
 	//Madgwick items
 	float sampleFreq, beta = 0.1; //beta changes how reliant the Madgwick filter is on acc and mag data, good value is 0.035

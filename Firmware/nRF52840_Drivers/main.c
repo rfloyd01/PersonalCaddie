@@ -49,12 +49,13 @@ uint8_t sensor_settings[SENSOR_SETTINGS_LENGTH];                                
 uint8_t m_current_sensor_samples = 10;                                             /**< The number of sensor samples currently being put into the acc,gy and mag characteristics (must be less than MAX_SENSOR_SAMPLES */
 uint32_t m_time_stamp;                                                             /**< Keeps track of the time that each data set is read at (this is measured in ticks of a 16MHz clock, i.e. 1 LSB = 1/16000000s = 62.5ns) */
 volatile bool m_data_ready  = false;                                               /**< Indicates when all characteristics have been filled with new data and we're ready to send it to the client  */
-volatile bool m_notification_done = false;                                         /**< Indicates when the current data notification has complete  */
 
 //IMU Sensor Communication Parameters
 imu_communication_t imu_comm;                                                      /**< Structure that Holds information on how to communicate with each sensor */
 uint16_t desired_minimum_connection_interval, desired_maximum_connection_interval; /**< The desired min and max connection interval */
 static float current_sensor_odr = 59.5;                                            /**< Keeps track of the current sensor ODR, connection interval is set based on this variable */
+volatile int m_notifications_done = 0;                                             /**< Indicates the number of notifications sent out in a single connection interval  */
+
 
 //LED Pin Parameters
 #define RED_LED            NRF_GPIO_PIN_MAP(0, 24)                                 /**< Red LED Indicator on BLE 33 sense*/
@@ -517,12 +518,10 @@ static void characteristic_update_and_notify()
     //Set the notifcation_done boolean to false and start notifications.
     //The boolean will be set to true in the BLE handler when the notification
     //is complete, alerting us to send out the next notification.
-    m_notification_done = false;
+    //m_notifications_done = 0;
     uint32_t ret = sd_ble_gatts_hvx(m_conn_handle, &acc_notify_params); //acc data notification
     ret = sd_ble_gatts_hvx(m_conn_handle, &gyr_notify_params); //gyr data notification
     ret = sd_ble_gatts_hvx(m_conn_handle, &mag_notify_params); //mag data notification
-
-    while (!m_notification_done) {} //wait for the three notifications to go out before continuing
     //APP_ERROR_CHECK(ret); //Uncommenting this can help debug notification errors
 }
 
@@ -742,6 +741,7 @@ static void sensor_active_mode_start()
     data_timers_start();
     
     current_operating_mode = SENSOR_ACTIVE_MODE; //set the current operating mode to active
+    m_data_ready = false; //Want to make sure we start with fresh data
 }
 
 static void connected_mode_start()
@@ -962,7 +962,7 @@ int main(void)
     log_init();
     timers_init(&active_led, &m_data_ready, &m_current_sensor_samples, &m_time_stamp, &timer_handlers);
     power_management_init();
-    ble_stack_init(&ble_handlers, &m_conn_handle, &m_notification_done, &m_current_sensor_samples, &desired_minimum_connection_interval, &desired_maximum_connection_interval);
+    ble_stack_init(&ble_handlers, &m_conn_handle, &m_notifications_done, &m_current_sensor_samples, &desired_minimum_connection_interval, &desired_maximum_connection_interval);
     gatt_init();
     services_init();
     twi_init();

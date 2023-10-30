@@ -247,7 +247,7 @@ void CalibrationMode::update()
 	else if (m_state & CalibrationModeState::MAGNETOMETER) magnetometerCalibration();
 }
 
-void CalibrationMode::addData(std::vector<std::vector<std::vector<float> > > const& sensorData, float sensorODR)
+void CalibrationMode::addData(std::vector<std::vector<std::vector<float> > > const& sensorData, float sensorODR, float timeStamp, int totalSamples)
 {
 	//This method gets called asynchronously whenever new data is ready. We simply iterate over the appropriate
 	//data (given the current calibration we're doing) and add it to the internal data vector.
@@ -280,7 +280,7 @@ void CalibrationMode::addData(std::vector<std::vector<std::vector<float> > > con
 		float timeIncrement = 1.0f / sensorODR;
 		int current_stage = m_currentStage / 2 - 1;
 
-		for (int i = 0; i < sensorData[calibrationType][0].size(); i++)
+		for (int i = 0; i < totalSamples; i++)
 		{
 			//x, y and z data gets added to the overall data vectors
 			m_graphDataX.push_back({ m_timeStamp, sensorData[calibrationType][0][i] });

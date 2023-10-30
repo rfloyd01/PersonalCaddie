@@ -60,14 +60,17 @@
   <Watches active="0" update="Never"/>
  </Watch4>
  <Files>
-  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="984" useTextEdit="1" openedFrom="D:/Coding/PersonalCaddie/Firmware/nRF52840_Drivers/nRF_Implementations/pc_ble.c" useBinaryEdit="0" left="0" path="main.c" selected="1" top="976" codecName="Default"/>
-  <SessionOpenFile windowGroup="DockEditLeft" x="38" y="11436" useTextEdit="1" openedFrom="" useBinaryEdit="0" left="0" path="config/sdk_config.h" selected="0" top="11408" codecName="Default"/>
-  <SessionOpenFile windowGroup="DockEditLeft" x="81" y="166" useTextEdit="1" openedFrom="" useBinaryEdit="0" left="0" path="ble_sensor_service.c" selected="0" top="151" codecName="Default"/>
-  <SessionOpenFile windowGroup="DockEditLeft" x="29" y="33" useTextEdit="1" openedFrom="D:/Coding/PersonalCaddie/Firmware/nRF52840_Drivers/ble_sensor_service.c" useBinaryEdit="0" left="0" path="ble_sensor_service.h" selected="0" top="88" codecName="Default"/>
-  <SessionOpenFile windowGroup="DockEditLeft" x="20" y="205" useTextEdit="1" openedFrom="" useBinaryEdit="0" left="0" path="nRF_Implementations/pc_ble.c" selected="0" top="361" codecName="Default"/>
-  <SessionOpenFile windowGroup="DockEditLeft" x="36" y="51" useTextEdit="1" openedFrom="D:/Coding/PersonalCaddie/Firmware/nRF52840_Drivers/nRF_Implementations/pc_ble.c" useBinaryEdit="0" left="0" path="nRF_Implementations/pc_ble.h" selected="0" top="33" codecName="Default"/>
-  <SessionOpenFile windowGroup="DockEditLeft" x="46" y="34" useTextEdit="1" openedFrom="D:/Coding/PersonalCaddie/Firmware/nRF52840_Drivers/nRF_Implementations/pc_timer.c" useBinaryEdit="0" left="0" path="nRF_Implementations/pc_timer.h" selected="0" top="6" codecName="Default"/>
-  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="103" useTextEdit="1" openedFrom="" useBinaryEdit="0" left="0" path="nRF_Implementations/pc_timer.c" selected="0" top="81" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="969" useTextEdit="1" openedFrom="D:/Coding/PersonalCaddie/Firmware/nRF52840_Drivers/nRF_Implementations/pc_ble.c" useBinaryEdit="0" left="0" path="main.c" selected="1" top="948" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="67" y="11420" useTextEdit="1" openedFrom="" useBinaryEdit="0" left="0" path="config/sdk_config.h" selected="0" top="11403" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="73" y="164" useTextEdit="1" openedFrom="" useBinaryEdit="0" left="0" path="ble_sensor_service.c" selected="0" top="145" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="29" y="33" useTextEdit="1" openedFrom="D:/Coding/PersonalCaddie/Firmware/nRF52840_Drivers/main.c" useBinaryEdit="0" left="0" path="ble_sensor_service.h" selected="0" top="14" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="381" useTextEdit="1" openedFrom="" useBinaryEdit="0" left="0" path="nRF_Implementations/pc_ble.c" selected="0" top="352" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="28" y="48" useTextEdit="1" openedFrom="D:/Coding/PersonalCaddie/Firmware/nRF52840_Drivers/nRF_Implementations/pc_ble.c" useBinaryEdit="0" left="0" path="nRF_Implementations/pc_ble.h" selected="0" top="21" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="27" y="86" useTextEdit="1" openedFrom="" useBinaryEdit="0" left="0" path="nRF_Implementations/pc_timer.c" selected="0" top="65" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="27" y="43" useTextEdit="1" openedFrom="D:/Coding/PersonalCaddie/Firmware/nRF52840_Drivers/nRF_Implementations/pc_timer.c" useBinaryEdit="0" left="0" path="nRF_Implementations/pc_timer.h" selected="0" top="12" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="259" useTextEdit="1" openedFrom="D:/Coding/PersonalCaddie/Firmware/nRF52840_Drivers/nRF_Implementations/pc_ble.c" useBinaryEdit="0" left="0" path="C:/Users/Bobby/Documents/Coding/BLE/nRFSDK17.0.2/components/softdevice/common/nrf_sdh_ble.c" selected="0" top="223" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="114" useTextEdit="1" openedFrom="" useBinaryEdit="0" left="0" path="C:/Users/Bobby/Documents/Coding/BLE/nRFSDK17.0.2/components/libraries/util/app_error_weak.c" selected="0" top="84" codecName=""/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="32" y="599" useTextEdit="1" openedFrom="D:/Coding/PersonalCaddie/Firmware/nRF52840_Drivers/main.c" useBinaryEdit="0" left="0" path="C:/Users/Bobby/Documents/Coding/BLE/nRFSDK17.0.2/components/softdevice/s140/headers/ble_gatts.h" selected="0" top="560" codecName="Default"/>
  </Files>
  <ARMCrossStudioWindow activeProject="personal_caddie" fileDialogDefaultFilter="*.c;*.cpp;*.cxx;*.cc;*.h;*.hpp;*.hxx" autoConnectTarget="J-Link" buildConfiguration="Debug" sessionSettings="" debugSearchFileMap="" fileDialogInitialDirectory="D:/Coding/PersonalCaddie/Firmware/nRF52840_Drivers/nRF_Implementations" debugSearchPath="" autoConnectCapabilities="3711"/>
 </session>

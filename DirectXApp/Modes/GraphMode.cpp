@@ -146,7 +146,7 @@ uint32_t GraphMode::handleUIElementStateChange(int i)
 	return m_state;
 }
 
-void GraphMode::addData(std::vector<std::vector<std::vector<float> > > const& sensorData, float sensorODR)
+void GraphMode::addData(std::vector<std::vector<std::vector<float> > > const& sensorData, float sensorODR, float timeStamp, int totalSamples)
 {
 	//If we're currently recording data, then every time a new set of data is ready this method will
 	//get called and add the selected data to the data set for each axis.
@@ -154,9 +154,9 @@ void GraphMode::addData(std::vector<std::vector<std::vector<float> > > const& se
 
 	std::wstring dataType = ((DropDownMenu*)m_uiElements[1].get())->getSelectedOption();
 	DataType selectedDataType = getCurrentlySelectedDataType(dataType);
-	float time_increment = 1.0 / sensorODR, current_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - data_collection_start).count() / 1000000000.0f;
+	//float time_increment = 1.0 / sensorODR, current_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - data_collection_start).count() / 1000000000.0f;
 
-	for (int i = 0; i < sensorData[0][0].size(); i++)
+	for (int i = 0; i < totalSamples; i++)
 	{
 		float x_data = sensorData[static_cast<int>(selectedDataType)][X][i];
 		float y_data = sensorData[static_cast<int>(selectedDataType)][Y][i];
@@ -181,11 +181,11 @@ void GraphMode::addData(std::vector<std::vector<std::vector<float> > > const& se
 		/*m_graphDataX.push_back({ m_graphDataX.back().x + time_increment, x_data });
 		m_graphDataY.push_back({ m_graphDataY.back().x + time_increment, y_data });
 		m_graphDataZ.push_back({ m_graphDataZ.back().x + time_increment, z_data });*/
-		m_graphDataX.push_back({ current_time, x_data });
-		m_graphDataY.push_back({ current_time, y_data });
-		m_graphDataZ.push_back({ current_time, z_data });
+		m_graphDataX.push_back({ timeStamp + i / sensorODR, x_data });
+		m_graphDataY.push_back({ timeStamp + i / sensorODR, y_data });
+		m_graphDataZ.push_back({ timeStamp + i / sensorODR, z_data });
 
-		current_time += time_increment;
+		//current_time += time_increment;
 	}
 }
 

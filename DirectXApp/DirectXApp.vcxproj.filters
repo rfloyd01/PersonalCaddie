@@ -148,9 +148,12 @@
     <ClCompile Include="Graphics\Utilities\DDSTextureLoader.cpp">
       <Filter>Graphics\Utilities</Filter>
     </ClCompile>
-    <ClCompile Include="Modes\CalibrationMode.cpp" />
     <ClCompile Include="Graphics\Objects\2D\BasicElements\Ellipse.cpp">
       <Filter>Graphics\Objects\2D\BasicElements</Filter>
+    </ClCompile>
+    <ClCompile Include="Math\ellipse_math.cpp" />
+    <ClCompile Include="Modes\CalibrationMode.cpp">
+      <Filter>Modes</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -356,9 +359,13 @@
     <ClInclude Include="..\Firmware\MEMs_Drivers\NXP\fxas21002\fxas21002_regdef.h">
       <Filter>Devices\Sensors\Drivers</Filter>
     </ClInclude>
-    <ClInclude Include="Modes\CalibrationMode.h" />
     <ClInclude Include="Graphics\Objects\2D\BasicElements\Ellipse.h">
       <Filter>Graphics\Objects\2D\BasicElements</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\eigen.h" />
+    <ClInclude Include="Math\ellipse_math.h" />
+    <ClInclude Include="Modes\CalibrationMode.h">
+      <Filter>Modes</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
