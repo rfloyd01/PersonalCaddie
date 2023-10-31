@@ -20,11 +20,7 @@ int32_t fxos8700_active_mode_enable();
 int32_t fxos8700_acc_apply_setting(uint8_t setting);
 int32_t fxos8700_mag_apply_setting(uint8_t setting);
 
-//Register reading and writing methods
-//static int32_t fxos8700_read_imu(void *handle, uint8_t reg, uint8_t *bufp, uint16_t len);
-//static int32_t fxos8700_write_imu(void *handle, uint8_t reg, const uint8_t *bufp, uint16_t len);
-//static int32_t fxos8700_read_mag(void *handle, uint8_t reg, uint8_t *bufp, uint16_t len);
-//static int32_t fxos8700_write_mag(void *handle, uint8_t reg, const uint8_t *bufp, uint16_t len);
+void fxos8700_get_actual_settings();
 
 //TODO: There are separate functions for getting data from the acc and the mag, I should look into 
 //using a single function for when both acc and mag are active.

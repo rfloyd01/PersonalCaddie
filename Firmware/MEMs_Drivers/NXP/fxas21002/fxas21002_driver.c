@@ -78,7 +78,7 @@ int32_t fxas21002_power_mode_set(sensor_communication_t* gyr_comm, fxas21002_pow
     if (ret == 0)
     {
         ctrl_reg1.ready = (uint8_t)val & 0b01;
-        ctrl_reg1.active = (uint8_t)val & 0b10;
+        ctrl_reg1.active = ((uint8_t)val & 0b10 >> 1);
         ret = gyr_comm->write_register((void*)gyr_comm->twi_bus, gyr_comm->address, FXAS21002_REG_CTRL_REG1,
             (uint8_t*)&ctrl_reg1);
     }
@@ -137,7 +137,7 @@ int32_t fxas21002_full_scale_range_set(sensor_communication_t* gyr_comm, fxas210
 
     if (ret == 0)
     {
-        ctrl_reg3.fs_double = (uint8_t)val & 0x10;
+        ctrl_reg3.fs_double = (((uint8_t)val & 0x10) >> 1);
         ret = gyr_comm->write_register((void*)gyr_comm->twi_bus, gyr_comm->address, FXAS21002_REG_CTRL_REG3,
             (uint8_t*)&ctrl_reg3);
     }

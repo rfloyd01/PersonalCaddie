@@ -72,6 +72,28 @@ int32_t fxas21002_active_mode_enable()
     return ret;
 }
 
+void fxas21002_get_actual_settings()
+{
+    //For debugging purposes it's nice to see that the settings we have stored in the sensor array
+    //physically make their way onto the chip. This method prints out the current register values
+    //of some of the more important registers
+    uint8_t reg_val;
+
+    //initialize read/write methods, address, and default settings for mag
+    if (imu_comm->sensor_model[GYR_SENSOR] == FXAS21002_GYR)
+    {
+        SEGGER_RTT_WriteString(0, "FXAS21002 Gyr. Register Values:\n");
+        imu_comm->gyr_comm.read_register((void*)imu_comm->gyr_comm.twi_bus,  imu_comm->gyr_comm.address, FXAS21002_REG_CTRL_REG0, &reg_val, 1);
+        SEGGER_RTT_printf(0, "CTRL_REG0 Register: 0x%x\n", reg_val);
+        imu_comm->gyr_comm.read_register((void*)imu_comm->gyr_comm.twi_bus,  imu_comm->gyr_comm.address, FXAS21002_REG_CTRL_REG1, &reg_val, 1);
+        SEGGER_RTT_printf(0, "CTRL_REG1 Register: 0x%x\n", reg_val);
+        imu_comm->gyr_comm.read_register((void*)imu_comm->gyr_comm.twi_bus,  imu_comm->gyr_comm.address, FXAS21002_REG_CTRL_REG2, &reg_val, 1);
+        SEGGER_RTT_printf(0, "CTRL_REG2 Register: 0x%x\n", reg_val);
+        imu_comm->gyr_comm.read_register((void*)imu_comm->gyr_comm.twi_bus,  imu_comm->gyr_comm.address, FXAS21002_REG_CTRL_REG3, &reg_val, 1);
+        SEGGER_RTT_printf(0, "CTRL_REG3 Register: 0x%x\n\n", reg_val);
+    }
+}
+
 int32_t fxas21002_get_gyr_data(uint8_t* pBuff, uint8_t offset)
 {
     //Data for the x, y and z axes are read in a single burst and put directly

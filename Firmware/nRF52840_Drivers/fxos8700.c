@@ -77,12 +77,12 @@ int32_t fxos8700_idle_mode_enable()
     uint8_t ret = 0, mode;
     if (imu_comm->sensor_model[ACC_SENSOR] == FXOS8700_ACC || imu_comm->sensor_model[MAG_SENSOR] == FXOS8700_MAG)
     {
-        //ret = fxos8700_set_mode(&sensor_driver, FXOS8700_STANDBY_MODE);
-        ret = sensor_comm_read(sensor_driver.pComHandle, FXOS8700_SYSMOD, 1, &mode);
+        ret = fxos8700_set_mode(&sensor_driver, FXOS8700_STANDBY_MODE); //First put the chip in standby mode
+        //ret = sensor_comm_read(sensor_driver.pComHandle, FXOS8700_SYSMOD, 1, &mode);
         
-        mode &= 0xFC;
-        mode |= 0x02; //put the register into sleep mode
-        sensor_comm_write(sensor_driver.pComHandle, FXOS8700_SYSMOD, 1, &mode);
+        //mode &= 0xFC;
+        //mode |= 0x02; //put the register into sleep mode
+        //sensor_comm_write(sensor_driver.pComHandle, FXOS8700_SYSMOD, 1, &mode); //then put it into sleep mode
     }
     return ret;
 }
@@ -95,8 +95,6 @@ int32_t fxos8700_active_mode_enable()
     int32_t ret = 0;
 
     uint8_t reg_val;
-    //imu_comm->acc_comm.read_register((void*)imu_comm->acc_comm.twi_bus,  imu_comm->acc_comm.address, FXOS8700_CTRL_REG1, &reg_val, 1);
-    //SEGGER_RTT_printf(0, "CTRL_REG1 Register: %x\n", reg_val);
 
     if (imu_comm->sensor_model[ACC_SENSOR] == FXOS8700_ACC)
     {
@@ -250,6 +248,47 @@ int32_t fxos8700_mag_apply_setting(uint8_t setting)
     //Put the sensor back into standby mode when leaving this method
     status |= fxos8700_set_mode(&sensor_driver, FXOS8700_STANDBY_MODE);
     return status;
+}
+
+void fxos8700_get_actual_settings()
+{
+    //For debugging purposes it's nice to see that the settings we have stored in the sensor array
+    //physically make their way onto the chip. This method prints out the current register values
+    //of some of the more important registers
+    uint8_t reg_val;
+
+    if (imu_comm->sensor_model[ACC_SENSOR] == FXOS8700_ACC)
+    {
+        SEGGER_RTT_WriteString(0, "FXOS8700 Acc. Register Values:\n");
+        imu_comm->acc_comm.read_register((void*)imu_comm->acc_comm.twi_bus,  imu_comm->acc_comm.address, FXOS8700_SYSMOD, &reg_val, 1);
+        SEGGER_RTT_printf(0, "SYSMOD Register: 0x%x\n", reg_val);
+        imu_comm->acc_comm.read_register((void*)imu_comm->acc_comm.twi_bus,  imu_comm->acc_comm.address, FXOS8700_CTRL_REG1, &reg_val, 1);
+        SEGGER_RTT_printf(0, "CTRL_REG1 Register: 0x%x\n", reg_val);
+        imu_comm->acc_comm.read_register((void*)imu_comm->acc_comm.twi_bus,  imu_comm->acc_comm.address, FXOS8700_CTRL_REG2, &reg_val, 1);
+        SEGGER_RTT_printf(0, "CTRL_REG2 Register: 0x%x\n", reg_val);
+        imu_comm->acc_comm.read_register((void*)imu_comm->acc_comm.twi_bus,  imu_comm->acc_comm.address, FXOS8700_CTRL_REG3, &reg_val, 1);
+        SEGGER_RTT_printf(0, "CTRL_REG3 Register: 0x%x\n", reg_val);
+        imu_comm->acc_comm.read_register((void*)imu_comm->acc_comm.twi_bus,  imu_comm->acc_comm.address, FXOS8700_CTRL_REG4, &reg_val, 1);
+        SEGGER_RTT_printf(0, "CTRL_REG4 Register: 0x%x\n", reg_val);
+        imu_comm->acc_comm.read_register((void*)imu_comm->acc_comm.twi_bus,  imu_comm->acc_comm.address, FXOS8700_CTRL_REG5, &reg_val, 1);
+        SEGGER_RTT_printf(0, "CTRL_REG5 Register: 0x%x\n", reg_val);
+        imu_comm->acc_comm.read_register((void*)imu_comm->acc_comm.twi_bus,  imu_comm->acc_comm.address, FXOS8700_XYZ_DATA_CFG, &reg_val, 1);
+        SEGGER_RTT_printf(0, "XYZ_DATA_CONFIG Register: 0x%x\n", reg_val);
+        imu_comm->acc_comm.read_register((void*)imu_comm->acc_comm.twi_bus,  imu_comm->acc_comm.address, FXOS8700_HP_FILTER_CUTOFF, &reg_val, 1);
+        SEGGER_RTT_printf(0, "HP_FILTER_CUTOFF Register: 0x%x\n\n", reg_val);
+    }
+
+    //initialize read/write methods, address, and default settings for mag
+    if (imu_comm->sensor_model[MAG_SENSOR] == FXOS8700_MAG)
+    {
+        SEGGER_RTT_WriteString(0, "FXOS8700 Mag. Register Values:\n");
+        imu_comm->mag_comm.read_register((void*)imu_comm->mag_comm.twi_bus,  imu_comm->mag_comm.address, FXOS8700_M_CTRL_REG1, &reg_val, 1);
+        SEGGER_RTT_printf(0, "M_CTRL_REG1 Register: 0x%x\n", reg_val);
+        imu_comm->mag_comm.read_register((void*)imu_comm->mag_comm.twi_bus,  imu_comm->mag_comm.address, FXOS8700_M_CTRL_REG2, &reg_val, 1);
+        SEGGER_RTT_printf(0, "M_CTRL_REG2 Register: 0x%x\n", reg_val);
+        imu_comm->mag_comm.read_register((void*)imu_comm->mag_comm.twi_bus,  imu_comm->mag_comm.address, FXOS8700_M_CTRL_REG3, &reg_val, 1);
+        SEGGER_RTT_printf(0, "M_CTRL_REG3 Register: 0x%x\n\n", reg_val);
+    }
 }
 
 int32_t fxos8700_get_acc_data(uint8_t* pBuff, uint8_t offset)

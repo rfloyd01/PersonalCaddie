@@ -778,21 +778,15 @@ static void sensor_active_mode_start()
     //All of the settings for the sensor should have been set already, we just need to activate them
     //and then start the data collection timer. We also disable the LED to save on power
     led_timers_stop();
-    
+
     //Put all initialized sensors into active mode
     lsm9ds1_active_mode_enable();
     fxos8700_active_mode_enable();
     fxas21002_active_mode_enable();
 
-    //DEBUG: After enabling the fxos sensor read all of the main 
-    //control registers to see what their values are
-    //SEGGER_RTT_WriteString(0, "Sensor Settings Array:\n");
-    //for (int i = 0; i < SENSOR_SETTINGS_LENGTH; i++) SEGGER_RTT_printf(0, "%x ", sensor_settings[i]);
-    //SEGGER_RTT_WriteString(0, "\n");
-
-    //uint8_t reg_val;
-    //imu_comm.acc_comm.read_register((void*)imu_comm.acc_comm.twi_bus,  imu_comm.acc_comm.address, FXOS8700_CTRL_REG1, &reg_val, 1);
-    //SEGGER_RTT_printf(0, "CTRL_REG1 Register After active mode enable: %x\n", reg_val);
+    //uncomment the below lines to read active sensor registers and confirm settings
+    //fxos8700_get_actual_settings();
+    //fxas21002_get_actual_settings();
 
     //start data acquisition by turning on the data timers
     data_timers_start();

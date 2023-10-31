@@ -17,6 +17,8 @@ void fxas21002init(imu_communication_t* comm, uint8_t sensors, uint8_t* settings
 int32_t fxas21002_idle_mode_enable();
 int32_t fxas21002_active_mode_enable();
 
+void fxas21002_get_actual_settings();
+
 int32_t fxas21002_get_gyr_data(uint8_t* pBuff, uint8_t offset);
 
 #ifdef __cplusplus
