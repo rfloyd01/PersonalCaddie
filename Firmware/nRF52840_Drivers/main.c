@@ -690,6 +690,7 @@ void data_read_handler(int measurements_taken)
     imu_comm.acc_comm.get_data(acc_characteristic_data, SAMPLE_SIZE * measurements_taken);
     imu_comm.gyr_comm.get_data(gyr_characteristic_data, SAMPLE_SIZE * measurements_taken);
     imu_comm.mag_comm.get_data(mag_characteristic_data, SAMPLE_SIZE * measurements_taken);
+    //SEGGER_RTT_printf(0, "Readings complete at %d\n", get_current_data_time());
 }
 
 
@@ -718,6 +719,10 @@ static void sensor_idle_mode_start()
         lsm9ds1_idle_mode_enable();
         fxos8700_idle_mode_enable();
         fxas21002_idle_mode_enable();
+
+        //uint8_t reg_val;
+        //imu_comm.acc_comm.read_register((void*)imu_comm.acc_comm.twi_bus,  imu_comm.acc_comm.address, FXOS8700_CTRL_REG1, &reg_val, 1);
+        //SEGGER_RTT_printf(0, "CTRL_REG1 Register After idel mode enable: %x\n", reg_val);
 
         //the LED is deactivated during data collection so turn it back on
         led_timers_start();
@@ -763,6 +768,7 @@ static void sensor_idle_mode_start()
     }
 
     current_operating_mode = SENSOR_IDLE_MODE; //set the current operating mode to idle
+    SEGGER_RTT_WriteString(0, "Sensor Idle Mode engaged.\n");
 }
 
 static void sensor_active_mode_start()
@@ -778,11 +784,22 @@ static void sensor_active_mode_start()
     fxos8700_active_mode_enable();
     fxas21002_active_mode_enable();
 
+    //DEBUG: After enabling the fxos sensor read all of the main 
+    //control registers to see what their values are
+    //SEGGER_RTT_WriteString(0, "Sensor Settings Array:\n");
+    //for (int i = 0; i < SENSOR_SETTINGS_LENGTH; i++) SEGGER_RTT_printf(0, "%x ", sensor_settings[i]);
+    //SEGGER_RTT_WriteString(0, "\n");
+
+    //uint8_t reg_val;
+    //imu_comm.acc_comm.read_register((void*)imu_comm.acc_comm.twi_bus,  imu_comm.acc_comm.address, FXOS8700_CTRL_REG1, &reg_val, 1);
+    //SEGGER_RTT_printf(0, "CTRL_REG1 Register After active mode enable: %x\n", reg_val);
+
     //start data acquisition by turning on the data timers
     data_timers_start();
     
     current_operating_mode = SENSOR_ACTIVE_MODE; //set the current operating mode to active
     m_data_ready = false; //Want to make sure we start with fresh data
+    SEGGER_RTT_WriteString(0, "Sensor Active Mode engaged.\n");
 }
 
 static void connected_mode_start()

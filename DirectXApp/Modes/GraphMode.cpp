@@ -104,9 +104,12 @@ uint32_t GraphMode::handleUIElementStateChange(int i)
 				//IMU readings before they warm up). Because of this, drop the first 25
 				//data points. This corresponds to 0.5 seconds of data at 50Hz ODR and 0.25
 				//seconds of data at 100Hz ODR.
-				m_graphDataX.erase(m_graphDataX.begin(), m_graphDataX.begin() + 25);
-				m_graphDataY.erase(m_graphDataY.begin(), m_graphDataY.begin() + 25);
-				m_graphDataZ.erase(m_graphDataZ.begin(), m_graphDataZ.begin() + 25);
+				if (m_graphDataX.size() > 25)
+				{
+					m_graphDataX.erase(m_graphDataX.begin(), m_graphDataX.begin() + 25);
+					m_graphDataY.erase(m_graphDataY.begin(), m_graphDataY.begin() + 25);
+					m_graphDataZ.erase(m_graphDataZ.begin(), m_graphDataZ.begin() + 25);
+				}
 
 				//set the min and max data values for the graph
 				((Graph*)m_uiElements[2].get())->setAxisMaxAndMins({ m_graphDataX[0].x,  m_minimalPoint.y}, {m_graphDataX.back().x, m_maximalPoint.y});

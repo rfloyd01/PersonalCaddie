@@ -74,12 +74,15 @@ int32_t fxos8700_idle_mode_enable()
     //Regardless of whether the acc and mag, or just the acc/mag are being used, idle mode
     //will be the same. Put the chip into standyby mode which has an average current draw of 2 uA.
 
-    //TODO: There is also a sleep mode, I should look into the difference between this and standby,
-    //I'm assuming there are shorter times to get good data from the sensors.
-    uint8_t ret = 0;
+    uint8_t ret = 0, mode;
     if (imu_comm->sensor_model[ACC_SENSOR] == FXOS8700_ACC || imu_comm->sensor_model[MAG_SENSOR] == FXOS8700_MAG)
     {
-        ret = fxos8700_set_mode(&sensor_driver, FXOS8700_STANDBY_MODE);
+        //ret = fxos8700_set_mode(&sensor_driver, FXOS8700_STANDBY_MODE);
+        ret = sensor_comm_read(sensor_driver.pComHandle, FXOS8700_SYSMOD, 1, &mode);
+        
+        mode &= 0xFC;
+        mode |= 0x02; //put the register into sleep mode
+        sensor_comm_write(sensor_driver.pComHandle, FXOS8700_SYSMOD, 1, &mode);
     }
     return ret;
 }
@@ -90,6 +93,10 @@ int32_t fxos8700_active_mode_enable()
     //We then handle the ODR and Power settings as these values are updated using the same
     //driver method (which also sets the sensor mode to active).
     int32_t ret = 0;
+
+    uint8_t reg_val;
+    //imu_comm->acc_comm.read_register((void*)imu_comm->acc_comm.twi_bus,  imu_comm->acc_comm.address, FXOS8700_CTRL_REG1, &reg_val, 1);
+    //SEGGER_RTT_printf(0, "CTRL_REG1 Register: %x\n", reg_val);
 
     if (imu_comm->sensor_model[ACC_SENSOR] == FXOS8700_ACC)
     {
@@ -160,7 +167,6 @@ int32_t fxos8700_acc_apply_setting(uint8_t setting)
 
             //We need to right shift and use bitwise AND to extract the appropriate setting
             power &= FXOS8700_CTRL_REG2_SMODS_MASK;
-            power >>= FXOS8700_CTRL_REG2_SMODS_SHIFT;
 
             //We can now update the odr while keeping the same power setting. If the 
             //magnetometer is also on then we need to call the hybrid configuration method.
@@ -176,7 +182,6 @@ int32_t fxos8700_acc_apply_setting(uint8_t setting)
 
             //We need to right shift and use bitwise and to extract the appropriate setting
             odr &= FXOS8700_CTRL_REG1_DR_MASK;
-            odr >>= FXOS8700_CTRL_REG1_DR_SHIFT;
 
             //we can now update the power while keeping the same odr setting
             status |= fxos8700_configure_accel(&sensor_driver, odr, p_sensor_settings[setting], FXOS8700_ACCEL_14BIT_READ_POLL_MODE);

@@ -332,7 +332,6 @@ uint8_t fxos8700_set_embedded_function(fxos8700_driver_t *pDriver, fxos8700_embe
  *  @param[in]   fxos8700_driver_t *pDriver - the pointer to the FXOS8700 driver handle.
  *  @param[in]   ODR - ODR to be configured
  *  @param[in]   pConfig, the pointer to the acceleration configuration.
- *  @param[in]   auto_sleep, enables auto sleep mode, which overwrites the current ODR.
  *  @return      returns the status of the operation.
  */
 uint8_t fxos8700_configure_accel(fxos8700_driver_t *pDriver, fxos8700_odr_t odr, fxos8700_power_mode_t powerMode, fxos8700_accel_config_type_t pConfig);
