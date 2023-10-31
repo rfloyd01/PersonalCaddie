@@ -494,6 +494,15 @@ static void characteristic_update_and_notify()
     gyr_characteristic_data[MAX_SENSOR_SAMPLES * SAMPLE_SIZE + 4] = m_current_sensor_samples;
     mag_characteristic_data[MAX_SENSOR_SAMPLES * SAMPLE_SIZE + 4] = m_current_sensor_samples;
 
+    //Uncomment to see raw accelerometer bytes
+    //SEGGER_RTT_WriteString(0, "Accelerometer data.");
+    //for (int i = 0; i < m_current_sensor_samples * 6; i++)
+    //{
+    //    if (i % 6 == 0) SEGGER_RTT_WriteString(0, "\n");
+    //    SEGGER_RTT_printf(0, "0x%x ", acc_characteristic_data[i]);
+    //}
+    //SEGGER_RTT_WriteString(0, "\n\n");
+
     //Setup accelerometer notification first
     acc_notify_params.type = BLE_GATT_HVX_NOTIFICATION;
     acc_notify_params.handle = m_ss.data_handles[0].value_handle;
@@ -539,6 +548,33 @@ uint64_t findLCM(uint64_t a, uint64_t b)
 float findDecimalLCM(float a, float b)
 {
     return findLCM(a * 1000000, b * 1000000) / 1000000.0;
+}
+
+void calculate_samples_and_connection_interval_two()
+{
+   //Had a change of heart and am attempting a totally different strategy here.
+   //We want to minimize the amount of lag that occurs with the image on screen,
+   //which is accomplished by minimizing the data collection time. While testing
+   //I'm going to pick a desired lag time and set the sensor samples based off of
+   //that and the current odr.
+
+   //Furthermore, it actually makes sense to have the data collection period be 
+   //longer than the connection interval, so after calculating the number of 
+   //samples to collect, pick the lowest multiple of 15 milliseconds less than this
+   //data collection period and set that as the maximum connection interval, and
+   //15 ms less than this as the minimum connection interval.
+
+   float desired_lag_time = 0.2; //in seconds
+   m_current_sensor_samples = current_sensor_odr * desired_lag_time;
+   if (m_current_sensor_samples > MAX_SENSOR_SAMPLES) m_current_sensor_samples = MAX_SENSOR_SAMPLES;
+   SEGGER_RTT_printf(0, "%d sensor samples have been selected.\n", m_current_sensor_samples);
+
+   //Calculate the actual lag time in milliseconds. Subtract 1 millisecond to guarantee
+   //a longer data collection time than connection interval
+   int actual_lag_time = 1000.0 * m_current_sensor_samples / current_sensor_odr - 1; 
+   
+   desired_maximum_connection_interval = actual_lag_time - (actual_lag_time % 15); //round down to the nearst 15th millisecond
+   desired_minimum_connection_interval = desired_maximum_connection_interval - 15;
 }
 
 void calculate_samples_and_connection_interval()
@@ -639,6 +675,11 @@ void set_sensor_samples(int actual_connection_interval)
             break;
         }
     }
+}
+
+void set_sensor_samples_two(int actual_connection_interval)
+{
+    //For now just do nothing here
 }
 
 void data_read_handler(int measurements_taken)
@@ -952,8 +993,8 @@ int main(void)
     ble_event_handler_t ble_handlers;
     ble_handlers.gap_connected_handler = on_gap_connection_handler;
     ble_handlers.gap_disconnected_handler = on_gap_disconnection_handler;
-    ble_handlers.gap_connection_interval_handler = calculate_samples_and_connection_interval;
-    ble_handlers.gap_update_sensor_samples = set_sensor_samples;
+    ble_handlers.gap_connection_interval_handler = calculate_samples_and_connection_interval_two;
+    ble_handlers.gap_update_sensor_samples = set_sensor_samples_two;
 
     timer_handlers_t timer_handlers;
     timer_handlers.data_read_handler = data_read_handler;

@@ -148,8 +148,8 @@ const registerwritelist_t gFxos8700HybridPollConfig[] = {
 
     /*! Configure FXOS8700 to enable auto-sleep, low power in sleep, high res in wake. */
     {FXOS8700_XYZ_DATA_CFG, FXOS8700_XYZ_DATA_CFG_FS_4G_0P488,FXOS8700_XYZ_DATA_CFG_FS_MASK},
-	 /*! Configure FXOS8700 to enable auto-sleep, low power in sleep, high res in wake. */
-	{FXOS8700_CTRL_REG2, FXOS8700_CTRL_REG2_MODS_HIGH_RES | FXOS8700_CTRL_REG2_SLPE_EN | FXOS8700_CTRL_REG2_SMODS_LOW_POWER,
+	 /*! Configure FXOS8700 to enable low power in sleep, high res in wake. */
+	{FXOS8700_CTRL_REG2, FXOS8700_CTRL_REG2_MODS_HIGH_RES  | FXOS8700_CTRL_REG2_SMODS_LOW_POWER,
 	                          FXOS8700_CTRL_REG2_MODS_MASK | FXOS8700_CTRL_REG2_SLPE_MASK | FXOS8700_CTRL_REG2_SMODS_MASK},
     /*! Set FXOS8700 M_CTRL_REG1 Register "m_acal" & "m_hms[1:0]" bit-fields to enable auto-calibration
         and configure sensor for hybrid mode. */

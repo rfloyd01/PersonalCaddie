@@ -108,6 +108,7 @@ static void data_read_timer_handler(nrf_timer_event_t event_type, void* p_contex
 {
     //Read data from each of the three sensors using the data read function pointer
     m_timer_handlers.data_read_handler(measurements_taken); //measurements taken is the offset in bytes for the data to be read
+    //SEGGER_RTT_printf(0, "Reading taken at %d.\n", nrf_drv_timer_capture(&m_data_start_timer, NRF_TIMER_CC_CHANNEL2));
     
     measurements_taken++;
     if (measurements_taken == 1)

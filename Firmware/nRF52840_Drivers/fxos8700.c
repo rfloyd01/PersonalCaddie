@@ -93,6 +93,7 @@ int32_t fxos8700_active_mode_enable()
 
     if (imu_comm->sensor_model[ACC_SENSOR] == FXOS8700_ACC)
     {
+        ret |= fxos8700_acc_apply_setting(POWER + ACC_START);
         ret |= fxos8700_acc_apply_setting(FS_RANGE + ACC_START);
         ret |= fxos8700_acc_apply_setting(FILTER_SELECTION + ACC_START);
         ret |= fxos8700_acc_apply_setting(HIGH_PASS_FILTER + ACC_START);
@@ -158,8 +159,8 @@ int32_t fxos8700_acc_apply_setting(uint8_t setting)
             sensor_comm_read(sensor_driver.pComHandle, FXOS8700_CTRL_REG2, 1, &power);
 
             //We need to right shift and use bitwise AND to extract the appropriate setting
-            power >>= FXOS8700_CTRL_REG2_SMODS_SHIFT;
             power &= FXOS8700_CTRL_REG2_SMODS_MASK;
+            power >>= FXOS8700_CTRL_REG2_SMODS_SHIFT;
 
             //We can now update the odr while keeping the same power setting. If the 
             //magnetometer is also on then we need to call the hybrid configuration method.
@@ -174,8 +175,8 @@ int32_t fxos8700_acc_apply_setting(uint8_t setting)
             sensor_comm_read(sensor_driver.pComHandle, FXOS8700_CTRL_REG1, 1, &odr);
 
             //We need to right shift and use bitwise and to extract the appropriate setting
-            odr >>= FXOS8700_CTRL_REG1_DR_SHIFT;
             odr &= FXOS8700_CTRL_REG1_DR_MASK;
+            odr >>= FXOS8700_CTRL_REG1_DR_SHIFT;
 
             //we can now update the power while keeping the same odr setting
             status |= fxos8700_configure_accel(&sensor_driver, odr, p_sensor_settings[setting], FXOS8700_ACCEL_14BIT_READ_POLL_MODE);
@@ -256,6 +257,11 @@ int32_t fxos8700_get_acc_data(uint8_t* pBuff, uint8_t offset)
     //Then read the chip, storing the data in the above struct
     uint8_t ret;
     ret = fxos8700_read_data(&sensor_driver, FXOS8700_ACCEL_14BIT_DATAREAD, &dataBuffer);
+
+    //TEST: Print out the bytes as they're read
+    //SEGGER_RTT_WriteString(0, "Raw FXOS Acc reading.\n");
+    //SEGGER_RTT_printf(0, "%x %x %x\n", dataBuffer.accel[0], dataBuffer.accel[1], dataBuffer.accel[2]);
+    //SEGGER_RTT_WriteString(0, "\n");
 
     //Acc data is read into the dataBuffer object, we need to extract it and put it into our
     //own data buffer, one byte at a time, need to be careful of endianness here

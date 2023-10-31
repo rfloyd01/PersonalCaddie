@@ -16,6 +16,7 @@
  ******************************************************************************/
 /* Component Lib Includes */
 #include "fxos8700_driver.h"
+#include "SEGGER_RTT.h"
 
 /*******************************************************************************
  * Prototypes
@@ -119,11 +120,6 @@ uint8_t fxos8700_read_data(fxos8700_driver_t *pDriver, fxos8700_data_type_t data
     case FXOS8700_ACCEL_14BIT_DATAREAD:
         /* Read the FXOS8700 status register and wait till new data is ready*/
 
-        //TODO: The data ready register was taking much longer than the actual
-        //ODR to update, as a result a single data read was taking close to 40 milliseconds
-        //I've commented out waiting for the data ready register but should look into 
-        //again in the future
-
         //status = fxos8700_read_reg(pDriver, FXOS8700_STATUS, 1, &dr_status);
         //if (SENSOR_SUCCESS != status)
         //{
@@ -222,10 +218,6 @@ uint8_t fxos8700_read_data(fxos8700_driver_t *pDriver, fxos8700_data_type_t data
                     break;
     case FXOS8700_MAG_DATAREAD:
         /* Read the FXOS8700 status register and wait till new data is ready*/
-        //TODO: The data ready register was taking much longer than the actual
-        //ODR to update, as a result a single data read was taking close to 40 milliseconds
-        //I've commented out waiting for the data ready register but should look into 
-        //again in the future
         //while (dr_status != 0xFF)
         //{
         //    status = fxos8700_read_reg(pDriver, FXOS8700_M_DR_STATUS, 1, &dr_status);
@@ -414,6 +406,7 @@ uint8_t fxos8700_configure_accel(fxos8700_driver_t *pDriver, fxos8700_odr_t odr,
 	    return SENSOR_BAD_ADDRESS;
 	}
 
+        
 	/*! Prepare the register write list to configure FXOS8700 for required ODR and power mode. */
 	registerwritelist_t fxos8700OdrSmodConfig[] = {
 		/*! Configure FXOS8700 CTRL_REG1 Register "dr[2:0]" bit-fields to set ODR value. */
