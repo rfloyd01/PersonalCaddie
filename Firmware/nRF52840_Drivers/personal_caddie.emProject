@@ -109,6 +109,7 @@
         <file file_name="nRF_Implementations/pc_ble.c" />
         <file file_name="nRF_Implementations/pc_timer.c" />
       </folder>
+      <file file_name="ble_pc_service.c" />
     </folder>
     <folder Name="nRF_Segger_RTT">
       <file file_name="$(IncludeDir)/$(SDKVer)/external/segger_rtt/SEGGER_RTT.c" />

@@ -584,6 +584,16 @@ void ModeScreen::PersonalCaddieHandler(PersonalCaddieEventType pcEvent, void* ev
 		}
 		break;
 	}
+	case PersonalCaddieEventType::PC_ERROR:
+	{
+		//Some sort of error occured on the nRF device, whether it be a TWI read error, notification set
+		//up error, or something similar. All we do for now is just create an alert in red text which 
+		//displays the pertinent error code.
+
+		std::wstring alertText = *((std::wstring*)eventArgs);
+		createAlert(alertText, UIColor::Red);
+		break;
+	}
 	}
 
 }

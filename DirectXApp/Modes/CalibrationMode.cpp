@@ -255,7 +255,7 @@ void CalibrationMode::addData(std::vector<std::vector<std::vector<float> > > con
 
 	if (m_state & CalibrationModeState::RECORDING_DATA) //only add date if we're actively recording
 	{
-		m_timeStamp = (float)std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - data_timer).count() / 1000000000.0;
+		//m_timeStamp = (float)std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - data_timer).count() / 1000000000.0;
 		data_time_stamps.push_back(m_timeStamp);
 		std::wstring time_debug = L"Add data called at " + std::to_wstring(m_timeStamp) + L"\n";
 		OutputDebugString(&time_debug[0]);
@@ -283,9 +283,9 @@ void CalibrationMode::addData(std::vector<std::vector<std::vector<float> > > con
 		for (int i = 0; i < totalSamples; i++)
 		{
 			//x, y and z data gets added to the overall data vectors
-			m_graphDataX.push_back({ m_timeStamp, sensorData[calibrationType][0][i] });
-			m_graphDataY.push_back({ m_timeStamp, sensorData[calibrationType][1][i] });
-			m_graphDataZ.push_back({ m_timeStamp, sensorData[calibrationType][2][i] });
+			m_graphDataX.push_back({ timeStamp + i * timeIncrement, sensorData[calibrationType][0][i] });
+			m_graphDataY.push_back({ timeStamp + i * timeIncrement, sensorData[calibrationType][1][i] });
+			m_graphDataZ.push_back({ timeStamp + i * timeIncrement, sensorData[calibrationType][2][i] });
 
 			if (calibrationType == raw_acceleration || calibrationType == 0)
 			{
@@ -296,7 +296,7 @@ void CalibrationMode::addData(std::vector<std::vector<std::vector<float> > > con
 				avg_count++;
 			}
 
-			m_timeStamp += timeIncrement;
+			//m_timeStamp += timeIncrement;
 		}
 	}
 }
@@ -720,8 +720,7 @@ void CalibrationMode::calculateCalNumbers()
 		//will be noticed. A calculated ODR of 0.5 or 2.0 x the expected (or worse)
 		//will flag the error.
 		float calculated_odr = 0.0f, odr_error = 1.0f;
-		for (int i = 1; i < data_time_stamps.size(); i++) calculated_odr += (data_time_stamps[i] - data_time_stamps[i - 1]);
-		calculated_odr = (10.0f * data_time_stamps.size() - 1) / calculated_odr; //TODO: instead of using 10 here I should be using the SENSOR_SAMPLES variable
+		calculated_odr = m_graphDataX.size() / m_graphDataX.back().x;
 
 		odr_error = calculated_odr / m_sensorODR;
 		data_time_stamps.clear();

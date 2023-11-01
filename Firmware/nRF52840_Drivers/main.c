@@ -23,6 +23,7 @@
 #include "fxos8700.h"
 #include "fxas21002.h"
 #include "ble_sensor_service.h"
+#include "ble_pc_service.h"
 #include "personal_caddie_operating_modes.h"
 #include "nRF_Implementations/pc_twi.h"
 #include "nRF_Implementations/pc_ble.h"
@@ -31,6 +32,7 @@
 //Soft Device Parameters
 #define DEAD_BEEF                       0xDEADBEEF                                /**< Value used as error code on stack dump, can be used to identify stack location on stack unwind. */
 BLE_SENSOR_SERVICE_DEF(m_ss);                                                     /**< IMU Sensor Service instance. */
+BLE_PC_SERVICE_DEF(m_pc);                                                     /**< Personal Caddie Service instance. */
 uint16_t m_conn_handle = BLE_CONN_HANDLE_INVALID;                                 /**< Handle of the current connection. */
 
 //IMU Sensor Parameters
@@ -56,7 +58,6 @@ uint16_t desired_minimum_connection_interval, desired_maximum_connection_interva
 static float current_sensor_odr = 59.5;                                            /**< Keeps track of the current sensor ODR, connection interval is set based on this variable */
 volatile int m_notifications_done = 0;                                             /**< Indicates the number of notifications sent out in a single connection interval  */
 
-
 //LED Pin Parameters
 #define RED_LED            NRF_GPIO_PIN_MAP(0, 24)                                 /**< Red LED Indicator on BLE 33 sense*/
 #define BLUE_LED           NRF_GPIO_PIN_MAP(0, 6)                                  /**< Blue LED Indicator on BLE 33 sense*/
@@ -65,7 +66,6 @@ volatile uint8_t active_led = BLUE_LED;                                         
 
 //Personal Caddie Parameters
 static personal_caddie_operating_mode_t current_operating_mode = ADVERTISING_MODE; /**< The chip starts in advertising mode*/
-
 
 /**@brief Callback function for asserts in the SoftDevice.
  *
@@ -469,6 +469,32 @@ static void sensors_init(bool discovery)
     APP_ERROR_CHECK(err_code);
 }
 
+static void error_notification(uint32_t err_code)
+{
+    //This method is used to alert the front end application of nRF errors that have occured.
+    //This happens by putting the error code into a characteristic and sending it via a
+    //notification.
+    ble_gatts_hvx_params_t err_notify_params;
+    memset(&err_notify_params, 0, sizeof(err_notify_params));
+
+    uint16_t err_characteristic_size = 4; //currently only error codes less than or equal to 4 bytes can be sent
+
+    //Convert the error code into a byte array
+    uint8_t err_array[4];
+    uint8_t* err_start = (uint8_t*)&err_code; //cast the float to a 32-bit integer to take up 4 array slots
+    for (int i = 0; i < 4; i++) err_array[i] = *(err_start + i);
+
+    //Setup accelerometer notification first
+    err_notify_params.type = BLE_GATT_HVX_NOTIFICATION;
+    err_notify_params.handle = m_pc.error_handle.value_handle;
+    err_notify_params.p_data = err_array;
+    err_notify_params.p_len  = &err_characteristic_size;
+    err_notify_params.offset = 0;
+
+    uint32_t ret = sd_ble_gatts_hvx(m_conn_handle, &err_notify_params); //acc data notification
+    APP_ERROR_CHECK(ret);
+}
+
 static void characteristic_update_and_notify()
 {
     ble_gatts_hvx_params_t acc_notify_params, gyr_notify_params, mag_notify_params;
@@ -531,7 +557,14 @@ static void characteristic_update_and_notify()
     uint32_t ret = sd_ble_gatts_hvx(m_conn_handle, &acc_notify_params); //acc data notification
     ret = sd_ble_gatts_hvx(m_conn_handle, &gyr_notify_params); //gyr data notification
     ret = sd_ble_gatts_hvx(m_conn_handle, &mag_notify_params); //mag data notification
-    //APP_ERROR_CHECK(ret); //Uncommenting this can help debug notification errors
+
+    //if (ret == BLE_ERROR_GATTS_SYS_ATTR_MISSING)
+    //{
+    //    ret = sd_ble_gatts_sys_attr_set(m_conn_handle, NULL, 0, 0);
+    //    APP_ERROR_CHECK(ret);
+    //}
+    
+    APP_ERROR_CHECK(ret); //Uncommenting this can help debug notification errors
 }
 
 uint64_t findGCD(uint64_t a, uint64_t b)
@@ -912,6 +945,9 @@ static void services_init(void)
     init.setting_write_handler = sensor_settings_write_handler;
 
     err_code = ble_sensor_service_init(&m_ss, &init, SENSOR_SETTINGS_LENGTH);
+    APP_ERROR_CHECK(err_code);
+
+    err_code = ble_pc_service_init(&m_pc);
     APP_ERROR_CHECK(err_code);
 }
 

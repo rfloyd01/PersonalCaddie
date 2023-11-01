@@ -148,6 +148,7 @@ void PersonalCaddie::disconnectFromDevice()
         m_services = nullptr;
         
         //set all the characteristics to null as well
+        m_error_characteristic = nullptr;
         m_settings_characteristic = nullptr;
         m_accelerometer_data_characteristic = nullptr;
         m_gyroscope_data_characteristic = nullptr;
@@ -180,6 +181,7 @@ void PersonalCaddie::BLEDeviceHandler(BLEState state)
         event_handler(PersonalCaddieEventType::BLE_ALERT, (void*)&message);
 
         m_services = this->p_ble->getBLEDevice()->GetGattServicesAsync(BluetoothCacheMode::Uncached).get().Services();
+        //m_services = this->p_ble->getBLEDevice()->GetGattServicesAsync().get().Services();
         if (m_services.Size() == 0)
         {
             message = L"Couldn't connect to the Personal Caddie. Go to the settings menu to manually connect.\n";
@@ -243,8 +245,8 @@ void PersonalCaddie::BLEDeviceHandler(BLEState state)
             case SENSOR_SERVICE_UUID:
                 getDataCharacteristics(gattService);
                 break;
-            case SENSOR_INFO_UUID:
-                OutputDebugString(L"Found the Device Info service, getting info about on-board sensors.\n");
+            case PERSONAL_CADDIE_SERVICE_UUID:
+                getErrorCharacteristic(gattService);
                 break;
             default:
                 break;
@@ -323,7 +325,7 @@ void PersonalCaddie::getDataCharacteristics(Bluetooth::GenericAttributeProfile::
     {
         uint16_t short_uuid = (data_characteristics.GetAt(i).Uuid().Data1 & 0xFFFF);
         bool setup_notifcations = true;
-        OutputDebugString(L"Found characteristic: \n");
+        //OutputDebugString(L"Found characteristic: \n");
 
         switch (short_uuid)
         {
@@ -354,6 +356,72 @@ void PersonalCaddie::getDataCharacteristics(Bluetooth::GenericAttributeProfile::
                 {
                     dataCharacteristicEventHandler(car, args); //handler defined elsewhere to prevent three identical code blocks being needed here
                 }));
+        }
+    }
+}
+
+void PersonalCaddie::getErrorCharacteristic(Bluetooth::GenericAttributeProfile::GattDeviceService& pc_service)
+{
+    //The error characteristic is a way to forward nRF errors from the BLE device to the app. The characteristic itself is small,
+    //only 4 bytes long, so it can only hold a single error at a time. We write to its CCCD handle so we will automatically get
+    //notified of new errors as they come in.
+    auto pc_characteristics = pc_service.GetCharacteristicsAsync().get().Characteristics();
+
+    //For now there's just the error characteristic, use a for loop here though in case more
+    //characteristics are added in the future.
+    for (int i = 0; i < pc_characteristics.Size(); i++)
+    {
+        uint16_t short_uuid = (pc_characteristics.GetAt(i).Uuid().Data1 & 0xFFFF);
+        bool setup_notifcations = true;
+
+        switch (short_uuid)
+        {
+        case ERROR_CHARACTERISTIC_UUID:
+        {
+            this->m_error_characteristic = pc_characteristics.GetAt(i);
+
+            //set up a handler for when new errors come in
+            m_error_characteristic.ValueChanged(Windows::Foundation::TypedEventHandler<GattCharacteristic, GattValueChangedEventArgs>(
+                [this](GattCharacteristic car, GattValueChangedEventArgs args)
+                {
+                    //For now, the only thing we do is create an alert that pops up on the screen, telling us what the error is
+                    auto read_buffer = Windows::Storage::Streams::DataReader::FromBuffer(args.CharacteristicValue());
+                    read_buffer.ByteOrder(Windows::Storage::Streams::ByteOrder::LittleEndian); //the nRF52840 uses little endian so we match it here
+
+                    //Read all 4 bytes of the error code
+                    uint32_t error_code = read_buffer.ReadUInt32();
+
+                    std::wstring message = L"Personal Caddie Error: " + std::to_wstring(error_code) + L"\n";
+                    event_handler(PersonalCaddieEventType::PC_ERROR, (void*)&message);
+                }));
+
+            //also, make sure to set the CCCD descriptor to notify if it isn't already
+            auto cccdRead = m_error_characteristic.ReadClientCharacteristicConfigurationDescriptorAsync();
+
+            cccdRead.Completed([this](
+                IAsyncOperation<GattReadClientCharacteristicConfigurationDescriptorResult> const& sender,
+                AsyncStatus const status)
+                {
+                    auto cccd_value = sender.get().ClientCharacteristicConfigurationDescriptor();
+                    if (cccd_value == Bluetooth::GenericAttributeProfile::GattClientCharacteristicConfigurationDescriptorValue::None)
+                    {
+                        //the data characteristics are currently set to notify so turn off notifications. There are three characteristic descriptors to write
+                        //so nest the asynchronous calls to make sure all calls actually get processed.
+                        auto cccdAccWriteOn = m_error_characteristic.WriteClientCharacteristicConfigurationDescriptorAsync(GattClientCharacteristicConfigurationDescriptorValue::Notify);
+                        cccdAccWriteOn.Completed([this](IAsyncOperation<GattCommunicationStatus> const& sender, AsyncStatus const status)
+                            {
+                                if (status != AsyncStatus::Completed)
+                                {
+                                    std::wstring message = L"An error occured when trying to enable error notifications.\n";
+                                    event_handler(PersonalCaddieEventType::BLE_ALERT, (void*)&message);
+                                    return;
+                                }
+                            });
+                    }
+                });
+
+            break;
+        }
         }
     }
 }

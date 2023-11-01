@@ -11,7 +11,8 @@ using namespace winrt;
 using namespace Windows::Devices;
 
 //Service and characteristic values are the same across Personal Caddie devices so define them here
-#define SENSOR_INFO_UUID                       0xBEEF
+#define PERSONAL_CADDIE_SERVICE_UUID           0xBF40
+#define ERROR_CHARACTERISTIC_UUID              0xBF41
 #define SENSOR_SERVICE_UUID                    0xBF34
 #define SETTINGS_CHARACTERISTIC_UUID           0xBF35
 #define ACC_DATA_CHARACTERISTIC_UUID           0xBF36
@@ -52,7 +53,8 @@ enum class PersonalCaddieEventType
 	DEVICE_WATCHER_UPDATE = 4,
 	CONNECTION_EVENT = 5,
 	NOTIFICATIONS_TOGGLE = 6,
-	DATA_READY = 7
+	DATA_READY = 7,
+	PC_ERROR = 8
 };
 
 enum class TextType;
@@ -126,6 +128,7 @@ private:
 
 	//BLE Functionality
 	void getDataCharacteristics(Bluetooth::GenericAttributeProfile::GattDeviceService& data_service);
+	void getErrorCharacteristic(Bluetooth::GenericAttributeProfile::GattDeviceService& pc_service);
 	void dataCharacteristicEventHandler(Bluetooth::GenericAttributeProfile::GattCharacteristic& car, Bluetooth::GenericAttributeProfile::GattValueChangedEventArgs& args);
 	void automaticallyConnect();
 
@@ -144,6 +147,7 @@ private:
 
 	//Gatt Settings and Characteristics obtained from m_ble
 	winrt::Windows::Foundation::Collections::IVectorView<Bluetooth::GenericAttributeProfile::GattDeviceService>  m_services{ nullptr };
+	Bluetooth::GenericAttributeProfile::GattCharacteristic m_error_characteristic{ nullptr };
 	Bluetooth::GenericAttributeProfile::GattCharacteristic m_settings_characteristic{ nullptr };
 	Bluetooth::GenericAttributeProfile::GattCharacteristic m_available_sensors_characteristic{ nullptr };
 	Bluetooth::GenericAttributeProfile::GattCharacteristic m_accelerometer_data_characteristic{ nullptr };
