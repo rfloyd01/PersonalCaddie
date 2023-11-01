@@ -493,7 +493,6 @@ void ModeScreen::PersonalCaddieHandler(PersonalCaddieEventType pcEvent, void* ev
 			{
 				//In Madwick testing mode we go straight into sensor idle mode upon entering
 				m_modeState ^= (ModeState::PersonalCaddieSensorIdleMode | ModeState::PersonalCaddieSensorActiveMode);
-				((MadgwickTestMode*)m_modes[static_cast<int>(m_currentMode)].get())->setODR(m_personalCaddie->getMaxODR());
 				m_personalCaddie->enableDataNotifications();
 			}
 		}
@@ -503,6 +502,12 @@ void ModeScreen::PersonalCaddieHandler(PersonalCaddieEventType pcEvent, void* ev
 			{
 				((CalibrationMode*)m_modes[static_cast<int>(m_currentMode)].get())->startDataCapture();
 				m_modeState ^= ModeState::Active; //re-enter the active state to resume updates
+			}
+			else if (m_currentMode == ModeType::MADGWICK)
+			{
+				//As soon as the sensor is placed into active mode data is going to be sent, start the absolute data
+				//timer so we can see which quaternions actually need to get rendered
+				((MadgwickTestMode*)m_modes[static_cast<int>(m_currentMode)].get())->setAbsoluteTimer();
 			}
 		}
 		else if (alertText == L"The Personal Caddie has been placed into Connected Mode")
@@ -580,7 +585,7 @@ void ModeScreen::PersonalCaddieHandler(PersonalCaddieEventType pcEvent, void* ev
 		else if (m_currentMode == ModeType::MADGWICK)
 		{
 			//TODO: Add quaternion getting method here
-			m_modes[static_cast<int>(m_currentMode)]->addQuaternions(m_personalCaddie->getQuaterninos());
+			m_modes[static_cast<int>(m_currentMode)]->addQuaternions(m_personalCaddie->getQuaternions(), m_personalCaddie->getNumberOfSamples(), m_personalCaddie->getCurrentTime(), m_personalCaddie->getMaxODR() / 1000.0f);
 		}
 		break;
 	}

@@ -868,8 +868,8 @@ int PersonalCaddie::getCurrentSample()
 
 float PersonalCaddie::getCurrentTime()
 {
-    //returns the time that current sample was taken at in seconds
-    return time_stamp / 1000.0;
+    //returns the timestamp for the first sample in the data vectors
+    return m_first_data_time_stamp;
 }
 
 void PersonalCaddie::setSampleFrequency(float freq)

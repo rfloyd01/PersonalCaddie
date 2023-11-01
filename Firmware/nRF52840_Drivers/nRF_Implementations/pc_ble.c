@@ -48,12 +48,12 @@ static ble_uuid_t m_sr_uuids[] =                                               /
 //Pointers
 ble_event_handler_t m_ble_event_handlers;
 uint16_t*           p_conn_handle; //A pointer to the connection handle for the active connection
-volatile int*       p_notifications_done; //A pointer to an integer which lets us know how many notification are complete
+volatile bool*       p_notification_done; //A pointer to an integer which lets us know how many notification are complete
 static uint8_t* p_total_sensor_samples;  //The connection interval needs to change to match the current number of samples we're collecting
 uint16_t* p_minimum_connection_interval;  //The current desired minimum connection interval (in ms)
 uint16_t* p_maximum_connection_interval;  //The current desired maximum connection interval (in ms)
 
-void ble_stack_init(ble_event_handler_t* handler_methods, uint16_t* connection_handle, volatile int* notifications_done,
+void ble_stack_init(ble_event_handler_t* handler_methods, uint16_t* connection_handle, volatile bool* notification_done,
                     uint8_t* sensor_samples, uint16_t* min_conn_int, uint16_t* max_conn_int)
 {
     ret_code_t err_code;
@@ -75,7 +75,7 @@ void ble_stack_init(ble_event_handler_t* handler_methods, uint16_t* connection_h
     //Set a referene to the notification done boolean in main.c Like the connection
     //handle, there are other modules that reference this variable so we only keep 
     //a pointer to it
-    p_notifications_done = notifications_done;
+    p_notification_done = notification_done;
     p_total_sensor_samples = sensor_samples;
     p_minimum_connection_interval = min_conn_int;
     p_maximum_connection_interval = max_conn_int;
@@ -201,6 +201,8 @@ uint32_t update_connection_interval()
         err_code = ble_conn_params_change_conn_params(*p_conn_handle, &new_params);
         SEGGER_RTT_WriteString(0, "SoftDevice Busy, retrying connection interval update.\n");
     }
+
+    if (err_code != NRF_SUCCESS) return err_code;
 
     //We also need to update the preferred connection parameters, this will ensure that
     //we use the connection interval as specified in the sensor settings array in the case
@@ -380,8 +382,8 @@ static void ble_evt_handler(ble_evt_t const * p_ble_evt, void * p_context)
 
         case BLE_GATTS_EVT_HVN_TX_COMPLETE:
             //SEGGER_RTT_printf(0, "Compledted %d notifications.\n", p_ble_evt->evt.gatts_evt.params.hvn_tx_complete.count);
-            //*p_notification_done = true; //set the notification done bool to true to allow more notifications
-            *p_notifications_done = *p_notifications_done + 1; //increment the notifications complete
+            *p_notification_done = true; //set the notification done bool to true to allow more notifications
+            //*p_notifications_done = *p_notifications_done + 1; //increment the notifications complete
             break;
 
         default:

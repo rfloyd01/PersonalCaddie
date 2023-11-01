@@ -115,7 +115,7 @@ public:
 
 	std::set<DeviceInfoDisplay>* getScannedDevices() { return p_ble->getScannedDevices(); }
 	std::vector<std::vector<std::vector<float> > > const& getSensorData() { return sensor_data; }
-	std::vector<glm::quat> const& getQuaterninos() { return orientation_quaternions; }
+	std::vector<glm::quat> const& getQuaternions() { return orientation_quaternions; }
 
 private:
 	std::unique_ptr<BLE> p_ble;

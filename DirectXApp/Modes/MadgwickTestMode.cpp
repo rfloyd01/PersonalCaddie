@@ -50,8 +50,6 @@ uint32_t MadgwickTestMode::initializeMode(winrt::Windows::Foundation::Size windo
 	m_quaternions.clear();
 	m_timeStamps.clear();
 
-	current_time = std::chrono::steady_clock::now();
-
 	//Load the quaternion vector with default quaternions and the 
 	//time stamp vector with default times. TODO: Shouldn't use a 
 	//loop to 10, should instead use the SENSOR_READINGS variable
@@ -67,16 +65,11 @@ uint32_t MadgwickTestMode::initializeMode(winrt::Windows::Foundation::Size windo
 	return (ModeState::CanTransfer | ModeState::NeedMaterial | ModeState::Active | ModeState::PersonalCaddieSensorIdleMode);
 }
 
-void MadgwickTestMode::setODR(float odr)
+void MadgwickTestMode::setAbsoluteTimer()
 {
-	//TODO: Don't use 10, should be using sensor samples here
-	float time = 1.0f / odr;
-	m_timeStamps.clear();
-	for (int i = 0; i < 10; i++)
-	{
-		m_timeStamps.push_back(time);
-		time += 1.0f / odr;
-	}
+	//As soon as the Personal Caddie is placed into active mode we will begin receiving
+	//data. The moment this happens we start a timer, this will let us keep track of 
+	data_start_timer = std::chrono::steady_clock::now();
 }
 
 void MadgwickTestMode::uninitializeMode()
@@ -115,18 +108,19 @@ uint32_t MadgwickTestMode::handleUIElementStateChange(int i)
 	return 0;
 }
 
-void MadgwickTestMode::addQuaternions(std::vector<glm::quat> const& quaternions)
+void MadgwickTestMode::addQuaternions(std::vector<glm::quat> const& quaternions, int quaternion_number, float time_stamp, float delta_t)
 {
+	//It's possible that the quaternions vector will have some empty/junk values at the end. This is because the number of 
+	//samples coming from the sensor is dependent on the current sensor ODR (which can change). Because of this we 
+	//only add the first quaternion_number quaternions to the vector on this page
 	m_currentQuaternion = 0; //reset the current quaternion to be rendered
 	m_quaternions.clear(); //clear out existing quaternions
-	for (int i = 0; i < quaternions.size(); i++) m_quaternions.push_back(quaternions[i]);
-
-	current_time = std::chrono::steady_clock::now(); //set the time when the data came in
-	/*;
-	
-
-	std::wstring time_yo = std::to_wstring(time_elapsed) + L" milliseconds since last quaternion update.\n";
-	OutputDebugString(&time_yo[0]);*/
+	m_timeStamps.clear();
+	for (int i = 0; i < quaternion_number; i++)
+	{
+		m_quaternions.push_back(quaternions[i]);
+		m_timeStamps.push_back(time_stamp + i * delta_t);
+	}
 }
 
 void MadgwickTestMode::update()
@@ -134,13 +128,16 @@ void MadgwickTestMode::update()
 	//Animate the current rotation quaternion obtained from the Personal Caddie. We need to look at the 
 	//time stamp to figure out which quaternion is correct. We do this since the ODR of the sensors won't always
 	//match up with the frame rate of the current screen.
-	float time_elapsed_since_data_update = (float)std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - current_time).count() / 1000000000.0f;
+	float time_elapsed_since_data_start = (float)std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - data_start_timer).count() / 1000000000.0f;
 
 	float quat[3];
 
+	//Due to difference between the refresh rate of the screen and the ODR of the sensor, it may not make sense
+	//to render each quaternion. The time_elapsed_since_data_update is used to track which quaternions should
+	//actually get rendered.
 	for (int i = m_currentQuaternion; i < m_quaternions.size(); i++)
 	{
-		if (time_elapsed_since_data_update < m_timeStamps[i])
+		if (time_elapsed_since_data_start < m_timeStamps[i])
 		{
 			glm::quat correctedQuaternion = QuaternionMultiply(m_offsetQuaternion, m_quaternions[m_currentQuaternion]);
 			correctedQuaternion = QuaternionMultiply({ 0.7071f, 0.0f, 0.0f, 0.7071f }, correctedQuaternion);

@@ -56,7 +56,7 @@ volatile bool m_data_ready  = false;                                            
 imu_communication_t imu_comm;                                                      /**< Structure that Holds information on how to communicate with each sensor */
 uint16_t desired_minimum_connection_interval, desired_maximum_connection_interval; /**< The desired min and max connection interval */
 static float current_sensor_odr = 59.5;                                            /**< Keeps track of the current sensor ODR, connection interval is set based on this variable */
-volatile int m_notifications_done = 0;                                             /**< Indicates the number of notifications sent out in a single connection interval  */
+volatile bool m_notification_done = true;                                         /**< Indicates the number of notifications sent out in a single connection interval  */
 
 //LED Pin Parameters
 #define RED_LED            NRF_GPIO_PIN_MAP(0, 24)                                 /**< Red LED Indicator on BLE 33 sense*/
@@ -469,7 +469,7 @@ static void sensors_init(bool discovery)
     APP_ERROR_CHECK(err_code);
 }
 
-static void error_notification(uint32_t err_code)
+static void error_notification(int err_code)
 {
     //This method is used to alert the front end application of nRF errors that have occured.
     //This happens by putting the error code into a characteristic and sending it via a
@@ -493,6 +493,32 @@ static void error_notification(uint32_t err_code)
 
     uint32_t ret = sd_ble_gatts_hvx(m_conn_handle, &err_notify_params); //acc data notification
     APP_ERROR_CHECK(ret);
+}
+
+static uint32_t data_notification_error_handler(uint32_t* ret)
+{
+    //This method is for handling common errors that happen during notification
+    //and shouldn't crash the application.
+    if (*ret == BLE_ERROR_GATTS_SYS_ATTR_MISSING)
+    {
+        //This error will pop up during a secure connection when we aren't sure who
+        //the sender is (this happens when we try to send notifications without first
+        //setting the CCCD to notify from the app). Calling the below method should fix
+        //things.
+        *ret = sd_ble_gatts_sys_attr_set(m_conn_handle, NULL, 0, 0);
+        APP_ERROR_CHECK(*ret);
+    }
+    else if (*ret == NRF_ERROR_RESOURCES)
+    {
+        //This error occurs when there are more notifcations than allowed in the queue.
+        //This can happen if a notification fails to send and we need to resend it, but 
+        //more data comes in before this occurs. In this case we set the m_notification
+        //complete boolean to false, and wait for it to get set to true in the BLE stack
+        //handler (this will happen automatically when the next notification goes out).
+        m_notification_done = false;
+        SEGGER_RTT_WriteString(0, "Notification queue is full.\n");
+        *ret = 0x69; //a great error code
+    }
 }
 
 static void characteristic_update_and_notify()
@@ -550,21 +576,33 @@ static void characteristic_update_and_notify()
     mag_notify_params.p_len  = &mag_data_characteristic_size;
     mag_notify_params.offset = 0;
 
-    //Set the notifcation_done boolean to false and start notifications.
-    //The boolean will be set to true in the BLE handler when the notification
-    //is complete, alerting us to send out the next notification.
-    //m_notifications_done = 0;
-    uint32_t ret = sd_ble_gatts_hvx(m_conn_handle, &acc_notify_params); //acc data notification
-    ret = sd_ble_gatts_hvx(m_conn_handle, &gyr_notify_params); //gyr data notification
-    ret = sd_ble_gatts_hvx(m_conn_handle, &mag_notify_params); //mag data notification
+    //Send out notifications for each data characteristic, however, we
+    //can only do so if there's enough room in the notification queue.
+    if (m_notification_done)
+    {
+        uint32_t ret = sd_ble_gatts_hvx(m_conn_handle, &acc_notify_params); //acc data notification
+        data_notification_error_handler(&ret);
+        if (ret == 0x69)
+        {
+            return; //too many notifications in queue, wait until next cycle to send data
+        }
 
-    //if (ret == BLE_ERROR_GATTS_SYS_ATTR_MISSING)
-    //{
-    //    ret = sd_ble_gatts_sys_attr_set(m_conn_handle, NULL, 0, 0);
-    //    APP_ERROR_CHECK(ret);
-    //}
+        ret = sd_ble_gatts_hvx(m_conn_handle, &gyr_notify_params); //gyr data notification
+        data_notification_error_handler(&ret);
+        if (ret == 0x69)
+        {
+            return; //too many notifications in queue, wait until next cycle to send data
+        }
+
+        ret = sd_ble_gatts_hvx(m_conn_handle, &mag_notify_params); //mag data notification
+        data_notification_error_handler(&ret);
+        if (ret == 0x69)
+        {
+            return; //too many notifications in queue, wait until next cycle to send data
+        }
     
-    APP_ERROR_CHECK(ret); //Uncommenting this can help debug notification errors
+        APP_ERROR_CHECK(ret);
+    }
 }
 
 uint64_t findGCD(uint64_t a, uint64_t b)
@@ -583,21 +621,19 @@ float findDecimalLCM(float a, float b)
     return findLCM(a * 1000000, b * 1000000) / 1000000.0;
 }
 
-void calculate_samples_and_connection_interval_two()
+void calculate_samples_and_connection_interval()
 {
-   //Had a change of heart and am attempting a totally different strategy here.
+   //This method is used to select the number of samples to store and the 
+   //data characteristics as a function of the current sensor ODR and connection interval.
    //We want to minimize the amount of lag that occurs with the image on screen,
-   //which is accomplished by minimizing the data collection time. While testing
-   //I'm going to pick a desired lag time and set the sensor samples based off of
-   //that and the current odr.
+   //which is accomplished by minimizing the data collection time. 
 
-   //Furthermore, it actually makes sense to have the data collection period be 
-   //longer than the connection interval, so after calculating the number of 
-   //samples to collect, pick the lowest multiple of 15 milliseconds less than this
-   //data collection period and set that as the maximum connection interval, and
-   //15 ms less than this as the minimum connection interval.
+   //After some testing, 95 milliseconds seems to be a good target time for the connection interval.
+   //There is a small lag seen on the screen in this case, but not really that noticeable,
+   //and it allows us to collect at least a few samples at lower ODR values, which is 
+   //more efficient than sending out samples 1 at a time.
 
-   float desired_lag_time = 0.2; //in seconds
+   float desired_lag_time = 0.095; //in seconds.
    m_current_sensor_samples = current_sensor_odr * desired_lag_time;
    if (m_current_sensor_samples > MAX_SENSOR_SAMPLES) m_current_sensor_samples = MAX_SENSOR_SAMPLES;
    SEGGER_RTT_printf(0, "%d sensor samples have been selected.\n", m_current_sensor_samples);
@@ -610,109 +646,22 @@ void calculate_samples_and_connection_interval_two()
    desired_minimum_connection_interval = desired_maximum_connection_interval - 15;
 }
 
-void calculate_samples_and_connection_interval()
-{
-    //This method is used to select the appropriate number of sensor samples to collect
-    //and the min-max connection interval to select to minimize data loss.
-
-    //This method is necessary as a consequence of not being able to set a specific 
-    //connection interval, the interval must be negotiated between two devices and thus
-    //is prone to not be exactly what we want. On iOS devices, in particular, the minimumn
-    //and maximum requested connection interval must be at least 15 milliseconds apart. 
-    //Depending on the current sensor ODR, 15 milliseconds can be anywhere from 0.75 sensor
-    //samples at an ODR of 50 Hz to 6 samples at 400 Hz. Basically, depending on what the 
-    //negotiated connection interval is, it may make sense to collect more or less samples
-    //at a time from the sensors in order to minimize data being overwritten.
-
-    //Since we won't know what the actual connection interval will be until after it's
-    //negotiated, we attempt to pick a min and max interval that will maximize our chances
-    //of having low data loss.
-    int minimum_time = ceil(1000.0 / current_sensor_odr);
-    minimum_time += (15 - minimum_time % 15);
-
-    int maximum_time = ceil(MAX_SENSOR_SAMPLES * 1000.0 / current_sensor_odr);
-    maximum_time += (15 - maximum_time % 15);
-
-    float current_expected_loss = 1.0, current_best_loss = 1.0; //at 0 samples read we expect to lose all data
-    int current_time = minimum_time, best_minimum_interval = 0;
-
-    for (; current_time <= maximum_time; current_time += 15)
-    {
-        //For each time interval we calcualte the expected data loss for choosing 1 - MAX_SENSOR_SAMPLES
-        //number of samples. If the time needed to collect the samples is longer than the current_time
-        //limit we stop iterating (we never want our data collection time to be longer than the connection
-        //interval or the data will start to lag).
-        float best_data_loss_percentage = 1.0; 
-        for (int i = 1; i <= MAX_SENSOR_SAMPLES; i++)
-        {
-            float data_collection_time = i * 1000.0 / current_sensor_odr;
-
-            //we assume that if the data collection time = the connection interval we will slowly fall behind. So 
-            //only carry out the calculation when the data collection time is less than the connection interval
-            if (data_collection_time >= current_time) break;
-
-            //Calculate the expected data loss with current data_collection_time and connection interval
-            float connection_cycle_length = findDecimalLCM(current_time, data_collection_time);
-
-            float total_connection_intervals = connection_cycle_length / current_time;
-            float total_data_packets = connection_cycle_length / data_collection_time;
-            float data_loss_percentage = (total_data_packets - total_connection_intervals) / total_data_packets;
-
-            if (data_loss_percentage < best_data_loss_percentage) best_data_loss_percentage = data_loss_percentage;
-        }
-
-        //We now assume that we choose the lower of the two current connection intervals
-        //being compared. We expect to get the higher connection interval 90% of the time
-        //and the lower interval only 10% of the time.
-        float expected_data_loss = 0.1 * current_expected_loss + 0.9 * best_data_loss_percentage;
-        if (expected_data_loss < current_best_loss)
-        {
-            current_best_loss = expected_data_loss;
-            best_minimum_interval = current_time - 15;
-        }
-
-        current_expected_loss = best_data_loss_percentage;
-    }
-    
-    //Once all calculations are done, set the desired minimum and maximum connection
-    //intervals based on the best_minimum_interval variable
-    desired_minimum_connection_interval = best_minimum_interval;
-    desired_maximum_connection_interval = desired_minimum_connection_interval + 15;
-}
-
 void set_sensor_samples(int actual_connection_interval)
 {
-    //As mentioned above in the alcualte_samples_and_connection_interval() method,
-    //there's no guarantee as to what the connection interval is going to be set at.
-    //Once the interval has been established we update the sample amount so that
-    //sensor odr * sample amount is as close to the connection interval (without
-    //exceeding it) as possible.
-    for (int i = MAX_SENSOR_SAMPLES; i >= 0; i--)
+    //This method is used to make sure we maximize the number of sensor samples to store in 
+    //the data characteristics. While the calculate_samples_and_connection_interval()
+    //method above also does this, we have no way of knowing what the connection interval
+    //will be until after it's negotiated between the gatt server and client. Once we have
+    //the actual time interval, we use this method just to make sure the number of 
+    //samples we've selected works out. For example, if the current samples we want to collect
+    int maximum_samples = current_sensor_odr * (float)actual_connection_interval / 1000.0;
+    if (maximum_samples > MAX_SENSOR_SAMPLES) maximum_samples = MAX_SENSOR_SAMPLES;
+
+    if (maximum_samples > m_current_sensor_samples)
     {
-        if ((1000.0 * i / current_sensor_odr) < actual_connection_interval)
-        {
-            SEGGER_RTT_printf(0, "%d sensor samples selected.\n", i);
-            m_current_sensor_samples = i;
-
-            //Not 100% necesary here, however, it may be handy for debugging.
-            //Print out the expected data loss per connection interval to 
-            //confirm our selection was ok. Ideally this number would be a good
-            //deal under 1 byte.
-            float connection_cycle_length = findDecimalLCM(actual_connection_interval, 1000 * i / current_sensor_odr);
-
-            float connection_intervals_per_cycle = connection_cycle_length / actual_connection_interval;
-            float total_data_packets = connection_cycle_length / (1000 * i / current_sensor_odr);
-            float total_data_loss_percent = (total_data_packets - connection_intervals_per_cycle) / total_data_packets; //bytes in a complete sensor reading
-
-            SEGGER_RTT_printf(0, "Expected data loss is ~: %d%%\n", (uint32_t)(100 * total_data_loss_percent));
-            break;
-        }
+        m_current_sensor_samples = maximum_samples;
+        SEGGER_RTT_printf(0, "%d sensor samples have been selected.\n", m_current_sensor_samples);
     }
-}
-
-void set_sensor_samples_two(int actual_connection_interval)
-{
-    //For now just do nothing here
 }
 
 void data_read_handler(int measurements_taken)
@@ -752,10 +701,6 @@ static void sensor_idle_mode_start()
         lsm9ds1_idle_mode_enable();
         fxos8700_idle_mode_enable();
         fxas21002_idle_mode_enable();
-
-        //uint8_t reg_val;
-        //imu_comm.acc_comm.read_register((void*)imu_comm.acc_comm.twi_bus,  imu_comm.acc_comm.address, FXOS8700_CTRL_REG1, &reg_val, 1);
-        //SEGGER_RTT_printf(0, "CTRL_REG1 Register After idel mode enable: %x\n", reg_val);
 
         //the LED is deactivated during data collection so turn it back on
         led_timers_start();
@@ -911,10 +856,12 @@ static void sensor_settings_write_handler(uint16_t conn_handle, ble_sensor_servi
             {
                 float temp = current_sensor_odr; //save the original odr in case something goes wrong
                 current_sensor_odr = new_sensor_odr;
-                if (update_connection_interval(new_sensor_odr) != NRF_SUCCESS)
+                uint32_t err_code = update_connection_interval();
+                if (err_code != NRF_SUCCESS)
                 {
                     current_sensor_odr = temp; //reset the sensor odr as it wasn't actually updated
                     SEGGER_RTT_WriteString(0, "Couldn't update connection interval.\n");
+                    error_notification(err_code);
                 }
                 else
                 {
@@ -961,10 +908,12 @@ void on_gap_connection_handler()
     {
         float temp = current_sensor_odr; //save the original odr in case something goes wrong
         current_sensor_odr = new_sensor_odr;
-        if (update_connection_interval(new_sensor_odr) != NRF_SUCCESS)
+        uint32_t err_code = update_connection_interval();
+        if (err_code != NRF_SUCCESS)
         {
             current_sensor_odr = temp; //reset the sensor odr as it wasn't actually updated
             SEGGER_RTT_WriteString(0, "Couldn't update connection interval.\n");
+            error_notification(err_code);
         }
         else
         {
@@ -1040,17 +989,18 @@ int main(void)
     ble_event_handler_t ble_handlers;
     ble_handlers.gap_connected_handler = on_gap_connection_handler;
     ble_handlers.gap_disconnected_handler = on_gap_disconnection_handler;
-    ble_handlers.gap_connection_interval_handler = calculate_samples_and_connection_interval_two;
-    ble_handlers.gap_update_sensor_samples = set_sensor_samples_two;
+    ble_handlers.gap_connection_interval_handler = calculate_samples_and_connection_interval;
+    ble_handlers.gap_update_sensor_samples = set_sensor_samples;
 
     timer_handlers_t timer_handlers;
     timer_handlers.data_read_handler = data_read_handler;
+    timer_handlers.error_handler = error_notification;
 
     //Initialize.
     log_init();
     timers_init(&active_led, &m_data_ready, &m_current_sensor_samples, &m_time_stamp, &timer_handlers);
     power_management_init();
-    ble_stack_init(&ble_handlers, &m_conn_handle, &m_notifications_done, &m_current_sensor_samples, &desired_minimum_connection_interval, &desired_maximum_connection_interval);
+    ble_stack_init(&ble_handlers, &m_conn_handle, &m_notification_done, &m_current_sensor_samples, &desired_minimum_connection_interval, &desired_maximum_connection_interval);
     gatt_init();
     services_init();
     twi_init();

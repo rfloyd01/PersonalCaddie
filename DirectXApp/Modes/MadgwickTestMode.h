@@ -13,8 +13,8 @@ public:
 	virtual uint32_t handleUIElementStateChange(int i) override;
 
 	virtual void update() override;
-	virtual void addQuaternions(std::vector<glm::quat> const& quaternions) override;
-	void setODR(float odr);
+	virtual void addQuaternions(std::vector<glm::quat> const& quaternions, int quaternion_number, float time_stamp, float delta_t) override;
+	void setAbsoluteTimer();
 
 private:
 	void initializeTextOverlay(winrt::Windows::Foundation::Size windowSize);
@@ -22,7 +22,7 @@ private:
 	float m_currentRotation;
 	float m_currentDegree;
 
-	std::chrono::steady_clock::time_point current_time;
+	std::chrono::steady_clock::time_point data_start_timer;
 
 	volatile int m_currentQuaternion;
 	DirectX::XMVECTOR m_renderQuaternion; //the current quaternion to be applied on screen

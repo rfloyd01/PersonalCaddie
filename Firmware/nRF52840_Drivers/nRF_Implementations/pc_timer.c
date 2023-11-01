@@ -38,6 +38,7 @@ void timers_init(volatile uint8_t* led, volatile bool* data_ready, uint8_t* sens
     p_data_ready = data_ready;
     p_current_time_stamp = time_stamp;
     m_timer_handlers.data_read_handler = handlers->data_read_handler;
+    m_timer_handlers.error_handler = handlers->error_handler; //currently don't have any error handling here, but include this method anyway
 
     //Create the data reading timers using the nrf_drv_timer library
     nrf_drv_timer_config_t timer_cfg = NRF_DRV_TIMER_DEFAULT_CONFIG;
@@ -57,7 +58,8 @@ void timers_init(volatile uint8_t* led, volatile bool* data_ready, uint8_t* sens
 void led_timers_start(void)
 {
     //Start the LED on timer. The LED off timer is controlled from within the ON timer
-    app_timer_start(m_led_on_timer, APP_TIMER_TICKS(2000), NULL); //the LEDs blink once every 2 seconds
+    uint32_t err_code = app_timer_start(m_led_on_timer, APP_TIMER_TICKS(2000), NULL); //the LEDs blink once every 2 seconds
+    
 }
 
 void led_timers_stop(void)
@@ -97,10 +99,21 @@ uint32_t get_current_data_time()
     return nrf_drv_timer_capture(&m_data_start_timer, NRF_TIMER_CC_CHANNEL2);
 }
 
-void update_data_read_timer(int milliseconds)
+void update_data_read_timer(float milliseconds)
 {
     //Used to change how often the data read timer goes off.
-    uint32_t new_data_read_time = nrf_drv_timer_ms_to_ticks(&m_data_read_timer, milliseconds); //convert from milliseconds to clock ticks
+
+    //We need to convert from milliseconds into clock ticks to set the timer.
+    //The built-in methods for converting to ticks can't take a number with a decimal
+    //point so to be as accurate as possible we use the microsecond method. As an example
+    //let's say the sensor ODR is 400 Hz, this corresponds to a sample being taken every 
+    //2.5 milliseconds. Using the built-in ms_to_ticks method would round this down to 
+    //2 milliseconds flat. This would cause us to take readings 1.25x quicker than need
+    //to, resulting in a percieved ODR of 500 instead of 400. Using the microsecond to ticks
+    //method though and we'd get the correct value here of 2500 microseconds and take the
+     //correct readings.
+    uint32_t microseconds = 1000 * milliseconds;
+    uint32_t new_data_read_time = nrf_drv_timer_us_to_ticks(&m_data_read_timer, microseconds); //convert from milliseconds to clock ticks
     nrf_drv_timer_extended_compare(&m_data_read_timer, NRF_TIMER_CC_CHANNEL0, new_data_read_time, NRF_TIMER_SHORT_COMPARE0_CLEAR_MASK, true);
 }
 

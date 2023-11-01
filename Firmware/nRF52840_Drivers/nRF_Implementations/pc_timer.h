@@ -20,19 +20,20 @@ such as a data collection timer, a timer for blinking LEDs, etc.
 //Forward declaration of the data_event_handler_t type.
 typedef struct timer_handlers_s timer_handlers_t;
 
-typedef void (*timer_event_handler_t) (int measurements_taken); //Function pointer for methods to be passed to timer handlers
+typedef void (*timer_event_handler_t) (int); //Function pointer for methods to be passed to timer handlers
 
 //Struct to hold function pointers for BLE Event handler
 struct timer_handlers_s
 {
     timer_event_handler_t data_read_handler;   /**< This method is used to read data every time the data read timer goes off */
+    timer_event_handler_t error_handler;       /**< This method is used for forarding error codes to the front end app */
 };
 
 //Init methods
 void timers_init(volatile uint8_t* led, volatile bool* data_ready, uint8_t* sensor_samples, uint32_t* time_stamp, timer_handlers_t* handlers);
 
 //Timer Update Methods
-void update_data_read_timer(int milliseconds);
+void update_data_read_timer(float milliseconds);
 
 //Start/Stop Timer Methods
 void led_timers_start(void);
