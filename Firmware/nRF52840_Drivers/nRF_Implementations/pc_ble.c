@@ -141,6 +141,9 @@ void advertising_init(void)
     APP_ERROR_CHECK(err_code);
 
     ble_advertising_conn_cfg_tag_set(&m_advertising, APP_BLE_CONN_CFG_TAG);
+
+    //Set the radio power during advertising to -16dBm (slight power savings)
+    sd_ble_gap_tx_power_set(BLE_GAP_TX_POWER_ROLE_ADV, m_advertising.adv_handle, -16);
 }
 
 void advertising_start(bool erase_bonds)
@@ -341,8 +344,10 @@ static void ble_evt_handler(ble_evt_t const * p_ble_evt, void * p_context)
             *p_conn_handle = p_ble_evt->evt.gap_evt.conn_handle;
             err_code = nrf_ble_qwr_conn_handle_assign(&m_qwr, *p_conn_handle);
             APP_ERROR_CHECK(err_code);
-            //connected_mode_start();
-            //update_connection_interval(); //confirm that the correct connection interval is being used
+            
+            //Set the radio power for the connection to -4dBm (slight power savings)
+            sd_ble_gap_tx_power_set(BLE_GAP_TX_POWER_ROLE_CONN, *p_conn_handle, -4);
+
             m_ble_event_handlers.gap_connected_handler();
             SEGGER_RTT_printf(0, "Connected to the Personal Caddie with a connection interval of %u milliseconds.\n",
                               p_ble_evt->evt.gap_evt.params.connected.conn_params.max_conn_interval * 5 / 4);

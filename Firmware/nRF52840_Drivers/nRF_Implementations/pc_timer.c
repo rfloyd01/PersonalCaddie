@@ -152,7 +152,7 @@ static void led_on_timer_handler(void * p_context)
     //LED off timer, which will turn the LED back off after 5 milliseconds
     nrf_gpio_pin_clear(*p_active_led); //The LEDs must be pulled low to turn on
 
-    app_timer_start(m_led_off_timer, APP_TIMER_TICKS(5), NULL); //the LEDs blink only lasts for 5 milliseconds
+    app_timer_start(m_led_off_timer, APP_TIMER_TICKS(20), NULL); //the LEDs blink only lasts for 20 milliseconds
 }
 
 void led_off_timer_handler(void * p_context)

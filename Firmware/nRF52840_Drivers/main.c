@@ -628,12 +628,12 @@ void calculate_samples_and_connection_interval()
    //We want to minimize the amount of lag that occurs with the image on screen,
    //which is accomplished by minimizing the data collection time. 
 
-   //After some testing, 95 milliseconds seems to be a good target time for the connection interval.
+   //After some testing, 80 milliseconds seems to be a good target time for the connection interval.
    //There is a small lag seen on the screen in this case, but not really that noticeable,
    //and it allows us to collect at least a few samples at lower ODR values, which is 
    //more efficient than sending out samples 1 at a time.
 
-   float desired_lag_time = 0.095; //in seconds.
+   float desired_lag_time = 0.08; //in seconds.
    m_current_sensor_samples = current_sensor_odr * desired_lag_time;
    if (m_current_sensor_samples > MAX_SENSOR_SAMPLES) m_current_sensor_samples = MAX_SENSOR_SAMPLES;
    SEGGER_RTT_printf(0, "%d sensor samples have been selected.\n", m_current_sensor_samples);
@@ -745,8 +745,19 @@ static void sensor_idle_mode_start()
         nrf_delay_ms(50); //slight delay so sensors have time to power on   
     }
 
+    //Uncomment the below lines to read the registers of active sensors
+    //and confirm correct settings are applied
+    //fxos8700_get_actual_settings();
+    //fxas21002_get_actual_settings();
+
     current_operating_mode = SENSOR_IDLE_MODE; //set the current operating mode to idle
     SEGGER_RTT_WriteString(0, "Sensor Idle Mode engaged.\n");
+
+    //TEST: Try to change the aradio power level
+    //err_code = sd_ble_gap_tx_power_set(BLE_GAP_TX_POWER_ROLE_CONN, m_conn_handle, -16);
+    //APP_ERROR_CHECK(err_code);
+
+    //SEGGER_RTT_WriteString(0, "Radio Power Set.\n");
 }
 
 static void sensor_active_mode_start()
@@ -979,6 +990,21 @@ static void leds_init()
     nrf_gpio_pin_set(GREEN_LED);
 }
 
+static void power_saving_init()
+{
+    //This method implements certain power saving techniques that I've discovered
+    //with my time using the SDK
+
+    //enable the DCDC regulators
+    uint32_t err_code = sd_power_dcdc_mode_set(NRF_POWER_DCDC_ENABLE);
+    APP_ERROR_CHECK(err_code);
+
+    err_code = sd_power_dcdc0_mode_set(NRF_POWER_DCDC_ENABLE);
+    APP_ERROR_CHECK(err_code);
+
+    SEGGER_RTT_WriteString(0, "DCDC Engaged.\n");
+}
+
 /**@brief Function for application main entry.
  */
 int main(void)
@@ -1010,6 +1036,7 @@ int main(void)
     conn_params_init();
     peer_manager_init();
     leds_init();
+    power_saving_init();
 
     //Start execution.
     led_timers_start();
