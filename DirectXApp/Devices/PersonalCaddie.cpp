@@ -919,10 +919,6 @@ void PersonalCaddie::dataUpdate()
         //the scale of 10 milliseconds apart (at the most).
         current_sample = 0;
 
-        //DEBUG: Making sure that time stamps are working
-        std::wstring timer_test = L"Data reading at: " + std::to_wstring(m_first_data_time_stamp) + L" seconds.\n";
-        OutputDebugString(&timer_test[0]);
-
         //reset the data_updated variables to false. doing this means this method will instead increment the current
         //sample variable for the graphics module.
         sensor_data_updated[ACC_SENSOR] = false;

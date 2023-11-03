@@ -62,7 +62,7 @@ void lsm9ds1_init(imu_communication_t* comm, uint8_t sensors, uint8_t* settings)
         update_sensor_setting(p_sensor_settings + GYR_START, ODR, LSM9DS1_IMU_59Hz5); //accelerometer/gyroscope ODR and Power (59.5 Hz, gyroscope in standard power mode)
         update_sensor_setting(p_sensor_settings + GYR_START, POWER, LSM9DS1_IMU_59Hz5); //accelerometer/gyroscope ODR and Power (59.5 Hz, gyroscope in standard power mode)
 
-        update_sensor_setting(p_sensor_settings + GYR_START, FILTER_SELECTION, LSM9DS1_LPF1_HPF_OUT); //Gyroscope filter selection (low pass filter 1 and HPF)
+        update_sensor_setting(p_sensor_settings + GYR_START, FILTER_SELECTION, LSM9DS1_LPF1_OUT); //Gyroscope filter selection (low pass filter 1 and HPF)
         update_sensor_setting(p_sensor_settings + GYR_START, LOW_PASS_FILTER, 0); //gyroscope low pass filter setting (only takes effect when LPF2 is set in gyro filter path)
         update_sensor_setting(p_sensor_settings + GYR_START, HIGH_PASS_FILTER, LSM9DS1_HP_MEDIUM); //gyroscope high pass filter setting (at an ODR of 59.5 Hz this correlates to 0.5 Hz cut-off)
 

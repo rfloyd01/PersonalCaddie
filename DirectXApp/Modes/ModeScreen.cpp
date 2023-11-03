@@ -174,6 +174,11 @@ void ModeScreen::processKeyboardInput(winrt::Windows::System::VirtualKey pressed
 			{
 				changeCurrentMode(ModeType::UI_TEST_MODE);
 			}
+			else if (m_currentMode == ModeType::MADGWICK)
+			{
+				//Update the data type to display on screen
+				((MadgwickTestMode*)m_modes[static_cast<int>(m_currentMode)].get())->switchDisplayDataType(1);
+			}
 		}
 
 		break;
@@ -193,6 +198,11 @@ void ModeScreen::processKeyboardInput(winrt::Windows::System::VirtualKey pressed
 				//else changeCurrentMode(ModeType::GRAPH_MODE);
 				changeCurrentMode(ModeType::IMU_SETTINGS);
 			}
+			else if (m_currentMode == ModeType::MADGWICK)
+			{
+				//Update the data type to display on screen
+				((MadgwickTestMode*)m_modes[static_cast<int>(m_currentMode)].get())->switchDisplayDataType(2);
+			}
 		}
 
 		break;
@@ -211,6 +221,11 @@ void ModeScreen::processKeyboardInput(winrt::Windows::System::VirtualKey pressed
 				//sensor settings page
 				changeCurrentMode(ModeType::CALIBRATION);
 			}
+			else if (m_currentMode == ModeType::MADGWICK)
+			{
+				//Update the data type to display on screen
+				((MadgwickTestMode*)m_modes[static_cast<int>(m_currentMode)].get())->switchDisplayDataType(3);
+			}
 		}
 		break;
 	case winrt::Windows::System::VirtualKey::Number4:
@@ -221,6 +236,11 @@ void ModeScreen::processKeyboardInput(winrt::Windows::System::VirtualKey pressed
 				//If we're on the Main Menu screen then pressing the 5 key will take us to the
 				//sensor settings page
 				changeCurrentMode(ModeType::SETTINGS_MENU);
+			}
+			else if (m_currentMode == ModeType::MADGWICK)
+			{
+				//Update the data type to display on screen
+				((MadgwickTestMode*)m_modes[static_cast<int>(m_currentMode)].get())->switchDisplayDataType(4);
 			}
 		}
 		break;
@@ -233,6 +253,26 @@ void ModeScreen::processKeyboardInput(winrt::Windows::System::VirtualKey pressed
 				//sensor settings page
 				changeCurrentMode(ModeType::DEVELOPER_TOOLS);
 			}
+		}
+		else if (m_currentMode == ModeType::MADGWICK)
+		{
+			//Update the data type to display on screen
+			((MadgwickTestMode*)m_modes[static_cast<int>(m_currentMode)].get())->switchDisplayDataType(5);
+		}
+		break;
+	case winrt::Windows::System::VirtualKey::Number6:
+		if (m_currentMode == ModeType::MADGWICK)
+		{
+			//Update the data type to display on screen
+			((MadgwickTestMode*)m_modes[static_cast<int>(m_currentMode)].get())->switchDisplayDataType(6);
+		}
+		break;
+	case winrt::Windows::System::VirtualKey::Enter:
+		if (m_currentMode == ModeType::MADGWICK)
+		{
+			//Pressing the enter key toggles whether or not we can see a live feed of data
+			//coming from the sensor
+			((MadgwickTestMode*)m_modes[static_cast<int>(m_currentMode)].get())->toggleDisplayData();
 		}
 		break;
 	}
@@ -584,8 +624,8 @@ void ModeScreen::PersonalCaddieHandler(PersonalCaddieEventType pcEvent, void* ev
 		}
 		else if (m_currentMode == ModeType::MADGWICK)
 		{
-			//TODO: Add quaternion getting method here
 			m_modes[static_cast<int>(m_currentMode)]->addQuaternions(m_personalCaddie->getQuaternions(), m_personalCaddie->getNumberOfSamples(), m_personalCaddie->getCurrentTime(), m_personalCaddie->getMaxODR() / 1000.0f);
+			m_modes[static_cast<int>(m_currentMode)]->addData(m_personalCaddie->getSensorData(), m_personalCaddie->getMaxODR(), m_personalCaddie->getDataTimeStamp(), m_personalCaddie->getNumberOfSamples());
 		}
 		break;
 	}

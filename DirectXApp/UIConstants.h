@@ -41,7 +41,7 @@ namespace UIConstants
     static const float BodyTextSizeY = BodyRectangleY1 - BodyRectangleY0;
 
     //TextType::SENSOR_INFO constants
-    static const float SensorInfoTextPointSize = 0.05f;
+    static const float SensorInfoTextPointSize = 0.03f;
     static const float SensorInfoRectangleX0 = WidthMargin;
     static const float SensorInfoRectangleX1 = (1.0 - WidthMargin) / 3.0;
     static const float SensorInfoRectangleY0 = BodyRectangleY1 + HeightMargin;

@@ -256,7 +256,10 @@ void CalibrationMode::addData(std::vector<std::vector<std::vector<float> > > con
 	if (m_state & CalibrationModeState::RECORDING_DATA) //only add date if we're actively recording
 	{
 		//m_timeStamp = (float)std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - data_timer).count() / 1000000000.0;
-		data_time_stamps.push_back(m_timeStamp);
+		float timeIncrement = 1.0f / sensorODR;
+		int current_stage = m_currentStage / 2 - 1;
+
+		if (m_graphDataX.size() > 0) m_timeStamp = m_graphDataX.back().x + timeStamp;
 		std::wstring time_debug = L"Add data called at " + std::to_wstring(m_timeStamp) + L"\n";
 		OutputDebugString(&time_debug[0]);
 
@@ -277,15 +280,21 @@ void CalibrationMode::addData(std::vector<std::vector<std::vector<float> > > con
 		    else calibrationType = raw_magnetic;
 		}
 
-		float timeIncrement = 1.0f / sensorODR;
-		int current_stage = m_currentStage / 2 - 1;
-
 		for (int i = 0; i < totalSamples; i++)
 		{
 			//x, y and z data gets added to the overall data vectors
-			m_graphDataX.push_back({ timeStamp + i * timeIncrement, sensorData[calibrationType][0][i] });
-			m_graphDataY.push_back({ timeStamp + i * timeIncrement, sensorData[calibrationType][1][i] });
-			m_graphDataZ.push_back({ timeStamp + i * timeIncrement, sensorData[calibrationType][2][i] });
+			if (m_state & CalibrationModeState::ACCELEROMETER)
+			{
+				m_graphDataX.push_back({ m_timeStamp + i * timeIncrement, sensorData[calibrationType][0][i] });
+				m_graphDataY.push_back({ m_timeStamp + i * timeIncrement, sensorData[calibrationType][1][i] });
+				m_graphDataZ.push_back({ m_timeStamp + i * timeIncrement, sensorData[calibrationType][2][i] });
+			}
+			else
+			{
+				m_graphDataX.push_back({ timeStamp + i * timeIncrement, sensorData[calibrationType][0][i] });
+				m_graphDataY.push_back({ timeStamp + i * timeIncrement, sensorData[calibrationType][1][i] });
+				m_graphDataZ.push_back({ timeStamp + i * timeIncrement, sensorData[calibrationType][2][i] });
+			}
 
 			if (calibrationType == raw_acceleration || calibrationType == 0)
 			{
@@ -720,7 +729,7 @@ void CalibrationMode::calculateCalNumbers()
 		//will be noticed. A calculated ODR of 0.5 or 2.0 x the expected (or worse)
 		//will flag the error.
 		float calculated_odr = 0.0f, odr_error = 1.0f;
-		calculated_odr = m_graphDataX.size() / m_graphDataX.back().x;
+		calculated_odr = m_graphDataX.size() / (m_graphDataX.back().x - m_graphDataX[0].x);
 
 		odr_error = calculated_odr / m_sensorODR;
 		data_time_stamps.clear();

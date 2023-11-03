@@ -13,4 +13,12 @@ public:
 		float fontSize, std::vector<UIColor> colors, std::vector<unsigned long long> colorLocations, UITextJustification justification);
 
 	void updateText(std::wstring message);
+	void updateColorLocations(std::vector<unsigned long long> const& newLocations)
+	{
+		//this method assumes newLocations and colorLocations vectors are the same length
+		for (int i = 0; i < newLocations.size(); i++)
+		{
+			m_text.colorLocations[i] = newLocations[i];
+		}
+	}
 };

@@ -742,7 +742,7 @@ static void sensor_idle_mode_start()
         enable_twi_bus(imu_comm.acc_comm.twi_bus->inst_idx);
         enable_twi_bus(imu_comm.gyr_comm.twi_bus->inst_idx);
         enable_twi_bus(imu_comm.mag_comm.twi_bus->inst_idx);
-        nrf_delay_ms(50); //slight delay so sensors have time to power on   
+        //nrf_delay_ms(50); //slight delay so sensors have time to power on   
     }
 
     //Uncomment the below lines to read the registers of active sensors

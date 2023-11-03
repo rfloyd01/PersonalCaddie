@@ -26,6 +26,7 @@ void external_twi_handler(nrf_drv_twi_evt_t const * p_event, void * p_context);
 void twi_init();
 void enable_twi_bus(int instance_id);
 void disable_twi_bus(int instance_id);
+void enable_twi_bus_test(int instance_id);
 
 //Get methods
 const nrf_drv_twi_t* get_internal_twi_bus();
