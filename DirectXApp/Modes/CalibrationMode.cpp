@@ -351,7 +351,7 @@ void CalibrationMode::accAxisCalculate(int axis)
 	//than one axis should have an average value of +/-9.8 while the others are close to 0. Convert all values to be positive,
 	//and then take the max
 	int invert[3] = { 1, 1, 1 };
-	int current_stage = m_currentStage / 2 - 1;
+	int current_stage = m_currentStage / 2 - 1; //this method gets called every other stage, starting at 2, which needs to map to the X (0) axis
 	for (int i = 0; i < 3; i++)
 	{
 		if (acc_cal[i][current_stage] < 0)
@@ -373,6 +373,43 @@ void CalibrationMode::accAxisCalculate(int axis)
 
 	acc_axis_swap[axis] = largest_axis;
 	acc_axis_polarity[axis] = invert[largest_axis];
+}
+
+void CalibrationMode::gyrAxisCalculate(int axis)
+{
+	//Integrate the gyroscope data over all three axes to see the total degree of movement.
+	//We then calcualte the proper axis swap and polarity as in the accAxisCalculate() method
+	float total_movement[3] = { 0, 0, 0 };
+	for (int i = 1; i < m_graphDataX.size(); i++)
+	{
+		total_movement[0] += integrateData(m_graphDataX[i].y, m_graphDataX[i - 1].y, m_graphDataX[i].x - m_graphDataX[i - 1].x);
+		total_movement[1] += integrateData(m_graphDataY[i].y, m_graphDataY[i - 1].y, m_graphDataY[i].x - m_graphDataY[i - 1].x);
+		total_movement[2] += integrateData(m_graphDataZ[i].y, m_graphDataZ[i - 1].y, m_graphDataZ[i].x - m_graphDataZ[i - 1].x);
+	}
+
+	int invert[3] = { 1, 1, 1 };
+	int current_stage = m_currentStage / 2 - 5; //this method gets called every other stage, starting at 10, which needs to map to the X (0) axis
+	for (int i = 0; i < 3; i++)
+	{
+		if (total_movement[i] < 0)
+		{
+			total_movement[i] *= -1;
+			invert[i] = -1;
+		}
+	}
+
+	int largest_axis = 0, largest_value = total_movement[0];
+	for (int i = 1; i <= 2; i++)
+	{
+		if (total_movement[i] > largest_value)
+		{
+			largest_value = total_movement[i];
+			largest_axis = i;
+		}
+	}
+
+	gyr_axis_swap[axis] = largest_axis;
+	gyr_axis_polarity[axis] = invert[largest_axis];
 }
 
 std::wstring CalibrationMode::axisResultString(int* axis_swap, int* axis_polarity)
@@ -424,6 +461,7 @@ void CalibrationMode::axisCalibration()
 		if (!m_stageSet)
 		{
 			((TextOverlay*)m_uiElements[4].get())->updateText(L"First the accelerometer axes will be aligned. Point the +X-axis of the sensor straight upwards like depicted in the image and hold it there for 2 seconds. Press continue when ready to proceed.");
+			((TextOverlay*)m_uiElements[5].get())->updateText(((TextButton*)m_uiElements[5].get())->getText() + L": Accelerometer Phase"); //update the sub-title text
 			m_state |= CalibrationModeState::ACCELEROMETER; //Set the acc flag so the getData() method knows which data points to grab
 			data_timer_duration = 2000; //the acceleromter needs 5 seconds of data at each stage
 			m_stageSet = true;
@@ -434,9 +472,9 @@ void CalibrationMode::axisCalibration()
 	case 2:
 	case 4:
 	case 6:
-	case 8:
-	case 10:
-	case 12:
+	case 9:
+	case 11:
+	case 13:
 	{
 		prepareRecording();
 		break;
@@ -473,13 +511,83 @@ void CalibrationMode::axisCalibration()
 			//With the data collected, see if a swap or inversion needs to occur for the y-axis
 			accAxisCalculate(1);
 
-			std::wstring completionText = L"Accelerometer axis calibration complete, see results below. Press continue to return to continue with the gyroscope axis calibration.\n\n\n"
+			std::wstring completionText = L"Accelerometer axis calibration complete, see results below. Press continue to proceed to the gyroscope axis calibration.\n\n\n"
 				L"Standard Axes = [X, Y, Z]\n"
 				L"New Axes = [" + axisResultString(acc_axis_swap, acc_axis_polarity) + L"]\n\n";
 
 			((TextOverlay*)m_uiElements[4].get())->updateText(completionText);
+
 			m_stageSet = true;
 
+		}
+		break;
+	}
+	case 8:
+	{
+		if (!m_stageSet)
+		{
+			((TextOverlay*)m_uiElements[5].get())->updateText(L"Axis Calibration: Gyroscope Phase"); //update the sub-title text
+			((TextOverlay*)m_uiElements[4].get())->updateText(L"Rotate the sensor clockwise about the X-axis by 90 degrees, like depicted in the animation. Data will be collected for 2 seconds, press continue when ready");
+			m_stageSet = true;
+
+			//Clear accumulated date before moving the next gyroscope axis calibration stage
+			m_graphDataX.clear();
+			m_graphDataY.clear();
+			m_graphDataZ.clear();
+
+			m_state ^= (CalibrationModeState::ACCELEROMETER | CalibrationModeState::GYROSCOPE); //Set the gyr flag and remove the acc flag so the getData() method knows which data points to grab
+		}
+		break;
+	}
+	case 10:
+	{
+		if (!m_stageSet)
+		{
+			//With the data collected, see if a swap or inversion needs to occur for the y-axis
+			gyrAxisCalculate(0);
+
+			((TextOverlay*)m_uiElements[4].get())->updateText(L"Data collection complete. Rotate the sensor clockwise about the Y-axis by 90 degrees, like depicted in the animation. Data will be collected for 2 seconds, press continue when ready");
+
+			//Clear accumulated date before moving the next gyroscope axis calibration stage
+			m_graphDataX.clear();
+			m_graphDataY.clear();
+			m_graphDataZ.clear();
+
+			m_stageSet = true;
+		}
+		break;
+	}
+	case 12:
+	{
+		if (!m_stageSet)
+		{
+			//With the data collected, see if a swap or inversion needs to occur for the y-axis
+			gyrAxisCalculate(1);
+
+			((TextOverlay*)m_uiElements[4].get())->updateText(L"Data collection complete. Rotate the sensor clockwise about the Z-axis by 90 degrees, like depicted in the animation. Data will be collected for 2 seconds, press continue when ready");
+
+			//Clear accumulated date before moving the next gyroscope axis calibration stage
+			m_graphDataX.clear();
+			m_graphDataY.clear();
+			m_graphDataZ.clear();
+
+			m_stageSet = true;
+		}
+		break;
+	}
+	case 14:
+	{
+		if (!m_stageSet)
+		{
+			//With the data collected, see if a swap or inversion needs to occur for the y-axis
+			gyrAxisCalculate(2);
+
+			std::wstring completionText = L"Gyroscope axis calibration complete, see results below. Press continue to proceed to the magnetometer axis calibration.\n\n\n"
+				L"Standard Axes = [X, Y, Z]\n"
+				L"New Axes = [" + axisResultString(gyr_axis_swap, gyr_axis_polarity) + L"]\n\n";
+
+			((TextOverlay*)m_uiElements[4].get())->updateText(completionText);
+			m_stageSet = true;
 		}
 		break;
 	}

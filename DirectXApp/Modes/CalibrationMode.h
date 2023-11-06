@@ -57,6 +57,7 @@ private:
 	void displayGraph();
 
 	void accAxisCalculate(int axis);
+	void gyrAxisCalculate(int axis);
 	std::wstring axisResultString(int* axis_swap, int* axis_polarity);
 
 	void updateEllipsePoints(std::vector<float>& x, std::vector<float>& y, std::vector<float>& z, Eigen::MatrixXf& b);
@@ -110,4 +111,7 @@ private:
 
 	int acc_axis_swap[3] = { 0 };
 	int acc_axis_polarity[3] = { 0 };
+
+	int gyr_axis_swap[3] = { 0 };
+	int gyr_axis_polarity[3] = { 0 };
 };
