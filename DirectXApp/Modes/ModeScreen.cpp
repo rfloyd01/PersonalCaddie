@@ -253,11 +253,11 @@ void ModeScreen::processKeyboardInput(winrt::Windows::System::VirtualKey pressed
 				//sensor settings page
 				changeCurrentMode(ModeType::DEVELOPER_TOOLS);
 			}
-		}
-		else if (m_currentMode == ModeType::MADGWICK)
-		{
-			//Update the data type to display on screen
-			((MadgwickTestMode*)m_modes[static_cast<int>(m_currentMode)].get())->switchDisplayDataType(5);
+			else if (m_currentMode == ModeType::MADGWICK)
+			{
+				//Update the data type to display on screen
+				((MadgwickTestMode*)m_modes[static_cast<int>(m_currentMode)].get())->switchDisplayDataType(5);
+			}
 		}
 		break;
 	case winrt::Windows::System::VirtualKey::Number6:

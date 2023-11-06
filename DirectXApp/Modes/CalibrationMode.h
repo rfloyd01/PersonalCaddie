@@ -13,7 +13,8 @@ enum CalibrationModeState
 	RECORDING_DATA = 32,
 	STOP_RECORD = 64,
 	UPDATE_CAL_NUMBERS = 128,
-	ODR_ERROR = 256
+	ODR_ERROR = 256,
+	AXES = 512
 };
 
 class CalibrationMode : public Mode
@@ -44,6 +45,7 @@ private:
 	void initializeCalibrationVariables();
 
 	//Methods for maneuvering through the calibrations
+	void axisCalibration();
 	void accelerometerCalibration();
 	void gyroscopeCalibration();
 	void magnetometerCalibration();
@@ -53,6 +55,9 @@ private:
 	void advanceToNextStage();
 	void prepareRecording();
 	void displayGraph();
+
+	void accAxisCalculate(int axis);
+	std::wstring axisResultString(int* axis_swap, int* axis_polarity);
 
 	void updateEllipsePoints(std::vector<float>& x, std::vector<float>& y, std::vector<float>& z, Eigen::MatrixXf& b);
 
@@ -102,4 +107,7 @@ private:
 	float mag_gain_y[3] = { 0 };
 	float mag_gain_z[3] = { 0 };
 	float* mag_gain[3] = { mag_gain_x, mag_gain_y, mag_gain_z };
+
+	int acc_axis_swap[3] = { 0 };
+	int acc_axis_polarity[3] = { 0 };
 };
