@@ -58,6 +58,7 @@ private:
 
 	void accAxisCalculate(int axis);
 	void gyrAxisCalculate(int axis);
+	void magAxisCalculate(int axis);
 	std::wstring axisResultString(int* axis_swap, int* axis_polarity);
 
 	void updateEllipsePoints(std::vector<float>& x, std::vector<float>& y, std::vector<float>& z, Eigen::MatrixXf& b);
@@ -89,7 +90,7 @@ private:
 	int avg_count; //used for averaging accelerometer data from tumble test
 
 	//calibration variables
-	bool accept_cal;
+	bool accept_cal, unlimited_record;
 
 	float acc_off[3] = { 0 }; //acceleration offset values
 	float acc_gain_x[3] = { 0 }; //acceleration axis and cross axis gain values
@@ -114,4 +115,7 @@ private:
 
 	int gyr_axis_swap[3] = { 0 };
 	int gyr_axis_polarity[3] = { 0 };
+
+	int mag_axis_swap[3] = { -1, -1, -1 };
+	int mag_axis_polarity[3] = { 1, 1, 1 };
 };
