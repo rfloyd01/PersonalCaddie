@@ -185,9 +185,10 @@ void CalibrationMode::updateComplete()
 	//this method to remove the update_cal_numbers flag from the current state.
 	//This is called from a separate thread which is why this is necessary.
 	if (m_state & CalibrationModeState::UPDATE_CAL_NUMBERS) m_state ^= CalibrationModeState::UPDATE_CAL_NUMBERS;
+	if (m_state & CalibrationModeState::UPDATE_AXES_NUMBERS) m_state ^= CalibrationModeState::UPDATE_AXES_NUMBERS;
 	if (m_state & ModeState::Active) m_state ^= ModeState::Active;
 
-	m_state &= 0xFFFFFFF0; //This will remove the active flag as well as the current sensor flag
+	m_state &= 0xFFFFFDF0; //This will remove the active flag as well as the current sensor flag and axes flag
 	initializeCalibrationVariables(); //reset calibration variables to their default values
 }
 
@@ -264,6 +265,9 @@ uint32_t CalibrationMode::handleUIElementStateChange(int i)
 		((TextOverlay*)m_uiElements[5].get())->updateText(((TextButton*)m_uiElements[i].get())->getText()); //update the sub-title text
 
 		m_uiElements[8]->setState(m_uiElements[8]->getState() | UIElementState::Invisible); //make the data toggle switch invisible
+
+		//DEBUG
+		m_currentStage = 33;
 
 		m_state |= ModeState::Active;
 	}
@@ -1049,12 +1053,13 @@ void CalibrationMode::axisCalibration()
 			//that it needs to physically update the calibration numbers.
 			if (accept_cal)
 			{
-				m_state |= CalibrationModeState::UPDATE_CAL_NUMBERS;
+				m_state |= CalibrationModeState::UPDATE_AXES_NUMBERS;
 			}
 
 			m_uiElements[0]->setState(m_uiElements[0]->getState() ^ UIElementState::Invisible);
 			m_uiElements[1]->setState(m_uiElements[1]->getState() ^ UIElementState::Invisible);
 			m_uiElements[2]->setState(m_uiElements[2]->getState() ^ UIElementState::Invisible);
+			m_uiElements[12]->setState(m_uiElements[12]->getState() ^ UIElementState::Invisible); //make the axis button visible
 
 			//Update the body text
 			((TextOverlay*)m_uiElements[4].get())->updateText(L"In calibration mode we can manually calculate the offsets and cross-axis gains for the accelerometer, gyroscope and magnetometer on the Personal Caddie to get more accurate data. Select one of the sensors using the buttons below to begin the calibration process.");
@@ -1065,7 +1070,7 @@ void CalibrationMode::axisCalibration()
 			m_uiElements[6]->setState(m_uiElements[6]->getState() | UIElementState::Invisible); //make the graph invisible
 			m_uiElements[7]->setState(m_uiElements[7]->getState() | UIElementState::Invisible); //make the no button invisible
 			m_uiElements[8]->setState(m_uiElements[8]->getState() ^ UIElementState::Invisible); //make the data toggle switch visible
-			m_uiElements[12]->setState(m_uiElements[12]->getState() | UIElementState::Invisible); //make the axis button visible
+			
 
 			((Graph*)m_uiElements[6].get())->removeAllLines(); //clear everything out from the graph when done viewing it
 
@@ -1200,6 +1205,7 @@ void CalibrationMode::accelerometerCalibration()
 			m_uiElements[0]->setState(m_uiElements[0]->getState() ^ UIElementState::Invisible);
 			m_uiElements[1]->setState(m_uiElements[1]->getState() ^ UIElementState::Invisible);
 			m_uiElements[2]->setState(m_uiElements[2]->getState() ^ UIElementState::Invisible);
+			m_uiElements[12]->setState(m_uiElements[12]->getState() ^ UIElementState::Invisible); //make the axis button visible
 
 			//Update the body text
 			((TextOverlay*)m_uiElements[4].get())->updateText(L"In calibration mode we can manually calculate the offsets and cross-axis gains for the accelerometer, gyroscope and magnetometer on the Personal Caddie to get more accurate data. Select one of the sensors using the buttons below to begin the calibration process.");
@@ -1210,7 +1216,6 @@ void CalibrationMode::accelerometerCalibration()
 			m_uiElements[6]->setState(m_uiElements[6]->getState() | UIElementState::Invisible); //make the graph invisible
 			m_uiElements[7]->setState(m_uiElements[7]->getState() | UIElementState::Invisible); //make the no button invisible
 			m_uiElements[8]->setState(m_uiElements[8]->getState() ^ UIElementState::Invisible); //make the data toggle switch visible
-			m_uiElements[12]->setState(m_uiElements[12]->getState() | UIElementState::Invisible); //make the axis button visible
 
 			((Graph*)m_uiElements[6].get())->removeAllLines(); //clear everything out from the graph when done viewing it
 
@@ -1328,6 +1333,7 @@ void CalibrationMode::gyroscopeCalibration()
 			m_uiElements[0]->setState(m_uiElements[0]->getState() ^ UIElementState::Invisible);
 			m_uiElements[1]->setState(m_uiElements[1]->getState() ^ UIElementState::Invisible);
 			m_uiElements[2]->setState(m_uiElements[2]->getState() ^ UIElementState::Invisible);
+			m_uiElements[12]->setState(m_uiElements[12]->getState() ^ UIElementState::Invisible); //make the axis button visible
 
 			//Update the body text
 			((TextOverlay*)m_uiElements[4].get())->updateText(L"In calibration mode we can manually calculate the offsets and cross-axis gains for the accelerometer, gyroscope and magnetometer on the Personal Caddie to get more accurate data. Select one of the sensors using the buttons below to begin the calibration process.");
@@ -1338,7 +1344,6 @@ void CalibrationMode::gyroscopeCalibration()
 			m_uiElements[6]->setState(m_uiElements[6]->getState() | UIElementState::Invisible); //make the graph invisible
 			m_uiElements[7]->setState(m_uiElements[7]->getState() | UIElementState::Invisible); //make the no button invisible
 			m_uiElements[8]->setState(m_uiElements[8]->getState() ^ UIElementState::Invisible); //make the data toggle switch visible
-			m_uiElements[12]->setState(m_uiElements[12]->getState() | UIElementState::Invisible); //make the axis button visible
 
 			m_stageSet = true;
 		}
@@ -1417,6 +1422,7 @@ void CalibrationMode::magnetometerCalibration()
 			m_uiElements[0]->setState(m_uiElements[0]->getState() ^ UIElementState::Invisible);
 			m_uiElements[1]->setState(m_uiElements[1]->getState() ^ UIElementState::Invisible);
 			m_uiElements[2]->setState(m_uiElements[2]->getState() ^ UIElementState::Invisible);
+			m_uiElements[12]->setState(m_uiElements[12]->getState() ^ UIElementState::Invisible); //make the axis button visible
 
 			//Update the body text
 			((TextOverlay*)m_uiElements[4].get())->updateText(L"In calibration mode we can manually calculate the offsets and cross-axis gains for the accelerometer, gyroscope and magnetometer on the Personal Caddie to get more accurate data. Select one of the sensors using the buttons below to begin the calibration process.");
@@ -1429,7 +1435,6 @@ void CalibrationMode::magnetometerCalibration()
 			m_uiElements[9]->setState(m_uiElements[9]->getState() | UIElementState::Invisible); //make the graph invisible
 			m_uiElements[10]->setState(m_uiElements[10]->getState() | UIElementState::Invisible); //make the graph invisible
 			m_uiElements[11]->setState(m_uiElements[11]->getState() | UIElementState::Invisible); //make the graph invisible
-			m_uiElements[12]->setState(m_uiElements[12]->getState() | UIElementState::Invisible); //make the axis button visible
 
 			//Clear everything out from the graphs when done viewing them
 			((Graph*)m_uiElements[9].get())->removeAllLines();
@@ -1763,6 +1768,15 @@ std::pair<float*, float**> CalibrationMode::getCalibrationResults()
 	if (m_state & CalibrationModeState::ACCELEROMETER) return { acc_off, acc_gain};
 	else if (m_state & CalibrationModeState::GYROSCOPE) return { gyr_off, gyr_gain };
 	else if (m_state & CalibrationModeState::MAGNETOMETER) return { mag_off, mag_gain };
+}
+
+std::vector<int> CalibrationMode::getNewAxesOrientations()
+{
+	//If we like the axis calibration results, we use this method to send them to
+	//the IMU class and update the external axis orientation files for future use
+	return {acc_axis_swap[0], acc_axis_swap[1], acc_axis_swap[2], acc_axis_polarity[0], acc_axis_polarity[1], acc_axis_polarity[2],
+	gyr_axis_swap[0], gyr_axis_swap[1], gyr_axis_swap[2], gyr_axis_polarity[0], gyr_axis_polarity[1], gyr_axis_polarity[2],
+	mag_axis_swap[0], mag_axis_swap[1], mag_axis_swap[2], mag_axis_polarity[0], mag_axis_polarity[1], mag_axis_polarity[2]};
 }
 
 void CalibrationMode::handlePersonalCaddieConnectionEvent(bool connectionStatus)

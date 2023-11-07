@@ -14,7 +14,8 @@ enum CalibrationModeState
 	STOP_RECORD = 64,
 	UPDATE_CAL_NUMBERS = 128,
 	ODR_ERROR = 256,
-	AXES = 512
+	AXES = 512,
+	UPDATE_AXES_NUMBERS = 1024
 };
 
 class CalibrationMode : public Mode
@@ -39,6 +40,7 @@ public:
 	virtual void addData(std::vector<std::vector<std::vector<float> > > const& sensorData, float sensorODR, float timeStamp, int totalSamples) override;
 
 	std::pair<float*, float**> getCalibrationResults();
+	std::vector<int> getNewAxesOrientations();
 
 private:
 	void initializeTextOverlay(winrt::Windows::Foundation::Size windowSize);

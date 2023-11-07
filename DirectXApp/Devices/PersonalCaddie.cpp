@@ -296,8 +296,6 @@ void PersonalCaddie::BLEDeviceHandler(BLEState state)
 
         sampleFreq = this->p_imu->getMaxODR(); //Set the sample frequency to be equal to the largest of the sensor ODRs
 
-        //TODO: update calibration numbers here
-
         message = L"Successfully connected to the Personal Caddie\n";
         event_handler(PersonalCaddieEventType::CONNECTION_EVENT, (void*)&message);
         break;
@@ -437,6 +435,7 @@ void PersonalCaddie::dataCharacteristicEventHandler(Bluetooth::GenericAttributeP
     std::pair<const float*, const float**> calibration_data;
 
     //Get the appropriate data type by looking at the characteristic's UUID so we know which vector to update
+    //TODO: Add axis orientation variables
     switch (uuid)
     {
     case ACC_DATA_CHARACTERISTIC_UUID:
@@ -475,6 +474,8 @@ void PersonalCaddie::dataCharacteristicEventHandler(Bluetooth::GenericAttributeP
         //the number of actual samples. The number of actual data samples in the characteritic
         //isn't constant (it can change based on the sensor odr and bluetooth connection interval), however, we must read the 
         //whole characteristic to get the time stamp and useful data byte.
+
+        //TODO: Make sure the correct axis is being read, and having the appropriate polarity applied to it
         for (int axis = X; axis <= Z; axis++)
         {
             int16_t axis_reading = read_buffer.ReadInt16();
@@ -535,6 +536,13 @@ void PersonalCaddie::updateSensorCalibrationNumbers(sensor_type_t sensor, std::p
 {
     this->p_imu->setCalibrationNumbers(sensor, cal_numbers);
     std::wstring message = L"Updated Calibration Info";
+    event_handler(PersonalCaddieEventType::IMU_ALERT, (void*)&message);
+}
+
+void PersonalCaddie::updateSensorAxisOrientations(std::vector<int> axis_orientations)
+{
+    this->p_imu->setAxesOrientations(axis_orientations);
+    std::wstring message = L"Updated Axis Orientation Info";
     event_handler(PersonalCaddieEventType::IMU_ALERT, (void*)&message);
 }
 

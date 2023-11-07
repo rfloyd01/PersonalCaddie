@@ -73,6 +73,7 @@ public:
 	std::pair<const float*, const float**> getMagnetometerCalibrationNumbers();
 
 	void setCalibrationNumbers(sensor_type_t sensor, std::pair<float*, float**> cal_numbers);
+	void setAxesOrientations(std::vector<int> axis_orientations);
 
 	//Setting Altering Functions
 	void updateSensorSettings(uint8_t* imu_settings);

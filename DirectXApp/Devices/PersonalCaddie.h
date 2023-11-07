@@ -86,6 +86,7 @@ public:
 
 	std::pair<const float*, const float**> getSensorCalibrationNumbers(sensor_type_t sensor);
 	void updateSensorCalibrationNumbers(sensor_type_t sensor, std::pair<float*, float**> cal_numbers);
+	void updateSensorAxisOrientations(std::vector<int> axis_orientations);
 
 	int getNumberOfSamples() { return this->number_of_samples; }
 	float getMaxODR() { return this->p_imu->getMaxODR(); }

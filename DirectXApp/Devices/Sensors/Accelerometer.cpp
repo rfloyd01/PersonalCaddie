@@ -18,14 +18,17 @@ Accelerometer::Accelerometer(uint8_t* current_settings)
 	{
 	case LSM9DS1_ACC:
 		this->calibrationFile = L"lsm9ds1_acc_calibration.txt";
+		this->axisFile = L"lsm9ds1_acc_axes_orientations.txt";
 		break;
 	case FXOS8700_ACC:
 		this->calibrationFile = L"fxos8700_acc_calibration.txt";
+		this->axisFile = L"fxos8700_acc_axes_orientations.txt";
 		break;
 	}
 
 	//Then attempt to override the default values using the text file
 	getCalibrationNumbersFromTextFile();
+	getAxisOrientationsFromTextFile();
 }
 
 void Accelerometer::setConversionRateFromSettings()

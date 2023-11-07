@@ -562,7 +562,7 @@ void ModeScreen::PersonalCaddieHandler(PersonalCaddieEventType pcEvent, void* ev
 		std::wstring alertText = *((std::wstring*)eventArgs); //cast the eventArgs into a wide string
 		createAlert(alertText, UIColor::Green);
 
-		if (alertText == L"Updated Calibration Info")
+		if (alertText == L"Updated Calibration Info" || alertText == L"Updated Axis Orientation Info")
 		{
 			if (m_currentMode == ModeType::CALIBRATION)
 			{
@@ -767,6 +767,11 @@ void ModeScreen::stateUpdate()
 			else if (m_modes[static_cast<int>(m_currentMode)]->getModeState() & CalibrationModeState::GYROSCOPE) current_sensor = GYR_SENSOR;
 			else if (m_modes[static_cast<int>(m_currentMode)]->getModeState() & CalibrationModeState::MAGNETOMETER) current_sensor = MAG_SENSOR;
 			m_personalCaddie->updateSensorCalibrationNumbers(current_sensor, ((CalibrationMode*)m_modes[static_cast<int>(m_currentMode)].get())->getCalibrationResults());
+		}
+		else if (m_modes[static_cast<int>(m_currentMode)]->getModeState() & CalibrationModeState::UPDATE_AXES_NUMBERS)
+		{
+			//We've carried out a successful axis calibration so we need to update the appropriate axis calibration text files
+			m_personalCaddie->updateSensorAxisOrientations(((CalibrationMode*)m_modes[static_cast<int>(m_currentMode)].get())->getNewAxesOrientations());
 		}
 		break;
 	}

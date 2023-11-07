@@ -17,13 +17,16 @@ Gyroscope::Gyroscope(uint8_t* current_settings)
 	{
 	case LSM9DS1_GYR:
 		this->calibrationFile = L"lsm9ds1_gyr_calibration.txt";
+		this->axisFile = L"lsm9ds1_gyr_axes_orientations.txt";
 		break;
 	case FXAS21002_GYR:
 		this->calibrationFile = L"fxas21002_gyr_calibration.txt";
+		this->axisFile = L"fxas21002_gyr_axes_orientations.txt";
 		break;
 	}
 
 	getCalibrationNumbersFromTextFile();
+	getAxisOrientationsFromTextFile();
 }
 
 void Gyroscope::setConversionRateFromSettings()

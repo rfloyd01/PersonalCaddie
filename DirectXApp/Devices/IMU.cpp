@@ -129,6 +129,22 @@ void IMU::setCalibrationNumbers(sensor_type_t sensor, std::pair<float*, float**>
     else if (sensor == MAG_SENSOR) p_mag->setCalibrationNumbers(cal_numbers.first, cal_numbers.second);
 }
 
+void IMU::setAxesOrientations(std::vector<int> axis_orientations)
+{
+    //The axis_orientations vector passed in as a parameter should contain 18 elements. The elements are
+    //separated like so:
+    //[0 - 5] = acc axes info
+    //[6 - 11] = gyr axes info
+    //[12 - 17] = mag axes info
+    std::vector<int> acc_info(axis_orientations.begin(), axis_orientations.begin() + 6);
+    std::vector<int> gyr_info(axis_orientations.begin() + 6, axis_orientations.begin() + 12);
+    std::vector<int> mag_info(axis_orientations.begin() + 12, axis_orientations.begin() + 18);
+
+    p_acc->setAxesOrientations(acc_info);
+    p_gyr->setAxesOrientations(gyr_info);
+    p_mag->setAxesOrientations(mag_info);
+}
+
 //Get Functions
 //Accelerometer IMU::getAccelerometerType()
 //{

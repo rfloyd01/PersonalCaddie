@@ -26,6 +26,7 @@ public:
 
 	std::pair<const float*, const float**> getCalibrationNumbers();
 	void setCalibrationNumbers(float* offset, float** gain);
+	void setAxesOrientations(std::vector<int> axes_parameters);
 	void updateODR(float new_odr) { current_odr = new_odr; }
 
 protected:
@@ -47,15 +48,25 @@ protected:
 
 	//calibration variables
 	std::wstring calibrationFile; //the location and name of the calibration file for the sensor
+	std::wstring axisFile; //the location and name of the calibration file for the sensor
+
 	float calibration_offsets[3] = { 0, 0, 0 }; //points to axis offset numbers from calibration
 	float calibration_gain_x[3] = { 1, 0, 0 }, calibration_gain_y[3] = { 0, 1, 0 }, calibration_gain_z[3] = { 0, 0, 1 }; //individual axis gains for calibration
 	const float* calibration_gains[3] = { calibration_gain_x, calibration_gain_y, calibration_gain_z }; //combines the axis gain data into a single array, used by other classes
+	int axes_swap[3] = { 0, 1, 2 }; //swaps data between axes if necessary
+	int axes_polarity[3] = { 1, 1, 1 }; //inverts the readings of an axis between positive and negative if necessary
 
 	//PRIVATE FUNCTIONS
 	void getCalibrationNumbersFromTextFile();
 	void setCalibrationNumbersInTextFile();
+	void getAxisOrientationsFromTextFile();
+	void setAxisOrientationsInTextFile();
+
 	std::wstring convertCalNumbersToText();
 	void convertTextToCalNumbers(winrt::hstring calInfo);
+
+	std::wstring convertAxisNumbersToText();
+	void convertTextToAxisNumbers(winrt::hstring calInfo);
 
 	virtual void setConversionRateFromSettings() = 0;
 	virtual void setCurrentODRFromSettings() = 0;

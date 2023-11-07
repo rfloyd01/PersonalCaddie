@@ -17,13 +17,16 @@ Magnetometer::Magnetometer(uint8_t* current_settings)
 	{
 	case LSM9DS1_MAG:
 		this->calibrationFile = L"lsm9ds1_mag_calibration.txt";
+		this->axisFile = L"lsm9ds1_mag_axes_orientations.txt";
 		break;
 	case FXOS8700_MAG:
 		this->calibrationFile = L"fxos8700_mag_calibration.txt";
+		this->axisFile = L"fxos8700_mag_axes_orientations.txt";
 		break;
 	}
 	
 	getCalibrationNumbersFromTextFile();
+	getAxisOrientationsFromTextFile();
 }
 
 void Magnetometer::setConversionRateFromSettings()
