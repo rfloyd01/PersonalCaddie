@@ -693,6 +693,13 @@ void ModeScreen::enterActiveState()
 		//Entering the active state puts the sensors into idle mode, as well as enables data notifications
 		m_modeState |= ModeState::PersonalCaddieSensorIdleMode;
 		m_personalCaddie->enableDataNotifications();
+
+		if (m_modes[static_cast<int>(m_currentMode)]->getModeState() & CalibrationModeState::SET_AXES_NUMBERS)
+		{
+			//Before doing an axis calibration we must set the current axes to their default settings. It's easier to do this by
+			//updating the existing variables in the sensor classes so data isn't manipulated as it comes in
+			m_personalCaddie->updateSensorAxisOrientations({ 0, 1, 2, 1, 1, 1, 0, 1, 2, 1, 1, 1, 0, 1, 2, 1, 1, 1 });
+		}
 		break;
 	}
 	//case ModeType::MADGWICK:
@@ -773,6 +780,7 @@ void ModeScreen::stateUpdate()
 			//We've carried out a successful axis calibration so we need to update the appropriate axis calibration text files
 			m_personalCaddie->updateSensorAxisOrientations(((CalibrationMode*)m_modes[static_cast<int>(m_currentMode)].get())->getNewAxesOrientations());
 		}
+		
 		break;
 	}
 	}

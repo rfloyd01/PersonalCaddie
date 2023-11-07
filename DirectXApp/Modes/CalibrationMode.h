@@ -15,7 +15,8 @@ enum CalibrationModeState
 	UPDATE_CAL_NUMBERS = 128,
 	ODR_ERROR = 256,
 	AXES = 512,
-	UPDATE_AXES_NUMBERS = 1024
+	UPDATE_AXES_NUMBERS = 1024,
+	SET_AXES_NUMBERS = 2048
 };
 
 class CalibrationMode : public Mode
@@ -114,10 +115,16 @@ private:
 
 	int acc_axis_swap[3] = { 0 };
 	int acc_axis_polarity[3] = { 0 };
+	int existing_acc_axis_swap[3] = { 0 };
+	int existing_acc_axis_polarity[3] = { 0 };
 
 	int gyr_axis_swap[3] = { 0 };
 	int gyr_axis_polarity[3] = { 0 };
+	int existing_gyr_axis_swap[3] = { 0 };
+	int existing_gyr_axis_polarity[3] = { 0 };
 
 	int mag_axis_swap[3] = { -1, -1, -1 };
 	int mag_axis_polarity[3] = { 1, 1, 1 };
+	int existing_mag_axis_swap[3] = { -1, -1, -1 };
+	int existing_mag_axis_polarity[3] = { 1, 1, 1 };
 };

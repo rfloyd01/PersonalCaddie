@@ -184,6 +184,16 @@ void CalibrationMode::updateComplete()
 	//When we've successfully updated the calibration file in memory we use
 	//this method to remove the update_cal_numbers flag from the current state.
 	//This is called from a separate thread which is why this is necessary.
+	if (m_state & CalibrationModeState::SET_AXES_NUMBERS)
+	{
+		//The set_axes_numbers flag forces the sensor to reset its current
+		//axes orientations. This only occurs before we do a new axis calibration
+		//so there's no need to reset the current mode state, other than 
+		//removing the set_axes_numbers flag
+		m_state ^= CalibrationModeState::SET_AXES_NUMBERS;
+		return;
+	}
+
 	if (m_state & CalibrationModeState::UPDATE_CAL_NUMBERS) m_state ^= CalibrationModeState::UPDATE_CAL_NUMBERS;
 	if (m_state & CalibrationModeState::UPDATE_AXES_NUMBERS) m_state ^= CalibrationModeState::UPDATE_AXES_NUMBERS;
 	if (m_state & ModeState::Active) m_state ^= ModeState::Active;
@@ -266,7 +276,8 @@ uint32_t CalibrationMode::handleUIElementStateChange(int i)
 
 		m_uiElements[8]->setState(m_uiElements[8]->getState() | UIElementState::Invisible); //make the data toggle switch invisible
 
-		m_state |= ModeState::Active;
+		m_state |= (ModeState::Active | CalibrationModeState::SET_AXES_NUMBERS);
+		int x = 5;
 	}
 
 	return m_state;
