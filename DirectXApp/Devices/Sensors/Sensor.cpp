@@ -19,7 +19,13 @@ std::pair<const float*, const float**> Sensor::getCalibrationNumbers()
 	//we pass const pointers to the calibration data because we don't want other classes
 	//to be able to directly change the calibration values
 	return { this->calibration_offsets, this->calibration_gains };
-};
+}
+
+std::vector<int> Sensor::getAxisOrientations()
+{
+	//return the axis orientations for the sensor
+	return { axes_swap[0], axes_swap[1], axes_swap[2], axes_polarity[0], axes_polarity[1] , axes_polarity[2] };
+}
 
 void Sensor::setCalibrationNumbers(float* offset, float** gain)
 {

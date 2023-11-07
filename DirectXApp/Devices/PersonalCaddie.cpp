@@ -433,9 +433,9 @@ void PersonalCaddie::dataCharacteristicEventHandler(Bluetooth::GenericAttributeP
     DataType rdt = DataType::EULER_ANGLES, dt = DataType::EULER_ANGLES; //this is just to initialize the variables, they will get changed to either acc, gyr or mag equivalents
     sensor_type_t sensor_type;
     std::pair<const float*, const float**> calibration_data;
+    std::vector<int> axis_orientation_data;
 
     //Get the appropriate data type by looking at the characteristic's UUID so we know which vector to update
-    //TODO: Add axis orientation variables
     switch (uuid)
     {
     case ACC_DATA_CHARACTERISTIC_UUID:
@@ -443,18 +443,21 @@ void PersonalCaddie::dataCharacteristicEventHandler(Bluetooth::GenericAttributeP
         dt = DataType::ACCELERATION;
         sensor_type = ACC_SENSOR;
         calibration_data = this->p_imu->getAccelerometerCalibrationNumbers();
+        axis_orientation_data = this->p_imu->getAccelerometerAxisOrientations();
         break;
     case GYR_DATA_CHARACTERISTIC_UUID:
         rdt = DataType::RAW_ROTATION;
         dt = DataType::ROTATION;
         sensor_type = GYR_SENSOR;
         calibration_data = this->p_imu->getGyroscopeCalibrationNumbers();
+        axis_orientation_data = this->p_imu->getGyroscopeAxisOrientations();
         break;
     case MAG_DATA_CHARACTERISTIC_UUID:
         rdt = DataType::RAW_MAGNETIC;
         dt = DataType::MAGNETIC;
         sensor_type = MAG_SENSOR;
         calibration_data = this->p_imu->getMagnetometerCalibrationNumbers();
+        axis_orientation_data = this->p_imu->getMagnetometerAxisOrientations();
         break;
     default:
         return; //if something other than a data characteristic calls this handler, return without doing anything
@@ -479,7 +482,8 @@ void PersonalCaddie::dataCharacteristicEventHandler(Bluetooth::GenericAttributeP
         for (int axis = X; axis <= Z; axis++)
         {
             int16_t axis_reading = read_buffer.ReadInt16();
-            this->sensor_data[static_cast<int>(rdt)][axis][i] = axis_reading * this->p_imu->getConversionRate(sensor_type); //Apply appropriate conversion from LSB to the current unit
+            int actual_axis = axis_orientation_data[axis];
+            this->sensor_data[static_cast<int>(rdt)][actual_axis][i] = axis_reading * this->p_imu->getConversionRate(sensor_type) * axis_orientation_data[axis + 3]; //Apply appropriate conversion from LSB to the current unit
         }
     }
 

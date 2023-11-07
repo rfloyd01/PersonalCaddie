@@ -122,6 +122,10 @@ std::pair<const float*, const float**> IMU::getAccelerometerCalibrationNumbers()
 std::pair<const float*, const float**> IMU::getGyroscopeCalibrationNumbers() { return this->p_gyr->getCalibrationNumbers(); }
 std::pair<const float*, const float**> IMU::getMagnetometerCalibrationNumbers() { return this->p_mag->getCalibrationNumbers(); }
 
+std::vector<int> IMU::getAccelerometerAxisOrientations() { return this->p_acc->getAxisOrientations(); }
+std::vector<int> IMU::getGyroscopeAxisOrientations() { return this->p_gyr->getAxisOrientations(); }
+std::vector<int> IMU::getMagnetometerAxisOrientations() { return this->p_mag->getAxisOrientations(); }
+
 void IMU::setCalibrationNumbers(sensor_type_t sensor, std::pair<float*, float**> cal_numbers)
 {
     if (sensor == ACC_SENSOR) p_acc->setCalibrationNumbers(cal_numbers.first, cal_numbers.second);

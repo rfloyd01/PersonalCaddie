@@ -25,8 +25,10 @@ public:
 	}
 
 	std::pair<const float*, const float**> getCalibrationNumbers();
+	std::vector<int> getAxisOrientations();
 	void setCalibrationNumbers(float* offset, float** gain);
 	void setAxesOrientations(std::vector<int> axes_parameters);
+
 	void updateODR(float new_odr) { current_odr = new_odr; }
 
 protected:

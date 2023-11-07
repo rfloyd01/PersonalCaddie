@@ -266,9 +266,6 @@ uint32_t CalibrationMode::handleUIElementStateChange(int i)
 
 		m_uiElements[8]->setState(m_uiElements[8]->getState() | UIElementState::Invisible); //make the data toggle switch invisible
 
-		//DEBUG
-		m_currentStage = 33;
-
 		m_state |= ModeState::Active;
 	}
 
