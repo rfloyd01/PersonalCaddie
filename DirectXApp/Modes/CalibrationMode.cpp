@@ -1440,9 +1440,19 @@ void CalibrationMode::magnetometerCalibration()
 			m_uiElements[5]->setState(m_uiElements[5]->getState() | UIElementState::Invisible); //make the sub-title invisible
 			m_uiElements[7]->setState(m_uiElements[7]->getState() | UIElementState::Invisible); //make the no button invisible
 			m_uiElements[8]->setState(m_uiElements[8]->getState() ^ UIElementState::Invisible); //make the data toggle switch visible
+
+			//Remove the current data sets from each graph and then make them invisible
+			((Graph*)m_uiElements[9].get())->removeAllLines();
+			((Graph*)m_uiElements[10].get())->removeAllLines();
+			((Graph*)m_uiElements[11].get())->removeAllLines();
 			m_uiElements[9]->setState(m_uiElements[9]->getState() | UIElementState::Invisible); //make the graph invisible
 			m_uiElements[10]->setState(m_uiElements[10]->getState() | UIElementState::Invisible); //make the graph invisible
 			m_uiElements[11]->setState(m_uiElements[11]->getState() | UIElementState::Invisible); //make the graph invisible
+
+			//clear out existing data
+			m_graphDataX.clear();
+			m_graphDataY.clear();
+			m_graphDataZ.clear();
 
 			//Clear everything out from the graphs when done viewing them
 			((Graph*)m_uiElements[9].get())->removeAllLines();
