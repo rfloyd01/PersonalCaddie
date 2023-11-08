@@ -60,12 +60,16 @@ uint32_t MadgwickTestMode::initializeMode(winrt::Windows::Foundation::Size windo
 	m_display_data[2] = {};
 
 	//Load the quaternion vector with default quaternions and the 
-	//time stamp vector with default times. TODO: Shouldn't use a 
-	//loop to 10, should instead use the SENSOR_READINGS variable
-	for (int i = 0; i < 10; i++)
+	//time stamp vector with default times. We use 39 as this is
+	//the maximum number of samples we can have, this will get 
+	//pruned down when the first bit of data actuall comes in.
+	for (int i = 0; i < 39; i++)
 	{
 		m_quaternions.push_back({ 1.0f, 0.0f, 0.0f, 0.0f });
 		m_timeStamps.push_back(0.0f);
+		m_display_data[0].push_back(0.0f);
+		m_display_data[1].push_back(0.0f);
+		m_display_data[2].push_back(0.0f);
 	}
 	m_renderQuaternion = { m_quaternions[0].x, m_quaternions[0].y, m_quaternions[0].z, m_quaternions[0].w };
 
@@ -136,7 +140,8 @@ void MadgwickTestMode::initializeTextOverlay(winrt::Windows::Foundation::Size wi
 void MadgwickTestMode::updateDisplayText()
 {
 	//This method is called to update the sensor data being displayed on screen
-	if (!m_show_live_data || (m_display_data[0].size() == 0)) return; //currently we have no data to display
+	if (!m_show_live_data) return; //we currently don't want to display data
+	if ((m_display_data[0].size() == 0) || (m_display_data[1].size() == 0) || (m_display_data[2].size() == 0)) return; //currently we have no data to display, this can happen as old data is asynchronously overwritten
 
 	std::wstring sensor_info_message_one = m_display_data_type + L":\nSensor Frame\n";
 	std::wstring sensor_info_message_two = std::to_wstring(m_display_data[0][m_currentQuaternion]) + m_display_data_units + L"\n";
@@ -167,31 +172,40 @@ void MadgwickTestMode::addQuaternions(std::vector<glm::quat> const& quaternions,
 	//It's possible that the quaternions vector will have some empty/junk values at the end. This is because the number of 
 	//samples coming from the sensor is dependent on the current sensor ODR (which can change). Because of this we 
 	//only add the first quaternion_number quaternions to the vector on this page
-	m_currentQuaternion = 0; //reset the current quaternion to be rendered
-	m_quaternions.clear(); //clear out existing quaternions
-	m_timeStamps.clear();
 
+	//make sure that the length of the m_quaternion and m_timestamp vectors are the same as the quaternion_number parameter
+	if (m_quaternions.size() != quaternion_number)
+	{
+		m_quaternions.erase(m_quaternions.begin() + quaternion_number, m_quaternions.end());
+		m_timeStamps.erase(m_timeStamps.begin() + quaternion_number, m_timeStamps.end());
+	}
+
+	m_currentQuaternion = 0; //reset the current quaternion to be rendered
 	m_update_in_process = true;
+
 	for (int i = 0; i < quaternion_number; i++)
 	{
-		m_quaternions.push_back(quaternions[i]);
-		m_timeStamps.push_back(time_stamp + i * delta_t);
+		m_quaternions[i] = quaternions[i];
+		m_timeStamps[i] = time_stamp + i * delta_t;
 	}
 	m_update_in_process = false;
 }
 
 void MadgwickTestMode::addData(std::vector<std::vector<std::vector<float> > > const& sensorData, float sensorODR, float timeStamp, int totalSamples)
 {
-	//clear out existing data
-	m_display_data[0].clear();
-	m_display_data[1].clear();
-	m_display_data[2].clear();
+	//make sure that the length of the m_display_data vectors are the same as the totalSamples parameter
+	if (m_display_data[0].size() != totalSamples)
+	{
+		m_display_data[0].erase(m_display_data[0].begin() + totalSamples, m_display_data[0].end());
+		m_display_data[1].erase(m_display_data[1].begin() + totalSamples, m_display_data[1].end());
+		m_display_data[2].erase(m_display_data[2].begin() + totalSamples, m_display_data[2].end());
+	}
 
 	for (int i = 0; i < totalSamples; i++)
 	{
-		m_display_data[0].push_back(sensorData[m_display_data_index][0][i]);
-		m_display_data[1].push_back(sensorData[m_display_data_index][1][i]);
-		m_display_data[2].push_back(sensorData[m_display_data_index][2][i]);
+		m_display_data[0][i] = sensorData[m_display_data_index][0][i];
+		m_display_data[1][i] = sensorData[m_display_data_index][1][i];
+		m_display_data[2][i] = sensorData[m_display_data_index][2][i];
 	}
 }
 
@@ -223,9 +237,7 @@ void MadgwickTestMode::update()
 			//m_currentQuaternion = i;
 
 			float Q_sensor[3] = { m_quaternions[m_currentQuaternion].x, m_quaternions[m_currentQuaternion].y, m_quaternions[m_currentQuaternion].z };
-			float Q_computer[3] = { Q_sensor[computer_axis_from_sensor_axis[0]] * sensor_axis_polarity[computer_axis_from_sensor_axis[0]],
-								    Q_sensor[computer_axis_from_sensor_axis[1]] * sensor_axis_polarity[computer_axis_from_sensor_axis[1]],
-								    Q_sensor[computer_axis_from_sensor_axis[2]] * sensor_axis_polarity[computer_axis_from_sensor_axis[2]] };
+			float Q_computer[3] = { Q_sensor[computer_axis_from_sensor_axis[0]], Q_sensor[computer_axis_from_sensor_axis[1]], Q_sensor[computer_axis_from_sensor_axis[2]] };
 
 			m_renderQuaternion = { Q_computer[0], Q_computer[1], Q_computer[2], m_quaternions[m_currentQuaternion].w };
 			m_currentQuaternion = i;
