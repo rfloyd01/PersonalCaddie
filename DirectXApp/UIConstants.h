@@ -32,9 +32,9 @@ namespace UIConstants
     //TextType::BODY constants
     static const float BodyTextPointSize = 0.055f;
     static const float BodyRectangleX0 = WidthMargin;
-    static const float BodyRectangleX1 = 1.0 - WidthMargin;
+    static const float BodyRectangleX1 = 1.0f - WidthMargin;
     static const float BodyRectangleY0 = SubTitleRectangleY1 + HeightMargin;
-    static const float BodyRectangleY1 = BodyRectangleY0 + 0.5;
+    static const float BodyRectangleY1 = BodyRectangleY0 + 0.5f;
     static const float BodyTextLocationX = (BodyRectangleX0 + BodyRectangleX1) / 2.0f;
     static const float BodyTextLocationY = (BodyRectangleY0 + BodyRectangleY1) / 2.0f;
     static const float BodyTextSizeX = BodyRectangleX1 - BodyRectangleX0;
@@ -43,9 +43,9 @@ namespace UIConstants
     //TextType::SENSOR_INFO constants
     static const float SensorInfoTextPointSize = 0.03f;
     static const float SensorInfoRectangleX0 = WidthMargin;
-    static const float SensorInfoRectangleX1 = (1.0 - WidthMargin) / 3.0;
+    static const float SensorInfoRectangleX1 = (1.0f - WidthMargin) / 3.0f;
     static const float SensorInfoRectangleY0 = BodyRectangleY1 + HeightMargin;
-    static const float SensorInfoRectangleY1 = 1.0 - HeightMargin;
+    static const float SensorInfoRectangleY1 = 1.0f - HeightMargin;
     static const float SensorInfoTextLocationX = (SensorInfoRectangleX0 + SensorInfoRectangleX1) / 2.0f;
     static const float SensorInfoTextLocationY = (SensorInfoRectangleY0 + SensorInfoRectangleY1) / 2.0f;
     static const float SensorInfoTextSizeX = SensorInfoRectangleX1 - SensorInfoRectangleX0;
@@ -54,9 +54,9 @@ namespace UIConstants
     //TextType::ALERT constants
     static const float AlertTextPointSize = 0.025f;
     static const float AlertRectangleX0 = SensorInfoRectangleX1 + WidthMargin;
-    static const float AlertRectangleX1 = SensorInfoRectangleX1 + (1.0 - WidthMargin) / 3.0;
+    static const float AlertRectangleX1 = SensorInfoRectangleX1 + (1.0f - WidthMargin) / 3.0f;
     static const float AlertRectangleY0 = SensorInfoRectangleY0;
-    static const float AlertRectangleY1 = 1.0 - HeightMargin;
+    static const float AlertRectangleY1 = 1.0f - HeightMargin;
     static const float AlertTextLocationX = (AlertRectangleX0 + AlertRectangleX1) / 2.0f;
     static const float AlertTextLocationY = (AlertRectangleY0 + AlertRectangleY1) / 2.0f;
     static const float AlertTextSizeX = AlertRectangleX1 - AlertRectangleX0;
@@ -65,9 +65,9 @@ namespace UIConstants
     //TextType::FOOT_NOTE constants
     static const float FootNoteTextPointSize = 0.025f;
     static const float FootNoteRectangleX0 = AlertRectangleX1 + WidthMargin;
-    static const float FootNoteRectangleX1 = 1.0 - WidthMargin;
+    static const float FootNoteRectangleX1 = 1.0f - WidthMargin;
     static const float FootNoteRectangleY0 = SensorInfoRectangleY0;
-    static const float FootNoteRectangleY1 = 1.0 - HeightMargin;
+    static const float FootNoteRectangleY1 = 1.0f - HeightMargin;
     static const float FootNoteTextLocationX = (FootNoteRectangleX0 + FootNoteRectangleX1) / 2.0f;
     static const float FootNoteTextLocationY = (FootNoteRectangleY0 + FootNoteRectangleY1) / 2.0f;
     static const float FootNoteTextSizeX = FootNoteRectangleX1 - FootNoteRectangleX0;

@@ -78,13 +78,6 @@ uint32_t MadgwickTestMode::initializeMode(winrt::Windows::Foundation::Size windo
 	return (ModeState::CanTransfer | ModeState::NeedMaterial | ModeState::Active | ModeState::PersonalCaddieSensorIdleMode);
 }
 
-void MadgwickTestMode::setAbsoluteTimer()
-{
-	//As soon as the Personal Caddie is placed into active mode we will begin receiving
-	//data. The moment this happens we start a timer, this will let us keep track of 
-	data_start_timer = std::chrono::steady_clock::now();
-}
-
 void MadgwickTestMode::uninitializeMode()
 {
 	//The only thing to do when leaving the main menu mode is to clear
@@ -151,9 +144,9 @@ void MadgwickTestMode::updateDisplayText()
 	((TextOverlay*)m_uiElements[2].get())->updateColorLocations({ 0,  (unsigned int)sensor_info_message_one.length(),  (unsigned int)sensor_info_message_two.length(),  (unsigned int)sensor_info_message_three.length(),  (unsigned int)sensor_info_message_four.length() });
 
 	sensor_info_message_one = L"\nDirectX Frame\n";
-	sensor_info_message_two = std::to_wstring(m_display_data[computer_axis_from_sensor_axis[0]][m_currentQuaternion] * sensor_axis_polarity[computer_axis_from_sensor_axis[0]]) + m_display_data_units + L"\n";
-	sensor_info_message_three = std::to_wstring(m_display_data[computer_axis_from_sensor_axis[1]][m_currentQuaternion] * sensor_axis_polarity[computer_axis_from_sensor_axis[1]]) + m_display_data_units + L"\n";
-	sensor_info_message_four = std::to_wstring(m_display_data[computer_axis_from_sensor_axis[2]][m_currentQuaternion] * sensor_axis_polarity[computer_axis_from_sensor_axis[2]]) + m_display_data_units + L"\n";
+	sensor_info_message_two = std::to_wstring(m_display_data[computer_axis_from_sensor_axis[0]][m_currentQuaternion]) + m_display_data_units + L"\n";
+	sensor_info_message_three = std::to_wstring(m_display_data[computer_axis_from_sensor_axis[1]][m_currentQuaternion]) + m_display_data_units + L"\n";
+	sensor_info_message_four = std::to_wstring(m_display_data[computer_axis_from_sensor_axis[2]][m_currentQuaternion]) + m_display_data_units + L"\n";
 	((TextOverlay*)m_uiElements[3].get())->updateText(sensor_info_message_one + sensor_info_message_two + sensor_info_message_three + sensor_info_message_four);
 	((TextOverlay*)m_uiElements[3].get())->updateColorLocations({0,  (unsigned int)sensor_info_message_one.length(),  (unsigned int)sensor_info_message_two.length(),  (unsigned int)sensor_info_message_three.length(),  (unsigned int)sensor_info_message_four.length()});
 }
@@ -173,14 +166,14 @@ void MadgwickTestMode::addQuaternions(std::vector<glm::quat> const& quaternions,
 	//samples coming from the sensor is dependent on the current sensor ODR (which can change). Because of this we 
 	//only add the first quaternion_number quaternions to the vector on this page
 
-	//make sure that the length of the m_quaternion and m_timestamp vectors are the same as the quaternion_number parameter
+	//make sure that the length of the m_quaternion and m_timestamp vectors are the same as the quaternion_number parameter.
 	if (m_quaternions.size() != quaternion_number)
 	{
 		m_quaternions.erase(m_quaternions.begin() + quaternion_number, m_quaternions.end());
 		m_timeStamps.erase(m_timeStamps.begin() + quaternion_number, m_timeStamps.end());
 	}
 
-	m_currentQuaternion = 0; //reset the current quaternion to be rendered
+	m_currentQuaternion = -1; //reset the current quaternion to be rendered
 	m_update_in_process = true;
 
 	for (int i = 0; i < quaternion_number; i++)
@@ -188,6 +181,9 @@ void MadgwickTestMode::addQuaternions(std::vector<glm::quat> const& quaternions,
 		m_quaternions[i] = quaternions[i];
 		m_timeStamps[i] = time_stamp + i * delta_t;
 	}
+
+	data_start_timer = std::chrono::steady_clock::now(); //set relative time
+
 	m_update_in_process = false;
 }
 
@@ -214,48 +210,36 @@ void MadgwickTestMode::update()
 	//Animate the current rotation quaternion obtained from the Personal Caddie. We need to look at the 
 	//time stamp to figure out which quaternion is correct. We do this since the ODR of the sensors won't always
 	//match up with the frame rate of the current screen.
-	if (m_update_in_process) return; //data is currently being updated asynchronously, return and come back later
+	
+	while (m_update_in_process) {}; //data is currently being updated asynchronously, wait for it to finish
 
 	float time_elapsed_since_data_start = (float)std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - data_start_timer).count() / 1000000000.0f;
 	float quat[3];
+	bool updated = false;
 
-	//Due to difference between the refresh rate of the screen and the ODR of the sensor, it may not make sense
-	//to render each quaternion. The time_elapsed_since_data_update is used to track which quaternions should
-	//actually get rendered.
-	for (int i = m_currentQuaternion; i < m_quaternions.size(); i++)
+	for (int i = (m_currentQuaternion + 1); i < m_quaternions.size(); i++)
 	{
-		if (time_elapsed_since_data_start < m_timeStamps[i])
+		if (time_elapsed_since_data_start >= (m_timeStamps[i] - m_timeStamps[0]))
 		{
-			/*glm::quat correctedQuaternion = QuaternionMultiply(m_offsetQuaternion, m_quaternions[m_currentQuaternion]);
-			correctedQuaternion = QuaternionMultiply({ 0.7071f, 0.0f, 0.0f, 0.7071f }, correctedQuaternion);
-
-			quat[0] = correctedQuaternion.x;
-			quat[1] = correctedQuaternion.y;
-			quat[2] = correctedQuaternion.z;*/
-
-			//m_renderQuaternion = { quat[computer_axis_from_sensor_axis[0]][m_currentQuaternion] * sensor_axis_polarity[computer_axis_from_sensor_axis[0]], quat[axes_swap[1]] * axes_invert[1], quat[axes_swap[2]] * axes_invert[2], correctedQuaternion.w};
-			//m_currentQuaternion = i;
-
-			float Q_sensor[3] = { m_quaternions[m_currentQuaternion].x, m_quaternions[m_currentQuaternion].y, m_quaternions[m_currentQuaternion].z };
-			float Q_computer[3] = { Q_sensor[computer_axis_from_sensor_axis[0]], Q_sensor[computer_axis_from_sensor_axis[1]], Q_sensor[computer_axis_from_sensor_axis[2]] };
-
-			m_renderQuaternion = { Q_computer[0], Q_computer[1], Q_computer[2], m_quaternions[m_currentQuaternion].w };
+			//since the relative timer is greater than the time distance between the current quaternion
+			//and the data set start time, this quaternion can potentially be rendered.
 			m_currentQuaternion = i;
-
-			//DEBUG
-			//std::wstring renderQ = L"[" + std::to_wstring(Q_computer[0]) + L", " + std::to_wstring(Q_computer[1]) + L", " + std::to_wstring(Q_computer[2]) + L", " + std::to_wstring(m_quaternions[m_currentQuaternion].w) + L"]\n";
-			//OutputDebugString(&renderQ[0]);
-
-			break;
+			updated = true; //set flag to update render quaternion);
 		}
+		else break; //we haven't reached the current quaternion in time yet so break out of loop
+
+	}
+
+	if (updated)
+	{
+		float Q_sensor[3] = { m_quaternions[m_currentQuaternion].x, m_quaternions[m_currentQuaternion].y, m_quaternions[m_currentQuaternion].z };
+		float Q_computer[3] = { Q_sensor[computer_axis_from_sensor_axis[0]], Q_sensor[computer_axis_from_sensor_axis[1]], Q_sensor[computer_axis_from_sensor_axis[2]] };
+
+		m_renderQuaternion = { Q_computer[0], Q_computer[1], Q_computer[2], m_quaternions[m_currentQuaternion].w };
 	}
 
 	//Rotate each face according to the given quaternion
 	for (int i = 0; i < m_volumeElements.size(); i++) ((Face*)m_volumeElements[i].get())->translateAndRotateFace({ 0.0f, 0.0f, 1.0f }, m_renderQuaternion);
-	
-	//Move to the next quaternion. If we've reached the end of the current 
-	//set of quaternions just keep rendering the last one in the set
-	if (m_currentQuaternion < m_quaternions.size() - 1) m_currentQuaternion++;
 
 	//Update any sensor display text currently being rendered
 	updateDisplayText();

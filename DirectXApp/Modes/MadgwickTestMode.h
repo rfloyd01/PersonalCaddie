@@ -16,8 +16,6 @@ public:
 	virtual void addQuaternions(std::vector<glm::quat> const& quaternions, int quaternion_number, float time_stamp, float delta_t) override;
 	virtual void addData(std::vector<std::vector<std::vector<float> > > const& sensorData, float sensorODR, float timeStamp, int totalSamples) override;
 
-	void setAbsoluteTimer();
-
 	void toggleDisplayData();
 	void switchDisplayDataType(int n);
 
@@ -43,9 +41,7 @@ private:
 	std::wstring m_display_data_type, m_display_data_units;
 	int m_display_data_index;
 
-	//Swap and invert axes as normal to get from world coordinates to DirectX coordinates
+	//Array used to swap real world coordinates to DirectX coordinates
 	int computer_axis_from_sensor_axis[3] = {1, 2, 0};
-	//int sensor_axis_polarity[3] = { 1, -1, 1 }; //FXOS Numbers
-	int sensor_axis_polarity[3] = { 1, 1, 1 }; //LSM9DS1 Numbers
 
 };

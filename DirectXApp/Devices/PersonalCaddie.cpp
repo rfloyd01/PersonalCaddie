@@ -972,7 +972,7 @@ void PersonalCaddie::updateMadgwick()
         float mag_x = getDataPoint(DataType::MAGNETIC, X, cs), mag_y = getDataPoint(DataType::MAGNETIC, Y, cs), mag_z = getDataPoint(DataType::MAGNETIC, Z, cs);
         
         //the first rotation quaternion of the new data set must build from the last rotation quaternion of the previous set. The rest can build off of
-        //earlier samples from the current set
+        //earlier samples from the current set.
         if (i == 0) MadgwickAHRSupdate(orientation_quaternions[number_of_samples - 1], orientation_quaternions[i], gyr_x, gyr_y, gyr_z, acc_x, acc_y, acc_z, mag_x, mag_y, mag_z, this->p_imu->getMaxODR(), 0.1f);
         else MadgwickAHRSupdate(orientation_quaternions[i - 1], orientation_quaternions[i], gyr_x, gyr_y, gyr_z, acc_x, acc_y, acc_z, mag_x, mag_y, mag_z, this->p_imu->getMaxODR(), 0.1f);
 
