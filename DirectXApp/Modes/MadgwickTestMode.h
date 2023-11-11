@@ -2,6 +2,11 @@
 
 #include "Mode.h"
 
+enum MadgwickModeState
+{
+	BETA_UPDATE = 2
+};
+
 class MadgwickTestMode : public Mode
 {
 public:
@@ -22,9 +27,13 @@ public:
 	glm::quat getCurrentHeadingOffset();
 	void setHeadingOffset(glm::quat offset) { m_headingOffset = offset; }
 
+	void betaUpdate();
+
 private:
 	void initializeTextOverlay(winrt::Windows::Foundation::Size windowSize);
 	void updateDisplayText();
+
+	void convergenceCheck();
 
 	float m_currentRotation;
 	float m_currentDegree;
@@ -38,6 +47,9 @@ private:
 	//glm::quat m_offsetQuaternion = { 0.9848f,  0.0f, 0.0f, -0.1736f };
 	glm::quat m_headingOffset = { 1.0f, 0.0f, 0.0f, 0.0f };
 	std::vector<float> m_timeStamps;
+
+	bool m_converged;
+	std::vector<glm::quat> m_convergenceQuaternions;
 
 	//Variables for Displaying Live data from sensor
 	bool m_show_live_data;

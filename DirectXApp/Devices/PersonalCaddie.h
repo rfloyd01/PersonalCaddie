@@ -95,6 +95,8 @@ public:
 	void connectToDevice(uint64_t deviceAddress);
 	void disconnectFromDevice();
 
+	void setMadgwickBeta(float b) { beta = b; }
+
 	std::vector<uint8_t*> getIMUSettings() { return p_imu->getSensorSettings(); }
 	std::vector<uint8_t> const& getAvailableSensors() { return m_availableSensors; }
 
@@ -184,9 +186,9 @@ private:
 	glm::quat m_heading_offset; //This quaternions represents the rotation necessary to have the computer screen pointing due north. This is used to line up the image with the monitor and not the North direction
 
 	//Movement variables
-	float lin_acc_threshold = 0.025; //linear acceleration will be set to zero unless it exceeds this threshold. This will help with location drift with time. This number was obtained experimentally as most white noise falls within +/- .025 of actual readings
+	float lin_acc_threshold = 0.025f; //linear acceleration will be set to zero unless it exceeds this threshold. This will help with location drift with time. This number was obtained experimentally as most white noise falls within +/- .025 of actual readings
 	bool acceleration_event = 0; //when an acceleration above the threshold is detected, starts collecting velocity and position data. When acceleration has stopped in all directions, the event is set back to zero and velocity is halted
-	float movement_scale = 1; //This number is to make sure that distance traveled looks accurate relative to how far sensor is from the camera
+	float movement_scale = 1.0f; //This number is to make sure that distance traveled looks accurate relative to how far sensor is from the camera
 	bool just_stopped = 0; //when acceleration gets low enough, this variable is used to stop velocity and location from trickling forwards
 
 	int data_counter = 0;
@@ -198,13 +200,13 @@ private:
 
 	//Timing Variables
 	double position_timer = 0, end_timer = 0; //used for tracking start and stop times of accerleation events, to known if the club should actually move or not
-	float time_stamp = 0; //the time in milliseconds from when the program connected to the BLE device, can be reset to 0 when looking at graphs
-	float last_time_stamp = 0; //holds the time of the last measured sample, used to find delta_t for integration purposes
-	float m_first_data_time_stamp = 0; //represents the point in time (from when sensors first start recording data) that the first bit of data in the current set was recorded
+	float time_stamp = 0.0f; //the time in milliseconds from when the program connected to the BLE device, can be reset to 0 when looking at graphs
+	float last_time_stamp = 0.0f; //holds the time of the last measured sample, used to find delta_t for integration purposes
+	float m_first_data_time_stamp = 0.0f; //represents the point in time (from when sensors first start recording data) that the first bit of data in the current set was recorded
 
 	//Madgwick items
-	float sampleFreq, beta = 0.1; //beta changes how reliant the Madgwick filter is on acc and mag data, good value is 0.035
-	float bx = -8, by = 40, bz = 15; //consider setting these values to the value of current location by default. Currently set to Conshohocken values
+	float sampleFreq, beta = 0.041f; //beta changes how reliant the Madgwick filter is on acc and mag data. A value of 0.041 is what Madgwick himself proproses so it's used here
+	float bx = -8.0f, by = 40.0f, bz = 15.0f; //consider setting these values to the value of current location by default. Currently set to Conshohocken values
 
 	//Axis Swapping variables
 	//The axes for the sensors don't typically line up with the axes that DirectX uses, so these variables allow a seemless

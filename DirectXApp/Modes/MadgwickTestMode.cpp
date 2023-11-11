@@ -73,6 +73,9 @@ uint32_t MadgwickTestMode::initializeMode(winrt::Windows::Foundation::Size windo
 	}
 	m_renderQuaternion = { m_quaternions[0].x, m_quaternions[0].y, m_quaternions[0].z, m_quaternions[0].w };
 
+	m_converged = false; //We need to let the filter re-converge every time this mode is opened
+	m_convergenceQuaternions = {};
+
 	//The NeedMaterial modeState lets the mode screen know that it needs to pass
 	//a list of materials to this mode that it can use to initialize 3d objects
 	return (ModeState::CanTransfer | ModeState::NeedMaterial | ModeState::Active | ModeState::PersonalCaddieSensorIdleMode);
@@ -185,6 +188,14 @@ void MadgwickTestMode::addQuaternions(std::vector<glm::quat> const& quaternions,
 	data_start_timer = std::chrono::steady_clock::now(); //set relative time
 
 	m_update_in_process = false;
+
+	if (!m_converged)
+	{
+		//if the filter hasn't yet converged add the first quaternion from this set to the convergence array
+		//and call the conergenceCheck() method
+		m_convergenceQuaternions.push_back(m_quaternions[0]);
+		convergenceCheck();
+	}
 }
 
 void MadgwickTestMode::addData(std::vector<std::vector<std::vector<float> > > const& sensorData, float sensorODR, float timeStamp, int totalSamples)
@@ -337,4 +348,47 @@ glm::quat MadgwickTestMode::getCurrentHeadingOffset()
 	//return the proper rotation quaternion about the y-axis as opposed to the z-axis
 	//as it gets applied after the Madgwick filter (so +y is up instead of +z)
 	return { cos(angle / 2.0f), 0.0f, 0.0f, sin(angle / 2.0f)};
+}
+
+void MadgwickTestMode::convergenceCheck()
+{
+	//We check to see if the filter has converged so that we can update the filter's beta value
+	//to something more useful. To check for convergence, we average the last 10 quaternions together
+	//and check the error between this and the current quaternion. If the error in the w, x, y and z
+	//fields are all below a certain threshold then the convergence check passes and we reset the
+	//beta value of the filter.
+	if (m_convergenceQuaternions.size() >= 10)
+	{
+		glm::quat averageQuaternion = { 0, 0, 0, 0 };
+		float error_threshold = 0.05f;
+
+		for (int i = m_convergenceQuaternions.size() - 10; i < m_convergenceQuaternions.size(); i++) averageQuaternion += m_convergenceQuaternions[i];
+		averageQuaternion /= 10;
+
+		float w_error = (averageQuaternion.w - m_convergenceQuaternions.back().w) / (averageQuaternion.w + m_convergenceQuaternions.back().w);
+		float x_error = (averageQuaternion.x - m_convergenceQuaternions.back().x) / (averageQuaternion.x + m_convergenceQuaternions.back().x);
+		float y_error = (averageQuaternion.y - m_convergenceQuaternions.back().y) / (averageQuaternion.y + m_convergenceQuaternions.back().y);
+		float z_error = (averageQuaternion.z - m_convergenceQuaternions.back().z) / (averageQuaternion.z + m_convergenceQuaternions.back().z);
+
+		if (w_error >= 1.0f) w_error = 1.0f / w_error;
+
+		if (w_error > error_threshold || w_error < -error_threshold) return;
+		if (x_error > error_threshold || x_error < -error_threshold) return;
+		if (y_error > error_threshold || y_error < -error_threshold) return;
+		if (z_error > error_threshold || z_error < -error_threshold) return;
+
+		//If all error check pass we reset the beta value of the filter by updating the current mode state
+		m_state |= MadgwickModeState::BETA_UPDATE;
+
+		//And do a little clean up
+		m_convergenceQuaternions.clear();
+		m_converged = true; //prevents this convergenceCheck() from being called again
+	}
+}
+
+void MadgwickTestMode::betaUpdate()
+{
+	//The Madgwick filter has converged and the beta value of the filter has successfully been reset.
+	//We remove the BETA_UPDATE flag from the mode state
+	if (m_state & MadgwickModeState::BETA_UPDATE) m_state ^= MadgwickModeState::BETA_UPDATE;
 }

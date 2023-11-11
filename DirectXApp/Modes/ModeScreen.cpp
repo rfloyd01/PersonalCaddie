@@ -544,6 +544,7 @@ void ModeScreen::PersonalCaddieHandler(PersonalCaddieEventType pcEvent, void* ev
 				//In Madwick testing mode we go straight into sensor idle mode upon entering
 				m_modeState ^= (ModeState::PersonalCaddieSensorIdleMode | ModeState::PersonalCaddieSensorActiveMode);
 				((MadgwickTestMode*)m_modes[static_cast<int>(m_currentMode)].get())->setHeadingOffset(m_personalCaddie->getHeadingOffset()); //set the heading offset quaternion
+				m_personalCaddie->setMadgwickBeta(2.5f); //increase Madwick filter beta value for faster convergence
 				m_personalCaddie->enableDataNotifications();
 			}
 		}
@@ -786,6 +787,16 @@ void ModeScreen::stateUpdate()
 			m_personalCaddie->updateSensorAxisOrientations(((CalibrationMode*)m_modes[static_cast<int>(m_currentMode)].get())->getNewAxesOrientations());
 		}
 		
+		break;
+	}
+	case ModeType::MADGWICK:
+	{
+		if (m_modes[static_cast<int>(m_currentMode)]->getModeState() & MadgwickModeState::BETA_UPDATE)
+		{
+			//The filter has converged so we change the beta value back to its standard value
+			m_personalCaddie->setMadgwickBeta(0.041f);
+			((MadgwickTestMode*)m_modes[static_cast<int>(m_currentMode)].get())->betaUpdate(); //let the Madwick test mode that the filter has successfully been updated
+		}
 		break;
 	}
 	}
