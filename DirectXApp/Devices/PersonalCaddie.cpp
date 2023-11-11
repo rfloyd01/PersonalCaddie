@@ -60,12 +60,13 @@ PersonalCaddie::PersonalCaddie(std::function<void(PersonalCaddieEventType, void*
         this->sensor_data.push_back(data_type);
     }
     
-    //initialize all orientation quaternions to the starting position
+    //Initialize all orientation quaternions to the starting position. The starting position is the opposite of how
+    //much we would need to rotate the computer screen so that it's pointing due North
+    m_heading_offset = { 0.906923115f,  0.0f, 0.0f, -0.421296209f }; //This was found experimentally, should consider saving in a text file
+
     for (int i = 0; i < MAX_SENSOR_SAMPLES; i++)
     {
-        //glm::quat q = { 1, 0, 0, 0 };
-        glm::quat q = { 0.372859f, 0.000669f, 0.007263f, 0.914294f };
-        orientation_quaternions.push_back(q);
+        orientation_quaternions.push_back(m_heading_offset);
     }
 
 }

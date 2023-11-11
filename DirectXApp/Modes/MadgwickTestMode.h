@@ -19,6 +19,9 @@ public:
 	void toggleDisplayData();
 	void switchDisplayDataType(int n);
 
+	glm::quat getCurrentHeadingOffset();
+	void setHeadingOffset(glm::quat offset) { m_headingOffset = offset; }
+
 private:
 	void initializeTextOverlay(winrt::Windows::Foundation::Size windowSize);
 	void updateDisplayText();
@@ -32,7 +35,8 @@ private:
 	volatile bool m_update_in_process;
 	DirectX::XMVECTOR m_renderQuaternion; //the current quaternion to be applied on screen
 	std::vector<glm::quat> m_quaternions;
-	glm::quat m_offsetQuaternion = { 0.372859f, 0.000669f, 0.007263f, 0.914294f };
+	//glm::quat m_offsetQuaternion = { 0.9848f,  0.0f, 0.0f, -0.1736f };
+	glm::quat m_headingOffset = { 1.0f, 0.0f, 0.0f, 0.0f };
 	std::vector<float> m_timeStamps;
 
 	//Variables for Displaying Live data from sensor

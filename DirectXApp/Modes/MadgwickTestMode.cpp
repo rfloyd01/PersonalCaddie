@@ -232,10 +232,16 @@ void MadgwickTestMode::update()
 
 	if (updated)
 	{
-		float Q_sensor[3] = { m_quaternions[m_currentQuaternion].x, m_quaternions[m_currentQuaternion].y, m_quaternions[m_currentQuaternion].z };
+		//auto adjusted_q = QuaternionMultiply(m_quaternions[m_currentQuaternion], m_headingOffset);
+		//float Q_sensor[3] = { m_quaternions[m_currentQuaternion].x, m_quaternions[m_currentQuaternion].y, m_quaternions[m_currentQuaternion].z };
+
+		//Rotate the current quaternion from the Madgwick filter by the heading offset to line up with the computer monitor.
+		auto adjusted_q = QuaternionMultiply(m_headingOffset, m_quaternions[m_currentQuaternion]);
+
+		float Q_sensor[3] = { adjusted_q.x, adjusted_q.y, adjusted_q.z };
 		float Q_computer[3] = { Q_sensor[computer_axis_from_sensor_axis[0]], Q_sensor[computer_axis_from_sensor_axis[1]], Q_sensor[computer_axis_from_sensor_axis[2]] };
 
-		m_renderQuaternion = { Q_computer[0], Q_computer[1], Q_computer[2], m_quaternions[m_currentQuaternion].w };
+		m_renderQuaternion = { Q_computer[0], Q_computer[1], Q_computer[2], adjusted_q.w };
 	}
 
 	//Rotate each face according to the given quaternion
@@ -303,4 +309,32 @@ void MadgwickTestMode::switchDisplayDataType(int n)
 	}
 
 	m_display_data_index = n - 1;
+}
+
+glm::quat MadgwickTestMode::getCurrentHeadingOffset()
+{
+	//The Madgwick filter uses due North as a reference for the magnetic field, so if the computer monitor
+	//isn't aligned with this direction then the sensor will appear to have an improper heading while being
+	//rendered on screen. This function can be called to get the current heading offset from due North
+	//which can in turn be used to align the calculated reference direction of North from the Madwick filter
+	//to align with the computer monitor. All of the following calculations use the sensor coordinate frame
+	//(where +Z axis is up instead of +Y).
+
+	//We rotate a vector representing true North by the current rotation quaternion. We then project the resulting
+	//vector back into the XY plane, and rotate it back to due North. The rotation required to get back to due
+	//North is the value that we return.
+
+	glm::quat trueNorth = { 0, 1, 0, 0 }; //Madgwick filter has North aligned with the +X axis
+	glm::quat currentHeading = QuaternionMultiply(m_quaternions[0], trueNorth); //use the first quaternion in the array
+	currentHeading = QuaternionMultiply(currentHeading, { m_quaternions[0].w, -m_quaternions[0].x, -m_quaternions[0].y, -m_quaternions[0].z}); //use the first quaternion in the array
+
+	//Project the current heading into the XY plane (using sensor coordinates, meaning Z is set to 0)
+	currentHeading.z = 0;
+
+	//Calculate the angle from the current heading to true North by calculating the cross product
+	float angle = asin(CrossProduct({ currentHeading.x, currentHeading.y, currentHeading.z }, {trueNorth.x, trueNorth.y, trueNorth.z})[2] / sqrt(currentHeading.x * currentHeading.x + currentHeading.y * currentHeading.y));
+
+	//return the proper rotation quaternion about the y-axis as opposed to the z-axis
+	//as it gets applied after the Madgwick filter (so +y is up instead of +z)
+	return { cos(angle / 2.0f), 0.0f, 0.0f, sin(angle / 2.0f)};
 }

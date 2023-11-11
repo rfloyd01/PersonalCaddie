@@ -98,6 +98,9 @@ public:
 	std::vector<uint8_t*> getIMUSettings() { return p_imu->getSensorSettings(); }
 	std::vector<uint8_t> const& getAvailableSensors() { return m_availableSensors; }
 
+	glm::quat getHeadingOffset() { return m_heading_offset; }
+	void setHeadingOffset(glm::quat offset) { m_heading_offset = offset; }
+
 	//Methods and fields from original BluetoothLE Class
 	void dataUpdate(); //master update function
 	float getDataPoint(DataType dt, Axis a, int sample_number);
@@ -178,6 +181,7 @@ private:
 	//looks in practice: { { {raw_acc_x_1, raw_acc_x_2, ..., raw_acc_x_numberofsamples}, {raw_acc_y_1 ...}, {raw_acc_z_1 ...} }, { {raw_gyr_x_1...} ....}
 	std::vector<std::vector<std::vector<float> > > sensor_data; 
 	std::vector<glm::quat> orientation_quaternions; //this vector holds number_of_samples quaternions, where each quaternion matches the sensor orientation at a point in time
+	glm::quat m_heading_offset; //This quaternions represents the rotation necessary to have the computer screen pointing due north. This is used to line up the image with the monitor and not the North direction
 
 	//Movement variables
 	float lin_acc_threshold = 0.025; //linear acceleration will be set to zero unless it exceeds this threshold. This will help with location drift with time. This number was obtained experimentally as most white noise falls within +/- .025 of actual readings

@@ -275,6 +275,16 @@ void ModeScreen::processKeyboardInput(winrt::Windows::System::VirtualKey pressed
 			((MadgwickTestMode*)m_modes[static_cast<int>(m_currentMode)].get())->toggleDisplayData();
 		}
 		break;
+	case winrt::Windows::System::VirtualKey::Space:
+	{
+		if (m_currentMode == ModeType::MADGWICK)
+		{
+			//Pressing the space key will reset the heading offset rotation quaternion for the Personal Caddie
+			glm::quat heading_offset = ((MadgwickTestMode*)m_modes[static_cast<int>(m_currentMode)].get())->getCurrentHeadingOffset();
+			((MadgwickTestMode*)m_modes[static_cast<int>(m_currentMode)].get())->setHeadingOffset(heading_offset); //set the heading offset quaternion in Madgwick test mode
+			m_personalCaddie->setHeadingOffset(heading_offset);
+		}
+	}
 	}
 }
 
@@ -533,6 +543,7 @@ void ModeScreen::PersonalCaddieHandler(PersonalCaddieEventType pcEvent, void* ev
 			{
 				//In Madwick testing mode we go straight into sensor idle mode upon entering
 				m_modeState ^= (ModeState::PersonalCaddieSensorIdleMode | ModeState::PersonalCaddieSensorActiveMode);
+				((MadgwickTestMode*)m_modes[static_cast<int>(m_currentMode)].get())->setHeadingOffset(m_personalCaddie->getHeadingOffset()); //set the heading offset quaternion
 				m_personalCaddie->enableDataNotifications();
 			}
 		}
