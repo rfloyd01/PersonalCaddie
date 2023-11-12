@@ -923,9 +923,12 @@ void PersonalCaddie::dataUpdate()
     {
         //The most recent data has been read from the BLE device and had calibration data applied to it. We can 
         //now calculate any interpreted data, such as position quaternion, euler angles, linear acceleration, etc.
+
         updateMadgwick(); //update orientation quaternion
         updatePosition(); //use newly calculated orientation to get linear acceleration, and then integrate that to get velocity, and again for position
         updateEulerAngles(); //use newly calculated orientation quaternion to get Euler Angles of sensor (used in training modes)
+
+        m_last_processed_data_time_stamp = m_first_data_time_stamp + 1.0f / this->p_imu->getMaxODR() * (number_of_samples - 1);
 
         //set the current sample to 0 so the graphics module starts rendering the new data. It's possible that not 
         //all data from the last set will actually have been rendered but this is ok since each piece of data is on 
@@ -958,30 +961,51 @@ void PersonalCaddie::dataUpdate()
 void PersonalCaddie::updateMadgwick()
 {
     //set up current time information
+
+    float temp_beta = beta; //the filter gain may by dynamically changed, so save a copy of it
+
     for (int i = 0; i < number_of_samples; i++)
     {
         float delta_t = 1.0 / this->p_imu->getMaxODR(); //get the time (in milliseconds) between successive samples
 
-        //TODO: Look into just sending references to the data instead of creating copies, not sure if this is really a huge time hit here but it can't hurt
         int cs = current_sample; //this is only here because it became annoying to keep writing out current_sample
-        /*float acc_x = getDataPoint(DataType::ACCELERATION, acc_axes_swap[X], cs) * acc_axes_invert[X], acc_y = getDataPoint(DataType::ACCELERATION, acc_axes_swap[Y], cs) * acc_axes_invert[Y], acc_z = getDataPoint(DataType::ACCELERATION, acc_axes_swap[Z], cs) * acc_axes_invert[Z];
-        float gyr_x = getDataPoint(DataType::ROTATION, gyr_axes_swap[X], cs) * gyr_axes_invert[X], gyr_y = getDataPoint(DataType::ROTATION, gyr_axes_swap[Y], cs) * gyr_axes_invert[Y], gyr_z = getDataPoint(DataType::ROTATION, gyr_axes_swap[Z], cs) * gyr_axes_invert[Z];
-        float mag_x = getDataPoint(DataType::MAGNETIC, mag_axes_swap[X], cs) * mag_axes_invert[X], mag_y = getDataPoint(DataType::MAGNETIC, mag_axes_swap[Y], cs) * mag_axes_invert[Y], mag_z = getDataPoint(DataType::MAGNETIC, mag_axes_swap[Z], cs) * mag_axes_invert[Z];*/
-
+        
         float acc_x = getDataPoint(DataType::ACCELERATION, X, cs), acc_y = getDataPoint(DataType::ACCELERATION, Y, cs), acc_z = getDataPoint(DataType::ACCELERATION, Z, cs);
         float gyr_x = getDataPoint(DataType::ROTATION, X, cs), gyr_y = getDataPoint(DataType::ROTATION, Y, cs), gyr_z = getDataPoint(DataType::ROTATION, Z, cs);
         float mag_x = getDataPoint(DataType::MAGNETIC, X, cs), mag_y = getDataPoint(DataType::MAGNETIC, Y, cs), mag_z = getDataPoint(DataType::MAGNETIC, Z, cs);
         
         //the first rotation quaternion of the new data set must build from the last rotation quaternion of the previous set. The rest can build off of
-        //earlier samples from the current set.
-        if (i == 0) MadgwickAHRSupdate(orientation_quaternions[number_of_samples - 1], orientation_quaternions[i], gyr_x, gyr_y, gyr_z, acc_x, acc_y, acc_z, mag_x, mag_y, mag_z, this->p_imu->getMaxODR(), beta);
-        else MadgwickAHRSupdate(orientation_quaternions[i - 1], orientation_quaternions[i], gyr_x, gyr_y, gyr_z, acc_x, acc_y, acc_z, mag_x, mag_y, mag_z, this->p_imu->getMaxODR(), beta);
-
-        if (isinf(orientation_quaternions[i].w))
+        //earlier samples from the current set. It's possible that we've missed data packets, so the first quaternion shouldn't use the sensor ODR,
+        //but the time difference of the first piece of data in this set to the last piece of data in the previous set. The inverse of this time 
+        //delay will give us an approximate ODR.
+        if (i == 0)
         {
-            OutputDebugString(L"something went wrong\n");
+            //Due to potential congestion/interference in BLE traffic it's possible that we will miss packets of data. The Personal Caddie 
+            //operates in notify mode, so missed data packets won't be resent. When this happens a degree of error will form between the 
+            //calculated orientation quaternion and its real world equivalent. The more packets of data that are missed, the worse this 
+            //error will become. To quickly get back to the correct orientation we can dynamically increase the gain of the filter (which 
+            //will bias orientation results towards the accelerometer and magnetometer) for the current data set. Once this data set has
+            //been processed we put the filter gain back to what it was.
+
+            int packets_missed = (m_first_data_time_stamp - m_last_processed_data_time_stamp) * this->p_imu->getMaxODR() / number_of_samples;
+
+            if (packets_missed > 0)
+            {
+                std::wstring missedPackets = L"Missed " + std::to_wstring(packets_missed) + L" packets of data.\n";
+                OutputDebugString(&missedPackets[0]);
+
+                if (packets_missed == 1) beta += 0.1f; //minor increase
+                else if (packets_missed < 3) beta += 0.25f; //larger increase
+                else if (packets_missed < 5) beta += 0.75f;
+                else beta += 2.0f;
+            }
+            
+            MadgwickAHRSupdate(orientation_quaternions[number_of_samples - 1], orientation_quaternions[i], gyr_x, gyr_y, gyr_z, acc_x, acc_y, acc_z, mag_x, mag_y, mag_z, 1.0f / (m_first_data_time_stamp - m_last_processed_data_time_stamp), beta);
         }
+        else MadgwickAHRSupdate(orientation_quaternions[i - 1], orientation_quaternions[i], gyr_x, gyr_y, gyr_z, acc_x, acc_y, acc_z, mag_x, mag_y, mag_z, this->p_imu->getMaxODR(), beta);
     }
+
+    beta = temp_beta; //reset the filter gain
 }
 void PersonalCaddie::updateLinearAcceleration()
 {
