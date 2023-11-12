@@ -155,6 +155,12 @@
     <ClCompile Include="Modes\CalibrationMode.cpp">
       <Filter>Modes</Filter>
     </ClCompile>
+    <ClCompile Include="Math\SensorFusion\FusionAhrs.cpp">
+      <Filter>Math\SensorFusion</Filter>
+    </ClCompile>
+    <ClCompile Include="Math\SensorFusion\FusionOffset.cpp">
+      <Filter>Math\SensorFusion</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -367,6 +373,18 @@
     <ClInclude Include="Modes\CalibrationMode.h">
       <Filter>Modes</Filter>
     </ClInclude>
+    <ClInclude Include="Math\SensorFusion\FusionAhrs.h">
+      <Filter>Math\SensorFusion</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\SensorFusion\FusionConvention.h">
+      <Filter>Math\SensorFusion</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\SensorFusion\FusionMath.h">
+      <Filter>Math\SensorFusion</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\SensorFusion\FusionOffset.h">
+      <Filter>Math\SensorFusion</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Assets\Wide310x150Logo.scale-200.png">
@@ -484,6 +502,9 @@
     </Filter>
     <Filter Include="Graphics\Shaders">
       <UniqueIdentifier>{9187e1c9-45e8-43cf-97aa-9d3e7be5888d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Math\SensorFusion">
+      <UniqueIdentifier>{ce0ced81-1a99-4487-8dd7-aec0672e9044}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

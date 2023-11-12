@@ -2,6 +2,9 @@
 
 #include "Mode.h"
 
+#include "Math/SensorFusion/FusionAhrs.h"
+#include "Math/SensorFusion/FusionOffset.h"
+
 enum MadgwickModeState
 {
 	BETA_UPDATE = 2
@@ -28,6 +31,7 @@ public:
 	void setHeadingOffset(glm::quat offset) { m_headingOffset = offset; }
 
 	void betaUpdate();
+	void toggleFilter() { m_useNewFilter = !m_useNewFilter; }
 
 private:
 	void initializeTextOverlay(winrt::Windows::Foundation::Size windowSize);
@@ -60,4 +64,9 @@ private:
 	//Array used to swap real world coordinates to DirectX coordinates
 	int computer_axis_from_sensor_axis[3] = {1, 2, 0};
 
+	//New Madgwick Filter Testing
+	FusionOffset m_offset;
+	FusionAhrs m_ahrs;
+	std::vector<glm::quat> m_testQuaternions;
+	bool m_useNewFilter;
 };

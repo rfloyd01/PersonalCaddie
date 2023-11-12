@@ -190,6 +190,10 @@
     <ClInclude Include="Math\ellipse_math.h" />
     <ClInclude Include="Math\glm.h" />
     <ClInclude Include="Math\quaternion_functions.h" />
+    <ClInclude Include="Math\SensorFusion\FusionAhrs.h" />
+    <ClInclude Include="Math\SensorFusion\FusionConvention.h" />
+    <ClInclude Include="Math\SensorFusion\FusionMath.h" />
+    <ClInclude Include="Math\SensorFusion\FusionOffset.h" />
     <ClInclude Include="Math\sensor_fusion.h" />
     <ClInclude Include="Modes\CalibrationMode.h" />
     <ClInclude Include="Modes\DevelopmentMenuMode.h" />
@@ -279,6 +283,8 @@
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Math\ellipse_math.cpp" />
     <ClCompile Include="Math\quaternion_functions.cpp" />
+    <ClCompile Include="Math\SensorFusion\FusionAhrs.cpp" />
+    <ClCompile Include="Math\SensorFusion\FusionOffset.cpp" />
     <ClCompile Include="Math\sensor_fusion.cpp" />
     <ClCompile Include="Modes\CalibrationMode.cpp" />
     <ClCompile Include="Modes\DevelopmentMenuMode.cpp" />

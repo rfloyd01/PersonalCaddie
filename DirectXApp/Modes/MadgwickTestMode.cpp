@@ -53,6 +53,7 @@ uint32_t MadgwickTestMode::initializeMode(winrt::Windows::Foundation::Size windo
 	m_display_data_units = L"m/s^2";
 
 	m_quaternions.clear();
+	m_testQuaternions.clear();
 	m_timeStamps.clear();
 	m_show_live_data = false;
 	m_display_data[0] = {};
@@ -66,6 +67,7 @@ uint32_t MadgwickTestMode::initializeMode(winrt::Windows::Foundation::Size windo
 	for (int i = 0; i < 39; i++)
 	{
 		m_quaternions.push_back({ 1.0f, 0.0f, 0.0f, 0.0f });
+		m_testQuaternions.push_back({ 1.0f, 0.0f, 0.0f, 0.0f });
 		m_timeStamps.push_back(0.0f);
 		m_display_data[0].push_back(0.0f);
 		m_display_data[1].push_back(0.0f);
@@ -75,6 +77,22 @@ uint32_t MadgwickTestMode::initializeMode(winrt::Windows::Foundation::Size windo
 
 	m_converged = false; //We need to let the filter re-converge every time this mode is opened
 	m_convergenceQuaternions = {};
+
+	//TESTING: Attempting to use Madgwick's latest version of his algorithm. For now I've 
+	//manually put in an ODR of 50 Hz, but I should get this from the Personal Caddie class
+	FusionOffsetInitialise(&m_offset, 50);
+	FusionAhrsInitialise(&m_ahrs);
+
+	const FusionAhrsSettings settings = {
+			FusionConventionNwu,  /*Initializes with NWU magnetic orientation, I may need Enu */
+			0.5f,
+			2000.0f, /* replace this with actual gyroscope range in degrees/s */
+			10.0f,
+			10.0f,
+			5 * 50, /* 5 seconds */
+	};
+	FusionAhrsSetSettings(&m_ahrs, &settings);
+	m_useNewFilter = false;
 
 	//The NeedMaterial modeState lets the mode screen know that it needs to pass
 	//a list of materials to this mode that it can use to initialize 3d objects
@@ -127,7 +145,7 @@ void MadgwickTestMode::initializeTextOverlay(winrt::Windows::Foundation::Size wi
 	m_uiElements.push_back(std::make_shared<TextOverlay>(sensor_info_two));
 
 	//View data message
-	std::wstring view_data_message = L"Press Enter to see live Data from Sensor";
+	std::wstring view_data_message = L"Press Enter to see live Data from Sensor\nPress Space to Center the Sensor\nPress ^ Arrow to Swap Filter";
 	TextOverlay view_data(windowSize, { UIConstants::FootNoteTextLocationX - 0.33f, UIConstants::FootNoteTextLocationY }, { UIConstants::FootNoteTextSizeX, UIConstants::FootNoteTextSizeY },
 		view_data_message, UIConstants::FootNoteTextPointSize, { UIColor::White }, { 0,  (unsigned int)view_data_message.length() }, UITextJustification::LowerCenter);
 	m_uiElements.push_back(std::make_shared<TextOverlay>(view_data));
@@ -173,6 +191,7 @@ void MadgwickTestMode::addQuaternions(std::vector<glm::quat> const& quaternions,
 	if (m_quaternions.size() != quaternion_number)
 	{
 		m_quaternions.erase(m_quaternions.begin() + quaternion_number, m_quaternions.end());
+		m_testQuaternions.erase(m_testQuaternions.begin() + quaternion_number, m_testQuaternions.end());
 		m_timeStamps.erase(m_timeStamps.begin() + quaternion_number, m_timeStamps.end());
 	}
 
@@ -187,7 +206,7 @@ void MadgwickTestMode::addQuaternions(std::vector<glm::quat> const& quaternions,
 
 	data_start_timer = std::chrono::steady_clock::now(); //set relative time
 
-	m_update_in_process = false;
+	//m_update_in_process = false;
 
 	if (!m_converged)
 	{
@@ -214,6 +233,31 @@ void MadgwickTestMode::addData(std::vector<std::vector<std::vector<float> > > co
 		m_display_data[1][i] = sensorData[m_display_data_index][1][i];
 		m_display_data[2][i] = sensorData[m_display_data_index][2][i];
 	}
+
+	//TESTING of new Madgwick Filter
+	float deltaT = timeStamp - m_timeStamps.back();
+	int i = 0;
+
+	while (true)
+	{
+		//Calibrated data is read in from the sensor
+		FusionVector gyroscope = { sensorData[1][0][i], sensorData[1][1][i], sensorData[1][2][i] };
+		FusionVector accelerometer = { sensorData[0][0][i], sensorData[0][1][i], sensorData[0][2][i] };
+		FusionVector magnetometer = { sensorData[2][0][i], sensorData[2][1][i], sensorData[2][2][i] };
+
+		//Update gyroscope offset correction algorithm
+		gyroscope = FusionOffsetUpdate(&m_offset, gyroscope);
+
+		FusionAhrsUpdate(&m_ahrs, gyroscope, accelerometer, magnetometer, deltaT);
+		auto newQuat = FusionAhrsGetQuaternion(&m_ahrs);
+		m_testQuaternions[i] = { newQuat.element.w, newQuat.element.x, newQuat.element.y, newQuat.element.z };
+
+		i++;
+		if (i >= m_timeStamps.size()) break;
+
+		deltaT = m_timeStamps[i] - m_timeStamps[i - 1]; //should always equal sensor ODR since only the first time stamp is recorded 
+	}
+	m_update_in_process = false; //set this to false after addQuaternion and addData has been called
 }
 
 void MadgwickTestMode::update()
@@ -243,11 +287,10 @@ void MadgwickTestMode::update()
 
 	if (updated)
 	{
-		//auto adjusted_q = QuaternionMultiply(m_quaternions[m_currentQuaternion], m_headingOffset);
-		//float Q_sensor[3] = { m_quaternions[m_currentQuaternion].x, m_quaternions[m_currentQuaternion].y, m_quaternions[m_currentQuaternion].z };
-
 		//Rotate the current quaternion from the Madgwick filter by the heading offset to line up with the computer monitor.
-		auto adjusted_q = QuaternionMultiply(m_headingOffset, m_quaternions[m_currentQuaternion]);
+		glm::quat adjusted_q;
+		if (m_useNewFilter) adjusted_q = QuaternionMultiply(m_headingOffset, m_testQuaternions[m_currentQuaternion]);
+		else adjusted_q = QuaternionMultiply(m_headingOffset, m_quaternions[m_currentQuaternion]);
 
 		float Q_sensor[3] = { adjusted_q.x, adjusted_q.y, adjusted_q.z };
 		float Q_computer[3] = { Q_sensor[computer_axis_from_sensor_axis[0]], Q_sensor[computer_axis_from_sensor_axis[1]], Q_sensor[computer_axis_from_sensor_axis[2]] };
@@ -267,10 +310,10 @@ void MadgwickTestMode::toggleDisplayData()
 	m_show_live_data = !m_show_live_data;
 	std::wstring data_display_message;
 
-	if (m_show_live_data) data_display_message = L"Press Enter to hide live Data from Sensor";
+	if (m_show_live_data) data_display_message = L"Press Enter to hide live Data from Sensor\nPress Space to Center the Sensor\nPress ^ Arrow to Swap Filter";
 	else
 	{
-		data_display_message = L"Press Enter to see live Data from Sensor";
+		data_display_message = L"Press Enter to see live Data from Sensor\nPress Space to Center the Sensor\nPress ^ Arrow to Swap Filter";
 
 		std::wstring sensor_info_message_one = L"\n";
 		std::wstring sensor_info_message_two = L"\n";

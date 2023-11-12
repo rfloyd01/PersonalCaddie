@@ -553,10 +553,10 @@ void MadgwickAHRSupdate(glm::quat& q_first, glm::quat& q_second, float gx, float
     }
 
     // Rate of change of quaternion from gyroscope
-    qDot1 = 0.5f * (-q1 * gx - q2 * gy - q3 * gz);
+    /*qDot1 = 0.5f * (-q1 * gx - q2 * gy - q3 * gz);
     qDot2 = 0.5f * (q0 * gx + q2 * gz - q3 * gy);
     qDot3 = 0.5f * (q0 * gy - q1 * gz + q3 * gx);
-    qDot4 = 0.5f * (q0 * gz + q1 * gy - q2 * gx);
+    qDot4 = 0.5f * (q0 * gz + q1 * gy - q2 * gx);*/
 
     // Compute feedback only if accelerometer measurement valid (avoids NaN in accelerometer normalisation)
     if (!((ax == 0.0f) && (ay == 0.0f) && (az == 0.0f))) {
@@ -603,10 +603,6 @@ void MadgwickAHRSupdate(glm::quat& q_first, glm::quat& q_second, float gx, float
         _4bx = 2.0f * _2bx;
         _4bz = 2.0f * _2bz;
 
-        /*std::wstring mag_field = L"Measured Magnetic Field (ht): [" + std::to_wstring(hx) + L", " + std::to_wstring(hy) + L", " + std::to_wstring(_2bz) + L"]\n";
-        mag_field += L"Earth's Magnetic Field (bt): [" + std::to_wstring(_2bx) + L", 0, " +  std::to_wstring(_2bz) + L"]\n";
-        OutputDebugString(&mag_field[0]);*/
-
         // Gradient decent algorithm corrective step
         s0 = -_2q2 * (2.0f * q1q3 - _2q0q2 - ax) + _2q1 * (2.0f * q0q1 + _2q2q3 - ay) - _2bz * q2 * (_2bx * (0.5f - q2q2 - q3q3) + _2bz * (q1q3 - q0q2) - mx) + (-_2bx * q3 + _2bz * q1) * (_2bx * (q1q2 - q0q3) + _2bz * (q0q1 + q2q3) - my) + _2bx * q2 * (_2bx * (q0q2 + q1q3) + _2bz * (0.5f - q1q1 - q2q2) - mz);
         s1 = _2q3 * (2.0f * q1q3 - _2q0q2 - ax) + _2q0 * (2.0f * q0q1 + _2q2q3 - ay) - 4.0f * q1 * (1 - 2.0f * q1q1 - 2.0f * q2q2 - az) + _2bz * q3 * (_2bx * (0.5f - q2q2 - q3q3) + _2bz * (q1q3 - q0q2) - mx) + (_2bx * q2 + _2bz * q0) * (_2bx * (q1q2 - q0q3) + _2bz * (q0q1 + q2q3) - my) + (_2bx * q3 - _4bz * q1) * (_2bx * (q0q2 + q1q3) + _2bz * (0.5f - q1q1 - q2q2) - mz);
@@ -617,6 +613,27 @@ void MadgwickAHRSupdate(glm::quat& q_first, glm::quat& q_second, float gx, float
         s1 *= recipNorm;
         s2 *= recipNorm;
         s3 *= recipNorm;
+
+        //At this point the s = [s0, s1, s2, s3] is equal to the normalized gradient of the objective function. In the paper, this is denoted with delta(f) / ||delta(f)||
+        //This value represents the direction of the error in the rate of change of the orientation quaternion. Kind of a confusing sentence so what does this mean?
+        //Basically, if we were to calculate q purely from the accelerometer and gyroscope, all of the components of the current q would change by a certain amount. Putting these
+        //changes into vector form and normalizing it gives us the direction of our error. The gradient is used because it's the quickest way to get to the correct value.
+        //By taking the rate of change that's calculated by the gyroscope, and moving it along this error vector calculated by the acc. and mag, the gyroscope rate of change will
+        //be slightly biased towards the q that would have been calculated by the acc. and mag. alone.
+
+        //I'm a little confused because the paper talks about another gain value, zeta, which is supposed to be used to get rid of gyroscope drift over time.
+        //Nothing in this code indicates to me that this is actually getting used so out of curiosity I will attempt to calcualte this drift myself here.
+        float gyro_angular_error0 = 2.0f * (q0 * s0 + q1 * s1 + q2 * s2 + q3 * s3) * (1.0f / sampleFreq);
+        float zeta = sqrt(3.0f / 4.0f) * gyro_angular_error0;
+
+        float gyro_angular_error1 = 2.0f * (q0 * s1 - q1 * s0 - q2 * s3 + q3 * s2) * (1.0f / sampleFreq) * zeta;
+        float gyro_angular_error2 = 2.0f * (q0 * s2 + q1 * s3 - q2 * s0 - q3 * s1) * (1.0f / sampleFreq) * zeta;
+        float gyro_angular_error3 = 2.0f * (q0 * s3 - q1 * s2 + q2 * s1 - q3 * s0) * (1.0f / sampleFreq) * zeta;
+
+        qDot1 = 0.5f * (-q1 * (gx - gyro_angular_error1) - q2 * (gy - gyro_angular_error2) - q3 * (gz - gyro_angular_error3));
+        qDot2 = 0.5f * (q0 * (gx - gyro_angular_error1) + q2 * (gz - gyro_angular_error3) - q3 * (gy - gyro_angular_error2));
+        qDot3 = 0.5f * (q0 * (gy - gyro_angular_error2) - q1 * (gz - gyro_angular_error3) + q3 * (gx - gyro_angular_error1));
+        qDot4 = 0.5f * (q0 * (gz - gyro_angular_error3) + q1 * (gy - gyro_angular_error2) - q2 * (gx - gyro_angular_error1));
 
         // Apply feedback step
         qDot1 -= beta * s0;

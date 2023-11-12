@@ -13,6 +13,8 @@
 
 #include "Graphics/Rendering/MasterRenderer.h"
 
+//#include "Math/SensorFusion/FusionMath.h" //was debugging with this, can remove in future
+
 ModeScreen::ModeScreen() :
 	m_currentMode(ModeType::MAIN_MENU),
 	alert_active(false),
@@ -283,6 +285,14 @@ void ModeScreen::processKeyboardInput(winrt::Windows::System::VirtualKey pressed
 			glm::quat heading_offset = ((MadgwickTestMode*)m_modes[static_cast<int>(m_currentMode)].get())->getCurrentHeadingOffset();
 			((MadgwickTestMode*)m_modes[static_cast<int>(m_currentMode)].get())->setHeadingOffset(heading_offset); //set the heading offset quaternion in Madgwick test mode
 			m_personalCaddie->setHeadingOffset(heading_offset);
+		}
+	}
+	case winrt::Windows::System::VirtualKey::Up:
+	{
+		if (m_currentMode == ModeType::MADGWICK)
+		{
+			//Pressing the up key will swap the current sensor fusion filter
+			((MadgwickTestMode*)m_modes[static_cast<int>(m_currentMode)].get())->toggleFilter(); //set the heading offset quaternion in Madgwick test mode
 		}
 	}
 	}
