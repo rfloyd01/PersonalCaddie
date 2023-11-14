@@ -960,14 +960,8 @@ void PersonalCaddie::dataUpdate()
 //Internal Updating Functions
 void PersonalCaddie::updateMadgwick()
 {
-    //set up current time information
-
-    float temp_beta = beta; //the filter gain may by dynamically changed, so save a copy of it
-
     for (int i = 0; i < number_of_samples; i++)
     {
-        float delta_t = 1.0 / this->p_imu->getMaxODR(); //get the time (in milliseconds) between successive samples
-
         int cs = current_sample; //this is only here because it became annoying to keep writing out current_sample
         
         float acc_x = getDataPoint(DataType::ACCELERATION, X, cs), acc_y = getDataPoint(DataType::ACCELERATION, Y, cs), acc_z = getDataPoint(DataType::ACCELERATION, Z, cs);
@@ -986,18 +980,53 @@ void PersonalCaddie::updateMadgwick()
             //error will become. To quickly get back to the correct orientation we can dynamically increase the gain of the filter (which 
             //will bias orientation results towards the accelerometer and magnetometer) for the current data set. Once this data set has
             //been processed we put the filter gain back to what it was.
+            int data_sets_missed = (m_first_data_time_stamp - m_last_processed_data_time_stamp) * this->p_imu->getMaxODR() / number_of_samples;
 
-            int packets_missed = (m_first_data_time_stamp - m_last_processed_data_time_stamp) * this->p_imu->getMaxODR() / number_of_samples;
-
-            if (packets_missed > 0)
+            if (data_sets_missed > 0)
             {
-                std::wstring missedPackets = L"Missed " + std::to_wstring(packets_missed) + L" packets of data.\n";
+                std::wstring missedPackets = L"Missed " + std::to_wstring(data_sets_missed) + L" packets of data.\n";
                 OutputDebugString(&missedPackets[0]);
 
-                if (packets_missed == 1) beta += 0.1f; //minor increase
-                else if (packets_missed < 3) beta += 0.25f; //larger increase
-                else if (packets_missed < 5) beta += 0.75f;
-                else beta += 2.0f;
+                if (m_adjusted_data_sets_remaining == 0)
+                {
+                    //this is the first missed data set encountered. Set the beta gain and
+                    //number of data sets to keep it increased for accordingly
+                    original_beta = beta; //save a copy of the current gain amount to reapply when adjustments are complete
+                }
+                //beta += 2.5f; //minor increase
+                //m_adjusted_data_sets_remaining = data_sets_missed;
+
+                //Uncomment below code to use different beta values
+                if (data_sets_missed < 3)
+                {
+                    beta = 0.1f; //minor increase
+                    //m_adjusted_data_sets_remaining = 3;
+                }
+                else if (data_sets_missed < 5)
+                {
+                    beta = 0.5f; //larger increase
+                    //m_adjusted_data_sets_remaining = 3;
+                }
+                else if (data_sets_missed < 7)
+                {
+                    beta = 1.0f;
+                    //m_adjusted_data_sets_remaining = 3;
+                }
+                else
+                {
+                    beta = 2.5f;
+                    //m_adjusted_data_sets_remaining = 3;
+                }
+                m_adjusted_data_sets_remaining = 10;
+                //else
+                //{
+                //    //We've missed some more data while currently in the process of recovering
+                //    //from data loss, increase the m_adjusted_data_sets_remaining parameters
+                //    //accordingly.
+
+                //    /*m_adjusted_data_sets_remaining += data_sets_missed;*/
+                //    m_adjusted_data_sets_remaining = 3;
+                //}
             }
             
             MadgwickAHRSupdate(orientation_quaternions[number_of_samples - 1], orientation_quaternions[i], gyr_x, gyr_y, gyr_z, acc_x, acc_y, acc_z, mag_x, mag_y, mag_z, 1.0f / (m_first_data_time_stamp - m_last_processed_data_time_stamp), beta);
@@ -1005,8 +1034,22 @@ void PersonalCaddie::updateMadgwick()
         else MadgwickAHRSupdate(orientation_quaternions[i - 1], orientation_quaternions[i], gyr_x, gyr_y, gyr_z, acc_x, acc_y, acc_z, mag_x, mag_y, mag_z, this->p_imu->getMaxODR(), beta);
     }
 
-    beta = temp_beta; //reset the filter gain
+    /*std::wstring missedPackets = L"Current Beta: " + std::to_wstring(beta) + L"\n";
+    OutputDebugString(&missedPackets[0]);*/
+
+    if (--m_adjusted_data_sets_remaining <= 0)
+    {
+        beta = original_beta; //reset the filter gain
+        m_adjusted_data_sets_remaining = 0;
+    }
 }
+
+void PersonalCaddie::setMadgwickBeta(float b)
+{ 
+    beta = b;
+    original_beta = b;
+}
+
 void PersonalCaddie::updateLinearAcceleration()
 {
     for (int i = 0; i < number_of_samples; i++)

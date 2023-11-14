@@ -286,6 +286,7 @@ void ModeScreen::processKeyboardInput(winrt::Windows::System::VirtualKey pressed
 			((MadgwickTestMode*)m_modes[static_cast<int>(m_currentMode)].get())->setHeadingOffset(heading_offset); //set the heading offset quaternion in Madgwick test mode
 			m_personalCaddie->setHeadingOffset(heading_offset);
 		}
+		break;
 	}
 	case winrt::Windows::System::VirtualKey::Up:
 	{
@@ -294,6 +295,7 @@ void ModeScreen::processKeyboardInput(winrt::Windows::System::VirtualKey pressed
 			//Pressing the up key will swap the current sensor fusion filter
 			((MadgwickTestMode*)m_modes[static_cast<int>(m_currentMode)].get())->toggleFilter(); //set the heading offset quaternion in Madgwick test mode
 		}
+		break;
 	}
 	}
 }

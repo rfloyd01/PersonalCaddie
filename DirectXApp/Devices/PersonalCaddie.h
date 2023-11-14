@@ -95,7 +95,7 @@ public:
 	void connectToDevice(uint64_t deviceAddress);
 	void disconnectFromDevice();
 
-	void setMadgwickBeta(float b) { beta = b; }
+	void setMadgwickBeta(float b);
 
 	std::vector<uint8_t*> getIMUSettings() { return p_imu->getSensorSettings(); }
 	std::vector<uint8_t> const& getAvailableSensors() { return m_availableSensors; }
@@ -205,9 +205,10 @@ private:
 	float m_first_data_time_stamp = 0.0f; //represents the point in time (from when sensors first start recording data) that the first bit of data in the current set was recorded
 	float m_last_processed_data_time_stamp = 0.0f; //represents the point in time (from when sensors first start recording data) that the last bit of data was processed through the Madgwick filter
 	bool m_filter_adjust = false; //If we miss multiple data packets in a row from the sensor we use this flag to adjust the Madgwick filter gain temporarily to bias data towards acc. and mag. readings
+	int m_adjusted_data_sets_remaining = 0;
 
 	//Madgwick items
-	float sampleFreq, beta = 0.041f; //beta changes how reliant the Madgwick filter is on acc and mag data. A value of 0.041 is what Madgwick himself proproses so it's used here
+	float sampleFreq, beta = 0.041f, original_beta = 0.041f; //beta changes how reliant the Madgwick filter is on acc and mag data. A value of 0.041 is what Madgwick himself proproses so it's used here
 	float bx = -8.0f, by = 40.0f, bz = 15.0f; //consider setting these values to the value of current location by default. Currently set to Conshohocken values
 
 	//Axis Swapping variables
