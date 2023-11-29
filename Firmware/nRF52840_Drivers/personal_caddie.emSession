@@ -63,10 +63,17 @@
   <Watches active="0" update="Never"/>
  </Watch4>
  <Files>
-  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="0" useTextEdit="1" openedFrom="" useBinaryEdit="0" left="0" path="main.c" selected="0" top="0" codecName="Default"/>
-  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="0" useTextEdit="1" openedFrom="" useBinaryEdit="0" left="0" path="../MEMs_Drivers/sensor_settings.c" selected="0" top="0" codecName="Default"/>
-  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="0" useTextEdit="1" openedFrom="D:/Coding/PersonalCaddie/Firmware/MEMs_Drivers/sensor_settings.c" useBinaryEdit="0" left="0" path="../MEMs_Drivers/sensor_settings.h" selected="0" top="15" codecName="Default"/>
-  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="19" useTextEdit="1" openedFrom="" useBinaryEdit="0" left="0" path="nRF_Implementations/pc_twi.c" selected="1" top="0" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="33" y="590" useTextEdit="1" openedFrom="" useBinaryEdit="0" left="0" path="main.c" selected="0" top="557" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="5" y="9" useTextEdit="1" openedFrom="D:/Coding/PersonalCaddie/Firmware/nRF52840_Drivers/bmi270_drv.c" useBinaryEdit="0" left="0" path="../MEMs_Drivers/sensor_settings.c" selected="0" top="0" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="4" y="31" useTextEdit="1" openedFrom="D:/Coding/PersonalCaddie/Firmware/nRF52840_Drivers/bmi270_drv.c" useBinaryEdit="0" left="0" path="../MEMs_Drivers/sensor_settings.h" selected="0" top="15" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="10" useTextEdit="1" openedFrom="" useBinaryEdit="0" left="0" path="nRF_Implementations/pc_twi.c" selected="0" top="0" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="57" y="90" useTextEdit="1" openedFrom="" useBinaryEdit="0" left="0" path="nRF_Implementations/pc_ble.c" selected="0" top="67" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="130" useTextEdit="1" openedFrom="D:/Coding/PersonalCaddie/Firmware/nRF52840_Drivers/nRF_Implementations/pc_ble.c" useBinaryEdit="0" left="0" path="C:/Users/Bobby/Documents/Coding/BLE/nRFSDK17.0.2/components/softdevice/common/nrf_sdh_ble.c" selected="0" top="109" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="39" y="11436" useTextEdit="1" openedFrom="C:/Users/Bobby/Documents/Coding/BLE/nRFSDK17.0.2/components/softdevice/common/nrf_sdh_ble.c" useBinaryEdit="0" left="0" path="config/sdk_config.h" selected="0" top="11407" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="48" y="94" useTextEdit="1" openedFrom="" useBinaryEdit="0" left="0" path="C:/Users/Bobby/Documents/Coding/BLE/nRFSDK17.0.2/components/libraries/util/app_error_weak.c" selected="0" top="75" codecName=""/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="48" useTextEdit="1" openedFrom="" useBinaryEdit="0" left="0" path="C:/Users/Bobby/Documents/Coding/BLE/nRFSDK17.0.2/components/libraries/util/app_error_handler_gcc.c" selected="0" top="27" codecName=""/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="94" useTextEdit="1" openedFrom="" useBinaryEdit="0" left="0" path="nRF_Implementations/pc_timer.c" selected="0" top="78" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="629" useTextEdit="1" openedFrom="D:/Coding/PersonalCaddie/Firmware/nRF52840_Drivers/main.c" useBinaryEdit="0" left="0" path="C:/Users/Bobby/Documents/Coding/BLE/nRFSDK17.0.2/components/softdevice/s140/headers/ble_gatts.h" selected="1" top="603" codecName="Default"/>
  </Files>
- <ARMCrossStudioWindow activeProject="personal_caddie" fileDialogDefaultFilter="*.c;*.cpp;*.cxx;*.cc;*.h;*.hpp;*.hxx" autoConnectTarget="J-Link" buildConfiguration="Debug" sessionSettings="" debugSearchFileMap="" fileDialogInitialDirectory="D:/Coding/PersonalCaddie/Firmware/nRF52840_Drivers" debugSearchPath="" autoConnectCapabilities="3711"/>
+ <ARMCrossStudioWindow activeProject="personal_caddie" fileDialogDefaultFilter="*.c;*.cpp;*.cxx;*.cc;*.h;*.hpp;*.hxx" autoConnectTarget="J-Link" buildConfiguration="Debug" sessionSettings="" debugSearchFileMap="" fileDialogInitialDirectory="D:/Coding/PersonalCaddie/Firmware/MEMs_Drivers/Bosch" debugSearchPath="" autoConnectCapabilities="3711"/>
 </session>

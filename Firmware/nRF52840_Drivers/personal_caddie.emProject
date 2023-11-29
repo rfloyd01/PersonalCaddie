@@ -29,7 +29,7 @@
       linker_printf_width_precision_supported="Yes"
       linker_scanf_fmt_level="long"
       linker_section_placement_file="flash_placement.xml"
-      linker_section_placement_macros="FLASH_PH_START=0x0;FLASH_PH_SIZE=0x100000;RAM_PH_START=0x20000000;RAM_PH_SIZE=0x40000;FLASH_START=0x27000;FLASH_SIZE=0xd9000;RAM_START=0x20002de8;RAM_SIZE=0x3d218"
+      linker_section_placement_macros="FLASH_PH_START=0x0;FLASH_PH_SIZE=0x100000;RAM_PH_START=0x20000000;RAM_PH_SIZE=0x40000;FLASH_START=0x27000;FLASH_SIZE=0xd9000;RAM_START=0x20003438;RAM_SIZE=0x3cbc8"
       linker_section_placements_segments="FLASH RX 0x0 0x100000;RAM1 RWX 0x20000000 0x40000"
       macros="CMSIS_CONFIG_TOOL=C:/Users/Bobby/Documents/Coding/BLE/nRFSDK17.0.2/external_tools/cmsisconfig/CMSIS_Configuration_Wizard.jar"
       project_directory=""
@@ -103,6 +103,7 @@
         <file file_name="fxos8700.c" />
         <file file_name="lsm9ds1.c" />
         <file file_name="../MEMs_Drivers/sensor_settings.c" />
+        <file file_name="bmi270_drv.c" />
       </folder>
       <folder Name="nRF Implementations">
         <file file_name="nRF_Implementations/pc_twi.c" />
@@ -151,6 +152,8 @@
       <file file_name="../MEMs_Drivers/NXP/fxos8700/src/common/sensor_common.c" />
       <file file_name="../MEMs_Drivers/NXP/fxos8700/src/fxos8700_config.c" />
       <file file_name="../MEMs_Drivers/NXP/fxas21002/fxas21002_driver.c" />
+      <file file_name="../MEMs_Drivers/Bosch/bmi270.c" />
+      <file file_name="../MEMs_Drivers/Bosch/bmi2.c" />
     </folder>
   </project>
   <configuration

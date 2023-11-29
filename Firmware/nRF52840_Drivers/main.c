@@ -56,7 +56,8 @@ volatile bool m_data_ready  = false;                                            
 imu_communication_t imu_comm;                                                      /**< Structure that Holds information on how to communicate with each sensor */
 uint16_t desired_minimum_connection_interval, desired_maximum_connection_interval; /**< The desired min and max connection interval */
 static float current_sensor_odr = 59.5;                                            /**< Keeps track of the current sensor ODR, connection interval is set based on this variable */
-volatile bool m_notification_done = true;                                         /**< Indicates the number of notifications sent out in a single connection interval  */
+volatile bool m_notification_done = true;                                          /**< Indicates the number of notifications sent out in a single connection interval  */
+volatile int m_notifications_in_queue = 0;                                         /**< Let's us know the current number of notifications in the queue  */
 
 //LED Pin Parameters
 #define RED_LED            NRF_GPIO_PIN_MAP(0, 24)                                 /**< Red LED Indicator on BLE 33 sense*/
@@ -66,6 +67,9 @@ volatile uint8_t active_led = BLUE_LED;                                         
 
 //Personal Caddie Parameters
 static personal_caddie_operating_mode_t current_operating_mode = ADVERTISING_MODE; /**< The chip starts in advertising mode*/
+
+//Debugging Parameters
+int notification_failures = 0;
 
 /**@brief Callback function for asserts in the SoftDevice.
  *
@@ -516,7 +520,7 @@ static uint32_t data_notification_error_handler(uint32_t* ret)
         //complete boolean to false, and wait for it to get set to true in the BLE stack
         //handler (this will happen automatically when the next notification goes out).
         m_notification_done = false;
-        SEGGER_RTT_WriteString(0, "Notification queue is full.\n");
+        //SEGGER_RTT_WriteString(0, "Notification queue is full.\n");
         *ret = 0x69; //a great error code
     }
 }
@@ -578,19 +582,47 @@ static void characteristic_update_and_notify()
 
     //Send out notifications for each data characteristic, however, we
     //can only do so if there's enough room in the notification queue.
+
+    //DEBUG
+    while (m_notifications_in_queue > 0) {} //allow all notifications in the queue to transmit before adding more
+
+    uint32_t test_ret = 0;
+    //SEGGER_RTT_printf(0, "Before Adding Notifications: %d notifications queued.\n", m_notifications_in_queue);
+    
+    while (true)
+    {
+        test_ret = sd_ble_gatts_hvx(m_conn_handle, &acc_notify_params); //acc data notification
+        data_notification_error_handler(&test_ret);
+        if (test_ret == 0x69) break;
+        m_notifications_in_queue++;
+    }
+
+    //SEGGER_RTT_printf(0, "After Adding Notifications: %d notifications queued.\n\n", m_notifications_in_queue);
+
+    //while (NRF_RADIO->PACKETPTR == 0) {}
+
+    ////Attempt to dereference the packet pointer to see what's there
+    //uint32_t* packet_location = (uint32_t*) NRF_RADIO->PACKETPTR;
+    //uint32_t packet_value = *packet_location;
+
+
     if (m_notification_done)
     {
         uint32_t ret = sd_ble_gatts_hvx(m_conn_handle, &acc_notify_params); //acc data notification
         data_notification_error_handler(&ret);
         if (ret == 0x69)
         {
+            SEGGER_RTT_printf(0, "Notification failure %d from ACC.\n", ++notification_failures);
             return; //too many notifications in queue, wait until next cycle to send data
         }
+
+        SEGGER_RTT_WriteString(0, "ACC was notified.\n");
 
         ret = sd_ble_gatts_hvx(m_conn_handle, &gyr_notify_params); //gyr data notification
         data_notification_error_handler(&ret);
         if (ret == 0x69)
         {
+            SEGGER_RTT_printf(0, "Notification failure %d from GYR.\n", ++notification_failures);
             return; //too many notifications in queue, wait until next cycle to send data
         }
 
@@ -598,6 +630,7 @@ static void characteristic_update_and_notify()
         data_notification_error_handler(&ret);
         if (ret == 0x69)
         {
+            SEGGER_RTT_printf(0, "Notification failure %d from MAG.\n", ++notification_failures);
             return; //too many notifications in queue, wait until next cycle to send data
         }
     
@@ -1026,7 +1059,8 @@ int main(void)
     log_init();
     timers_init(&active_led, &m_data_ready, &m_current_sensor_samples, &m_time_stamp, &timer_handlers);
     power_management_init();
-    ble_stack_init(&ble_handlers, &m_conn_handle, &m_notification_done, &m_current_sensor_samples, &desired_minimum_connection_interval, &desired_maximum_connection_interval);
+    ble_stack_init(&ble_handlers, &m_conn_handle, &m_notification_done, &m_notifications_in_queue, &m_current_sensor_samples, &desired_minimum_connection_interval, &desired_maximum_connection_interval);
+    enable_connection_event_extension();
     gatt_init();
     services_init();
     twi_init();
@@ -1050,9 +1084,14 @@ int main(void)
         //after the CPU get's woken up (at a minimum this should happen once every
         //connection interval), see if the data ready flag has been set to true and
         //if so, send out data notifications).
+        //SEGGER_RTT_printf(0, "idle state handle exited at %d ticks.\n", get_current_data_time());
+
         if (m_data_ready)
         {
+            //SEGGER_RTT_printf(0, "charactieristic update called at %d ticks.\n", get_current_data_time());
             characteristic_update_and_notify();
+            //SEGGER_RTT_printf(0, "charactieristic update returned at %d ticks.\n", get_current_data_time());
+
             m_data_ready = false;
         }
     }

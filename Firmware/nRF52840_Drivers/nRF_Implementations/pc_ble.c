@@ -48,12 +48,16 @@ static ble_uuid_t m_sr_uuids[] =                                               /
 //Pointers
 ble_event_handler_t m_ble_event_handlers;
 uint16_t*           p_conn_handle; //A pointer to the connection handle for the active connection
-volatile bool*       p_notification_done; //A pointer to an integer which lets us know how many notification are complete
-static uint8_t* p_total_sensor_samples;  //The connection interval needs to change to match the current number of samples we're collecting
-uint16_t* p_minimum_connection_interval;  //The current desired minimum connection interval (in ms)
-uint16_t* p_maximum_connection_interval;  //The current desired maximum connection interval (in ms)
+volatile bool*      p_notification_done; //A pointer to an integer which lets us know how many notification are complete
+volatile int*       p_notifications_in_queue; //Let's us know how many notifications are currently in the queue
+static uint8_t*     p_total_sensor_samples;  //The connection interval needs to change to match the current number of samples we're collecting
+uint16_t*           p_minimum_connection_interval;  //The current desired minimum connection interval (in ms)
+uint16_t*           p_maximum_connection_interval;  //The current desired maximum connection interval (in ms)
 
-void ble_stack_init(ble_event_handler_t* handler_methods, uint16_t* connection_handle, volatile bool* notification_done,
+//Debug variables
+volatile int debug_total_notifications = 0;
+
+void ble_stack_init(ble_event_handler_t* handler_methods, uint16_t* connection_handle, volatile bool* notification_done, volatile int* queue,
                     uint8_t* sensor_samples, uint16_t* min_conn_int, uint16_t* max_conn_int)
 {
     ret_code_t err_code;
@@ -76,6 +80,7 @@ void ble_stack_init(ble_event_handler_t* handler_methods, uint16_t* connection_h
     //handle, there are other modules that reference this variable so we only keep 
     //a pointer to it
     p_notification_done = notification_done;
+    p_notifications_in_queue = queue;
     p_total_sensor_samples = sensor_samples;
     p_minimum_connection_interval = min_conn_int;
     p_maximum_connection_interval = max_conn_int;
@@ -96,13 +101,13 @@ void ble_stack_init(ble_event_handler_t* handler_methods, uint16_t* connection_h
 
     //TEST: Before enabling the ble stack change the notification queue size
     //to 3 (this should hopefully allow 3 notifications in one connection interval)
-    ble_cfg_t ble_cfg;
-    memset(&ble_cfg, 0, sizeof(ble_cfg));
+    //ble_cfg_t ble_cfg;
+    //memset(&ble_cfg, 0, sizeof(ble_cfg));
 
-    ble_cfg.conn_cfg.conn_cfg_tag = APP_BLE_CONN_CFG_TAG;
-    ble_cfg.conn_cfg.params.gatts_conn_cfg.hvn_tx_queue_size = 3; //looking at this variable in the defult_cfg_set() method above and it has a value of 231 which is the max mtu size
-    err_code = sd_ble_cfg_set(BLE_CONN_CFG_GATTS, &ble_cfg, ram_start);
-    APP_ERROR_CHECK(err_code);
+    //ble_cfg.conn_cfg.conn_cfg_tag = APP_BLE_CONN_CFG_TAG;
+    //ble_cfg.conn_cfg.params.gatts_conn_cfg.hvn_tx_queue_size = 0; //looking at this variable in the defult_cfg_set() method above and it has a value of 231 which is the max mtu size
+    //err_code = sd_ble_cfg_set(BLE_CONN_CFG_GATTS, &ble_cfg, ram_start);
+    //APP_ERROR_CHECK(err_code);
 
     // Enable BLE stack.
     err_code = nrf_sdh_ble_enable(&ram_start);
@@ -110,6 +115,22 @@ void ble_stack_init(ble_event_handler_t* handler_methods, uint16_t* connection_h
 
     // Register a handler for BLE events.
     NRF_SDH_BLE_OBSERVER(m_ble_observer, APP_BLE_OBSERVER_PRIO, ble_evt_handler, NULL);
+}
+
+void enable_connection_event_extension()
+{
+    //after the BLE stack is enabled (and before we connect to a central device)
+    //we can turn on an option which allows communication past the current
+    //connection event length. This is a good way to increase data throughput.
+
+    ret_code_t err_code;
+    ble_opt_t  opt;
+
+    memset(&opt, 0x00, sizeof(opt));
+    opt.common_opt.conn_evt_ext.enable = 1;
+
+    err_code = sd_ble_opt_set(BLE_COMMON_OPT_CONN_EVT_EXT, &opt);
+    APP_ERROR_CHECK(err_code);
 }
 
 void advertising_init(void)
@@ -351,6 +372,7 @@ static void ble_evt_handler(ble_evt_t const * p_ble_evt, void * p_context)
             m_ble_event_handlers.gap_connected_handler();
             SEGGER_RTT_printf(0, "Connected to the Personal Caddie with a connection interval of %u milliseconds.\n",
                               p_ble_evt->evt.gap_evt.params.connected.conn_params.max_conn_interval * 5 / 4);
+
             break;
 
         case BLE_GAP_EVT_PHY_UPDATE_REQUEST:
@@ -386,9 +408,15 @@ static void ble_evt_handler(ble_evt_t const * p_ble_evt, void * p_context)
             break;
 
         case BLE_GATTS_EVT_HVN_TX_COMPLETE:
-            //SEGGER_RTT_printf(0, "Compledted %d notifications.\n", p_ble_evt->evt.gatts_evt.params.hvn_tx_complete.count);
+            SEGGER_RTT_printf(0, "Notification %d sent.\n", ++debug_total_notifications);
             *p_notification_done = true; //set the notification done bool to true to allow more notifications
-            //*p_notifications_done = *p_notifications_done + 1; //increment the notifications complete
+            (*p_notifications_in_queue)--;
+            break;
+
+        case BLE_GAP_EVT_DATA_LENGTH_UPDATE:
+            //(intentional fallthrough)
+        case BLE_GAP_EVT_DATA_LENGTH_UPDATE_REQUEST:
+            SEGGER_RTT_WriteString(0, "A GAP Data Length update has gone through.");
             break;
 
         default:

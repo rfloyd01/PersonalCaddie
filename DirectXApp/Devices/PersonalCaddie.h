@@ -150,6 +150,7 @@ private:
 
 	volatile bool sensor_data_updated[3] = { false, false, false };
 	volatile bool data_available = false;
+	volatile int debug_notifications_received = 0;
 
 	//Gatt Settings and Characteristics obtained from m_ble
 	winrt::Windows::Foundation::Collections::IVectorView<Bluetooth::GenericAttributeProfile::GattDeviceService>  m_services{ nullptr };

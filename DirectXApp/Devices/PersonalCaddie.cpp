@@ -299,6 +299,7 @@ void PersonalCaddie::BLEDeviceHandler(BLEState state)
 
         message = L"Successfully connected to the Personal Caddie\n";
         event_handler(PersonalCaddieEventType::CONNECTION_EVENT, (void*)&message);
+
         break;
     }
     case BLEState::Disconnected:
@@ -501,7 +502,10 @@ void PersonalCaddie::dataCharacteristicEventHandler(Bluetooth::GenericAttributeP
     number_of_samples = read_buffer.ReadByte();
 
     //Check to see if the length of the data vectors matches the number_of_samples
-    
+
+    //DEBUG:
+    std::wstring bug_string = L"Notification " + std::to_wstring(++debug_notifications_received) + L" received.\n";
+    OutputDebugString(&bug_string[0]);
 }
 
 float PersonalCaddie::convertTicksToSeconds(uint32_t timer_ticks)
@@ -984,7 +988,7 @@ void PersonalCaddie::updateMadgwick()
 
             if (data_sets_missed > 0)
             {
-                std::wstring missedPackets = L"Missed " + std::to_wstring(data_sets_missed) + L" packets of data.\n";
+                std::wstring missedPackets = L"Missed " + std::to_wstring(data_sets_missed) + L" packets of data. Time stamp = " + std::to_wstring(m_first_data_time_stamp) + L"\n";
                 OutputDebugString(&missedPackets[0]);
 
                 if (m_adjusted_data_sets_remaining == 0)
