@@ -154,6 +154,7 @@ void PersonalCaddie::disconnectFromDevice()
         m_accelerometer_data_characteristic = nullptr;
         m_gyroscope_data_characteristic = nullptr;
         m_magnetometer_data_characteristic = nullptr;
+        m_composite_data_characteristic = nullptr;
         m_available_sensors_characteristic = nullptr;
 
         p_ble->terminateConnection();
@@ -338,6 +339,16 @@ void PersonalCaddie::getDataCharacteristics(Bluetooth::GenericAttributeProfile::
         case MAG_DATA_CHARACTERISTIC_UUID:
             this->m_magnetometer_data_characteristic = data_characteristics.GetAt(i);
             break;
+        case COMPOSITE_DATA_CHARACTERISTIC_UUID:
+            this->m_composite_data_characteristic = data_characteristics.GetAt(i);
+            //set the notification event handler for the composite data characteristic in the switch statement
+            //and continue to next iteration of loop instead of breaking out of switch
+            data_characteristics.GetAt(i).ValueChanged(Windows::Foundation::TypedEventHandler<GattCharacteristic, GattValueChangedEventArgs>(
+                [this](GattCharacteristic car, GattValueChangedEventArgs args)
+                {
+                    compositeDataCharacteristicEventHandler(car, args); //handler defined elsewhere to prevent multiple identical code blocks being needed here
+                }));
+            continue;
         case SETTINGS_CHARACTERISTIC_UUID:
             this->m_settings_characteristic = data_characteristics.GetAt(i);
             setup_notifcations = false; //the settings characteristic doesn't have notification capability
@@ -354,7 +365,7 @@ void PersonalCaddie::getDataCharacteristics(Bluetooth::GenericAttributeProfile::
             data_characteristics.GetAt(i).ValueChanged(Windows::Foundation::TypedEventHandler<GattCharacteristic, GattValueChangedEventArgs>(
                 [this](GattCharacteristic car, GattValueChangedEventArgs args)
                 {
-                    dataCharacteristicEventHandler(car, args); //handler defined elsewhere to prevent three identical code blocks being needed here
+                    dataCharacteristicEventHandler(car, args); //handler defined elsewhere to prevent multiple identical code blocks being needed here
                 }));
         }
     }
@@ -504,8 +515,76 @@ void PersonalCaddie::dataCharacteristicEventHandler(Bluetooth::GenericAttributeP
     //Check to see if the length of the data vectors matches the number_of_samples
 
     //DEBUG:
-    std::wstring bug_string = L"Notification " + std::to_wstring(++debug_notifications_received) + L" received.\n";
-    OutputDebugString(&bug_string[0]);
+    //std::wstring bug_string = L"Notification " + std::to_wstring(++debug_notifications_received) + L" received.\n";
+    //OutputDebugString(&bug_string[0]);
+}
+
+void PersonalCaddie::compositeDataCharacteristicEventHandler(Bluetooth::GenericAttributeProfile::GattCharacteristic& car, Bluetooth::GenericAttributeProfile::GattValueChangedEventArgs& args)
+{
+    //After a few months of using separate characteristics for each sensor I decided it would be based to put all sensor data into 
+    //a single composite characteristic. There's still potential benefit in having separate characteristics so I maintained all
+    //releveant code for it. Since the data layout in the composite characteristic is inherantly different I figured it was best
+    //to create a completely separate method.
+
+    //First get calibration and axis data for each sensor from the IMU class
+    std::pair<const float*, const float**> acc_calibration_data = this->p_imu->getAccelerometerCalibrationNumbers();
+    std::pair<const float*, const float**> gyr_calibration_data = this->p_imu->getGyroscopeCalibrationNumbers();
+    std::pair<const float*, const float**> mag_calibration_data = this->p_imu->getMagnetometerCalibrationNumbers();
+
+    std::vector<int> acc_axis_orientation_data = this->p_imu->getAccelerometerAxisOrientations();
+    std::vector<int> gyr_axis_orientation_data = this->p_imu->getGyroscopeAxisOrientations();
+    std::vector<int> mag_axis_orientation_data = this->p_imu->getMagnetometerAxisOrientations();
+
+    //Then read the physical data from the notification PDU
+    auto read_buffer = Windows::Storage::Streams::DataReader::FromBuffer(args.CharacteristicValue());
+    read_buffer.ByteOrder(Windows::Storage::Streams::ByteOrder::LittleEndian); //the nRF52840 uses little endian so we match it here
+
+    //The first four bytes of the characteristic contain a timestamp for when the first set of data in the 
+    //set was recorded. This is useful for keeping track of any delays the occur between transmissions and
+    //lost data packets
+    uint32_t timer_ticks = read_buffer.ReadUInt32();
+    m_first_data_time_stamp = convertTicksToSeconds(timer_ticks);
+
+    //Depending on the current sensor ODR we may receive more or less sensor samples in each notification. Since the characteristic
+    //size can't change we use the 5th byte to let us know the number of relevant samples to read. Read this byte and update the
+    //number_of_samples variable to reflect this amount.
+    number_of_samples = read_buffer.ReadByte();
+
+    //Finally read the appropriate number of sensor samples from the buffer. A single reading of the sensor is comprised of 6 bytes, 2 each 
+    //for each axes and the sensor data order goes acc, gyr then mag, which means the data in the read_buffer looks like so:
+    //[Acc_x_l_0, Acc_x_h_0, Acc_y_l_0, Acc_y_h_0, Acc_z_l_0, Acc_z_h_0, Gyr_x_l_0, Gyr_x_h_0, Gyr_y_l_0, Gyr_y_h_0, ...]. Since the 
+    //data is little endian the least significant byte comes before the most significant.
+    for (int i = 0; i < number_of_samples; i++)
+    {
+        //Read acc data first
+        for (int axis = X; axis <= Z; axis++)
+        {
+            int16_t axis_reading = read_buffer.ReadInt16();
+            int actual_axis = acc_axis_orientation_data[axis];
+            this->sensor_data[static_cast<int>(DataType::RAW_ACCELERATION)][actual_axis][i] = axis_reading * this->p_imu->getConversionRate(ACC_SENSOR) * acc_axis_orientation_data[axis + 3]; //Apply appropriate conversion from LSB to the current unit
+        }
+
+        //Read gyr data second
+        for (int axis = X; axis <= Z; axis++)
+        {
+            int16_t axis_reading = read_buffer.ReadInt16();
+            int actual_axis = gyr_axis_orientation_data[axis];
+            this->sensor_data[static_cast<int>(DataType::RAW_ROTATION)][actual_axis][i] = axis_reading * this->p_imu->getConversionRate(GYR_SENSOR) * gyr_axis_orientation_data[axis + 3]; //Apply appropriate conversion from LSB to the current unit
+        }
+
+        //Read mag data third
+        for (int axis = X; axis <= Z; axis++)
+        {
+            int16_t axis_reading = read_buffer.ReadInt16();
+            int actual_axis = mag_axis_orientation_data[axis];
+            this->sensor_data[static_cast<int>(DataType::RAW_MAGNETIC)][actual_axis][i] = axis_reading * this->p_imu->getConversionRate(MAG_SENSOR) * mag_axis_orientation_data[axis + 3]; //Apply appropriate conversion from LSB to the current unit
+        }
+    }
+
+    //once the raw data has been read update it with the appropriate calibration numbers for each sensor
+    updateRawDataWithCalibrationNumbers(DataType::RAW_ACCELERATION, DataType::ACCELERATION, ACC_SENSOR, acc_calibration_data.first, acc_calibration_data.second);
+    updateRawDataWithCalibrationNumbers(DataType::RAW_ROTATION, DataType::ROTATION, GYR_SENSOR, gyr_calibration_data.first, gyr_calibration_data.second);
+    updateRawDataWithCalibrationNumbers(DataType::RAW_MAGNETIC, DataType::MAGNETIC, MAG_SENSOR, mag_calibration_data.first, mag_calibration_data.second);
 }
 
 float PersonalCaddie::convertTicksToSeconds(uint32_t timer_ticks)
@@ -631,6 +710,31 @@ void PersonalCaddie::enableDataNotifications()
                     });
             }
         });
+
+    //Handle the composite data characteristic separately from the others
+    auto compositeCccdRead = m_composite_data_characteristic.ReadClientCharacteristicConfigurationDescriptorAsync();
+
+    compositeCccdRead.Completed([this](
+        IAsyncOperation<GattReadClientCharacteristicConfigurationDescriptorResult> const& sender,
+        AsyncStatus const status)
+        {
+            auto cccd_value = sender.get().ClientCharacteristicConfigurationDescriptor();
+            if (cccd_value == Bluetooth::GenericAttributeProfile::GattClientCharacteristicConfigurationDescriptorValue::None)
+            {
+                //the composite data characteristic isn't currently set to notify so turn on notifications now.
+                auto cccdCompWriteOn = m_composite_data_characteristic.WriteClientCharacteristicConfigurationDescriptorAsync(GattClientCharacteristicConfigurationDescriptorValue::Notify);
+                cccdCompWriteOn.Completed([this](IAsyncOperation<GattCommunicationStatus> const& sender, AsyncStatus const status)
+                    {
+                        bool compSuccess = cccdWriteHandler(sender, status);
+                        if (!compSuccess)
+                        {
+                            std::wstring message = L"An error occured when trying to enable composite data notifications.\n";
+                            event_handler(PersonalCaddieEventType::BLE_ALERT, (void*)&message);
+                            return;
+                        }
+                    });
+            }
+        });
 }
 
 void PersonalCaddie::disableDataNotifications()
@@ -695,6 +799,31 @@ void PersonalCaddie::disableDataNotifications()
                                         }
                                     });
                             });
+                    });
+            }
+        });
+
+    //Handle the composite data characteristic separately from the others
+    auto compositeCccdRead = m_composite_data_characteristic.ReadClientCharacteristicConfigurationDescriptorAsync();
+
+    compositeCccdRead.Completed([this](
+        IAsyncOperation<GattReadClientCharacteristicConfigurationDescriptorResult> const& sender,
+        AsyncStatus const status)
+        {
+            auto cccd_value = sender.get().ClientCharacteristicConfigurationDescriptor();
+            if (cccd_value == Bluetooth::GenericAttributeProfile::GattClientCharacteristicConfigurationDescriptorValue::Notify)
+            {
+                //the composite data characteristic is currently set to notify so turn off notifications now.
+                auto cccdCompWriteOff = m_composite_data_characteristic.WriteClientCharacteristicConfigurationDescriptorAsync(GattClientCharacteristicConfigurationDescriptorValue::None);
+                cccdCompWriteOff.Completed([this](IAsyncOperation<GattCommunicationStatus> const& sender, AsyncStatus const status)
+                    {
+                        bool compSuccess = cccdWriteHandler(sender, status);
+                        if (!compSuccess)
+                        {
+                            std::wstring message = L"An error occured when trying to disable composite data notifications.\n";
+                            event_handler(PersonalCaddieEventType::BLE_ALERT, (void*)&message);
+                            return;
+                        }
                     });
             }
         });

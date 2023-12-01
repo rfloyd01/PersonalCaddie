@@ -19,6 +19,7 @@ using namespace Windows::Devices;
 #define GYR_DATA_CHARACTERISTIC_UUID           0xBF37
 #define MAG_DATA_CHARACTERISTIC_UUID           0xBF38
 #define AVAILABLE_SENSORS_CHARACTERISTIC_UUID  0xBF39
+#define COMPOSITE_DATA_CHARACTERISTIC_UUID     0xBF40
 #define MAX_SENSOR_SAMPLES                     39 //at most we can hold 39 sensor readings in a single characteristic and send out the notification in a single packet
 
 //enums and structs used by the Personal Caddie class
@@ -136,6 +137,7 @@ private:
 	void getDataCharacteristics(Bluetooth::GenericAttributeProfile::GattDeviceService& data_service);
 	void getErrorCharacteristic(Bluetooth::GenericAttributeProfile::GattDeviceService& pc_service);
 	void dataCharacteristicEventHandler(Bluetooth::GenericAttributeProfile::GattCharacteristic& car, Bluetooth::GenericAttributeProfile::GattValueChangedEventArgs& args);
+	void compositeDataCharacteristicEventHandler(Bluetooth::GenericAttributeProfile::GattCharacteristic& car, Bluetooth::GenericAttributeProfile::GattValueChangedEventArgs& args);
 	void automaticallyConnect();
 
 	//Data Gathering/Manipulation
@@ -160,6 +162,7 @@ private:
 	Bluetooth::GenericAttributeProfile::GattCharacteristic m_accelerometer_data_characteristic{ nullptr };
 	Bluetooth::GenericAttributeProfile::GattCharacteristic m_gyroscope_data_characteristic{ nullptr };
 	Bluetooth::GenericAttributeProfile::GattCharacteristic m_magnetometer_data_characteristic{ nullptr };
+	Bluetooth::GenericAttributeProfile::GattCharacteristic m_composite_data_characteristic{ nullptr };
 
 	//    Methods and fields from original BluetoothLE Class     //
 	//Internal Updating Functions

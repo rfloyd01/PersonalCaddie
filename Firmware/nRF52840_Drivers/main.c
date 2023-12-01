@@ -52,7 +52,7 @@ uint8_t sensor_settings[SENSOR_SETTINGS_LENGTH];                                
 uint8_t m_current_sensor_samples = 10;                                              /**< The number of sensor samples currently being put into the acc,gy and mag characteristics (must be less than MAX_SENSOR_SAMPLES */
 uint32_t m_time_stamp;                                                              /**< Keeps track of the time that each data set is read at (this is measured in ticks of a 16MHz clock, i.e. 1 LSB = 1/16000000s = 62.5ns) */
 volatile bool m_data_ready = false;                                                 /**< Indicates when all characteristics have been filled with new data and we're ready to send it to the client  */
-bool m_use_composite_data  = false;                                                  /**< If this boolean is true, then all three sensors will have their data put into a single shared characteristic */
+bool m_use_composite_data  = true;                                                  /**< If this boolean is true, then all three sensors will have their data put into a single shared characteristic */
 
 //IMU Sensor Communication Parameters
 imu_communication_t imu_comm;                                                       /**< Structure that Holds information on how to communicate with each sensor */
@@ -519,14 +519,13 @@ static uint32_t data_notification_error_handler(uint32_t* ret)
         //This error occurs when we try to add a notification to the queue when the queue
         //is full. The m_notifications_in_queue variable of this file should prevent
         //this error code from occuring, so if it does occur it's indicative of some bigger
-        //failure elsewhere. We don't want this to crash our program so we call a while loop
-        //that will wait for the queue to completely empty out before moving on.
+        //failure elsewhere. We don't want this to crash our program so we return a custom
+        //error code.
         SEGGER_RTT_WriteString(0, "Error: Notification queue is full, waiting for it to empty.\n");
-        //while (m_notifications_in_queue > 0) {} //allow all notifications in the queue to transmit before adding more
         *ret = 0x69;
     }
-   // APP_ERROR_CHECK(*ret);
-   return 0;
+
+    return 0;
 }
 
 static void characteristic_update_and_notify_composite_characteristic()
@@ -552,39 +551,18 @@ static void characteristic_update_and_notify_composite_characteristic()
     data_notify_params.p_len  = &data_characteristic_size;
     data_notify_params.offset = 0;
 
-    //Notifications are never just sent out, they get added to an internal
-    //queue on the BLE stack first. This queue is large enough to accomodate
-    //data at very high ODRs, so at lower ODRs we need to limit the amount of 
-    //noticications we put into this queue. The reason for this is so that during
-    //periods of higher BLE traffic (which means not all notifications in the
-    //the queue are guaranteed to go out in the current connection interval)
-    //we can overwrite older data with newer data.
-    //while (m_notifications_in_queue >= m_notification_queue_limit) {} //allow the notification queue to empty appropriately before adding more data
+    //Attempt to add the notification to the notification queue. During times
+    //of heavy BLE traffic, this queue may fill up at higher sensor ODRs so if
+    //the queue is full don't add the current data set. Newer data will get
+    //added as the queue empties out.
+    uint32_t ret = 0;
+    ret = sd_ble_gatts_hvx(m_conn_handle, &data_notify_params);
+    data_notification_error_handler(&ret);
 
-    //The data in the composite data array can be overwritten  while the above while loop
-    //is active. Only when the below hvx() method is called will the data be "locked in"
-    //to the BLE stack's internal buffers.
-    uint32_t ret = 0; //start with some arbitrary value that isn't NRF_SUCCESS
-    while (ret != 0x69)
-    {
-        ret = sd_ble_gatts_hvx(m_conn_handle, &data_notify_params);
-        data_notification_error_handler(&ret);
-        m_notifications_in_queue++;
-        SEGGER_RTT_printf(0, "queue has %d notifications in it.\n", m_notifications_in_queue);
-    }
+    if (ret == 0x69) return;
+    m_notifications_in_queue++;
 
-    
-
-    //while (ret != NRF_SUCCESS)
-    //{
-    //    ret = sd_ble_gatts_hvx(m_conn_handle, &data_notify_params);
-    //    data_notification_error_handler(&ret);
-    //    if (ret == 0x60) return; //queue is full so skip this data set
-    //}
-    
-    //The notification was successfully added to the queue so we increment the 
-    //queue counting variable
-    //m_notifications_in_queue++;
+    //SEGGER_RTT_printf(0, "queue has %d notifications in it.\n", m_notifications_in_queue);
 }
 
 static void characteristic_update_and_notify_individual_characteristics()
@@ -644,32 +622,32 @@ static void characteristic_update_and_notify_individual_characteristics()
     //fill up, which in turn means we will only every try to add data
     //from the some characteristic into the queue until the queue empties out.
     //The result is major lag of the image in the front end of the application.
-    //while (m_notifications_in_queue > 0) {} //allow all notifications in the queue to transmit before adding more
+    while (m_notifications_in_queue > 0) {} //allow all notifications in the queue to transmit before adding more
 
     uint32_t ret = 0; //start with some arbitrary value that isn't NRF_SUCCESS
-    while (true)
-    {
-        ret = sd_ble_gatts_hvx(m_conn_handle, &acc_notify_params);
-        data_notification_error_handler(&ret);
+    //while (true)
+    //{
+    //    ret = sd_ble_gatts_hvx(m_conn_handle, &acc_notify_params);
+    //    data_notification_error_handler(&ret);
 
-        if (ret == 0x69) break;
-        SEGGER_RTT_printf(0, "queue has %d notifications in it.\n", ++m_notifications_in_queue);
-    }
+    //    if (ret == 0x69) break;
+    //    SEGGER_RTT_printf(0, "queue has %d notifications in it.\n", ++m_notifications_in_queue);
+    //}
 
     //The above while loop should make it so we're guaranteed to queue the below
     //three notifications without encountering the NRF_RESOURCES error, however,
     //we still need to do an error check after each call to to the hvx() method.
-    //while (ret != NRF_SUCCESS)
-    //{
-    //    ret = sd_ble_gatts_hvx(m_conn_handle, &acc_notify_params); //acc data notification
-    //    data_notification_error_handler(&ret);
+    while (ret != NRF_SUCCESS)
+    {
+        ret = sd_ble_gatts_hvx(m_conn_handle, &acc_notify_params); //acc data notification
+        data_notification_error_handler(&ret);
 
-    //    ret = sd_ble_gatts_hvx(m_conn_handle, &gyr_notify_params); //gyr data notification
-    //    data_notification_error_handler(&ret);
+        ret = sd_ble_gatts_hvx(m_conn_handle, &gyr_notify_params); //gyr data notification
+        data_notification_error_handler(&ret);
 
-    //    ret = sd_ble_gatts_hvx(m_conn_handle, &mag_notify_params); //mag data notification
-    //    data_notification_error_handler(&ret);
-    //}
+        ret = sd_ble_gatts_hvx(m_conn_handle, &mag_notify_params); //mag data notification
+        data_notification_error_handler(&ret);
+    }
 }
 
 
