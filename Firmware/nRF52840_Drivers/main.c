@@ -57,6 +57,7 @@ bool m_use_composite_data  = true;                                              
 //IMU Sensor Communication Parameters
 imu_communication_t imu_comm;                                                       /**< Structure that Holds information on how to communicate with each sensor */
 uint16_t desired_minimum_connection_interval, desired_maximum_connection_interval;  /**< The desired min and max connection interval */
+uint16_t m_connection_interval = 0;                                                 /**< The actuall connection interval of the current connection */
 static float current_sensor_odr = 59.5;                                             /**< Keeps track of the current sensor ODR, connection interval is set based on this variable */
 volatile bool m_notification_done = true;                                           /**< Indicates the number of notifications sent out in a single connection interval  */
 volatile int m_notifications_in_queue = 0;                                          /**< Let's us know the current number of notifications in the queue  */
@@ -562,7 +563,7 @@ static void characteristic_update_and_notify_composite_characteristic()
     if (ret == 0x69) return;
     m_notifications_in_queue++;
 
-    //SEGGER_RTT_printf(0, "queue has %d notifications in it.\n", m_notifications_in_queue);
+    //SEGGER_RTT_printf(0, "Queue has %d notifications in it.\n", m_notifications_in_queue);
 }
 
 static void characteristic_update_and_notify_individual_characteristics()
@@ -681,85 +682,137 @@ float findDecimalLCM(float a, float b)
 
 void calculate_samples_and_connection_interval()
 {
-   //This method is used to select the number of samples to store and the 
-   //data characteristics as a function of the current sensor ODR and connection interval.
+   //This method is used to select the number of samples to store in the 
+   //data characteristics as a function of the current sensor ODR and desired data collection time.
+   //It get's called when the application first starts, and any time the
+   //ODR of the sensors is updated from the front end application.
    //We want to minimize the amount of lag that occurs with the image on screen,
    //which is accomplished by minimizing the data collection time. 
-
-   //After some testing, 80 milliseconds seems to be a good target time for the connection interval.
+   //After some testing, 160 milliseconds seems to be a good target time for the data collection period.
    //There is a small lag seen on the screen in this case, but not really that noticeable,
    //and it allows us to collect at least a few samples at lower ODR values, which is 
    //more efficient than sending out samples 1 at a time.
 
-   float desired_lag_time = 0.08; //in seconds.
+   float desired_lag_time = 0.12; //in seconds.
    m_current_sensor_samples = current_sensor_odr * desired_lag_time;
 
-   //If ideal number of samples calcualted exceeds what can actually fit in the 
-   //data characteristic(s) then trim the actual number of samples back so they fit.
-   //This value will be slightly different depending on we're using the composite
-   //data characteristic or not.
+   if ((float)m_current_sensor_samples == (float)(current_sensor_odr * desired_lag_time))
+   {
+       //We need the data collection period to be less than the connection
+       //interval to ensure we get data in every single connection 
+       //interval. If the data collection time evenly divides the connection
+       //interval reduce the sample count by 1.
+       m_current_sensor_samples--;
+   }
+
+   //The desired lag time variable above represents what we "hope" the connection 
+   //interval will be. Since the connection interval is negotiated between the 
+   //BLE peripheral and Central we won't actually know what the connection interval
+   //is until it's set. In this method we assume that the desired lag time becomes the 
+   //connection interval and set the number of samples to collect for eac notification
+   //accordingly. Essentially, we want the data collection time to be as close to the 
+   //lag time while still being less than it. This will ensure that new data makes it to 
+   //the front end during each connection interval
    if (m_use_composite_data)
    {
-       if (m_current_sensor_samples > (MAX_SENSOR_SAMPLES / 3)) m_current_sensor_samples = (MAX_SENSOR_SAMPLES / 3);
+       //In the case where a single characteristic is being used for each sensor, we can hold
+       //MAX_SENSOR_SAMPLES worth of data in the entire characteristic, which means each 
+       //individual sensor can only contribute MAX_SENSOR_SAMPLES/3 before the characteristic
+       //is full.
+       if (m_current_sensor_samples > (MAX_SENSOR_SAMPLES / 3))
+       {
+          
+           //If we exceed the number of samples that will fit in the characteristic
+           //we can simply split up the data between a few notifications. The fewer notifications
+           //the better, and there's a cap on five notifcations. As an example, at a sensor
+           //ODR of 100Hz it will take 16 samples to reach the desired lag time of 0.16 seconds.
+           //Since the data collection time equals the connection interval we lower the number
+           //of samples to 15 (which will instead take 0.15 seconds to collect). The maximum
+           //number of samples that fit in the characteristic is 13 so what we do is split the 
+           //15 data points into 3 groups of 5 data points, each of which is sent out in a 
+           //different notification.
+           bool found = false;
+           for (int i = 2; i <= 5; i++)
+           {
+               if (m_current_sensor_samples % i == 0)
+               {
+                   m_current_sensor_samples = m_current_sensor_samples / i;
+                   found = true;
+                   break;
+               }
+           }
+
+           //If the number of samples can't be split up into 5 notifications or
+           //less then just use the full characteristic
+           if (!found) m_current_sensor_samples = (MAX_SENSOR_SAMPLES / 3);
+       }
    }
    else
    {
+       //Unlike when using a single 
+       //composite charcteristic, when using three separate characteristics the odds are lower 
+       //that data from each sensor will make it to the front end in a single connection interval
+       //(although it's possible to achieve multiple characteristic notifications in a single 
+       //connection interval, only one is guaranteed during times of high BLE traffic). Since this
+       //is the case we want to minimize the total notifications going out, so just fill each
+       //characteristic to max capacity.
        if (m_current_sensor_samples > MAX_SENSOR_SAMPLES) m_current_sensor_samples = MAX_SENSOR_SAMPLES;
    }
    
    SEGGER_RTT_printf(0, "%d sensor samples have been selected.\n", m_current_sensor_samples);
 
-   //Calculate the actual lag time in milliseconds. Subtract 1 millisecond to guarantee
-   //a longer data collection time than connection interval
-   int actual_lag_time = 1000.0 * m_current_sensor_samples / current_sensor_odr - 1; 
-   
-   desired_maximum_connection_interval = actual_lag_time - (actual_lag_time % 15); //round down to the nearst 15th millisecond
+   //Set the desired maximum and minimum connection interval values (which are used to negotiate
+   //the interval with the central device) based on the desired lag time above. These values
+   //must be multiples of 15 milliseconds with at least 15 millisecond spacing between them.
+   desired_maximum_connection_interval = (int)(desired_lag_time * 1000) - ((int)(desired_lag_time * 1000) % 15); //round down to the nearst 15th millisecond
    desired_minimum_connection_interval = desired_maximum_connection_interval - 15;
-
-   //Set a limit on the amount of notifications that can fit in the notification queue
-   //based on the desired minimum connection interval
-   m_notification_queue_limit = 1 + desired_minimum_connection_interval / (1000 * m_current_sensor_samples) * current_sensor_odr;
-   SEGGER_RTT_printf(0, "Notification queue length: %d.\n", m_notification_queue_limit);
 }
 
 void set_sensor_samples(int actual_connection_interval)
 {
-    //This method is used to make sure we maximize the number of sensor samples to store in 
-    //the data characteristics. While the calculate_samples_and_connection_interval()
-    //method above also does this, we have no way of knowing what the connection interval
-    //will be until after it's negotiated between the gatt server and client. Once we have
-    //the actual time interval, we use this method just to make sure the number of 
-    //samples we've selected works out.
-    int maximum_samples = current_sensor_odr * (float)actual_connection_interval / 1000.0;
+    //This method gets called after the connection interval has been changed. It's used to 
+    //confirm that the number of data samples we collect in a single period is maximized.
+    //It pretty much has the same logic as the calculate_samples_and_connection_interval()
+    //method above, however, it uses the actual negotiated connection interval instead of 
+    //the desired one.
+    if (actual_connection_interval != 0) m_connection_interval = actual_connection_interval;
+    int maximum_samples = current_sensor_odr * (float)m_connection_interval / 1000.0;
 
+    if ((float)maximum_samples == (float)(current_sensor_odr * (float)m_connection_interval / 1000.0))
+    {
+        maximum_samples--;
+    }
 
-    //If maximum samples exceed what can actually fit in the 
-    //data characteristic(s) then trim the actual number of samples back so they fit.
-    //This value will be slightly different depending on we're using the composite
-    //data characteristic or not.
     if (m_use_composite_data)
     {
-        if (maximum_samples > (MAX_SENSOR_SAMPLES / 3)) maximum_samples = (MAX_SENSOR_SAMPLES / 3);
+        if (maximum_samples > (MAX_SENSOR_SAMPLES / 3))
+        {
+            bool found = false;
+            for (int i = 2; i <= 5; i++)
+            {
+                if (maximum_samples % i == 0)
+                {
+                    maximum_samples = maximum_samples / i;
+                    found = true;
+                    break;
+                }
+            }
+
+            if (!found) maximum_samples = (MAX_SENSOR_SAMPLES / 3);
+        }
     }
     else
     {
         if (maximum_samples > MAX_SENSOR_SAMPLES) maximum_samples = MAX_SENSOR_SAMPLES;
     }
 
-    //If the actual maximum number of samples calculated by this method exceeds the 
-    //theoretical maximum calculated in the above calculate_samples_and_connection_interval()
-    //method, update the m_current_sensor_samples variable. We also need to recalculate
-    //the maximum number of notifications allowed in the notification queue
-    if (maximum_samples > m_current_sensor_samples)
+    //If the new maximum value doesn't match the value for m_current_sensor_samples
+    //calculated in the calculate_samples_and_connection_interval() method, update
+    //that value now.
+    if (maximum_samples != m_current_sensor_samples)
     {
         m_current_sensor_samples = maximum_samples;
-
-        //Update notification queue limit (this only matters when using the
-        //composite data characteristic).
-        m_notification_queue_limit = 1 + actual_connection_interval / (1000 * m_current_sensor_samples) * current_sensor_odr;
-
-        SEGGER_RTT_printf(0, "%d sensor samples have been selected.\n", m_current_sensor_samples);
-        SEGGER_RTT_printf(0, "Notification queue length: %d.\n", m_notification_queue_limit);
+        SEGGER_RTT_printf(0, "Based on connection interval and ODR, sensor samples have been adjusted to %d.\n", m_current_sensor_samples);
     }
 }
 
@@ -994,6 +1047,12 @@ static void sensor_settings_write_handler(uint16_t conn_handle, ble_sensor_servi
                     //If the change was successful we also need to update the data
                     //aquisition timer to reflect this new odr
                     update_data_read_timer(1000.0 / current_sensor_odr);
+
+                    //We also need to update the number of sensor samples
+                    //to put in the data characteristics (it's possible that
+                    //changing the sensor odr wont trigger a connection interval
+                    //change which is normally how this method is called).
+                    set_sensor_samples(0); //using 0 here forces the method to use the current connection interval
                 }
             }
             break;
