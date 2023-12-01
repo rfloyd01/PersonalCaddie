@@ -29,6 +29,7 @@ NRF_SDH_BLE_OBSERVER(_name ## _obs,                                             
 #define ACC_DATA_CHARACTERISTIC_UUID      0xBF36
 #define GYR_DATA_CHARACTERISTIC_UUID      0xBF37
 #define MAG_DATA_CHARACTERISTIC_UUID      0xBF38
+#define DATA_CHARACTERISTIC_UUID          0xBF40
 #define AVAILABLE_SENSORS_CHAR_UUID       0xBF39
 
 #define MAX_SENSOR_SAMPLES 39                /**< The max number of sensor samples we can put into a characteristic and still send out all data with 1 notification*/
@@ -50,7 +51,7 @@ typedef struct
 struct ble_sensor_service_s
 {
     uint16_t                    service_handle;                         /**< Handle of Sensor Service (as provided by the BLE stack). */
-    ble_gatts_char_handles_t    data_handles[3];                        /**< Handles related to the Data Characteristic. */
+    ble_gatts_char_handles_t    data_handles[4];                        /**< Handles related to the Data Characteristic. */
     ble_gatts_char_handles_t    settings_handles;                       /**< Handles related to the Settings Characteristic. */
     ble_gatts_char_handles_t    available_handle;                       /**< Handle related to the Available Sensors Characteristic. */
     uint8_t                     uuid_type;                              /**< UUID type for the Sensor Service. */

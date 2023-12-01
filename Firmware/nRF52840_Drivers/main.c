@@ -30,43 +30,46 @@
 #include "nRF_Implementations/pc_timer.h"
 
 //Soft Device Parameters
-#define DEAD_BEEF                       0xDEADBEEF                                /**< Value used as error code on stack dump, can be used to identify stack location on stack unwind. */
-BLE_SENSOR_SERVICE_DEF(m_ss);                                                     /**< IMU Sensor Service instance. */
-BLE_PC_SERVICE_DEF(m_pc);                                                     /**< Personal Caddie Service instance. */
-uint16_t m_conn_handle = BLE_CONN_HANDLE_INVALID;                                 /**< Handle of the current connection. */
+#define DEAD_BEEF                       0xDEADBEEF                                 /**< Value used as error code on stack dump, can be used to identify stack location on stack unwind. */
+BLE_SENSOR_SERVICE_DEF(m_ss);                                                      /**< IMU Sensor Service instance. */
+BLE_PC_SERVICE_DEF(m_pc);                                                          /**< Personal Caddie Service instance. */
+uint16_t m_conn_handle = BLE_CONN_HANDLE_INVALID;                                  /**< Handle of the current connection. */
 
 //IMU Sensor Parameters
-static uint8_t default_sensors[3] = {FXOS8700_ACC, FXAS21002_GYR, FXOS8700_MAG};  /**< Default sensors that are attempted to be initialized first. */
-static bool sensors_initialized[3] = {false, false, false};                       /**< Keep track of which sensors are currently initialized */
-static uint8_t internal_sensors[10];                                              /**< An array for holding the addresses of sensors on the internal TWI line */
-static uint8_t external_sensors[10];                                              /**< An array for holding the addresses of sensors on the external TWI line */
+static uint8_t default_sensors[3] = {FXOS8700_ACC, FXAS21002_GYR, FXOS8700_MAG};   /**< Default sensors that are attempted to be initialized first. */
+static bool sensors_initialized[3] = {false, false, false};                        /**< Keep track of which sensors are currently initialized */
+static uint8_t internal_sensors[10];                                               /**< An array for holding the addresses of sensors on the internal TWI line */
+static uint8_t external_sensors[10];                                               /**< An array for holding the addresses of sensors on the external TWI line */
 static uint8_t internal_sensors_found = 0;
 static uint8_t external_sensors_found = 0;
 
 //IMU Sensor Data Parameters
-static uint8_t acc_characteristic_data[5 + MAX_SENSOR_SAMPLES * SAMPLE_SIZE];      /**< An array for holding current accelerometer readings */
-static uint8_t gyr_characteristic_data[5 + MAX_SENSOR_SAMPLES * SAMPLE_SIZE];      /**< An array for holding current gyroscope readings */
-static uint8_t mag_characteristic_data[5 + MAX_SENSOR_SAMPLES * SAMPLE_SIZE];      /**< An array for holding current magnetometer readings */
-uint8_t sensor_settings[SENSOR_SETTINGS_LENGTH];                                   /**< An array represnting the IMU sensor settings */
-uint8_t m_current_sensor_samples = 10;                                             /**< The number of sensor samples currently being put into the acc,gy and mag characteristics (must be less than MAX_SENSOR_SAMPLES */
-uint32_t m_time_stamp;                                                             /**< Keeps track of the time that each data set is read at (this is measured in ticks of a 16MHz clock, i.e. 1 LSB = 1/16000000s = 62.5ns) */
-volatile bool m_data_ready  = false;                                               /**< Indicates when all characteristics have been filled with new data and we're ready to send it to the client  */
+static uint8_t acc_characteristic_data[5 + MAX_SENSOR_SAMPLES * SAMPLE_SIZE];       /**< An array for holding current accelerometer readings */
+static uint8_t gyr_characteristic_data[5 + MAX_SENSOR_SAMPLES * SAMPLE_SIZE];       /**< An array for holding current gyroscope readings */
+static uint8_t mag_characteristic_data[5 + MAX_SENSOR_SAMPLES * SAMPLE_SIZE];       /**< An array for holding current magnetometer readings */
+static uint8_t composite_characteristic_data[5 + MAX_SENSOR_SAMPLES * SAMPLE_SIZE]; /**< An array for holding current combined sensor readings */
+uint8_t sensor_settings[SENSOR_SETTINGS_LENGTH];                                    /**< An array represnting the IMU sensor settings */
+uint8_t m_current_sensor_samples = 10;                                              /**< The number of sensor samples currently being put into the acc,gy and mag characteristics (must be less than MAX_SENSOR_SAMPLES */
+uint32_t m_time_stamp;                                                              /**< Keeps track of the time that each data set is read at (this is measured in ticks of a 16MHz clock, i.e. 1 LSB = 1/16000000s = 62.5ns) */
+volatile bool m_data_ready = false;                                                 /**< Indicates when all characteristics have been filled with new data and we're ready to send it to the client  */
+bool m_use_composite_data  = false;                                                  /**< If this boolean is true, then all three sensors will have their data put into a single shared characteristic */
 
 //IMU Sensor Communication Parameters
-imu_communication_t imu_comm;                                                      /**< Structure that Holds information on how to communicate with each sensor */
-uint16_t desired_minimum_connection_interval, desired_maximum_connection_interval; /**< The desired min and max connection interval */
-static float current_sensor_odr = 59.5;                                            /**< Keeps track of the current sensor ODR, connection interval is set based on this variable */
-volatile bool m_notification_done = true;                                          /**< Indicates the number of notifications sent out in a single connection interval  */
-volatile int m_notifications_in_queue = 0;                                         /**< Let's us know the current number of notifications in the queue  */
+imu_communication_t imu_comm;                                                       /**< Structure that Holds information on how to communicate with each sensor */
+uint16_t desired_minimum_connection_interval, desired_maximum_connection_interval;  /**< The desired min and max connection interval */
+static float current_sensor_odr = 59.5;                                             /**< Keeps track of the current sensor ODR, connection interval is set based on this variable */
+volatile bool m_notification_done = true;                                           /**< Indicates the number of notifications sent out in a single connection interval  */
+volatile int m_notifications_in_queue = 0;                                          /**< Let's us know the current number of notifications in the queue  */
+volatile int m_notification_queue_limit = 1;                                        /**< Limits the number of notifications allowed in the notification queue based on the current sensor ODR and connection interval*/
 
 //LED Pin Parameters
-#define RED_LED            NRF_GPIO_PIN_MAP(0, 24)                                 /**< Red LED Indicator on BLE 33 sense*/
-#define BLUE_LED           NRF_GPIO_PIN_MAP(0, 6)                                  /**< Blue LED Indicator on BLE 33 sense*/
-#define GREEN_LED          NRF_GPIO_PIN_MAP(0, 16)                                 /**< Green LED Indicator on BLE 33 sense*/
-volatile uint8_t active_led = BLUE_LED;                                            /**< Variable used to keep track of which color LED to turn on/off*/
+#define RED_LED            NRF_GPIO_PIN_MAP(0, 24)                                  /**< Red LED Indicator on BLE 33 sense*/
+#define BLUE_LED           NRF_GPIO_PIN_MAP(0, 6)                                   /**< Blue LED Indicator on BLE 33 sense*/
+#define GREEN_LED          NRF_GPIO_PIN_MAP(0, 16)                                  /**< Green LED Indicator on BLE 33 sense*/
+volatile uint8_t active_led = BLUE_LED;                                             /**< Variable used to keep track of which color LED to turn on/off*/
 
 //Personal Caddie Parameters
-static personal_caddie_operating_mode_t current_operating_mode = ADVERTISING_MODE; /**< The chip starts in advertising mode*/
+static personal_caddie_operating_mode_t current_operating_mode = ADVERTISING_MODE;  /**< The chip starts in advertising mode*/
 
 //Debugging Parameters
 int notification_failures = 0;
@@ -502,7 +505,7 @@ static void error_notification(int err_code)
 static uint32_t data_notification_error_handler(uint32_t* ret)
 {
     //This method is for handling common errors that happen during notification
-    //and shouldn't crash the application.
+    //can be handled without crashing the application.
     if (*ret == BLE_ERROR_GATTS_SYS_ATTR_MISSING)
     {
         //This error will pop up during a secure connection when we aren't sure who
@@ -510,32 +513,82 @@ static uint32_t data_notification_error_handler(uint32_t* ret)
         //setting the CCCD to notify from the app). Calling the below method should fix
         //things.
         *ret = sd_ble_gatts_sys_attr_set(m_conn_handle, NULL, 0, 0);
-        APP_ERROR_CHECK(*ret);
     }
     else if (*ret == NRF_ERROR_RESOURCES)
     {
-        //This error occurs when there are more notifcations than allowed in the queue.
-        //This can happen if a notification fails to send and we need to resend it, but 
-        //more data comes in before this occurs. In this case we set the m_notification
-        //complete boolean to false, and wait for it to get set to true in the BLE stack
-        //handler (this will happen automatically when the next notification goes out).
-        m_notification_done = false;
-        //SEGGER_RTT_WriteString(0, "Notification queue is full.\n");
-        *ret = 0x69; //a great error code
+        //This error occurs when we try to add a notification to the queue when the queue
+        //is full. The m_notifications_in_queue variable of this file should prevent
+        //this error code from occuring, so if it does occur it's indicative of some bigger
+        //failure elsewhere. We don't want this to crash our program so we call a while loop
+        //that will wait for the queue to completely empty out before moving on.
+        SEGGER_RTT_WriteString(0, "Error: Notification queue is full, waiting for it to empty.\n");
+        //while (m_notifications_in_queue > 0) {} //allow all notifications in the queue to transmit before adding more
+        *ret = 0x69;
     }
+   // APP_ERROR_CHECK(*ret);
+   return 0;
 }
 
-static void characteristic_update_and_notify()
+static void characteristic_update_and_notify_composite_characteristic()
 {
-    ble_gatts_hvx_params_t acc_notify_params, gyr_notify_params, mag_notify_params;
-    memset(&acc_notify_params, 0, sizeof(acc_notify_params));
-    memset(&gyr_notify_params, 0, sizeof(gyr_notify_params));
-    memset(&mag_notify_params, 0, sizeof(mag_notify_params));
+    //Add the time stamp for the current data set and current number of 
+    //samples to the beginning of the characteristic.
+    for (int i = 0; i < 4; i++)
+    {
+        uint8_t* time_start = (uint8_t*)&m_time_stamp; //cast the float to a 32-bit integer to take up 4 array slots
+        composite_characteristic_data[i] = *(time_start + i);
+    }
+    composite_characteristic_data[4] = m_current_sensor_samples;
 
-    uint16_t acc_data_characteristic_size = 5 + MAX_SENSOR_SAMPLES * SAMPLE_SIZE;
-    uint16_t gyr_data_characteristic_size = 5 + MAX_SENSOR_SAMPLES * SAMPLE_SIZE;
-    uint16_t mag_data_characteristic_size = 5 + MAX_SENSOR_SAMPLES * SAMPLE_SIZE;
+    //Setup composite data notification
+    ble_gatts_hvx_params_t data_notify_params;
+    memset(&data_notify_params, 0, sizeof(data_notify_params));
 
+    uint16_t data_characteristic_size = 5 + MAX_SENSOR_SAMPLES * SAMPLE_SIZE;
+    
+    data_notify_params.type = BLE_GATT_HVX_NOTIFICATION;
+    data_notify_params.handle = m_ss.data_handles[3].value_handle;
+    data_notify_params.p_data = composite_characteristic_data;
+    data_notify_params.p_len  = &data_characteristic_size;
+    data_notify_params.offset = 0;
+
+    //Notifications are never just sent out, they get added to an internal
+    //queue on the BLE stack first. This queue is large enough to accomodate
+    //data at very high ODRs, so at lower ODRs we need to limit the amount of 
+    //noticications we put into this queue. The reason for this is so that during
+    //periods of higher BLE traffic (which means not all notifications in the
+    //the queue are guaranteed to go out in the current connection interval)
+    //we can overwrite older data with newer data.
+    //while (m_notifications_in_queue >= m_notification_queue_limit) {} //allow the notification queue to empty appropriately before adding more data
+
+    //The data in the composite data array can be overwritten  while the above while loop
+    //is active. Only when the below hvx() method is called will the data be "locked in"
+    //to the BLE stack's internal buffers.
+    uint32_t ret = 0; //start with some arbitrary value that isn't NRF_SUCCESS
+    while (ret != 0x69)
+    {
+        ret = sd_ble_gatts_hvx(m_conn_handle, &data_notify_params);
+        data_notification_error_handler(&ret);
+        m_notifications_in_queue++;
+        SEGGER_RTT_printf(0, "queue has %d notifications in it.\n", m_notifications_in_queue);
+    }
+
+    
+
+    //while (ret != NRF_SUCCESS)
+    //{
+    //    ret = sd_ble_gatts_hvx(m_conn_handle, &data_notify_params);
+    //    data_notification_error_handler(&ret);
+    //    if (ret == 0x60) return; //queue is full so skip this data set
+    //}
+    
+    //The notification was successfully added to the queue so we increment the 
+    //queue counting variable
+    //m_notifications_in_queue++;
+}
+
+static void characteristic_update_and_notify_individual_characteristics()
+{
     //Add the time stamp for the current data set and current number of 
     //samples to the end of each of the data characteristics.
     for (int i = 0; i < 4; i++)
@@ -546,18 +599,20 @@ static void characteristic_update_and_notify()
         gyr_characteristic_data[MAX_SENSOR_SAMPLES * SAMPLE_SIZE + i] = *(time_start + i);
         mag_characteristic_data[MAX_SENSOR_SAMPLES * SAMPLE_SIZE + i] = *(time_start + i);
     }
+
     acc_characteristic_data[MAX_SENSOR_SAMPLES * SAMPLE_SIZE + 4] = m_current_sensor_samples;
     gyr_characteristic_data[MAX_SENSOR_SAMPLES * SAMPLE_SIZE + 4] = m_current_sensor_samples;
     mag_characteristic_data[MAX_SENSOR_SAMPLES * SAMPLE_SIZE + 4] = m_current_sensor_samples;
 
-    //Uncomment to see raw accelerometer bytes
-    //SEGGER_RTT_WriteString(0, "Accelerometer data.");
-    //for (int i = 0; i < m_current_sensor_samples * 6; i++)
-    //{
-    //    if (i % 6 == 0) SEGGER_RTT_WriteString(0, "\n");
-    //    SEGGER_RTT_printf(0, "0x%x ", acc_characteristic_data[i]);
-    //}
-    //SEGGER_RTT_WriteString(0, "\n\n");
+    ble_gatts_hvx_params_t acc_notify_params, gyr_notify_params, mag_notify_params;
+    memset(&acc_notify_params, 0, sizeof(acc_notify_params));
+    memset(&gyr_notify_params, 0, sizeof(gyr_notify_params));
+    memset(&mag_notify_params, 0, sizeof(mag_notify_params));
+
+    //uint16_t acc_data_characteristic_size = 5 + MAX_SENSOR_SAMPLES * SAMPLE_SIZE;
+    uint16_t acc_data_characteristic_size = 5;
+    uint16_t gyr_data_characteristic_size = 5 + MAX_SENSOR_SAMPLES * SAMPLE_SIZE;
+    uint16_t mag_data_characteristic_size = 5 + MAX_SENSOR_SAMPLES * SAMPLE_SIZE;
 
     //Setup accelerometer notification first
     acc_notify_params.type = BLE_GATT_HVX_NOTIFICATION;
@@ -580,61 +635,53 @@ static void characteristic_update_and_notify()
     mag_notify_params.p_len  = &mag_data_characteristic_size;
     mag_notify_params.offset = 0;
 
-    //Send out notifications for each data characteristic, however, we
-    //can only do so if there's enough room in the notification queue.
+    //Notifications are never just sent out, they get added to an internal
+    //queue on the BLE stack first. When using individual characteristics
+    //for each sensor we need to wait for this queue to completely empty out
+    //before adding more data. This is because during times of higher BLE
+    //traffic we might not be able to transmit all of the notifications in the
+    //queue during the same connection interval. This will cause the queue to 
+    //fill up, which in turn means we will only every try to add data
+    //from the some characteristic into the queue until the queue empties out.
+    //The result is major lag of the image in the front end of the application.
+    //while (m_notifications_in_queue > 0) {} //allow all notifications in the queue to transmit before adding more
 
-    //DEBUG
-    while (m_notifications_in_queue > 0) {} //allow all notifications in the queue to transmit before adding more
-
-    uint32_t test_ret = 0;
-    //SEGGER_RTT_printf(0, "Before Adding Notifications: %d notifications queued.\n", m_notifications_in_queue);
-    
+    uint32_t ret = 0; //start with some arbitrary value that isn't NRF_SUCCESS
     while (true)
     {
-        test_ret = sd_ble_gatts_hvx(m_conn_handle, &acc_notify_params); //acc data notification
-        data_notification_error_handler(&test_ret);
-        if (test_ret == 0x69) break;
-        m_notifications_in_queue++;
+        ret = sd_ble_gatts_hvx(m_conn_handle, &acc_notify_params);
+        data_notification_error_handler(&ret);
+
+        if (ret == 0x69) break;
+        SEGGER_RTT_printf(0, "queue has %d notifications in it.\n", ++m_notifications_in_queue);
     }
 
-    //SEGGER_RTT_printf(0, "After Adding Notifications: %d notifications queued.\n\n", m_notifications_in_queue);
+    //The above while loop should make it so we're guaranteed to queue the below
+    //three notifications without encountering the NRF_RESOURCES error, however,
+    //we still need to do an error check after each call to to the hvx() method.
+    //while (ret != NRF_SUCCESS)
+    //{
+    //    ret = sd_ble_gatts_hvx(m_conn_handle, &acc_notify_params); //acc data notification
+    //    data_notification_error_handler(&ret);
 
-    //while (NRF_RADIO->PACKETPTR == 0) {}
+    //    ret = sd_ble_gatts_hvx(m_conn_handle, &gyr_notify_params); //gyr data notification
+    //    data_notification_error_handler(&ret);
 
-    ////Attempt to dereference the packet pointer to see what's there
-    //uint32_t* packet_location = (uint32_t*) NRF_RADIO->PACKETPTR;
-    //uint32_t packet_value = *packet_location;
+    //    ret = sd_ble_gatts_hvx(m_conn_handle, &mag_notify_params); //mag data notification
+    //    data_notification_error_handler(&ret);
+    //}
+}
 
 
-    if (m_notification_done)
+static void characteristic_update_and_notify()
+{
+    if (m_use_composite_data)
     {
-        uint32_t ret = sd_ble_gatts_hvx(m_conn_handle, &acc_notify_params); //acc data notification
-        data_notification_error_handler(&ret);
-        if (ret == 0x69)
-        {
-            SEGGER_RTT_printf(0, "Notification failure %d from ACC.\n", ++notification_failures);
-            return; //too many notifications in queue, wait until next cycle to send data
-        }
-
-        SEGGER_RTT_WriteString(0, "ACC was notified.\n");
-
-        ret = sd_ble_gatts_hvx(m_conn_handle, &gyr_notify_params); //gyr data notification
-        data_notification_error_handler(&ret);
-        if (ret == 0x69)
-        {
-            SEGGER_RTT_printf(0, "Notification failure %d from GYR.\n", ++notification_failures);
-            return; //too many notifications in queue, wait until next cycle to send data
-        }
-
-        ret = sd_ble_gatts_hvx(m_conn_handle, &mag_notify_params); //mag data notification
-        data_notification_error_handler(&ret);
-        if (ret == 0x69)
-        {
-            SEGGER_RTT_printf(0, "Notification failure %d from MAG.\n", ++notification_failures);
-            return; //too many notifications in queue, wait until next cycle to send data
-        }
-    
-        APP_ERROR_CHECK(ret);
+        characteristic_update_and_notify_composite_characteristic();
+    }
+    else
+    {
+        characteristic_update_and_notify_individual_characteristics();
     }
 }
 
@@ -668,7 +715,20 @@ void calculate_samples_and_connection_interval()
 
    float desired_lag_time = 0.08; //in seconds.
    m_current_sensor_samples = current_sensor_odr * desired_lag_time;
-   if (m_current_sensor_samples > MAX_SENSOR_SAMPLES) m_current_sensor_samples = MAX_SENSOR_SAMPLES;
+
+   //If ideal number of samples calcualted exceeds what can actually fit in the 
+   //data characteristic(s) then trim the actual number of samples back so they fit.
+   //This value will be slightly different depending on we're using the composite
+   //data characteristic or not.
+   if (m_use_composite_data)
+   {
+       if (m_current_sensor_samples > (MAX_SENSOR_SAMPLES / 3)) m_current_sensor_samples = (MAX_SENSOR_SAMPLES / 3);
+   }
+   else
+   {
+       if (m_current_sensor_samples > MAX_SENSOR_SAMPLES) m_current_sensor_samples = MAX_SENSOR_SAMPLES;
+   }
+   
    SEGGER_RTT_printf(0, "%d sensor samples have been selected.\n", m_current_sensor_samples);
 
    //Calculate the actual lag time in milliseconds. Subtract 1 millisecond to guarantee
@@ -677,6 +737,11 @@ void calculate_samples_and_connection_interval()
    
    desired_maximum_connection_interval = actual_lag_time - (actual_lag_time % 15); //round down to the nearst 15th millisecond
    desired_minimum_connection_interval = desired_maximum_connection_interval - 15;
+
+   //Set a limit on the amount of notifications that can fit in the notification queue
+   //based on the desired minimum connection interval
+   m_notification_queue_limit = 1 + desired_minimum_connection_interval / (1000 * m_current_sensor_samples) * current_sensor_odr;
+   SEGGER_RTT_printf(0, "Notification queue length: %d.\n", m_notification_queue_limit);
 }
 
 void set_sensor_samples(int actual_connection_interval)
@@ -686,14 +751,37 @@ void set_sensor_samples(int actual_connection_interval)
     //method above also does this, we have no way of knowing what the connection interval
     //will be until after it's negotiated between the gatt server and client. Once we have
     //the actual time interval, we use this method just to make sure the number of 
-    //samples we've selected works out. For example, if the current samples we want to collect
+    //samples we've selected works out.
     int maximum_samples = current_sensor_odr * (float)actual_connection_interval / 1000.0;
-    if (maximum_samples > MAX_SENSOR_SAMPLES) maximum_samples = MAX_SENSOR_SAMPLES;
 
+
+    //If maximum samples exceed what can actually fit in the 
+    //data characteristic(s) then trim the actual number of samples back so they fit.
+    //This value will be slightly different depending on we're using the composite
+    //data characteristic or not.
+    if (m_use_composite_data)
+    {
+        if (maximum_samples > (MAX_SENSOR_SAMPLES / 3)) maximum_samples = (MAX_SENSOR_SAMPLES / 3);
+    }
+    else
+    {
+        if (maximum_samples > MAX_SENSOR_SAMPLES) maximum_samples = MAX_SENSOR_SAMPLES;
+    }
+
+    //If the actual maximum number of samples calculated by this method exceeds the 
+    //theoretical maximum calculated in the above calculate_samples_and_connection_interval()
+    //method, update the m_current_sensor_samples variable. We also need to recalculate
+    //the maximum number of notifications allowed in the notification queue
     if (maximum_samples > m_current_sensor_samples)
     {
         m_current_sensor_samples = maximum_samples;
+
+        //Update notification queue limit (this only matters when using the
+        //composite data characteristic).
+        m_notification_queue_limit = 1 + actual_connection_interval / (1000 * m_current_sensor_samples) * current_sensor_odr;
+
         SEGGER_RTT_printf(0, "%d sensor samples have been selected.\n", m_current_sensor_samples);
+        SEGGER_RTT_printf(0, "Notification queue length: %d.\n", m_notification_queue_limit);
     }
 }
 
@@ -702,10 +790,26 @@ void data_read_handler(int measurements_taken)
     //Everytime the data reading timer goes off we take sensor readings and then 
     //update the appropriate characteristic values. The timer should go off SENSOR_SAMPLES times
     //every connection interval
-    imu_comm.acc_comm.get_data(acc_characteristic_data, SAMPLE_SIZE * measurements_taken);
-    imu_comm.gyr_comm.get_data(gyr_characteristic_data, SAMPLE_SIZE * measurements_taken);
-    imu_comm.mag_comm.get_data(mag_characteristic_data, SAMPLE_SIZE * measurements_taken);
-    //SEGGER_RTT_printf(0, "Readings complete at %d\n", get_current_data_time());
+    int offset = SAMPLE_SIZE * measurements_taken;
+
+    if (m_use_composite_data)
+    {
+        //If the m_use_composite_data boolean is true then data from all three sensors is 
+        //stored in a single characteristic.
+        offset *= 3; //we can only fit 1/3 of the data when sharing a single characteristic
+        offset += 5; //the composite data characteristic has the timestamp and number of data points variables at the front of the characteristic
+        imu_comm.acc_comm.get_data(composite_characteristic_data, offset);
+        imu_comm.gyr_comm.get_data(composite_characteristic_data, offset + SAMPLE_SIZE);
+        imu_comm.mag_comm.get_data(composite_characteristic_data, offset + SAMPLE_SIZE + SAMPLE_SIZE);
+    }
+    else
+    {
+        //If the m_use_composite_data boolean is false then data from all each sensor is
+        //stored into their own characteristics
+        imu_comm.acc_comm.get_data(acc_characteristic_data, offset);
+        imu_comm.gyr_comm.get_data(gyr_characteristic_data, offset);
+        imu_comm.mag_comm.get_data(mag_characteristic_data, offset);
+    }
 }
 
 

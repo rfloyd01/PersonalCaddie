@@ -71,7 +71,7 @@ uint32_t ble_sensor_service_init(ble_sensor_service_t * p_ss, const ble_sensor_s
 
 uint32_t ble_sensor_service_data_char_add(ble_sensor_service_t * p_ss)
 {
-    ble_add_char_params_t add_acc_char_params, add_gyr_char_params, add_mag_char_params;
+    ble_add_char_params_t add_acc_char_params, add_gyr_char_params, add_mag_char_params, add_data_char_params;
 
     //Each characteristic will be 5 + SAMPLE_SIZE * MAX_SENSOR_SAMPLES bytes in length.
     //The first SAMPLE_SIZE * MAX_SENSOR_SAMPLES bytes are for storing sensor data while
@@ -132,9 +132,29 @@ uint32_t ble_sensor_service_data_char_add(ble_sensor_service_t * p_ss)
     add_mag_char_params.read_access       = SEC_OPEN;
     add_mag_char_params.cccd_write_access = SEC_OPEN;
 
-    return characteristic_add(p_ss->service_handle,
+    err_code = characteristic_add(p_ss->service_handle,
                                   &add_mag_char_params,
                                   &p_ss->data_handles[2]);
+    if (err_code != NRF_SUCCESS)
+    {
+        return err_code;
+    }
+
+    // Add Composite Data characteristic.
+    memset(&add_data_char_params, 0, sizeof(add_data_char_params));
+    add_data_char_params.uuid              = DATA_CHARACTERISTIC_UUID;
+    add_data_char_params.uuid_type         = p_ss->uuid_type;
+    add_data_char_params.init_len          = (5 + SAMPLE_SIZE * MAX_SENSOR_SAMPLES) * sizeof(uint8_t);
+    add_data_char_params.max_len           = (5 + SAMPLE_SIZE * MAX_SENSOR_SAMPLES) * sizeof(uint8_t);
+    add_data_char_params.char_props.read   = 1;
+    add_data_char_params.char_props.notify = 1;
+
+    add_data_char_params.read_access       = SEC_OPEN;
+    add_data_char_params.cccd_write_access = SEC_OPEN;
+
+    return characteristic_add(p_ss->service_handle,
+                                  &add_data_char_params,
+                                  &p_ss->data_handles[3]);
 }
 
 uint32_t ble_sensor_service_settings_char_add(ble_sensor_service_t * p_ss, const uint8_t settings_length)

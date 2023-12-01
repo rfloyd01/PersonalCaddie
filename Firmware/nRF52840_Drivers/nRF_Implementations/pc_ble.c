@@ -101,13 +101,13 @@ void ble_stack_init(ble_event_handler_t* handler_methods, uint16_t* connection_h
 
     //TEST: Before enabling the ble stack change the notification queue size
     //to 3 (this should hopefully allow 3 notifications in one connection interval)
-    //ble_cfg_t ble_cfg;
-    //memset(&ble_cfg, 0, sizeof(ble_cfg));
+    ble_cfg_t ble_cfg;
+    memset(&ble_cfg, 0, sizeof(ble_cfg));
 
-    //ble_cfg.conn_cfg.conn_cfg_tag = APP_BLE_CONN_CFG_TAG;
-    //ble_cfg.conn_cfg.params.gatts_conn_cfg.hvn_tx_queue_size = 0; //looking at this variable in the defult_cfg_set() method above and it has a value of 231 which is the max mtu size
-    //err_code = sd_ble_cfg_set(BLE_CONN_CFG_GATTS, &ble_cfg, ram_start);
-    //APP_ERROR_CHECK(err_code);
+    ble_cfg.conn_cfg.conn_cfg_tag = APP_BLE_CONN_CFG_TAG;
+    ble_cfg.conn_cfg.params.gatts_conn_cfg.hvn_tx_queue_size = 12; //Increase the total notifications that can be queued at a given time
+    err_code = sd_ble_cfg_set(BLE_CONN_CFG_GATTS, &ble_cfg, ram_start);
+    APP_ERROR_CHECK(err_code);
 
     // Enable BLE stack.
     err_code = nrf_sdh_ble_enable(&ram_start);
@@ -408,7 +408,7 @@ static void ble_evt_handler(ble_evt_t const * p_ble_evt, void * p_context)
             break;
 
         case BLE_GATTS_EVT_HVN_TX_COMPLETE:
-            SEGGER_RTT_printf(0, "Notification %d sent.\n", ++debug_total_notifications);
+            //SEGGER_RTT_printf(0, "Notification %d sent.\n", ++debug_total_notifications);
             *p_notification_done = true; //set the notification done bool to true to allow more notifications
             (*p_notifications_in_queue)--;
             break;
