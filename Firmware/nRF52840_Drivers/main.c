@@ -693,7 +693,7 @@ void calculate_samples_and_connection_interval()
    //and it allows us to collect at least a few samples at lower ODR values, which is 
    //more efficient than sending out samples 1 at a time.
 
-   float desired_lag_time = 0.12; //in seconds.
+   float desired_lag_time = 0.09; //in seconds.
    m_current_sensor_samples = current_sensor_odr * desired_lag_time;
 
    if ((float)m_current_sensor_samples == (float)(current_sensor_odr * desired_lag_time))
