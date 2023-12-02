@@ -6,6 +6,7 @@
 //Global Timer Variables
 const nrf_drv_timer_t m_data_read_timer = NRF_DRV_TIMER_INSTANCE(1);         /**< This timer goes off every time we need to read data from the sensors */
 const nrf_drv_timer_t m_data_start_timer = NRF_DRV_TIMER_INSTANCE(2);        /**< This timer starts as soon as we take our first data reading, it gives us the absolute time for data reads */
+const nrf_drv_timer_t m_delay_timer = NRF_DRV_TIMER_INSTANCE(3);             /**< This timer is used for creating delays */
 APP_TIMER_DEF(m_led_on_timer);                                               /**< A timer used for turning on LEDs */
 APP_TIMER_DEF(m_led_off_timer);                                              /**< A timer used for turning off LEDs */
 
@@ -40,7 +41,7 @@ void timers_init(volatile uint8_t* led, volatile bool* data_ready, uint8_t* sens
     m_timer_handlers.data_read_handler = handlers->data_read_handler;
     m_timer_handlers.error_handler = handlers->error_handler; //currently don't have any error handling here, but include this method anyway
 
-    //Create the data reading timers using the nrf_drv_timer library
+    //Create the data reading and delay timers using the nrf_drv_timer library
     nrf_drv_timer_config_t timer_cfg = NRF_DRV_TIMER_DEFAULT_CONFIG;
     timer_cfg.frequency = NRF_TIMER_FREQ_16MHz; //each timer tick equals 62.5 nanoseconds
     timer_cfg.bit_width = NRF_TIMER_BIT_WIDTH_32; //2^32 maximum ticks * 62.5 nanoseconds = ~4.5 minutes max for timer
@@ -48,6 +49,8 @@ void timers_init(volatile uint8_t* led, volatile bool* data_ready, uint8_t* sens
     err_code = nrf_drv_timer_init(&m_data_read_timer, &timer_cfg, data_read_timer_handler);
     APP_ERROR_CHECK(err_code);
     err_code = nrf_drv_timer_init(&m_data_start_timer, &timer_cfg, data_start_timer_handler);
+    APP_ERROR_CHECK(err_code);
+    err_code = nrf_drv_timer_init(&m_delay_timer, &timer_cfg, delay_timer_handler);
     APP_ERROR_CHECK(err_code);
 
     //Create app timers for turning the LEDs on and off.
@@ -90,6 +93,24 @@ void data_timers_stop(void)
     //data timer starts
     *p_data_ready = false;
     measurements_taken = 0; //also reset the measurements taken variable
+}
+
+void set_delay(uint32_t microseconds)
+{
+    //This method turns on the delay timer and enters a while loop (doing nothing)
+    //for the given amount of time. It then turns the delay timer off.
+    nrf_drv_timer_enable(&m_delay_timer);
+
+    uint32_t start_ticks = nrf_drv_timer_capture(&m_delay_timer, NRF_TIMER_CC_CHANNEL2);
+    uint32_t goal_ticks = 16 * microseconds; //each tick represents 1/16,000,000 seconds
+
+    while ((nrf_drv_timer_capture(&m_delay_timer, NRF_TIMER_CC_CHANNEL2) - start_ticks) < goal_ticks)
+    {
+        //Intentionally left blank
+    }
+
+    nrf_drv_timer_disable(&m_delay_timer);
+    nrf_drv_timer_clear(&m_delay_timer);
 }
 
 uint32_t get_current_data_time()
@@ -141,6 +162,12 @@ static void data_read_timer_handler(nrf_timer_event_t event_type, void* p_contex
 }
 
 static void data_start_timer_handler(nrf_timer_event_t event_type, void* p_context)
+{
+    //Currently have no need for this handler, however, eacch instance of the nrf_drv_timer
+    //requires its own handler function.
+}
+
+static void delay_timer_handler(nrf_timer_event_t event_type, void* p_context)
 {
     //Currently have no need for this handler, however, eacch instance of the nrf_drv_timer
     //requires its own handler function.

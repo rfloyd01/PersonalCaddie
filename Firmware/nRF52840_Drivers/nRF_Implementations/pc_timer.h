@@ -40,6 +40,7 @@ void led_timers_start(void);
 void led_timers_stop(void);
 void data_timers_start(void);
 void data_timers_stop(void);
+void set_delay(uint32_t microseconds);
 
 //Get Methods
 uint32_t get_current_data_time();
@@ -47,6 +48,7 @@ uint32_t get_current_data_time();
 //Handlers
 static void data_read_timer_handler(nrf_timer_event_t event_type, void* p_context);
 static void data_start_timer_handler(nrf_timer_event_t event_type, void* p_context);
+static void delay_timer_handler(nrf_timer_event_t event_type, void* p_context);
 static void led_on_timer_handler(void * p_context);
 static void led_off_timer_handler(void * p_context);
 

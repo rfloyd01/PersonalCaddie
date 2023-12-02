@@ -22,6 +22,7 @@
 #include "lsm9ds1.h"
 #include "fxos8700.h"
 #include "fxas21002.h"
+#include "bmi270_drv.h"
 #include "ble_sensor_service.h"
 #include "ble_pc_service.h"
 #include "personal_caddie_operating_modes.h"
@@ -107,6 +108,7 @@ static void sensor_communication_init(sensor_type_t type, uint8_t model, uint8_t
             imu_comm.acc_comm.twi_bus = bus;
             imu_comm.acc_comm.read_register = sensor_read_register;
             imu_comm.acc_comm.write_register = sensor_write_register;
+            imu_comm.acc_comm.delay = set_delay;
             if (model == LSM9DS1_ACC)
             {
                 imu_comm.acc_comm.update_settings = lsm9ds1_acc_apply_setting;
@@ -123,6 +125,7 @@ static void sensor_communication_init(sensor_type_t type, uint8_t model, uint8_t
             imu_comm.gyr_comm.twi_bus = bus;
             imu_comm.gyr_comm.read_register = sensor_read_register;
             imu_comm.gyr_comm.write_register = sensor_write_register;
+            imu_comm.gyr_comm.delay = set_delay;
             if (model == LSM9DS1_GYR)
             {
                 imu_comm.gyr_comm.update_settings = lsm9ds1_gyr_apply_setting;
@@ -139,6 +142,7 @@ static void sensor_communication_init(sensor_type_t type, uint8_t model, uint8_t
             imu_comm.mag_comm.twi_bus = bus;
             imu_comm.mag_comm.read_register = sensor_read_register;
             imu_comm.mag_comm.write_register = sensor_write_register;
+            imu_comm.mag_comm.delay = set_delay;
             if (model == LSM9DS1_MAG)
             {
                 imu_comm.mag_comm.update_settings = lsm9ds1_mag_apply_setting;
@@ -327,6 +331,9 @@ static void default_sensor_select()
  */
 static void sensors_init(bool discovery)
 {
+    //DEBUG
+    //bmi270init(&imu_comm, 0b011, &sensor_settings[0]);
+
     //When first turning on the Personal Caddie we need to scan both the internal
     //and external TWI bus to see what sensors are available so we can populate some
     //arrays with this information. Subsequent calls to this method don't require this.

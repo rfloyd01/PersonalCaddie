@@ -1,5 +1,5 @@
-#ifndef FXAS21002_H__
-#define FXAS21002_H__
+#ifndef BMI270_DRV_H__
+#define BMI270_DRV_H__
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -19,6 +19,11 @@ int32_t bmi270_active_mode_enable();
 
 void bmi270_get_actual_settings();
 
+//Implementations of Driver Functional Pointers
+int8_t bmi270_read_register(uint8_t reg_addr, uint8_t *reg_data, uint32_t len, void *intf_ptr);
+int8_t bmi270_write_register(uint8_t reg_addr, const uint8_t *reg_data, uint32_t len, void *intf_ptr);
+void bmi270_delay(uint32_t period, void *intf_ptr);
+
 int32_t bmi270_get_acc_data(uint8_t* pBuff, uint8_t offset);
 int32_t bmi270_get_gyr_data(uint8_t* pBuff, uint8_t offset);
 
@@ -26,6 +31,6 @@ int32_t bmi270_get_gyr_data(uint8_t* pBuff, uint8_t offset);
 }
 #endif
 
-#endif // FXAS21002_H__
+#endif // BMI270_DRV_H__
 
 /** @} */

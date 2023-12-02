@@ -7,6 +7,8 @@
 static imu_communication_t* imu_comm;
 static uint8_t*             p_sensor_settings;
 
+static struct bmi2_dev    bmi270; //driver defined struct for holding functional pointers and other info
+
 void bmi270init(imu_communication_t* comm, uint8_t sensors, uint8_t* settings)
 {
     //create a pointer to an array which holds settings for the sensor
@@ -17,6 +19,19 @@ void bmi270init(imu_communication_t* comm, uint8_t sensors, uint8_t* settings)
     //chip. If both the FXOS acc and mag ar in use then the built-in communication
     //struct will default to the magnetometer.
     imu_comm = comm;
+
+    //initialize functional pointers in the driver defined struct for things like
+    //reading and writing
+    bmi270.intf = BMI2_I2C_INTF; //set the I2C interface
+    bmi270.read = bmi270_read_register; //set the I2C read functional pointer
+    bmi270.write = bmi270_write_register; //set the I2C write functional pointer
+    bmi270.delay_us = bmi270_delay; //set the microsecond delay functional pointer
+
+    int8_t rslt;
+    rslt = bmi270_init(&bmi270);
+
+    if (rslt == BMI2_OK) SEGGER_RTT_WriteString(0, "BMI270 initialized.\n");
+    
 
     //initialize read/write methods, address, and default settings for acc
     //if (imu_comm->sensor_model[ACC_SENSOR] == BMI270_ACC)
@@ -106,6 +121,30 @@ void bmi270_get_actual_settings()
     //    imu_comm->gyr_comm.read_register((void*)imu_comm->gyr_comm.twi_bus,  imu_comm->gyr_comm.address, FXAS21002_REG_CTRL_REG3, &reg_val, 1);
     //    SEGGER_RTT_printf(0, "CTRL_REG3 Register: 0x%x\n\n", reg_val);
     //}
+}
+
+int8_t bmi270_read_register(uint8_t reg_addr, uint8_t *reg_data, uint32_t len, void *intf_ptr)
+{
+    //This method converts my function pointer for a I2C read into the form required
+    //by Bosch's drivers
+    return (int8_t) imu_comm->acc_comm.read_register(intf_ptr, BMI2_I2C_PRIM_ADDR, reg_addr, reg_data, (uint16_t)len);
+}
+
+int8_t bmi270_write_register(uint8_t reg_addr, const uint8_t *reg_data, uint32_t len, void *intf_ptr)
+{
+    //This method converts my function pointer for a I2C write into the form required
+    //by Bosch's drivers. The Bosch Driver requires a length parameter, however, my
+    //method only allows for writing 1 byte at a time so I don't use the len parameter.
+    return (int8_t) imu_comm->acc_comm.write_register(intf_ptr, BMI2_I2C_PRIM_ADDR, reg_addr, reg_data);
+}
+
+void bmi270_delay(uint32_t period, void *intf_ptr)
+{
+    //The Bosch drivers sometimes force delays so they need a method that can implement
+    //this. Since the nRF chip has the BLE stack initialized I can't take advantage of
+    //the simple nrf_delay() method and instead need to use the nrf_drv_timer library
+    //which is a little more complex (although has a resolution of 62.5 nanoseconds).
+    imu_comm->acc_comm.delay(period);
 }
 
 int32_t bmi270_get_acc_data(uint8_t* pBuff, uint8_t offset)

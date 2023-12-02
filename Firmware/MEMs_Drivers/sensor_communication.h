@@ -13,6 +13,7 @@ typedef int32_t(*update_ptr)(uint8_t);
 typedef int32_t(*read_register_ptr)(void*, uint8_t, uint8_t, uint8_t*, uint16_t);
 typedef int32_t(*write_register_ptr)(void*, uint8_t, uint8_t, const uint8_t*);
 typedef int32_t(*data_ptr)(uint8_t*, uint8_t);
+typedef void(*delay_ptr)(uint32_t);
 
 //a struct that holds info for communication with an individual sensor
 typedef struct
@@ -23,6 +24,7 @@ typedef struct
     read_register_ptr     read_register;   //pointer to method for reading sensor registers
     write_register_ptr    write_register;  //pointer to method for writing sensor registers
     data_ptr              get_data;        //pointer to method for getting sensor data
+    delay_ptr             delay;           //pointer to method for creating delays
     void*                 other;           //an extra customizable pointer
 } sensor_communication_t;
 
