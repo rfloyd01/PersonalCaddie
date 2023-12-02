@@ -95,7 +95,7 @@ void data_timers_stop(void)
     measurements_taken = 0; //also reset the measurements taken variable
 }
 
-void set_delay(uint32_t microseconds)
+void delay_microseconds(uint32_t microseconds)
 {
     //This method turns on the delay timer and enters a while loop (doing nothing)
     //for the given amount of time. It then turns the delay timer off.

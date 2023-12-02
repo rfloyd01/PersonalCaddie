@@ -244,8 +244,8 @@ static int32_t lsm9ds1_write_imu(void *handle, uint8_t reg, const uint8_t *bufp,
     //It's possible for this method to be called by both the accelerometer and the 
     //gyroscope, and since we can have an acc and gyro that are on different chips, we need to 
     //figure out which one actually called this method.
-    if (used_sensors & 0b001) imu_comm->acc_comm.write_register((void*)imu_comm->acc_comm.twi_bus, IMU_Address, reg, bufp);
-    else if (used_sensors & 0b010) imu_comm->gyr_comm.write_register((void*)imu_comm->gyr_comm.twi_bus, IMU_Address, reg, bufp);
+    if (used_sensors & 0b001) imu_comm->acc_comm.write_register((void*)imu_comm->acc_comm.twi_bus, IMU_Address, reg, bufp, 1);
+    else if (used_sensors & 0b010) imu_comm->gyr_comm.write_register((void*)imu_comm->gyr_comm.twi_bus, IMU_Address, reg, bufp, 1);
 }
 static int32_t lsm9ds1_read_mag(void *handle, uint8_t reg, uint8_t *bufp, uint16_t len)
 {
@@ -261,7 +261,7 @@ static int32_t lsm9ds1_write_mag(void *handle, uint8_t reg, const uint8_t *bufp,
     //which essentially just holds methods for reading and writing. In order to take advantage
     //of the driver methods, this method acts as a passthrough, converting their writing method
     //to my own. I only allow for writing a single byte at a time so the len variable gets dropped.
-    imu_comm->mag_comm.write_register((void*)imu_comm->mag_comm.twi_bus, MAG_Address, reg, bufp);
+    imu_comm->mag_comm.write_register((void*)imu_comm->mag_comm.twi_bus, MAG_Address, reg, bufp, 1);
 }
 
 int32_t lsm9ds1_get_acc_data(uint8_t* pBuff, uint8_t offset)

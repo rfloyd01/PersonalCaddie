@@ -37,7 +37,7 @@ BLE_PC_SERVICE_DEF(m_pc);                                                       
 uint16_t m_conn_handle = BLE_CONN_HANDLE_INVALID;                                  /**< Handle of the current connection. */
 
 //IMU Sensor Parameters
-static uint8_t default_sensors[3] = {FXOS8700_ACC, FXAS21002_GYR, FXOS8700_MAG};   /**< Default sensors that are attempted to be initialized first. */
+static uint8_t default_sensors[3] = {BMI270_ACC, BMI270_GYR, FXOS8700_MAG};   /**< Default sensors that are attempted to be initialized first. */
 static bool sensors_initialized[3] = {false, false, false};                        /**< Keep track of which sensors are currently initialized */
 static uint8_t internal_sensors[10];                                               /**< An array for holding the addresses of sensors on the internal TWI line */
 static uint8_t external_sensors[10];                                               /**< An array for holding the addresses of sensors on the external TWI line */
@@ -108,7 +108,7 @@ static void sensor_communication_init(sensor_type_t type, uint8_t model, uint8_t
             imu_comm.acc_comm.twi_bus = bus;
             imu_comm.acc_comm.read_register = sensor_read_register;
             imu_comm.acc_comm.write_register = sensor_write_register;
-            imu_comm.acc_comm.delay = set_delay;
+            imu_comm.acc_comm.delay = delay_microseconds;
             if (model == LSM9DS1_ACC)
             {
                 imu_comm.acc_comm.update_settings = lsm9ds1_acc_apply_setting;
@@ -125,7 +125,7 @@ static void sensor_communication_init(sensor_type_t type, uint8_t model, uint8_t
             imu_comm.gyr_comm.twi_bus = bus;
             imu_comm.gyr_comm.read_register = sensor_read_register;
             imu_comm.gyr_comm.write_register = sensor_write_register;
-            imu_comm.gyr_comm.delay = set_delay;
+            imu_comm.gyr_comm.delay = delay_microseconds;
             if (model == LSM9DS1_GYR)
             {
                 imu_comm.gyr_comm.update_settings = lsm9ds1_gyr_apply_setting;
@@ -142,7 +142,7 @@ static void sensor_communication_init(sensor_type_t type, uint8_t model, uint8_t
             imu_comm.mag_comm.twi_bus = bus;
             imu_comm.mag_comm.read_register = sensor_read_register;
             imu_comm.mag_comm.write_register = sensor_write_register;
-            imu_comm.mag_comm.delay = set_delay;
+            imu_comm.mag_comm.delay = delay_microseconds;
             if (model == LSM9DS1_MAG)
             {
                 imu_comm.mag_comm.update_settings = lsm9ds1_mag_apply_setting;
@@ -331,9 +331,6 @@ static void default_sensor_select()
  */
 static void sensors_init(bool discovery)
 {
-    //DEBUG
-    //bmi270init(&imu_comm, 0b011, &sensor_settings[0]);
-
     //When first turning on the Personal Caddie we need to scan both the internal
     //and external TWI bus to see what sensors are available so we can populate some
     //arrays with this information. Subsequent calls to this method don't require this.
@@ -341,7 +338,7 @@ static void sensors_init(bool discovery)
     //need to be enabled.
     enable_twi_bus(get_internal_twi_bus_id());
     enable_twi_bus(get_external_twi_bus_id());
-    nrf_delay_ms(50); //slight delay so sensors have time to power on
+    delay_microseconds(10000); //slight delay so sensors have time to power on
     
     if (discovery)
     {
@@ -407,7 +404,7 @@ static void sensors_init(bool discovery)
         }
     }
 
-    //See if all sensors were initialized on the external bus, if not, then initialized sensors
+    //See if all sensors were initialized on the external bus, if not, then initialize sensors
     //from internal bus
     if (!sensors_initialized[0] || !sensors_initialized[1] || !sensors_initialized[2])
     {
@@ -456,6 +453,8 @@ static void sensors_init(bool discovery)
                 case LSM9DS1_ACC:
                     lsm9ds1_init(&imu_comm, sensors, sensor_settings);
                     break;
+                case BMI270_ACC:
+                    bmi270init(&imu_comm, sensors, sensor_settings);
                 case FXOS8700_ACC:
                     fxos8700init(&imu_comm, sensors, sensor_settings);
                     fxas21002init(&imu_comm, sensors, sensor_settings);
@@ -917,7 +916,7 @@ static void sensor_idle_mode_start()
         enable_twi_bus(imu_comm.acc_comm.twi_bus->inst_idx);
         enable_twi_bus(imu_comm.gyr_comm.twi_bus->inst_idx);
         enable_twi_bus(imu_comm.mag_comm.twi_bus->inst_idx);
-        //nrf_delay_ms(50); //slight delay so sensors have time to power on   
+        delay_microseconds(10000); //slight delay so sensors have time to power on   
     }
 
     //Uncomment the below lines to read the registers of active sensors

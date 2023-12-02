@@ -11,7 +11,7 @@ extern "C" {
 //pointers for storing functions that read and write sensor registers
 typedef int32_t(*update_ptr)(uint8_t);
 typedef int32_t(*read_register_ptr)(void*, uint8_t, uint8_t, uint8_t*, uint16_t);
-typedef int32_t(*write_register_ptr)(void*, uint8_t, uint8_t, const uint8_t*);
+typedef int32_t(*write_register_ptr)(void*, uint8_t, uint8_t, const uint8_t*, uint16_t len);
 typedef int32_t(*data_ptr)(uint8_t*, uint8_t);
 typedef void(*delay_ptr)(uint32_t);
 

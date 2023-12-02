@@ -3,6 +3,7 @@
 #include "SEGGER_RTT.h"
 #include "nrf_gpio.h"
 #include "sensor_settings.h"
+#include "stdlib.h"
 
 //Global TWI variables
 #if TWI0_ENABLED
@@ -343,18 +344,20 @@ int32_t sensor_read_register(void *bus, uint8_t add, uint8_t reg, uint8_t *bufp,
     APP_ERROR_CHECK(err_code);
     return (int32_t)err_code;
 }
-int32_t sensor_write_register(void *bus, uint8_t add, uint8_t reg, const uint8_t *bufp)
+int32_t sensor_write_register(void *bus, uint8_t add, uint8_t reg, const uint8_t *bufp, uint16_t len)
 {
     //This method is for writing data to a single register for a sensor
     ret_code_t err_code = 0;
 
-    uint8_t register_and_data[2] = {reg, bufp[0]};
+    uint8_t* register_and_data = (uint8_t*)malloc(len * sizeof(uint8_t));
+    register_and_data[0] = reg;
+    for (int i = 0; i < len; i++) register_and_data[i + 1] = bufp[i];
 
     //the primary buffer will hold the register address, as well as the value to write into it.
     //for a single write operation, the secondary buffer has no use in a single write command
     const nrf_drv_twi_xfer_desc_t sensor_write = {
         .address = add,
-        .primary_length = 2,
+        .primary_length = 1 + len,
         .secondary_length = 0,
         .p_primary_buf = register_and_data,
         .p_secondary_buf = NULL,
@@ -373,6 +376,8 @@ int32_t sensor_write_register(void *bus, uint8_t add, uint8_t reg, const uint8_t
         err_code = nrf_drv_twi_xfer((nrf_drv_twi_t const*)bus, &sensor_write, 0); //no flags needed here
     } while (err_code == 0x11); //if the nrf is currently busy doing something else this line will wait until its done before executing
     while (*m_xfer_done == false); //this line forces the program to wait for the TWI transfer to complete before moving on
+
+    free(register_and_data); //release memory after write operation is complete
 
     APP_ERROR_CHECK(err_code);
     return (int32_t)err_code;

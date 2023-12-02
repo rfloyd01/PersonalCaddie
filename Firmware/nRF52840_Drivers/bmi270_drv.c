@@ -23,6 +23,7 @@ void bmi270init(imu_communication_t* comm, uint8_t sensors, uint8_t* settings)
     //initialize functional pointers in the driver defined struct for things like
     //reading and writing
     bmi270.intf = BMI2_I2C_INTF; //set the I2C interface
+    bmi270.intf_ptr = (void*) imu_comm->acc_comm.twi_bus; //set the pointer to the active TWI bus
     bmi270.read = bmi270_read_register; //set the I2C read functional pointer
     bmi270.write = bmi270_write_register; //set the I2C write functional pointer
     bmi270.delay_us = bmi270_delay; //set the microsecond delay functional pointer
@@ -133,9 +134,8 @@ int8_t bmi270_read_register(uint8_t reg_addr, uint8_t *reg_data, uint32_t len, v
 int8_t bmi270_write_register(uint8_t reg_addr, const uint8_t *reg_data, uint32_t len, void *intf_ptr)
 {
     //This method converts my function pointer for a I2C write into the form required
-    //by Bosch's drivers. The Bosch Driver requires a length parameter, however, my
-    //method only allows for writing 1 byte at a time so I don't use the len parameter.
-    return (int8_t) imu_comm->acc_comm.write_register(intf_ptr, BMI2_I2C_PRIM_ADDR, reg_addr, reg_data);
+    //by Bosch's drivers.
+    return (int8_t) imu_comm->acc_comm.write_register(intf_ptr, BMI2_I2C_PRIM_ADDR, reg_addr, reg_data, len);
 }
 
 void bmi270_delay(uint32_t period, void *intf_ptr)

@@ -18,14 +18,14 @@ int32_t fxas21002_data_rate_set(sensor_communication_t* gyr_comm, fxas21002_odr_
     {
         ctrl_reg1.active = 0;
         ret = gyr_comm->write_register((void*)gyr_comm->twi_bus, gyr_comm->address, FXAS21002_REG_CTRL_REG1,
-            (uint8_t*)&ctrl_reg1);
+            (uint8_t*)&ctrl_reg1, 1);
     }
 
     if (ret == 0)
     {
         ctrl_reg1.dr = ((uint8_t)val & 0x07);
         ret = gyr_comm->write_register((void*)gyr_comm->twi_bus, gyr_comm->address, FXAS21002_REG_CTRL_REG1,
-            (uint8_t*)&ctrl_reg1);
+            (uint8_t*)&ctrl_reg1, 1);
     }
 
     return ret;
@@ -90,7 +90,7 @@ int32_t fxas21002_power_mode_set(sensor_communication_t* gyr_comm, fxas21002_pow
         ctrl_reg1.active = (((uint8_t)val & 0b10) >> 1);
 
         ret = gyr_comm->write_register((void*)gyr_comm->twi_bus, gyr_comm->address, FXAS21002_REG_CTRL_REG1,
-            (uint8_t*)&ctrl_reg1);
+            (uint8_t*)&ctrl_reg1, 1);
     }
 
     return ret;
@@ -148,14 +148,14 @@ int32_t fxas21002_full_scale_range_set(sensor_communication_t* gyr_comm, fxas210
     {
         ctrl_reg0.fs = (uint8_t)val & 0b11;
         ret = gyr_comm->write_register((void*)gyr_comm->twi_bus, gyr_comm->address, FXAS21002_REG_CTRL_REG0,
-            (uint8_t*)&ctrl_reg0);
+            (uint8_t*)&ctrl_reg0, 1);
     }
 
     if (ret == 0)
     {
         ctrl_reg3.fs_double = (((uint8_t)val & 0x10) >> 1);
         ret = gyr_comm->write_register((void*)gyr_comm->twi_bus, gyr_comm->address, FXAS21002_REG_CTRL_REG3,
-            (uint8_t*)&ctrl_reg3);
+            (uint8_t*)&ctrl_reg3, 1);
     }
 
     return ret;
@@ -226,7 +226,7 @@ int32_t fxas21002_filter_out_set(sensor_communication_t* gyr_comm, fxas21002_fil
     {
         ctrl_reg0.hpf_en = (uint8_t)val & 0b01;
         ret = gyr_comm->write_register((void*)gyr_comm->twi_bus, gyr_comm->address, FXAS21002_REG_CTRL_REG0,
-            (uint8_t*)&ctrl_reg0);
+            (uint8_t*)&ctrl_reg0, 1);
     }
 
     return ret;
@@ -272,7 +272,7 @@ int32_t fxas21002_lp_filter_bw_set(sensor_communication_t* gyr_comm, fxas21002_l
     {
         ctrl_reg0.bw = (uint8_t)val & 0b11;
         ret = gyr_comm->write_register((void*)gyr_comm->twi_bus, gyr_comm->address, FXAS21002_REG_CTRL_REG0,
-            (uint8_t*)&ctrl_reg0);
+            (uint8_t*)&ctrl_reg0, 1);
     }
 
     return ret;
@@ -321,7 +321,7 @@ int32_t fxas21002_hp_filter_bw_set(sensor_communication_t* gyr_comm, fxas21002_h
     {
         ctrl_reg0.sel = (uint8_t)val & 0b11;
         ret = gyr_comm->write_register((void*)gyr_comm->twi_bus, gyr_comm->address, FXAS21002_REG_CTRL_REG0,
-            (uint8_t*)&ctrl_reg0);
+            (uint8_t*)&ctrl_reg0, 1);
     }
 
     return ret;

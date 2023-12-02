@@ -40,7 +40,7 @@ void led_timers_start(void);
 void led_timers_stop(void);
 void data_timers_start(void);
 void data_timers_stop(void);
-void set_delay(uint32_t microseconds);
+void delay_microseconds(uint32_t microseconds);
 
 //Get Methods
 uint32_t get_current_data_time();

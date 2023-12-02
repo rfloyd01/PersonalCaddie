@@ -37,7 +37,7 @@ int get_external_twi_bus_id();
 //Reading/Writing Methods
 void twi_address_scan(uint8_t* addresses, uint8_t* device_count, nrf_drv_twi_t const * bus);
 int32_t sensor_read_register(void *bus, uint8_t add, uint8_t reg, uint8_t *bufp, uint16_t len);
-int32_t sensor_write_register(void *bus, uint8_t add, uint8_t reg, const uint8_t *bufp);
+int32_t sensor_write_register(void *bus, uint8_t add, uint8_t reg, const uint8_t *bufp, uint16_t len);
 
 #ifdef __cplusplus
 }

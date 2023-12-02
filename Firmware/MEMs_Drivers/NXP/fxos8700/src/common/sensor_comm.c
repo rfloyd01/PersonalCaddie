@@ -39,7 +39,7 @@ uint8_t sensor_comm_write(sensor_comm_handle_t *pComHandle, uint16_t offset, uin
     //Note* - Looking at calls to this function from the driver, it seems that the offset variable is actually the address of 
     //the register that we want to write. Not sure why the name is offset, or why it's a 16 bit number instead of 8-bit
     sensor_communication_t* sensor_comm = (sensor_communication_t*)pComHandle->pComm; //import my custom communication struct
-    return sensor_comm->write_register((void*)sensor_comm->twi_bus, sensor_comm->address, (uint8_t)offset, pWritebuffer);
+    return sensor_comm->write_register((void*)sensor_comm->twi_bus, sensor_comm->address, (uint8_t)offset, pWritebuffer, 1);
 }
 
 uint8_t sensor_comm_read(sensor_comm_handle_t *pComHandle, uint16_t offset, uint16_t size, uint8_t *pReadbuffer)
