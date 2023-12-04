@@ -104,6 +104,7 @@
         <file file_name="lsm9ds1.c" />
         <file file_name="../MEMs_Drivers/sensor_settings.c" />
         <file file_name="bmi270_drv.c" />
+        <file file_name="bmm150_drv.c" />
       </folder>
       <folder Name="nRF Implementations">
         <file file_name="nRF_Implementations/pc_twi.c" />
@@ -154,6 +155,7 @@
       <file file_name="../MEMs_Drivers/NXP/fxas21002/fxas21002_driver.c" />
       <file file_name="../MEMs_Drivers/Bosch/bmi270.c" />
       <file file_name="../MEMs_Drivers/Bosch/bmi2.c" />
+      <file file_name="../MEMs_Drivers/Bosch/bmm150.c" />
     </folder>
   </project>
   <configuration

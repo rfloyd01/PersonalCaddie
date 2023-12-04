@@ -37,7 +37,7 @@ BLE_PC_SERVICE_DEF(m_pc);                                                       
 uint16_t m_conn_handle = BLE_CONN_HANDLE_INVALID;                                  /**< Handle of the current connection. */
 
 //IMU Sensor Parameters
-static uint8_t default_sensors[3] = {BMI270_ACC, BMI270_GYR, FXOS8700_MAG};   /**< Default sensors that are attempted to be initialized first. */
+static uint8_t default_sensors[3] = {BMI270_ACC, BMI270_GYR, BMM150_MAG};   /**< Default sensors that are attempted to be initialized first. */
 //static uint8_t default_sensors[3] = {FXOS8700_ACC, FXAS21002_GYR, FXOS8700_MAG};
 static bool sensors_initialized[3] = {false, false, false};                        /**< Keep track of which sensors are currently initialized */
 static uint8_t internal_sensors[10];                                               /**< An array for holding the addresses of sensors on the internal TWI line */
