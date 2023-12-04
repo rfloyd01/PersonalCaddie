@@ -286,38 +286,32 @@ int32_t bmi270_get_data(uint8_t* pBuff, uint8_t offset)
     if (imu_comm->sensor_model[ACC_SENSOR] == BMI270_ACC)
     {
         //x-data
-        pBuff[offset] = ((sensor_data.acc.x & 0xFF00) >> 8);
-        pBuff[offset + 1] = sensor_data.acc.x & 0xFF;
+        pBuff[offset] = sensor_data.acc.x & 0xFF;
+        pBuff[offset + 1] = ((sensor_data.acc.x & 0xFF00) >> 8);
 
         //y-data
-        pBuff[offset + 2] = ((sensor_data.acc.y & 0xFF00) >> 8);
-        pBuff[offset + 3] = sensor_data.acc.y & 0xFF;
+        pBuff[offset + 2] = sensor_data.acc.y & 0xFF;
+        pBuff[offset + 3] = ((sensor_data.acc.y & 0xFF00) >> 8);
         
         //z-data
-        pBuff[offset + 4] = ((sensor_data.acc.z & 0xFF00) >> 8);
-        pBuff[offset + 5] = sensor_data.acc.z & 0xFF;
+        pBuff[offset + 4] = sensor_data.acc.z & 0xFF;
+        pBuff[offset + 5] = ((sensor_data.acc.z & 0xFF00) >> 8);
     }
 
     if (imu_comm->sensor_model[GYR_SENSOR] == BMI270_GYR)
     {
         //x-data
-        pBuff[offset + 6] = ((sensor_data.gyr.x & 0xFF00) >> 8);
-        pBuff[offset + 7] = sensor_data.gyr.x & 0xFF;
+        pBuff[offset + 6] = sensor_data.gyr.x & 0xFF;
+        pBuff[offset + 7] = ((sensor_data.gyr.x & 0xFF00) >> 8);
 
         //y-data
-        pBuff[offset + 8] = ((sensor_data.gyr.y & 0xFF00) >> 8);
-        pBuff[offset + 9] = sensor_data.gyr.y & 0xFF;
+        pBuff[offset + 8] = sensor_data.gyr.y & 0xFF;
+        pBuff[offset + 9] = ((sensor_data.gyr.y & 0xFF00) >> 8);
         
         //z-data
-        pBuff[offset + 10] = ((sensor_data.gyr.z & 0xFF00) >> 8);
-        pBuff[offset + 11] = sensor_data.gyr.z & 0xFF;
+        pBuff[offset + 10] = sensor_data.gyr.z & 0xFF;
+        pBuff[offset + 11] = ((sensor_data.gyr.z & 0xFF00) >> 8);
     }
-
-    //DEBUG: Try and read accelerometer low byte directly
-    //uint8_t dummy;
-    //int8_t rslt = bmi270_read_register(BMI2_ACC_X_LSB_ADDR, &dummy, 1, (void*) &imu_comm->acc_comm);
-
-    //SEGGER_RTT_printf(0, "ACC X LSB = %x.\n", dummy);
 
     return rslt;
 }
@@ -343,16 +337,16 @@ int32_t bmi270_get_acc_data(uint8_t* pBuff, uint8_t offset)
     if (imu_comm->sensor_model[ACC_SENSOR] == BMI270_ACC)
     {
         //x-data
-        pBuff[offset] = ((sensor_data.acc.x & 0xFF00) >> 8);
-        pBuff[offset + 1] = sensor_data.acc.x & 0xFF;
+        pBuff[offset] = sensor_data.acc.x & 0xFF;
+        pBuff[offset + 1] = ((sensor_data.acc.x & 0xFF00) >> 8);
 
         //y-data
-        pBuff[offset + 2] = ((sensor_data.acc.y & 0xFF00) >> 8);
-        pBuff[offset + 3] = sensor_data.acc.y & 0xFF;
+        pBuff[offset + 2] = sensor_data.acc.y & 0xFF;
+        pBuff[offset + 3] = ((sensor_data.acc.y & 0xFF00) >> 8);
         
         //z-data
-        pBuff[offset + 4] = ((sensor_data.acc.z & 0xFF00) >> 8);
-        pBuff[offset + 5] = sensor_data.acc.z & 0xFF;
+        pBuff[offset + 4] = sensor_data.acc.z & 0xFF;
+        pBuff[offset + 5] = ((sensor_data.acc.z & 0xFF00) >> 8);
     }
 
     return rslt;
@@ -366,19 +360,19 @@ int32_t bmi270_get_gyr_data(uint8_t* pBuff, uint8_t offset)
     struct bmi2_sens_data sensor_data = { { 0 } };
     int8_t rslt = bmi2_get_sensor_data(&sensor_data, &bmi270);
 
-    if (imu_comm->sensor_model[GYR_SENSOR] == BMI270_GYR)
+    if (imu_comm->sensor_model[ACC_SENSOR] == BMI270_ACC)
     {
         //x-data
-        pBuff[offset] = ((sensor_data.gyr.x & 0xFF00) >> 8);
-        pBuff[offset + 1] = sensor_data.gyr.x & 0xFF;
+        pBuff[offset] = sensor_data.gyr.x & 0xFF;
+        pBuff[offset + 1] = ((sensor_data.gyr.x & 0xFF00) >> 8);
 
         //y-data
-        pBuff[offset + 2] = ((sensor_data.gyr.y & 0xFF00) >> 8);
-        pBuff[offset + 3] = sensor_data.gyr.y & 0xFF;
+        pBuff[offset + 2] = sensor_data.gyr.y & 0xFF;
+        pBuff[offset + 3] = ((sensor_data.gyr.y & 0xFF00) >> 8);
         
         //z-data
-        pBuff[offset + 4] = ((sensor_data.gyr.z & 0xFF00) >> 8);
-        pBuff[offset + 5] = sensor_data.gyr.z & 0xFF;
+        pBuff[offset + 4] = sensor_data.gyr.z & 0xFF;
+        pBuff[offset + 5] = ((sensor_data.gyr.z & 0xFF00) >> 8);
     }
 
     return rslt;
