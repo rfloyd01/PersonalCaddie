@@ -4,6 +4,7 @@
 #include "NXP/fxos8700/src/fxos8700_driver.h"
 #include "NXP/fxas21002/fxas21002_regdef.h"
 #include "Bosch/bmi2_defs.h"
+#include "Bosch/bmm150_defs.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -43,6 +44,7 @@ uint8_t get_sensor_high_address(sensor_type_t sensor_type, uint8_t sensor_model)
         switch (sensor_model)
         {
             case LSM9DS1_MAG: return LSM9DS1_MAG_I2C_ADD_H >> 1; //saved address for LSM9DS1 is 8-bit instead of 7 bit so right shift by 1
+            case BMM150_MAG: return BMM150_DEFAULT_I2C_ADDRESS;
             case FXOS8700_MAG: return FXOS8700_DEVICE_ADDR_SA_11;
             default: return 0;
         }
@@ -77,6 +79,7 @@ uint8_t get_sensor_low_address(sensor_type_t sensor_type, uint8_t sensor_model)
         switch (sensor_model)
         {
             case LSM9DS1_MAG: return LSM9DS1_MAG_I2C_ADD_L >> 1; //saved address for LSM9DS1 is 8-bit instead of 7 bit so right shift by 1
+            case BMM150_MAG: return BMM150_DEFAULT_I2C_ADDRESS;
             case FXOS8700_MAG: return FXOS8700_DEVICE_ADDR_SA_10;
             default: return 0;
         }
@@ -1564,7 +1567,11 @@ float bmi_bmm_odr_calculate(uint8_t acc_model, uint8_t gyr_model, uint8_t mag_mo
         float gyr_odr = bmi270_gyr_odr_calculate(*(current_settings + GYR_START + ODR));
         if (gyr_odr > highest_odr) highest_odr = gyr_odr;
     }
-    //TODO: create magnetometer method when ready if (mag_model == BMM150_MAG) bm_sensor[2] = true;
+    if (mag_model == BMM150_MAG)
+    {
+        float mag_odr = bmm150_mag_odr_calculate(*(current_settings + MAG_START + ODR));
+        if (mag_odr > highest_odr) highest_odr = mag_odr;
+    }
 
     return highest_odr;
 }
@@ -1605,6 +1612,24 @@ float bmi270_gyr_odr_calculate(uint8_t odr)
     }
 }
 
+float bmm150_mag_odr_calculate(uint8_t odr)
+{
+    //TODO: Need to create my own auto odr calculation for when the sensor
+    //is running in forced mode
+    switch (odr)
+    {
+        case BMM150_DATA_RATE_02HZ: return 2.0f;
+        case BMM150_DATA_RATE_06HZ: return 6.0f;
+        case BMM150_DATA_RATE_08HZ: return 8.0f;
+        case BMM150_DATA_RATE_10HZ: return 10.0f;
+        case BMM150_DATA_RATE_15HZ: return 15.0f;
+        case BMM150_DATA_RATE_20HZ: return 20.0f;
+        case BMM150_DATA_RATE_25HZ: return 25.0f;
+        case BMM150_DATA_RATE_30HZ: return 30.0f;
+        default: return 0.0f;
+    }
+}
+
 float bmi_bmm_fsr_conversion(sensor_type_t sensor, uint8_t fsr_setting)
 {
     if (sensor == ACC_SENSOR)
@@ -1629,5 +1654,9 @@ float bmi_bmm_fsr_conversion(sensor_type_t sensor, uint8_t fsr_setting)
             case BMI2_GYR_RANGE_125: return 1.0f / 262.144f;
             default: return 0.0f;
         }
+    }
+    else if (sensor == MAG_SENSOR)
+    {
+        return  0.3f; //need to confirm this, couldn't find the typical uT/LSB conversion in the spec only a device resolution
     }
 }

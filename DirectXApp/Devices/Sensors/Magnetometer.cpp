@@ -23,6 +23,11 @@ Magnetometer::Magnetometer(uint8_t* current_settings)
 		this->calibrationFile = L"fxos8700_mag_calibration.txt";
 		this->axisFile = L"fxos8700_mag_axes_orientations.txt";
 		break;
+
+	case BMM150_MAG:
+		this->calibrationFile = L"bmm150_mag_calibration.txt";
+		this->axisFile = L"bmm150_mag_axes_orientations.txt";
+		break;
 	}
 	
 	getCalibrationNumbersFromTextFile();
@@ -39,6 +44,9 @@ void Magnetometer::setConversionRateFromSettings()
 	case FXOS8700_MAG:
 		this->conversion_rate = fxos_fxas_fsr_conversion(MAG_SENSOR, this->settings[FS_RANGE]); //uTesla
 		break;
+	case BMM150_MAG:
+		this->conversion_rate = bmi_bmm_fsr_conversion(MAG_SENSOR, this->settings[FS_RANGE]); //uTesla
+		break;
 	default:
 		this->conversion_rate = 0;
 		break;
@@ -54,6 +62,9 @@ void Magnetometer::setCurrentODRFromSettings()
 		break;
 	case FXOS8700_MAG:
 		this->current_odr = fxos8700_odr_calculate(0, FXOS8700_MAG, 0xFF, this->settings[ODR]); //the 0xC0 represents magnetometer off mode
+		break;
+	case BMM150_MAG:
+		this->current_odr = bmm150_mag_odr_calculate(this->settings[ODR]);
 		break;
 	default:
 		this->current_odr = 0;

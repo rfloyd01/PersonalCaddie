@@ -23,6 +23,7 @@
 #include "fxos8700.h"
 #include "fxas21002.h"
 #include "bmi270_drv.h"
+#include "bmm150_drv.h"
 #include "ble_sensor_service.h"
 #include "ble_pc_service.h"
 #include "personal_caddie_operating_modes.h"
@@ -158,6 +159,10 @@ static void sensor_communication_init(sensor_type_t type, uint8_t model, uint8_t
             {
                 imu_comm.mag_comm.update_settings = lsm9ds1_mag_apply_setting;  //deprecated
                 imu_comm.mag_comm.get_data = lsm9ds1_get_mag_data;
+            }
+            else if (model == BMM150_MAG)
+            {
+                imu_comm.mag_comm.get_data = bmm150_get_data;
             }
             else if (model == FXOS8700_MAG)
             {
@@ -471,6 +476,7 @@ static void sensors_init(bool discovery)
                     break;
                 case BMI270_ACC:
                     bmi270init(&imu_comm, sensors, sensor_settings);
+                    bmm150init(&imu_comm, sensors, sensor_settings);
                     break;
                 case FXOS8700_ACC:
                     fxos8700init(&imu_comm, sensors, sensor_settings);
@@ -893,6 +899,7 @@ static void sensor_idle_mode_start()
         fxos8700_idle_mode_enable();
         fxas21002_idle_mode_enable();
         bmi270_idle_mode_enable(false);
+        bmm150_idle_mode_enable(false);
 
         //the LED is deactivated during data collection so turn it back on
         led_timers_start();
@@ -939,6 +946,7 @@ static void sensor_idle_mode_start()
         //If the BMI270 sensor is being used, it needs to be initialized by loading
         //the configuration file
         bmi270_idle_mode_enable(true);
+        bmm150_idle_mode_enable(true);
     }
 
     current_operating_mode = SENSOR_IDLE_MODE; //set the current operating mode to idle
@@ -958,11 +966,10 @@ static void sensor_active_mode_start()
     fxos8700_active_mode_enable();
     fxas21002_active_mode_enable();
     bmi270_active_mode_enable();
+    bmm150_active_mode_enable();
 
     //uncomment the below lines to read active sensor registers and confirm settings
-    //fxos8700_get_actual_settings();
-    //fxas21002_get_actual_settings();
-    bmi270_get_actual_settings();
+    bmm150_get_actual_settings();
 
     //start data acquisition by turning on the data timers
     data_timers_start();

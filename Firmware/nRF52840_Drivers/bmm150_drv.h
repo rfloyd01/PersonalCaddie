@@ -1,5 +1,5 @@
-#ifndef FXAS21002_H__
-#define FXAS21002_H__
+#ifndef BMM150_DRV_H__
+#define BMM150_DRV_H__
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -30,6 +30,6 @@ int32_t bmm150_get_data(uint8_t* pBuff, uint8_t offset);
 }
 #endif
 
-#endif // FXAS21002_H__
+#endif // BMM150_DRV_H__
 
 /** @} */
