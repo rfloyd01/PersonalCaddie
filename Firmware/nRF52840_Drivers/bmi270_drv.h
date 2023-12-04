@@ -14,7 +14,7 @@ extern "C" {
 void bmi270init(imu_communication_t* comm, uint8_t sensors, uint8_t* settings);
 #endif
 
-int32_t bmi270_idle_mode_enable();
+int32_t bmi270_idle_mode_enable(bool init);
 int32_t bmi270_active_mode_enable();
 
 void bmi270_get_actual_settings();
@@ -24,6 +24,7 @@ int8_t bmi270_read_register(uint8_t reg_addr, uint8_t *reg_data, uint32_t len, v
 int8_t bmi270_write_register(uint8_t reg_addr, const uint8_t *reg_data, uint32_t len, void *intf_ptr);
 void bmi270_delay(uint32_t period, void *intf_ptr);
 
+int32_t bmi270_get_data(uint8_t* pBuff, uint8_t offset);
 int32_t bmi270_get_acc_data(uint8_t* pBuff, uint8_t offset);
 int32_t bmi270_get_gyr_data(uint8_t* pBuff, uint8_t offset);
 

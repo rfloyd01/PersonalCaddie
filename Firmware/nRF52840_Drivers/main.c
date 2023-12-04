@@ -111,12 +111,17 @@ static void sensor_communication_init(sensor_type_t type, uint8_t model, uint8_t
             imu_comm.acc_comm.delay = delay_microseconds;
             if (model == LSM9DS1_ACC)
             {
-                imu_comm.acc_comm.update_settings = lsm9ds1_acc_apply_setting;
+                imu_comm.acc_comm.update_settings = lsm9ds1_acc_apply_setting; //deprecated
                 imu_comm.acc_comm.get_data = lsm9ds1_get_acc_data;
+            }
+            else if (model == BMI270_ACC)
+            {
+                if (m_use_composite_data) imu_comm.acc_comm.get_data = bmi270_get_data;
+                else imu_comm.acc_comm.get_data = bmi270_get_acc_data;
             }
             else if (model == FXOS8700_ACC)
             {
-                imu_comm.acc_comm.update_settings = fxos8700_acc_apply_setting;
+                imu_comm.acc_comm.update_settings = fxos8700_acc_apply_setting; //deprecated
                 imu_comm.acc_comm.get_data = fxos8700_get_acc_data;
             }
             break;
@@ -128,12 +133,17 @@ static void sensor_communication_init(sensor_type_t type, uint8_t model, uint8_t
             imu_comm.gyr_comm.delay = delay_microseconds;
             if (model == LSM9DS1_GYR)
             {
-                imu_comm.gyr_comm.update_settings = lsm9ds1_gyr_apply_setting;
+                imu_comm.gyr_comm.update_settings = lsm9ds1_gyr_apply_setting; //deprecated
                 imu_comm.gyr_comm.get_data = lsm9ds1_get_gyr_data;
+            }
+            else if (model == BMI270_GYR)
+            {
+                if (m_use_composite_data) imu_comm.gyr_comm.get_data = bmi270_get_data;
+                else imu_comm.gyr_comm.get_data = bmi270_get_gyr_data;
             }
             else if (model == FXAS21002_GYR)
             {
-                imu_comm.gyr_comm.update_settings = NULL;
+                imu_comm.gyr_comm.update_settings = NULL;  //deprecated
                 imu_comm.gyr_comm.get_data = fxas21002_get_gyr_data;
             }
             break;
@@ -145,12 +155,12 @@ static void sensor_communication_init(sensor_type_t type, uint8_t model, uint8_t
             imu_comm.mag_comm.delay = delay_microseconds;
             if (model == LSM9DS1_MAG)
             {
-                imu_comm.mag_comm.update_settings = lsm9ds1_mag_apply_setting;
+                imu_comm.mag_comm.update_settings = lsm9ds1_mag_apply_setting;  //deprecated
                 imu_comm.mag_comm.get_data = lsm9ds1_get_mag_data;
             }
             else if (model == FXOS8700_MAG)
             {
-                imu_comm.mag_comm.update_settings = fxos8700_mag_apply_setting;
+                imu_comm.mag_comm.update_settings = fxos8700_mag_apply_setting;  //deprecated
                 imu_comm.mag_comm.get_data = fxos8700_get_mag_data;
             }
             break;
@@ -338,7 +348,7 @@ static void sensors_init(bool discovery)
     //need to be enabled.
     enable_twi_bus(get_internal_twi_bus_id());
     enable_twi_bus(get_external_twi_bus_id());
-    delay_microseconds(10000); //slight delay so sensors have time to power on
+    delay_microseconds(50000); //slight delay so sensors have time to power on
     
     if (discovery)
     {
@@ -455,6 +465,7 @@ static void sensors_init(bool discovery)
                     break;
                 case BMI270_ACC:
                     bmi270init(&imu_comm, sensors, sensor_settings);
+                    break;
                 case FXOS8700_ACC:
                     fxos8700init(&imu_comm, sensors, sensor_settings);
                     fxas21002init(&imu_comm, sensors, sensor_settings);
@@ -871,10 +882,11 @@ static void sensor_idle_mode_start()
         data_timers_stop();
         
         //Put all sensors into idle mode, any of the sensors that are active
-        //will be properly initialized
+        //will be properly de-initialized
         lsm9ds1_idle_mode_enable();
         fxos8700_idle_mode_enable();
         fxas21002_idle_mode_enable();
+        bmi270_idle_mode_enable(false);
 
         //the LED is deactivated during data collection so turn it back on
         led_timers_start();
@@ -916,22 +928,15 @@ static void sensor_idle_mode_start()
         enable_twi_bus(imu_comm.acc_comm.twi_bus->inst_idx);
         enable_twi_bus(imu_comm.gyr_comm.twi_bus->inst_idx);
         enable_twi_bus(imu_comm.mag_comm.twi_bus->inst_idx);
-        delay_microseconds(10000); //slight delay so sensors have time to power on   
-    }
+        delay_microseconds(50000); //slight delay so sensors have time to power on
 
-    //Uncomment the below lines to read the registers of active sensors
-    //and confirm correct settings are applied
-    //fxos8700_get_actual_settings();
-    //fxas21002_get_actual_settings();
+        //If the BMI270 sensor is being used, it needs to be initialized by loading
+        //the configuration file
+        bmi270_idle_mode_enable(true);
+    }
 
     current_operating_mode = SENSOR_IDLE_MODE; //set the current operating mode to idle
     SEGGER_RTT_WriteString(0, "Sensor Idle Mode engaged.\n");
-
-    //TEST: Try to change the aradio power level
-    //err_code = sd_ble_gap_tx_power_set(BLE_GAP_TX_POWER_ROLE_CONN, m_conn_handle, -16);
-    //APP_ERROR_CHECK(err_code);
-
-    //SEGGER_RTT_WriteString(0, "Radio Power Set.\n");
 }
 
 static void sensor_active_mode_start()
@@ -946,10 +951,12 @@ static void sensor_active_mode_start()
     lsm9ds1_active_mode_enable();
     fxos8700_active_mode_enable();
     fxas21002_active_mode_enable();
+    bmi270_active_mode_enable();
 
     //uncomment the below lines to read active sensor registers and confirm settings
     //fxos8700_get_actual_settings();
     //fxas21002_get_actual_settings();
+    bmi270_get_actual_settings();
 
     //start data acquisition by turning on the data timers
     data_timers_start();

@@ -250,18 +250,25 @@ void twi_address_scan(uint8_t* addresses, uint8_t* device_count, nrf_drv_twi_t c
     //we surpress logging of address NACKs (of which there will be a lot), but enable
     //successful TWI events so we can see what addresses lead to a hit.
     m_display_twi_events = false;
-    SEGGER_RTT_WriteString(0, "Initiating Sensor Scan on TWI buses.\n");
+    uint8_t instance = ((nrf_drv_twi_t const*)bus)->inst_idx;
+    volatile bool * m_xfer_done;
+    int* m_twi_bus_status;
+    if (instance == INTERNAL_TWI_INSTANCE_ID)
+    {
+        m_xfer_done = &m_xfer_internal_done; //set to false before any read or write operations (this gets set to true in twi_handler when the transfer is complete)
+        m_twi_bus_status = &m_twi_internal_bus_status;
+        SEGGER_RTT_WriteString(0, "Initiating Sensor Scan on Internal TWI bus.\n");
+    }
+    else
+    {
+        m_xfer_done = &m_xfer_external_done;
+        m_twi_bus_status = &m_twi_external_bus_status;
+        SEGGER_RTT_WriteString(0, "Initiating Sensor Scan on External TWI bus.\n");
+    }
 
     for (uint8_t add = 0; add <= 127; add++)
     {
         ret_code_t err_code;
-        
-        //set the m_xfer_done bool to false given the current TWI bus
-        uint8_t instance = ((nrf_drv_twi_t const*)bus)->inst_idx;
-        volatile bool * m_xfer_done;
-        if (instance == INTERNAL_TWI_INSTANCE_ID) m_xfer_done = &m_xfer_internal_done; //set to false before any read or write operations (this gets set to true in twi_handler when the transfer is complete)
-        else m_xfer_done = &m_xfer_external_done;
-
         *m_xfer_done = false;
 
         do
@@ -272,10 +279,6 @@ void twi_address_scan(uint8_t* addresses, uint8_t* device_count, nrf_drv_twi_t c
 
         //If a sensor was found so we add it to the list, get the bus status from the 
         //current twi bus and add the current address if we get an ACK
-        int* m_twi_bus_status;
-        if (instance == INTERNAL_TWI_INSTANCE_ID) m_twi_bus_status = &m_twi_internal_bus_status;
-        else m_twi_bus_status = &m_twi_external_bus_status;
-
         if (*m_twi_bus_status == NRF_DRV_TWI_EVT_DONE)
         {
             //We've found a TWI address, before adding it to the array though make sure that
