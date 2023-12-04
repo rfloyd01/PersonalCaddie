@@ -103,7 +103,9 @@ int32_t bmi270_idle_mode_enable(bool init)
 
 int32_t bmi270_active_mode_enable()
 {
-    //Appl
+    //Make sure that one of the bmi270 sensors is actually in use
+    if (imu_comm->sensor_model[ACC_SENSOR] != BMI270_ACC && imu_comm->sensor_model[GYR_SENSOR] != BMI270_GYR) return 0;
+
     int8_t rslt = 0;
 
     //Both BMI270 sensors are in use
@@ -200,7 +202,7 @@ int32_t bmi270_active_mode_enable()
         }
 
         //Set the advanced power saving bit based on the current power setting
-        //rslt = bmi2_set_adv_power_save(power_save, &bmi270);
+        rslt = bmi2_set_adv_power_save(power_save, &bmi270);
     }
     else SEGGER_RTT_WriteString(0, "Error: BMI270 enabled with incorrect settings.\n");
 
@@ -276,60 +278,40 @@ int32_t bmi270_get_data(uint8_t* pBuff, uint8_t offset)
     //different sensors. If the array is just for accelerometer or just for 
     //gyroscope data then the bmi270_get_acc_data() and bmi270_get_gyr_data()
     //methods below should be used
-    
+    uint8_t data_ready = 0;
 
-    uint8_t sensor_data[12], data_ready = 0;
+    struct bmi2_sens_data sensor_data = { { 0 } };
+    int8_t rslt = bmi2_get_sensor_data(&sensor_data, &bmi270);
 
-    while (!(data_ready & BMI2_DRDY_ACC) && !(data_ready & BMI2_DRDY_GYR))
+    if (imu_comm->sensor_model[ACC_SENSOR] == BMI270_ACC)
     {
-        bmi270_read_register(BMI2_STATUS_ADDR, &data_ready, 1, (void*) &imu_comm->acc_comm);
+        //x-data
+        pBuff[offset] = ((sensor_data.acc.x & 0xFF00) >> 8);
+        pBuff[offset + 1] = sensor_data.acc.x & 0xFF;
+
+        //y-data
+        pBuff[offset + 2] = ((sensor_data.acc.y & 0xFF00) >> 8);
+        pBuff[offset + 3] = sensor_data.acc.y & 0xFF;
+        
+        //z-data
+        pBuff[offset + 4] = ((sensor_data.acc.z & 0xFF00) >> 8);
+        pBuff[offset + 5] = sensor_data.acc.z & 0xFF;
     }
 
-    //int8_t rslt = bmi270_read_register(BMI2_ACC_X_LSB_ADDR, sensor_data, 12, (void*) &imu_comm->acc_comm);
+    if (imu_comm->sensor_model[GYR_SENSOR] == BMI270_GYR)
+    {
+        //x-data
+        pBuff[offset + 6] = ((sensor_data.gyr.x & 0xFF00) >> 8);
+        pBuff[offset + 7] = sensor_data.gyr.x & 0xFF;
 
-    //for (int i = 0; i < 12; i++) SEGGER_RTT_printf(0, "%x ", sensor_data[i]);
-    //SEGGER_RTT_WriteString(0, "\n");
-
-    struct bmi2_sens_data sensor_data_test = { { 0 } };
-    int8_t rslt = bmi2_get_sensor_data(&sensor_data_test, &bmi270);
-
-    int x = 5;
-
-    //while (!(sensor_data.status & BMI2_DRDY_ACC) && !(sensor_data.status & BMI2_DRDY_GYR))
-    //{
-    //    SEGGER_RTT_WriteString(0, "Data not Ready.\n");
-    //    rslt = bmi2_get_sensor_data(&sensor_data, &bmi270);
-    //}
-
-    //if (imu_comm->sensor_model[ACC_SENSOR] == BMI270_ACC)
-    //{
-    //    //x-data
-    //    pBuff[offset] = ((sensor_data.acc.x & 0xFF00) >> 8);
-    //    pBuff[offset + 1] = sensor_data.acc.x & 0xFF;
-
-    //    //y-data
-    //    pBuff[offset + 2] = ((sensor_data.acc.y & 0xFF00) >> 8);
-    //    pBuff[offset + 3] = sensor_data.acc.y & 0xFF;
+        //y-data
+        pBuff[offset + 8] = ((sensor_data.gyr.y & 0xFF00) >> 8);
+        pBuff[offset + 9] = sensor_data.gyr.y & 0xFF;
         
-    //    //z-data
-    //    pBuff[offset + 4] = ((sensor_data.acc.z & 0xFF00) >> 8);
-    //    pBuff[offset + 5] = sensor_data.acc.z & 0xFF;
-    //}
-
-    //if (imu_comm->sensor_model[GYR_SENSOR] == BMI270_GYR)
-    //{
-    //    //x-data
-    //    pBuff[offset + 6] = ((sensor_data.gyr.x & 0xFF00) >> 8);
-    //    pBuff[offset + 7] = sensor_data.gyr.x & 0xFF;
-
-    //    //y-data
-    //    pBuff[offset + 8] = ((sensor_data.gyr.y & 0xFF00) >> 8);
-    //    pBuff[offset + 9] = sensor_data.gyr.y & 0xFF;
-        
-    //    //z-data
-    //    pBuff[offset + 10] = ((sensor_data.gyr.z & 0xFF00) >> 8);
-    //    pBuff[offset + 11] = sensor_data.gyr.z & 0xFF;
-    //}
+        //z-data
+        pBuff[offset + 10] = ((sensor_data.gyr.z & 0xFF00) >> 8);
+        pBuff[offset + 11] = sensor_data.gyr.z & 0xFF;
+    }
 
     //DEBUG: Try and read accelerometer low byte directly
     //uint8_t dummy;
@@ -340,9 +322,21 @@ int32_t bmi270_get_data(uint8_t* pBuff, uint8_t offset)
     return rslt;
 }
 
+int32_t bmi270_get_dummy_data(uint8_t* pBuff, uint8_t offset)
+{
+    //If both the acc and gyro are in use then the above method gets data for both sensors
+    //in a single read when the accelerometer's data retrieval method gets called. The code
+    //in main still needs to call the data retrieval method for the gyroscope though, so we
+    //don't want to read repeat data. This method get's called instead which doesn't actually
+    //read anything.
+    return 0;
+}
+
 int32_t bmi270_get_acc_data(uint8_t* pBuff, uint8_t offset)
 {
     //Method for reading accelerometer data
+    uint8_t data_ready = 0;
+
     struct bmi2_sens_data sensor_data = { { 0 } };
     int8_t rslt = bmi2_get_sensor_data(&sensor_data, &bmi270);
 
@@ -367,6 +361,8 @@ int32_t bmi270_get_acc_data(uint8_t* pBuff, uint8_t offset)
 int32_t bmi270_get_gyr_data(uint8_t* pBuff, uint8_t offset)
 {
     //Method for reading accelerometer data
+    uint8_t data_ready = 0;
+
     struct bmi2_sens_data sensor_data = { { 0 } };
     int8_t rslt = bmi2_get_sensor_data(&sensor_data, &bmi270);
 

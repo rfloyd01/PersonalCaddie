@@ -100,6 +100,13 @@ const wchar_t* fxas_fxos_get_settings_string(sensor_type_t sensor_type, sensor_s
 void fxos8700_update_acc_and_mag_setting(uint8_t* current_settings, sensor_type_t sensor_type, sensor_settings_t setting_type, uint8_t setting);
 void fxos8700_update_acc_or_mag_setting(uint8_t* current_settings, sensor_type_t sensor_type, sensor_settings_t setting_type, uint8_t setting);
 
+//BMI/BMM conversions
+float bmi_bmm_odr_calculate(uint8_t acc_model, uint8_t gyr_model, uint8_t mag_model, uint8_t* current_settings);
+float bmi270_acc_odr_calculate(uint8_t odr);
+float bmi270_gyr_odr_calculate(uint8_t odr);
+float bmm150_mag_odr_calculate(uint8_t odr);
+float bmi_bmm_fsr_conversion(sensor_type_t sensor, uint8_t fsr_setting);
+
 #ifdef __cplusplus
 }
 #endif

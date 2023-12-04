@@ -24,6 +24,10 @@ Accelerometer::Accelerometer(uint8_t* current_settings)
 		this->calibrationFile = L"fxos8700_acc_calibration.txt";
 		this->axisFile = L"fxos8700_acc_axes_orientations.txt";
 		break;
+	case BMI270_ACC:
+		this->calibrationFile = L"bmi270_acc_calibration.txt";
+		this->axisFile = L"bmi270_acc_axes_orientations.txt";
+		break;
 	}
 
 	//Then attempt to override the default values using the text file
@@ -42,6 +46,9 @@ void Accelerometer::setConversionRateFromSettings()
 	case FXOS8700_ACC:
 		this->conversion_rate = fxos_fxas_fsr_conversion(ACC_SENSOR, this->settings[FS_RANGE]) / 1000.0 * GRAVITY; //convert from mg to m/s^2
 		break;
+	case BMI270_ACC:
+		this->conversion_rate = bmi_bmm_fsr_conversion(ACC_SENSOR, this->settings[FS_RANGE]) * GRAVITY; //convert from g to m/s^2
+		break;
 	default:
 		this->conversion_rate = 0;
 		break;
@@ -58,6 +65,9 @@ void Accelerometer::setCurrentODRFromSettings()
 		break;
 	case FXOS8700_ACC:
 		this->current_odr = fxos8700_odr_calculate(FXOS8700_ACC, 0, this->settings[ODR], 0xFF); //the 0xC0 represents magnetometer off mode
+		break;
+	case BMI270_ACC:
+		this->current_odr = bmi270_acc_odr_calculate(this->settings[ODR]); //the 0xC0 represents magnetometer off mode
 		break;
 	default:
 		this->current_odr = 0;

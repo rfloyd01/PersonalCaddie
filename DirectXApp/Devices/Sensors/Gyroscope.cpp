@@ -23,6 +23,10 @@ Gyroscope::Gyroscope(uint8_t* current_settings)
 		this->calibrationFile = L"fxas21002_gyr_calibration.txt";
 		this->axisFile = L"fxas21002_gyr_axes_orientations.txt";
 		break;
+	case BMI270_GYR:
+		this->calibrationFile = L"bmi270_gyr_calibration.txt";
+		this->axisFile = L"bmi270_gyr_axes_orientations.txt";
+		break;
 	}
 
 	getCalibrationNumbersFromTextFile();
@@ -39,6 +43,9 @@ void Gyroscope::setConversionRateFromSettings()
 	case FXAS21002_GYR:
 		this->conversion_rate = fxos_fxas_fsr_conversion(GYR_SENSOR, this->settings[FS_RANGE]) / 1000.0; //convert from mdps to dps
 		break;
+	case BMI270_GYR:
+		this->conversion_rate = bmi_bmm_fsr_conversion(GYR_SENSOR, this->settings[FS_RANGE]); //given in dps, no need for conversion
+		break;
 	default:
 		this->conversion_rate = 0;
 		break;
@@ -54,6 +61,9 @@ void Gyroscope::setCurrentODRFromSettings()
 		break;
 	case FXAS21002_GYR:
 		this->current_odr = fxas21002_odr_calculate(FXAS21002_GYR, this->settings[ODR]); //the 0xC0 represents magnetometer off mode
+		break;
+	case BMI270_GYR:
+		this->current_odr = bmi270_gyr_odr_calculate(this->settings[ODR]); //the 0xC0 represents magnetometer off mode
 		break;
 	default:
 		this->current_odr = 0;

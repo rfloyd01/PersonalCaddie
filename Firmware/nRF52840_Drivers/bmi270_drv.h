@@ -25,6 +25,7 @@ int8_t bmi270_write_register(uint8_t reg_addr, const uint8_t *reg_data, uint32_t
 void bmi270_delay(uint32_t period, void *intf_ptr);
 
 int32_t bmi270_get_data(uint8_t* pBuff, uint8_t offset);
+int32_t bmi270_get_dummy_data(uint8_t* pBuff, uint8_t offset);
 int32_t bmi270_get_acc_data(uint8_t* pBuff, uint8_t offset);
 int32_t bmi270_get_gyr_data(uint8_t* pBuff, uint8_t offset);
 

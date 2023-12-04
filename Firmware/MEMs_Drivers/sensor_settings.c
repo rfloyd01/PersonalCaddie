@@ -1547,3 +1547,87 @@ void fxos8700_update_acc_or_mag_setting(uint8_t* current_settings, sensor_type_t
         }
     }
 }
+
+//BMI/BMM conversions
+float bmi_bmm_odr_calculate(uint8_t acc_model, uint8_t gyr_model, uint8_t mag_model, uint8_t* current_settings)
+{
+    //We take the highest ODR of any bmi/bmm sensors that are available.
+    float highest_odr = 0.0f;
+
+    if (acc_model == BMI270_ACC)
+    {
+        float acc_odr = bmi270_acc_odr_calculate(*(current_settings + ACC_START + ODR));
+        if (acc_odr > highest_odr) highest_odr = acc_odr;
+    }
+    if (gyr_model == BMI270_GYR)
+    {
+        float gyr_odr = bmi270_gyr_odr_calculate(*(current_settings + GYR_START + ODR));
+        if (gyr_odr > highest_odr) highest_odr = gyr_odr;
+    }
+    //TODO: create magnetometer method when ready if (mag_model == BMM150_MAG) bm_sensor[2] = true;
+
+    return highest_odr;
+}
+
+float bmi270_acc_odr_calculate(uint8_t odr)
+{
+    switch (odr)
+    {
+        case BMI2_ACC_ODR_0_78HZ: return 0.78f;
+        case BMI2_ACC_ODR_1_56HZ: return 1.56f;       
+        case BMI2_ACC_ODR_3_12HZ: return 3.12f;
+        case BMI2_ACC_ODR_6_25HZ: return 6.25f;
+        case BMI2_ACC_ODR_12_5HZ: return 12.5f;
+        case BMI2_ACC_ODR_25HZ: return 25.0f;
+        case BMI2_ACC_ODR_50HZ: return 50.0f;
+        case BMI2_ACC_ODR_100HZ: return 100.0f;
+        case BMI2_ACC_ODR_200HZ: return 200.0f;
+        case BMI2_ACC_ODR_400HZ: return 400.0f;
+        case BMI2_ACC_ODR_800HZ: return 800.0f;
+        case BMI2_ACC_ODR_1600HZ: return 1600.0f;
+        default: return 0.0f;
+    }
+}
+
+float bmi270_gyr_odr_calculate(uint8_t odr)
+{
+    switch (odr)
+    {
+        case BMI2_GYR_ODR_25HZ: return 25.0f;
+        case BMI2_GYR_ODR_50HZ: return 50.0f;
+        case BMI2_GYR_ODR_100HZ: return 100.0f;
+        case BMI2_GYR_ODR_200HZ: return 200.0f;
+        case BMI2_GYR_ODR_400HZ: return 400.0f;
+        case BMI2_GYR_ODR_800HZ: return 800.0f;
+        case BMI2_GYR_ODR_1600HZ: return 1600.0f;
+        case BMI2_GYR_ODR_3200HZ: return 3200.0f;
+        default: return 0.0f;
+    }
+}
+
+float bmi_bmm_fsr_conversion(sensor_type_t sensor, uint8_t fsr_setting)
+{
+    if (sensor == ACC_SENSOR)
+    {
+        switch (fsr_setting)
+        {
+            case BMI2_ACC_RANGE_2G: return 1.0f / 16384.0f;
+            case BMI2_ACC_RANGE_4G: return 1.0f / 8192.0f;
+            case BMI2_ACC_RANGE_8G: return 1.0f / 4096.0f;
+            case BMI2_ACC_RANGE_16G: return 1.0f / 2048.0f;
+            default: return 0.0f;
+        }
+    }
+    else if (sensor == GYR_SENSOR)
+    {
+        switch (fsr_setting)
+        {
+            case BMI2_GYR_RANGE_2000: return 1.0f / 16.384f;
+            case BMI2_GYR_RANGE_1000: return 1.0f / 32.768f;
+            case BMI2_GYR_RANGE_500: return 1.0f / 65.536f;
+            case BMI2_GYR_RANGE_250: return 1.0f / 131.072f;
+            case BMI2_GYR_RANGE_125: return 1.0f / 262.144f;
+            default: return 0.0f;
+        }
+    }
+}

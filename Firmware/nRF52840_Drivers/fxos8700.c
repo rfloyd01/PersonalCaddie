@@ -31,7 +31,9 @@ void fxos8700init(imu_communication_t* comm, uint8_t sensors, uint8_t* settings)
         //Apply default settings for the acc
         update_sensor_setting(p_sensor_settings + ACC_START, FS_RANGE, FXOS8700_XYZ_DATA_CFG_FS_4G_0P488); //accelerometer full scale range (+/- 4 g)
 
-        update_sensor_setting(p_sensor_settings + ACC_START, ODR, FXOS8700_ODR_SINGLE_100_HZ); //accelerometer ODR (100 Hz)
+        if (imu_comm->sensor_model[MAG_SENSOR] == FXOS8700_MAG) update_sensor_setting(p_sensor_settings + ACC_START, ODR, FXOS8700_ODR_HYBRID_50_HZ); //accelerometer + magnetomter ODR (50 Hz)
+        else update_sensor_setting(p_sensor_settings + ACC_START, ODR, FXOS8700_ODR_SINGLE_50_HZ); //accelerometer ODR (50 Hz)
+        
         update_sensor_setting(p_sensor_settings + ACC_START, POWER, FXOS8700_ACCEL_NORMAL); //accelerometer Power (normal power mode)
 
         update_sensor_setting(p_sensor_settings + ACC_START, FILTER_SELECTION, FXOS8700_XYZ_DATA_CFG_HPF_OUT_DISABLE); //accelerometer filter selection (high pass filter disabled)
@@ -58,7 +60,9 @@ void fxos8700init(imu_communication_t* comm, uint8_t sensors, uint8_t* settings)
         //has a fixed full-scale range of +/- 1200 uT. The power mode is share. Furthermore,
         //low power modes are only applied to the acc, not the mag, so really the only thing
         //we set here is the mag ODR.
-        update_sensor_setting(p_sensor_settings + MAG_START, ODR, FXOS8700_ODR_SINGLE_100_HZ); //accelerometer ODR (100 Hz)
+        if (imu_comm->sensor_model[ACC_SENSOR] == FXOS8700_ACC) update_sensor_setting(p_sensor_settings + MAG_START, ODR, FXOS8700_ODR_HYBRID_50_HZ); //magnetometer + accelerometer ODR (100 Hz)
+        else update_sensor_setting(p_sensor_settings + MAG_START, ODR, FXOS8700_ODR_SINGLE_50_HZ); //magnetometer ODR (50 Hz)
+        
         update_sensor_setting(p_sensor_settings + MAG_START, POWER, 0); //power (indicates on)
 
         //After setting default settings, attempt to read the whoAmI register

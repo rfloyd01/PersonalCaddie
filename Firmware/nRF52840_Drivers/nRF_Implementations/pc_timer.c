@@ -132,7 +132,7 @@ void update_data_read_timer(float milliseconds)
     //2 milliseconds flat. This would cause us to take readings 1.25x quicker than need
     //to, resulting in a percieved ODR of 500 instead of 400. Using the microsecond to ticks
     //method though and we'd get the correct value here of 2500 microseconds and take the
-     //correct readings.
+    //correct readings.
     uint32_t microseconds = 1000 * milliseconds;
     uint32_t new_data_read_time = nrf_drv_timer_us_to_ticks(&m_data_read_timer, microseconds); //convert from milliseconds to clock ticks
     nrf_drv_timer_extended_compare(&m_data_read_timer, NRF_TIMER_CC_CHANNEL0, new_data_read_time, NRF_TIMER_SHORT_COMPARE0_CLEAR_MASK, true);
@@ -158,6 +158,7 @@ static void data_read_timer_handler(nrf_timer_event_t event_type, void* p_contex
         //after all the samples are read, update the characteristics and notify
         *p_data_ready = true; //flags the main loop to broadcast data notifications
         measurements_taken = 0; //reset the data counter
+        //SEGGER_RTT_printf(0, "Full reading taken at %d.\n", nrf_drv_timer_capture(&m_data_start_timer, NRF_TIMER_CC_CHANNEL2));
     }
 }
 

@@ -38,6 +38,7 @@ uint16_t m_conn_handle = BLE_CONN_HANDLE_INVALID;                               
 
 //IMU Sensor Parameters
 static uint8_t default_sensors[3] = {BMI270_ACC, BMI270_GYR, FXOS8700_MAG};   /**< Default sensors that are attempted to be initialized first. */
+//static uint8_t default_sensors[3] = {FXOS8700_ACC, FXAS21002_GYR, FXOS8700_MAG};
 static bool sensors_initialized[3] = {false, false, false};                        /**< Keep track of which sensors are currently initialized */
 static uint8_t internal_sensors[10];                                               /**< An array for holding the addresses of sensors on the internal TWI line */
 static uint8_t external_sensors[10];                                               /**< An array for holding the addresses of sensors on the external TWI line */
@@ -138,7 +139,7 @@ static void sensor_communication_init(sensor_type_t type, uint8_t model, uint8_t
             }
             else if (model == BMI270_GYR)
             {
-                if (m_use_composite_data) imu_comm.gyr_comm.get_data = bmi270_get_data;
+                if (m_use_composite_data) imu_comm.gyr_comm.get_data = bmi270_get_dummy_data;
                 else imu_comm.gyr_comm.get_data = bmi270_get_gyr_data;
             }
             else if (model == FXAS21002_GYR)
@@ -187,6 +188,11 @@ static float sensor_odr_calculate()
             if (i == GYR_SENSOR) new_odr = fxas21002_odr_calculate(imu_comm.sensor_model[1], sensor_settings[GYR_START + ODR]);
             else new_odr = fxos8700_odr_calculate(imu_comm.sensor_model[0], imu_comm.sensor_model[2], sensor_settings[ACC_START + ODR], sensor_settings[MAG_START + ODR]);
             
+            if (new_odr > current_highest_odr) current_highest_odr = new_odr;
+        }
+        else if (imu_comm.sensor_model[i] == BMI270_ACC)
+        {
+            float new_odr = bmi_bmm_odr_calculate(imu_comm.sensor_model[0], imu_comm.sensor_model[1], imu_comm.sensor_model[2], sensor_settings);
             if (new_odr > current_highest_odr) current_highest_odr = new_odr;
         }
     }
