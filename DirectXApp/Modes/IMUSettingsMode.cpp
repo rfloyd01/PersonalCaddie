@@ -81,8 +81,8 @@ void IMUSettingsMode::getCurrentSettings(winrt::Windows::Foundation::Size window
 	if (!use_current)
 	{
 		//The vector passed into this method holds three pointers. One each that
-	//points to the settings in the accelerometer, gyroscope and magnetometer
-	//classes. We copy these into the m_currentSettings array
+	    //points to the settings in the accelerometer, gyroscope and magnetometer
+	    //classes. We copy these into the m_currentSettings array
 		for (int i = 0; i < 3; i++)
 		{
 			//TODO: shouldn't be using the number 10 here, should be getting this
@@ -230,27 +230,51 @@ void IMUSettingsMode::populateDropDownText()
 	std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
 
 	if (m_newSettings[ACC_START] == LSM9DS1_ACC)
+	{
 		for (int i = FS_RANGE; i <= EXTRA_2; i++) m_dropDownText[ACC_SENSOR][i] = lsm9ds1_get_complete_settings_string(ACC_SENSOR, static_cast<sensor_settings_t>(i));
+	}
+	else if (m_newSettings[ACC_START] == BMI270_ACC)
+	{
+		for (int i = FS_RANGE; i <= EXTRA_2; i++) m_dropDownText[ACC_SENSOR][i] = bmi_bmm_get_complete_settings_string(ACC_SENSOR, static_cast<sensor_settings_t>(i));
+	}
 	else if (m_newSettings[ACC_START] == FXOS8700_ACC)
+	{
 		for (int i = FS_RANGE; i <= EXTRA_2; i++)
 		{
 			if (i == ODR && m_newSettings[MAG_START + SENSOR_MODEL] == FXOS8700_MAG && m_newSettings[MAG_START + POWER] != 0xFF) m_dropDownText[ACC_SENSOR][i] = fxas_fxos_get_complete_settings_string(ACC_SENSOR, static_cast<sensor_settings_t>(100));
 			else m_dropDownText[ACC_SENSOR][i] = fxas_fxos_get_complete_settings_string(ACC_SENSOR, static_cast<sensor_settings_t>(i));
 		}
+	}
 
 	if (m_newSettings[GYR_START] == LSM9DS1_GYR)
+	{
 		for (int i = FS_RANGE; i <= EXTRA_2; i++) m_dropDownText[GYR_SENSOR][i] = lsm9ds1_get_complete_settings_string(GYR_SENSOR, static_cast<sensor_settings_t>(i));
+	}
+	else if (m_newSettings[GYR_START] == BMI270_GYR)
+	{
+		for (int i = FS_RANGE; i <= EXTRA_2; i++) m_dropDownText[GYR_SENSOR][i] = bmi_bmm_get_complete_settings_string(GYR_SENSOR, static_cast<sensor_settings_t>(i));
+	}
 	else if (m_newSettings[GYR_START] == FXAS21002_GYR)
+	{
 		for (int i = FS_RANGE; i <= EXTRA_2; i++) m_dropDownText[GYR_SENSOR][i] = fxas_fxos_get_complete_settings_string(GYR_SENSOR, static_cast<sensor_settings_t>(i));
+	}
 
 	if (m_newSettings[MAG_START] == LSM9DS1_MAG)
+	{
 		for (int i = FS_RANGE; i <= EXTRA_2; i++) m_dropDownText[MAG_SENSOR][i] = lsm9ds1_get_complete_settings_string(MAG_SENSOR, static_cast<sensor_settings_t>(i));
+	}
+	else if (m_newSettings[MAG_START] == BMM150_MAG)
+	{
+		for (int i = FS_RANGE; i <= EXTRA_2; i++) m_dropDownText[MAG_SENSOR][i] = bmi_bmm_get_complete_settings_string(MAG_SENSOR, static_cast<sensor_settings_t>(i));
+	}
 	else if (m_newSettings[MAG_START] == FXOS8700_MAG)
+	{
 		for (int i = FS_RANGE; i <= EXTRA_2; i++)
 		{
 			if (i == ODR && m_newSettings[ACC_START + SENSOR_MODEL] == FXOS8700_ACC && m_newSettings[ACC_START + POWER] != 0xFF) m_dropDownText[MAG_SENSOR][i] = fxas_fxos_get_complete_settings_string(MAG_SENSOR, static_cast<sensor_settings_t>(100));
 			else m_dropDownText[MAG_SENSOR][i] = fxas_fxos_get_complete_settings_string(MAG_SENSOR, static_cast<sensor_settings_t>(i));
 		}
+	}
 }
 
 uint32_t IMUSettingsMode::handleUIElementStateChange(int i)

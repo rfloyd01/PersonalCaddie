@@ -107,6 +107,9 @@ float bmi270_gyr_odr_calculate(uint8_t odr);
 float bmm150_mag_odr_calculate(uint8_t odr);
 float bmi_bmm_fsr_conversion(sensor_type_t sensor, uint8_t fsr_setting);
 
+const wchar_t* bmi_bmm_get_complete_settings_string(sensor_type_t sensor_type, sensor_settings_t setting_type);
+const wchar_t* bmi_bmm_get_settings_string(sensor_type_t sensor_type, sensor_settings_t setting_type, uint8_t setting);
+
 #ifdef __cplusplus
 }
 #endif

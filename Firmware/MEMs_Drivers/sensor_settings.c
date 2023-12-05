@@ -94,6 +94,7 @@ const wchar_t* get_sensor_model_string(uint8_t sensor_type, uint8_t sensor_model
     switch (sensor_model)
     {
     case (0): return lsm9ds1_get_complete_settings_string(sensor_type, SENSOR_MODEL);
+    case (1): return bmi_bmm_get_complete_settings_string(sensor_type, SENSOR_MODEL);
     case (2): return fxas_fxos_get_complete_settings_string(sensor_type, SENSOR_MODEL);
     default: return L"";
     }
@@ -123,6 +124,16 @@ const wchar_t* get_sensor_model_string_from_address(uint8_t sensor_type, uint8_t
     case FXAS21002_DEVICE_ADDR_SA_1:
         if (sensor_type == GYR_SENSOR) return fxas_fxos_get_complete_settings_string(sensor_type, SENSOR_MODEL);
         else return L"";
+    case BMI2_I2C_SEC_ADDR:
+    case BMI2_I2C_PRIM_ADDR:
+        if (sensor_type == ACC_SENSOR || sensor_type == GYR_SENSOR) return bmi_bmm_get_complete_settings_string(sensor_type, SENSOR_MODEL);
+        else return L"";
+    case BMM150_DEFAULT_I2C_ADDRESS:
+    case BMM150_I2C_ADDRESS_CSB_LOW_SDO_HIGH:
+    case BMM150_I2C_ADDRESS_CSB_HIGH_SDO_LOW:
+    case BMM150_I2C_ADDRESS_CSB_HIGH_SDO_HIGH:
+        if (sensor_type == MAG_SENSOR) return bmi_bmm_get_complete_settings_string(sensor_type, SENSOR_MODEL);
+        else return L"";
     default: return L"";
     }
     
@@ -149,6 +160,15 @@ void get_sensor_default_settings(uint8_t sensor_type, uint8_t sensor_model, uint
             settings_array[HIGH_PASS_FILTER] = 0;
             settings_array[EXTRA_FILTER] = LSM9DS1_50Hz;
         }
+        else if (sensor_model == BMI270_ACC)
+        {
+            settings_array[SENSOR_MODEL] = BMI270_ACC;
+            settings_array[FS_RANGE] = BMI2_ACC_RANGE_4G;
+            settings_array[ODR] = BMI2_ACC_ODR_50HZ;
+            settings_array[POWER] = 0x03; //user defined normal power mode
+            settings_array[LOW_PASS_FILTER] = BMI2_ACC_NORMAL_AVG4;
+            settings_array[EXTRA_FILTER] = BMI2_PERF_OPT_MODE;
+        }
         else if (sensor_model == FXOS8700_ACC)
         {
             settings_array[SENSOR_MODEL] = FXOS8700_ACC;
@@ -172,6 +192,16 @@ void get_sensor_default_settings(uint8_t sensor_type, uint8_t sensor_model, uint
             settings_array[LOW_PASS_FILTER] = 0;
             settings_array[HIGH_PASS_FILTER] = LSM9DS1_HP_MEDIUM;
         }
+        else if (sensor_model == BMI270_GYR)
+        {
+            settings_array[SENSOR_MODEL] = BMI270_GYR;
+            settings_array[FS_RANGE] = BMI2_GYR_RANGE_2000;
+            settings_array[ODR] = BMI2_GYR_ODR_50HZ;
+            settings_array[POWER] = 0x03; //user defined normal power mode
+            settings_array[LOW_PASS_FILTER] = BMI2_GYR_NORMAL_MODE;
+            settings_array[EXTRA_FILTER] = BMI2_PERF_OPT_MODE;
+            settings_array[EXTRA_1] = BMI2_POWER_OPT_MODE;
+        }
         else if (sensor_model == FXAS21002_GYR)
         {
             settings_array[SENSOR_MODEL] = FXAS21002_GYR;
@@ -192,6 +222,14 @@ void get_sensor_default_settings(uint8_t sensor_type, uint8_t sensor_model, uint
             settings_array[FS_RANGE] = LSM9DS1_4Ga;
             settings_array[ODR] = LSM9DS1_MAG_LP_40Hz;
             settings_array[POWER] = LSM9DS1_MAG_LP_40Hz;
+        }
+        else if (sensor_model == BMM150_MAG)
+        {
+            settings_array[SENSOR_MODEL] = BMM150_MAG;
+            settings_array[ODR] = BMM150_DATA_RATE_30HZ;
+            settings_array[POWER] = BMM150_POWERMODE_NORMAL;
+            settings_array[EXTRA_1] = BMM150_REPXY_REGULAR;
+            settings_array[EXTRA_1] = BMM150_REPZ_REGULAR;
         }
         else if (sensor_model == FXOS8700_MAG)
         {
@@ -1084,7 +1122,6 @@ void lsm9ds1_update_mag_setting(uint8_t* current_settings, sensor_settings_t set
 }
 
 //FXAS/FXOS conersions
-
 float fxos8700_odr_calculate(uint8_t acc_model, uint8_t mag_model, uint8_t acc_odr_setting, uint8_t mag_odr_setting)
 {
     //Check to see if the acc model and mag model are both FXOS sensors, if so, the ODR will be 
@@ -1658,5 +1695,247 @@ float bmi_bmm_fsr_conversion(sensor_type_t sensor, uint8_t fsr_setting)
     else if (sensor == MAG_SENSOR)
     {
         return  0.3f; //need to confirm this, couldn't find the typical uT/LSB conversion in the spec only a device resolution
+    }
+}
+
+const wchar_t* bmi_bmm_get_complete_settings_string(sensor_type_t sensor_type, sensor_settings_t setting_type)
+{
+    //Creates a single string out of all the settings for a single sensor setting type. Each setting
+    //is separated by a '\n' character.
+
+    //Write out the strings instead of getting them with the bmi_bmm_get_settings_string() method so that we
+    //avoid duplicates.
+    switch (sensor_type)
+    {
+    case ACC_SENSOR:
+        switch (setting_type)
+        {
+        case SENSOR_MODEL: return L"BMI270 Accelerometer 0x01";
+        case FS_RANGE: return L"+/- 2 g 0x00\n+/- 4 g 0x01\n+/- 8 g 0x02\n+/- 16 g 0x03";
+        case ODR: return L"0 Hz0x0\n0.78 Hz 0x1\n1.56 Hz 0x2\n3.12 Hz 0x3\n6.25 Hz 0x4\n12.5 Hz 0x5\n25 Hz 0x6\n50 Hz 0x7\n100 Hz 0x8\n200 Hz 0x9\n400 Hz 0xA\n800 Hz 0xB\n1600 Hz 0xC";
+        case POWER: return L"Suspend 0x0\nConfig. 0x1\nLow 0x2\nNormal 0x3\nPerformance 0x4";
+        case LOW_PASS_FILTER: return L"4X Oversample 0x0\nSingle Sample Avg. 0x0\n2X Oversample 0x1\n2 Sample Avg. 0x1\nStandard Samples 0x2\n4 Sample Avg. 0x2\nCIC 0x3\n8 Sample Avg. 0x3\n16 Sample Avg. 0x4\n32 Sample Avg. 0x5\n64 Sample Avg. 0x6\n128 Sample Avg. 0x7";
+        case EXTRA_FILTER: return L"LPF: Power Opt. 0x0\nLPF: Perf. Opt. 0x1";
+        default: return L"";
+        }
+    case GYR_SENSOR:
+        switch (setting_type)
+        {
+        case SENSOR_MODEL: return L"BMI270 Gyroscope 0x01";
+        case FS_RANGE: return L"+/- 125 DPS 0x4\n+/- 250 DPS 0x3\n+/- 500 DPS 0x2\n+/- 1000 DPS 0x1\n+/- 2000 DPS 0x0";
+        case ODR: return L"0 Hz0x00\n25 Hz 0x06\n50 Hz 0x07\n100 Hz 0x08\n200 Hz 0x09\n400 Hz 0x0A\n800 Hz 0x0B\n1600 Hz 0x0C\n3200 Hz 0x0D";
+        case POWER: return L"Suspend 0x0\nConfig. 0x1\nLow 0x2\nNormal 0x3\nPerformance 0x4";
+        case LOW_PASS_FILTER: return L"4X Oversample 0x00\n2X Oversample 0x01\nStandard Samples 0x02\nCIC 0x03";
+        case EXTRA_FILTER: return L"LPF: Power Opt. 0x0\nLPF: Perf. Opt. 0x1";
+        case EXTRA_1: return L"LPF Noise: Power Opt. 0x0\nLPF Noise: Perf. Opt. 0x1";
+        default: return L"";
+        }
+    case MAG_SENSOR:
+        switch (setting_type)
+        {
+        case SENSOR_MODEL: return L"BMM150 Magnetometer 0x01";
+        case ODR: return L"0 Hz 0xFF\n2 Hz 0x1\n6 Hz 0x2\n8 Hz 0x3\n10 Hz 0x0\n15 Hz 0x4\n20 Hz 0x5\n25 Hz 0x6\n30 Hz 0x7";
+        case POWER: return L"Normal 0x0\nForced 0x1\nSleep 0x3\nSuspend 0x4";
+        case EXTRA_1: return L"Low XY Rep. 0x01\nRegular XY Rep. 0x04\nEnhanced XY Rep. 0x07\nPerf. XY Rep. 0x17";
+        case EXTRA_2: return L"Low Z Rep. 0x01\nRegular Z Rep. 0x07\nEnhanced Z Rep. 0x0D\nPerf. Z Rep. 0x29";
+        default: return L"";
+        }
+    }
+}
+
+const wchar_t* bmi_bmm_get_settings_string(sensor_type_t sensor_type, sensor_settings_t setting_type, uint8_t setting)
+{
+    //This method converts a specific sensor setting to a string that can be 
+    //read by a human. Mainly used in displaying settings on a UI.
+
+    //Shouldn't need break statements because every path of the switch returns a value
+    switch (sensor_type)
+    {
+    case ACC_SENSOR:
+    {
+        switch (setting_type)
+        {
+        case SENSOR_MODEL: return L"BMI270 Accelerometer 0x01";
+        case FS_RANGE:
+            switch (setting)
+            {
+            case BMI2_ACC_RANGE_2G: return L"+/- 2g 0x00";
+            case BMI2_ACC_RANGE_4G: return L"+/- 4g 0x01";
+            case BMI2_ACC_RANGE_8G: return L"+/- 8g 0x02";
+            case BMI2_ACC_RANGE_16G: return L"+/- 16g 0x03";
+            default: return L"";
+            }
+        case ODR:
+            switch (setting)
+            {
+            case BMI2_ACC_ODR_0_78HZ: return L"0.78 Hz 0x1";
+            case BMI2_ACC_ODR_1_56HZ: return L"1.56 Hz 0x2";
+            case BMI2_ACC_ODR_3_12HZ: return L"3.12 Hz 0x3";
+            case BMI2_ACC_ODR_6_25HZ: return L"6.25 Hz 0x4";
+            case BMI2_ACC_ODR_12_5HZ: return L"12.5 Hz 0x5";
+            case BMI2_ACC_ODR_25HZ: return L"25 Hz 0x6";
+            case BMI2_ACC_ODR_50HZ: return L"50 Hz 0x7";
+            case BMI2_ACC_ODR_100HZ: return L"100 Hz 0x8";
+            case BMI2_ACC_ODR_200HZ: return L"200 Hz 0x9";
+            case BMI2_ACC_ODR_400HZ: return L"400 Hz 0xA";
+            case BMI2_ACC_ODR_800HZ: return L"800 Hz 0xB";
+            case BMI2_ACC_ODR_1600HZ: return L"1600 Hz 0xC";
+            default: return L"";
+            }
+        case POWER:
+            //I use a custom enum here which isn't included in this file so 
+            //just use the raw hex numbers for each case
+            switch (setting)
+            {
+            case 0x0: return L"Suspend 0x0";
+            case 0x1: return L"Config. 0x1";
+            case 0x2: return L"Low 0x2";
+            case 0x3: return L"Normal 0x3";
+            case 0x4: return L"Performance 0x4";
+            default: return L"";
+            }
+        case LOW_PASS_FILTER:
+            switch (setting)
+            {
+            case BMI2_ACC_OSR4_AVG1: return L"Single Sample Avg. 0x0";
+            case BMI2_ACC_OSR2_AVG2: return L"2 Sample Avg. 0x1";
+            case BMI2_ACC_NORMAL_AVG4: return L"4 Sample Avg. 0x2";
+            case BMI2_ACC_CIC_AVG8: return L"8 Sample Avg. 0x3";
+            case BMI2_ACC_RES_AVG16: return L"16 Sample Avg. 0x4";
+            case BMI2_ACC_RES_AVG32: return L"32 Sample Avg. 0x5";
+            case BMI2_ACC_RES_AVG64: return L"64 Sample Avg. 0x6";
+            case BMI2_ACC_RES_AVG128: return L"128 Sample Avg. 0x7";
+            default: return L"";
+            }
+        case 100:
+            //This is a special case that gets called when the sensor is running in 
+            //performance optimized mode. It effects which of the low pass filter options
+            //can be selected
+            switch (setting)
+            {
+            case BMI2_ACC_OSR4_AVG1: return L"4X Oversample 0x0";
+            case BMI2_ACC_OSR2_AVG2: return L"2X Oversample 0x1";
+            case BMI2_ACC_NORMAL_AVG4: return L"Standard Samples 0x2";
+            case BMI2_ACC_CIC_AVG8: return L"CIC 0x3";
+            default: return L"";
+            }
+        case EXTRA_FILTER:
+            switch (setting)
+            {
+            case BMI2_POWER_OPT_MODE: return L"LPF: Power Opt. 0x0";
+            case BMI2_PERF_OPT_MODE: return L"LPF: Perf. Opt. 0x1";
+            default: return L"";
+            }
+        default: return L"";
+        }
+    }
+    case GYR_SENSOR:
+    {
+        switch (setting_type)
+        {
+        case SENSOR_MODEL: return L"FXAS21002 Gyroscope 0x02";
+        case FS_RANGE:
+            switch (setting)
+            {
+            case FXAS21002_RANGE_4000DPS: return L"+/- 4000 DPS 0x10";
+            case FXAS21002_RANGE_2000DPS: return L"+/- 2000 DPS 0x00";
+            case FXAS21002_RANGE_1000DPS: return L"+/- 1000 DPS 0x01";
+            case FXAS21002_RANGE_500DPS: return L"+/- 500 DPS 0x02";
+            case FXAS21002_RANGE_250DPS: return L"+/- 250 DPS 0x03";
+            default: return L"";
+            }
+        case ODR:
+            switch (setting)
+            {
+            case FXAS21002_ODR_800_HZ: return L"800 Hz 0x0";
+            case FXAS21002_ODR_400_HZ: return L"400 Hz 0x1";
+            case FXAS21002_ODR_200_HZ: return L"200 Hz 0x2";
+            case FXAS21002_ODR_100_HZ: return L"100 Hz 0x3";
+            case FXAS21002_ODR_50_HZ: return L"50 Hz 0x4";
+            case FXAS21002_ODR_25_HZ: return L"12.5 Hz 0x5";
+            case FXAS21002_ODR_12_5_HZ: return L"6.25 Hz 0x6";
+            default: return L"";
+            }
+        case POWER:
+            switch (setting)
+            {
+            case FXAS21002_POWER_READY: return L"Ready Mode 0x1";
+            case FXAS21002_POWER_STANDBY:
+            default:
+                return L"Standby Mode 0x0";
+            }
+        case FILTER_SELECTION:
+            switch (setting)
+            {
+            case FXAS21002_FILTER_LPF: return L"LPF Only 0x0";
+            case FXAS21002_FILTER_LPF_HPF: return L"LPF/HPF 0x1";
+            default: return L"";
+            }
+        case LOW_PASS_FILTER:
+            switch (setting)
+            {
+            case FXAS21002_LPF_STRONG: return L"Strong 0x0";
+            case FXAS21002_LPF_MEDIUM: return L"Medium 0x1";
+            case FXAS21002_LPF_LIGHT: return L"Light 0x2";
+            default: return L"";
+            }
+        case HIGH_PASS_FILTER:
+            switch (setting)
+            {
+            case FXAS21002_HPF_EXTREME: return L"Extreme 0x0";
+            case FXAS21002_HPF_STRONG: return L"Strong 0x1";
+            case FXAS21002_HPF_MEDIUM: return L"Medium 0x2";
+            case FXAS21002_HPF_LIGHT: return L"Light 0x3";
+            default: return L"";
+            }
+        default: return L"";
+        }
+    }
+    case MAG_SENSOR:
+    {
+        switch (setting_type)
+        {
+        case SENSOR_MODEL: return L"FXOS8700 Magnetometer 0x02";
+        case FS_RANGE: return L"+/- 1200 uT";
+        case ODR:
+            switch (setting)
+            {
+            case FXOS8700_ODR_SINGLE_800_HZ: return L"800 Hz 0x00";
+            case FXOS8700_ODR_SINGLE_400_HZ: return L"400 Hz 0x08";
+            case FXOS8700_ODR_SINGLE_200_HZ: return L"200 Hz 0x10";
+            case FXOS8700_ODR_SINGLE_100_HZ: return L"100 Hz 0x18";
+            case FXOS8700_ODR_SINGLE_50_HZ: return L"50 Hz 0x20";
+            case FXOS8700_ODR_SINGLE_12P5_HZ: return L"12.5 Hz 0x28";
+            case FXOS8700_ODR_SINGLE_6P25_HZ: return L"6.25 Hz 0x30";
+            case FXOS8700_ODR_SINGLE_1P5625_HZ: return L"1.5625 Hz 0x38";
+            case FXOS8700_ODR_SINGLE_OFF: return L"0Hz 0xFF";
+            default: return L"";
+            }
+        case 100:
+            //This is a special case that gets called when both the accelerometer and mag are enabled
+            //and powered on. This is only used to obtain the ODR, which is cut in half when both
+            //sensors are in use.
+            switch (setting)
+            {
+            case FXOS8700_ODR_HYBRID_400_HZ: return L"400 Hz 0x00";
+            case FXOS8700_ODR_HYBRID_200_HZ: return L"200 Hz 0x08";
+            case FXOS8700_ODR_HYBRID_100_HZ: return L"100 Hz 0x10";
+            case FXOS8700_ODR_HYBRID_50_HZ: return L"50 Hz 0x18";
+            case FXOS8700_ODR_HYBRID_25_HZ: return L"25 Hz 0x20";
+            case FXOS8700_ODR_HYBRID_6P25_HZ: return L"6.25 Hz 0x28";
+            case FXOS8700_ODR_HYBRID_3P125_HZ: return L"3.125 Hz 0x30";
+            case FXOS8700_ODR_HYBRID_0P7813_HZ: return L"0.7813 Hz 0x38";
+            case FXOS8700_ODR_HYBRID_OFF: return L"0 Hz 0xFF";
+            default: return L"";
+            }
+        case POWER:
+            switch (setting)
+            {
+            case 0: return L"On 0x00";
+            default: return L"Off 0xFF";
+            }
+        default: return L"";
+        }
+    }
     }
 }
