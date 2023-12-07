@@ -81,23 +81,34 @@ int32_t bmm150_idle_mode_enable(bool init)
     }
 }
 
-int32_t bmm150_active_mode_enable()
+int32_t bmm150_active_mode_enable(float highest_odr)
 {
     //Make sure that the bmm150 sensor is actually in use
     if (imu_comm->sensor_model[MAG_SENSOR] != BMM150_MAG) return 0;
 
     //Put the pertinent settings from the sensor setting array into the
     //bmm150_settings struct from the driver
-
-    //TODO: For now just get the sensor working, after that will need to
-    //figure out how to get forced mode working properly
     struct bmm150_settings settings;
 
     settings.pwr_mode = p_sensor_settings[MAG_START + POWER];
     settings.data_rate  = p_sensor_settings[MAG_START + ODR];
-    settings.xy_rep  = p_sensor_settings[MAG_START + EXTRA_1];
-    settings.z_rep  = p_sensor_settings[MAG_START + EXTRA_2];
 
+    //I've created a custom setting that matches the BMM150 ODR to that of
+    //the accelerometer and gyroscope. This is achieved by putting the
+    //sensor in forced mode and selecting the custom odr option.
+    if (settings.pwr_mode == BMM150_POWERMODE_FORCED && settings.data_rate == 0x8)
+    {
+        //The custom ODR is achieved by manipulating the s, y and z axis 
+        //repetitions per the following equations
+        bmm150_set_axes_repetitions((void*)&settings, highest_odr);
+    }
+    else
+    {
+        //Just use one of the pre-built ODRs
+        settings.xy_rep  = p_sensor_settings[MAG_START + EXTRA_1];
+        settings.z_rep  = p_sensor_settings[MAG_START + EXTRA_2];
+    }
+    
     int8_t rtrn = bmm150_set_op_mode(&settings, &bmm150); //set the power mode first
 
     if (rtrn == BMM150_OK)
@@ -107,6 +118,31 @@ int32_t bmm150_active_mode_enable()
     else SEGGER_RTT_WriteString(0, "Couldn't turn the BMM150 on.\n");
     
     return rtrn;
+}
+
+void bmm150_set_axes_repetitions(void* settings, float odr)
+{
+    //Custom ODR's are calculated with the following formulas:
+
+    //ODR ~= 1 / (0.000145 * nXY + 0.0005 * nZ + 0.00098)
+    //nXY  = 1 + 2 * (register_0x51)
+    //nZ   = 1 + register_0x52
+
+    //The goal is to get as close to the goal ODR while keeping
+    //nXY and nZ as close to each other as we can. The maximum
+    //value for nZ is only 256 while for nXY it is 511, however,
+    //this many samples averaged together would create a large
+    //current draw any way so this shouldn't be an issue. Since
+    //we want the values to be equal the register values become:
+
+    //register_0x51 = (((1 / ODR - 0.00098) / 0.000645) - 1) / 2
+    //register_0x52 = register_0x51 * 2
+
+    //Calculate the nXY value and write the register values into the settings struct
+    struct bmm150_settings* bmi_settings = (struct bmm150_settings*)settings;
+    float nXY = (1.0f / odr - 0.00098f) / 0.000645f;
+    bmi_settings->xy_rep = (nXY - 1) / 2;
+    bmi_settings->z_rep = bmi_settings->xy_rep * 2;
 }
 
 void bmm150_get_actual_settings()
@@ -156,6 +192,21 @@ void bmm150_delay(uint32_t period, void *intf_ptr)
 
 int32_t bmm150_get_data(uint8_t* pBuff, uint8_t offset)
 {
+    //If the device is currently being run in Forced mode then we need to 
+    //wake it up every time we want a new data reading
+
+    if (p_sensor_settings[MAG_START + POWER] == BMM150_POWERMODE_FORCED)
+    {
+        struct bmm150_settings settings;
+        settings.pwr_mode = BMM150_POWERMODE_FORCED;
+        int8_t rslt = bmm150_set_op_mode(&settings, &bmm150);
+        if (rslt != BMM150_OK)
+        {
+            SEGGER_RTT_WriteString(0, "Couldn't read BMM150 data in Forced Mode.\n");
+            return 0;
+        }
+    }
+
     struct bmm150_mag_data sensor_data;
     int8_t rslt = bmm150_read_mag_data(&sensor_data, &bmm150);
 

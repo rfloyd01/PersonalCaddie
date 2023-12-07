@@ -67,9 +67,10 @@ volatile int m_notifications_in_queue = 0;                                      
 volatile int m_notification_queue_limit = 1;                                        /**< Limits the number of notifications allowed in the notification queue based on the current sensor ODR and connection interval*/
 
 //LED Pin Parameters
-#define RED_LED            NRF_GPIO_PIN_MAP(0, 24)                                  /**< Red LED Indicator on BLE 33 sense*/
-#define BLUE_LED           NRF_GPIO_PIN_MAP(0, 6)                                   /**< Blue LED Indicator on BLE 33 sense*/
-#define GREEN_LED          NRF_GPIO_PIN_MAP(0, 16)                                  /**< Green LED Indicator on BLE 33 sense*/
+#define RED_LED            NRF_GPIO_PIN_MAP(0, 24)                                  /**< Red LED Indicator on BLE 33 sense (part of triple RGB LED)*/
+#define BLUE_LED           NRF_GPIO_PIN_MAP(0, 6)                                   /**< Blue LED Indicator on BLE 33 sense (part of triple RGB LED)*/
+#define GREEN_LED          NRF_GPIO_PIN_MAP(0, 16)                                  /**< Green LED Indicator on BLE 33 sense (part of triple RGB LED)*/
+#define DARK_GREEN_LED     NRF_GPIO_PIN_MAP(1, 9)                                   /**< Individual Green LED Indicator on BLE 33 sense*/
 volatile uint8_t active_led = BLUE_LED;                                             /**< Variable used to keep track of which color LED to turn on/off*/
 
 //Personal Caddie Parameters
@@ -360,6 +361,7 @@ static void sensors_init(bool discovery)
     enable_twi_bus(get_internal_twi_bus_id());
     enable_twi_bus(get_external_twi_bus_id());
     delay_microseconds(50000); //slight delay so sensors have time to power on
+    //nrf_delay_ms(50);
     
     if (discovery)
     {
@@ -966,7 +968,7 @@ static void sensor_active_mode_start()
     fxos8700_active_mode_enable();
     fxas21002_active_mode_enable();
     bmi270_active_mode_enable();
-    bmm150_active_mode_enable();
+    bmm150_active_mode_enable(sensor_odr_calculate());
 
     //uncomment the below lines to read active sensor registers and confirm settings
     bmm150_get_actual_settings();
@@ -1182,12 +1184,17 @@ static void leds_init()
     nrf_gpio_cfg_output(RED_LED);
     nrf_gpio_cfg_output(BLUE_LED);
     nrf_gpio_cfg_output(GREEN_LED);
+    nrf_gpio_cfg_output(DARK_GREEN_LED);
 
     //these LEDs are situated backwards from what you would expect so the pin needs to be 
     //pulled high for the LEDs to turn off
     nrf_gpio_pin_set(RED_LED);
     nrf_gpio_pin_set(BLUE_LED);
     nrf_gpio_pin_set(GREEN_LED);
+
+    //The single green LED doesn't get used due to higher current draw than the 3 RGB LEDs.
+    //Make sure its GPIO pin isn't floating to reduced current leak
+    nrf_gpio_pin_clear(DARK_GREEN_LED);
 }
 
 static void power_saving_init()
@@ -1203,6 +1210,8 @@ static void power_saving_init()
     APP_ERROR_CHECK(err_code);
 
     SEGGER_RTT_WriteString(0, "DCDC Engaged.\n");
+
+    turn_on_mic(); //used for lowering overall power consumption (prevents GPIO pin from floating)
 }
 
 /**@brief Function for application main entry.

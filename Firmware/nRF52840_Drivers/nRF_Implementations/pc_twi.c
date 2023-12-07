@@ -26,6 +26,8 @@ const nrf_drv_twi_t m_twi_external = NRF_DRV_TWI_INSTANCE(EXTERNAL_TWI_INSTANCE_
 #define INTERNAL_SCL_PIN             NRF_GPIO_PIN_MAP(0, 15)                         /**< Pin used for internal TWI clock for BLE33*/
 #define INTERNAL_SDA_PIN             NRF_GPIO_PIN_MAP(0, 14)                         /**< Pin used for internal TWI data for BLE33*/
 #define INTERNAL_PULLUP              NRF_GPIO_PIN_MAP(1, 0)                          /**< Pullup resistors on BLE 33 sense have separate power source*/
+#define INTERNAL_MIC_POWER_PIN       NRF_GPIO_PIN_MAP(0, 17)                         /**< Pin for powering BLE 33 Sense onboard microphone */
+#define INTERNAL_MIC_CLOCK_PIN       NRF_GPIO_PIN_MAP(0, 26)                         /**< Pin for clock signal of BLE 33 Sense onboard microphone */
 
 volatile bool m_xfer_internal_done = false; //Indicates if operation on the internal TWI bus has ended.
 volatile bool m_xfer_external_done = false; //Indicates if operation on the external TWI bus has ended.
@@ -111,6 +113,10 @@ void twi_init()
     nrf_gpio_cfg(EXTERNAL_SENSOR_POWER_PIN, NRF_GPIO_PIN_DIR_OUTPUT, NRF_GPIO_PIN_INPUT_CONNECT, NRF_GPIO_PIN_NOPULL, NRF_GPIO_PIN_S0H1, NRF_GPIO_PIN_NOSENSE);
     //nrf_gpio_cfg(INTERNAL_SENSOR_POWER_PIN, NRF_GPIO_PIN_DIR_OUTPUT, NRF_GPIO_PIN_INPUT_CONNECT, NRF_GPIO_PIN_NOPULL, NRF_GPIO_PIN_S0S1, NRF_GPIO_PIN_NOSENSE);
     //nrf_gpio_cfg(EXTERNAL_SENSOR_POWER_PIN, NRF_GPIO_PIN_DIR_OUTPUT, NRF_GPIO_PIN_INPUT_CONNECT, NRF_GPIO_PIN_NOPULL, NRF_GPIO_PIN_S0S1, NRF_GPIO_PIN_NOSENSE);
+
+    //Microphone Pin Test
+    nrf_gpio_cfg(INTERNAL_MIC_POWER_PIN, NRF_GPIO_PIN_DIR_OUTPUT, NRF_GPIO_PIN_INPUT_CONNECT, NRF_GPIO_PIN_NOPULL, NRF_GPIO_PIN_S0H1, NRF_GPIO_PIN_NOSENSE);
+    nrf_gpio_cfg(INTERNAL_MIC_CLOCK_PIN, NRF_GPIO_PIN_DIR_OUTPUT, NRF_GPIO_PIN_INPUT_CONNECT, NRF_GPIO_PIN_NOPULL, NRF_GPIO_PIN_S0H1, NRF_GPIO_PIN_NOSENSE);
 
     //Configure pullup resistor pins if necessary
     if (INTERNAL_PULLUP != 0) nrf_gpio_cfg_output(INTERNAL_PULLUP);
@@ -384,4 +390,30 @@ int32_t sensor_write_register(void *bus, uint8_t add, uint8_t reg, const uint8_t
 
     APP_ERROR_CHECK(err_code);
     return (int32_t)err_code;
+}
+
+void turn_on_mic()
+{
+    nrf_gpio_pin_set(INTERNAL_MIC_POWER_PIN);
+    nrf_gpio_pin_set(INTERNAL_MIC_CLOCK_PIN);
+
+    nrf_gpio_pin_set(INTERNAL_SENSOR_POWER_PIN);
+    if (INTERNAL_PULLUP != 0)
+    {
+        nrf_gpio_pin_set(INTERNAL_PULLUP);
+        SEGGER_RTT_WriteString(0, "Internal Pullup Enabled.\n");
+    }
+
+    nrf_gpio_pin_set(EXTERNAL_SENSOR_POWER_PIN);
+    if (EXTERNAL_PULLUP != 0)
+    {
+        nrf_gpio_pin_set(EXTERNAL_PULLUP);
+        SEGGER_RTT_WriteString(0, "External Pullup Enabled.\n");
+    }
+}
+
+void turn_off_mic()
+{
+    nrf_gpio_pin_clear(INTERNAL_MIC_POWER_PIN);
+    nrf_gpio_pin_clear(INTERNAL_MIC_CLOCK_PIN);
 }

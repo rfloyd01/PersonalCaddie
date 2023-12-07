@@ -229,6 +229,7 @@ void IMUSettingsMode::populateDropDownText()
 	//create a converter from string to wstring
 	std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
 
+	//ACC Text
 	if (m_newSettings[ACC_START] == LSM9DS1_ACC)
 	{
 		for (int i = FS_RANGE; i <= EXTRA_2; i++) m_dropDownText[ACC_SENSOR][i] = lsm9ds1_get_complete_settings_string(ACC_SENSOR, static_cast<sensor_settings_t>(i));
@@ -246,6 +247,7 @@ void IMUSettingsMode::populateDropDownText()
 		}
 	}
 
+	//GYR Text
 	if (m_newSettings[GYR_START] == LSM9DS1_GYR)
 	{
 		for (int i = FS_RANGE; i <= EXTRA_2; i++) m_dropDownText[GYR_SENSOR][i] = lsm9ds1_get_complete_settings_string(GYR_SENSOR, static_cast<sensor_settings_t>(i));
@@ -259,6 +261,7 @@ void IMUSettingsMode::populateDropDownText()
 		for (int i = FS_RANGE; i <= EXTRA_2; i++) m_dropDownText[GYR_SENSOR][i] = fxas_fxos_get_complete_settings_string(GYR_SENSOR, static_cast<sensor_settings_t>(i));
 	}
 
+	//MAG Text
 	if (m_newSettings[MAG_START] == LSM9DS1_MAG)
 	{
 		for (int i = FS_RANGE; i <= EXTRA_2; i++) m_dropDownText[MAG_SENSOR][i] = lsm9ds1_get_complete_settings_string(MAG_SENSOR, static_cast<sensor_settings_t>(i));
@@ -676,6 +679,14 @@ void IMUSettingsMode::update()
 				{
 				case LSM9DS1_ACC:
 					initialText = lsm9ds1_get_settings_string(static_cast<sensor_type_t>(sensor), static_cast<sensor_settings_t>(type), m_newSettings[sensor_start_locations[sensor] + type]);
+					break;
+				case BMI270_ACC:
+					//Load filter bandwidth options for the BMI270 acc based on the filter's current operating mode
+					if (sensor == ACC_SENSOR && type == LOW_PASS_FILTER && m_newSettings[sensor_start_locations[sensor] + EXTRA_FILTER] == 0x1)
+					{
+						initialText = bmi_bmm_get_settings_string(static_cast<sensor_type_t>(sensor), static_cast<sensor_settings_t>(100), m_newSettings[sensor_start_locations[sensor] + type]);
+					}
+					else initialText = bmi_bmm_get_settings_string(static_cast<sensor_type_t>(sensor), static_cast<sensor_settings_t>(type), m_newSettings[sensor_start_locations[sensor] + type]);
 					break;
 				case FXOS8700_ACC:
 					int other_sensor = ((sensor - 2) % 4) * -1;  //if current sensor is 2 (mag), this yields 0 (acc). If current sensors is 0 (acc) this yields 2 (mag)

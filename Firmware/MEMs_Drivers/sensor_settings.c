@@ -1723,7 +1723,7 @@ const wchar_t* bmi_bmm_get_complete_settings_string(sensor_type_t sensor_type, s
         {
         case SENSOR_MODEL: return L"BMI270 Gyroscope 0x01";
         case FS_RANGE: return L"+/- 125 DPS 0x4\n+/- 250 DPS 0x3\n+/- 500 DPS 0x2\n+/- 1000 DPS 0x1\n+/- 2000 DPS 0x0";
-        case ODR: return L"0 Hz0x00\n25 Hz 0x06\n50 Hz 0x07\n100 Hz 0x08\n200 Hz 0x09\n400 Hz 0x0A\n800 Hz 0x0B\n1600 Hz 0x0C\n3200 Hz 0x0D";
+        case ODR: return L"0 Hz0x0\n25 Hz 0x6\n50 Hz 0x7\n100 Hz 0x8\n200 Hz 0x9\n400 Hz 0xA\n800 Hz 0xB\n1600 Hz 0xC\n3200 Hz 0xD";
         case POWER: return L"Suspend 0x0\nConfig. 0x1\nLow 0x2\nNormal 0x3\nPerformance 0x4";
         case LOW_PASS_FILTER: return L"4X Oversample 0x00\n2X Oversample 0x01\nStandard Samples 0x02\nCIC 0x03";
         case EXTRA_FILTER: return L"LPF: Power Opt. 0x0\nLPF: Perf. Opt. 0x1";
@@ -1734,7 +1734,7 @@ const wchar_t* bmi_bmm_get_complete_settings_string(sensor_type_t sensor_type, s
         switch (setting_type)
         {
         case SENSOR_MODEL: return L"BMM150 Magnetometer 0x01";
-        case ODR: return L"0 Hz 0xFF\n2 Hz 0x1\n6 Hz 0x2\n8 Hz 0x3\n10 Hz 0x0\n15 Hz 0x4\n20 Hz 0x5\n25 Hz 0x6\n30 Hz 0x7";
+        case ODR: return L"0 Hz 0xFF\n2 Hz 0x1\n6 Hz 0x2\n8 Hz 0x3\n10 Hz 0x0\n15 Hz 0x4\n20 Hz 0x5\n25 Hz 0x6\n30 Hz 0x7\nAcc./Gyr. ODR 0x8";
         case POWER: return L"Normal 0x0\nForced 0x1\nSleep 0x3\nSuspend 0x4";
         case EXTRA_1: return L"Low XY Rep. 0x01\nRegular XY Rep. 0x04\nEnhanced XY Rep. 0x07\nPerf. XY Rep. 0x17";
         case EXTRA_2: return L"Low Z Rep. 0x01\nRegular Z Rep. 0x07\nEnhanced Z Rep. 0x0D\nPerf. Z Rep. 0x29";
@@ -1833,59 +1833,63 @@ const wchar_t* bmi_bmm_get_settings_string(sensor_type_t sensor_type, sensor_set
     {
         switch (setting_type)
         {
-        case SENSOR_MODEL: return L"FXAS21002 Gyroscope 0x02";
+        case SENSOR_MODEL: return L"BMI270 Gyroscope 0x01";
         case FS_RANGE:
             switch (setting)
             {
-            case FXAS21002_RANGE_4000DPS: return L"+/- 4000 DPS 0x10";
-            case FXAS21002_RANGE_2000DPS: return L"+/- 2000 DPS 0x00";
-            case FXAS21002_RANGE_1000DPS: return L"+/- 1000 DPS 0x01";
-            case FXAS21002_RANGE_500DPS: return L"+/- 500 DPS 0x02";
-            case FXAS21002_RANGE_250DPS: return L"+/- 250 DPS 0x03";
+            case BMI2_GYR_RANGE_125: return L"+/- 125 DPS 0x4";
+            case BMI2_GYR_RANGE_250: return L"+/- 250 DPS 0x3";
+            case BMI2_GYR_RANGE_500: return L"+/- 500 DPS 0x2";
+            case BMI2_GYR_RANGE_1000: return L"+/- 1000 DPS 0x1";
+            case BMI2_GYR_RANGE_2000: return L"+/- 2000 DPS 0x0";
             default: return L"";
             }
         case ODR:
             switch (setting)
             {
-            case FXAS21002_ODR_800_HZ: return L"800 Hz 0x0";
-            case FXAS21002_ODR_400_HZ: return L"400 Hz 0x1";
-            case FXAS21002_ODR_200_HZ: return L"200 Hz 0x2";
-            case FXAS21002_ODR_100_HZ: return L"100 Hz 0x3";
-            case FXAS21002_ODR_50_HZ: return L"50 Hz 0x4";
-            case FXAS21002_ODR_25_HZ: return L"12.5 Hz 0x5";
-            case FXAS21002_ODR_12_5_HZ: return L"6.25 Hz 0x6";
+            case BMI2_GYR_ODR_25HZ: return L"25 Hz 0x6";
+            case BMI2_GYR_ODR_50HZ: return L"50 Hz 0x7";
+            case BMI2_GYR_ODR_100HZ: return L"100 Hz 0x8";
+            case BMI2_GYR_ODR_200HZ: return L"200 Hz 0x9";
+            case BMI2_GYR_ODR_400HZ: return L"400 Hz 0xA";
+            case BMI2_GYR_ODR_800HZ: return L"800 Hz 0xB";
+            case BMI2_GYR_ODR_1600HZ: return L"1600 Hz 0xC";
+            case BMI2_GYR_ODR_3200HZ: return L"3200 Hz 0xD";
             default: return L"";
             }
         case POWER:
+            //I use a custom enum here which isn't included in this file so 
+            //just use the raw hex numbers for each case
             switch (setting)
             {
-            case FXAS21002_POWER_READY: return L"Ready Mode 0x1";
-            case FXAS21002_POWER_STANDBY:
-            default:
-                return L"Standby Mode 0x0";
-            }
-        case FILTER_SELECTION:
-            switch (setting)
-            {
-            case FXAS21002_FILTER_LPF: return L"LPF Only 0x0";
-            case FXAS21002_FILTER_LPF_HPF: return L"LPF/HPF 0x1";
+            case 0x0: return L"Suspend 0x0";
+            case 0x1: return L"Config. 0x1";
+            case 0x2: return L"Low 0x2";
+            case 0x3: return L"Normal 0x3";
+            case 0x4: return L"Performance 0x4";
             default: return L"";
             }
         case LOW_PASS_FILTER:
             switch (setting)
             {
-            case FXAS21002_LPF_STRONG: return L"Strong 0x0";
-            case FXAS21002_LPF_MEDIUM: return L"Medium 0x1";
-            case FXAS21002_LPF_LIGHT: return L"Light 0x2";
+            case BMI2_ACC_OSR4_AVG1: return L"4X Oversample 0x0";
+            case BMI2_ACC_OSR2_AVG2: return L"2X Oversample 0x1";
+            case BMI2_ACC_NORMAL_AVG4: return L"Standard Samples 0x2";
+            case BMI2_ACC_CIC_AVG8: return L"CIC 0x3";
             default: return L"";
             }
-        case HIGH_PASS_FILTER:
+        case EXTRA_FILTER:
             switch (setting)
             {
-            case FXAS21002_HPF_EXTREME: return L"Extreme 0x0";
-            case FXAS21002_HPF_STRONG: return L"Strong 0x1";
-            case FXAS21002_HPF_MEDIUM: return L"Medium 0x2";
-            case FXAS21002_HPF_LIGHT: return L"Light 0x3";
+            case BMI2_POWER_OPT_MODE: return L"LPF: Power Opt. 0x0";
+            case BMI2_PERF_OPT_MODE: return L"LPF: Perf. Opt. 0x1";
+            default: return L"";
+            }
+        case EXTRA_1:
+            switch (setting)
+            {
+            case BMI2_POWER_OPT_MODE: return L"LPF Noise: Power Opt. 0x0";
+            case BMI2_PERF_OPT_MODE: return L"LPF Noise: Perf. Opt. 0x1";
             default: return L"";
             }
         default: return L"";
@@ -1895,44 +1899,49 @@ const wchar_t* bmi_bmm_get_settings_string(sensor_type_t sensor_type, sensor_set
     {
         switch (setting_type)
         {
-        case SENSOR_MODEL: return L"FXOS8700 Magnetometer 0x02";
+        case SENSOR_MODEL: return L"BMM150 Magnetometer 0x01";
         case FS_RANGE: return L"+/- 1200 uT";
         case ODR:
             switch (setting)
             {
-            case FXOS8700_ODR_SINGLE_800_HZ: return L"800 Hz 0x00";
-            case FXOS8700_ODR_SINGLE_400_HZ: return L"400 Hz 0x08";
-            case FXOS8700_ODR_SINGLE_200_HZ: return L"200 Hz 0x10";
-            case FXOS8700_ODR_SINGLE_100_HZ: return L"100 Hz 0x18";
-            case FXOS8700_ODR_SINGLE_50_HZ: return L"50 Hz 0x20";
-            case FXOS8700_ODR_SINGLE_12P5_HZ: return L"12.5 Hz 0x28";
-            case FXOS8700_ODR_SINGLE_6P25_HZ: return L"6.25 Hz 0x30";
-            case FXOS8700_ODR_SINGLE_1P5625_HZ: return L"1.5625 Hz 0x38";
-            case FXOS8700_ODR_SINGLE_OFF: return L"0Hz 0xFF";
-            default: return L"";
-            }
-        case 100:
-            //This is a special case that gets called when both the accelerometer and mag are enabled
-            //and powered on. This is only used to obtain the ODR, which is cut in half when both
-            //sensors are in use.
-            switch (setting)
-            {
-            case FXOS8700_ODR_HYBRID_400_HZ: return L"400 Hz 0x00";
-            case FXOS8700_ODR_HYBRID_200_HZ: return L"200 Hz 0x08";
-            case FXOS8700_ODR_HYBRID_100_HZ: return L"100 Hz 0x10";
-            case FXOS8700_ODR_HYBRID_50_HZ: return L"50 Hz 0x18";
-            case FXOS8700_ODR_HYBRID_25_HZ: return L"25 Hz 0x20";
-            case FXOS8700_ODR_HYBRID_6P25_HZ: return L"6.25 Hz 0x28";
-            case FXOS8700_ODR_HYBRID_3P125_HZ: return L"3.125 Hz 0x30";
-            case FXOS8700_ODR_HYBRID_0P7813_HZ: return L"0.7813 Hz 0x38";
-            case FXOS8700_ODR_HYBRID_OFF: return L"0 Hz 0xFF";
+            case 0xFF: return L"0 Hz 0xF";
+            case BMM150_DATA_RATE_02HZ: return L"2 Hz 0x1";
+            case BMM150_DATA_RATE_06HZ: return L"6 Hz 0x2";
+            case BMM150_DATA_RATE_08HZ: return L"8 Hz 0x3";
+            case BMM150_DATA_RATE_10HZ: return L"10 Hz 0x0";
+            case BMM150_DATA_RATE_15HZ: return L"15 Hz 0x4";
+            case BMM150_DATA_RATE_20HZ: return L"20 Hz 0x5";
+            case BMM150_DATA_RATE_25HZ: return L"25 Hz 0x6";
+            case BMM150_DATA_RATE_30HZ: return L"30 Hz 0x7";
+            case 0x8: return L"Acc./Gyr. ODR 0x8";
             default: return L"";
             }
         case POWER:
             switch (setting)
             {
-            case 0: return L"On 0x00";
-            default: return L"Off 0xFF";
+            case 0x0: return L"Normal 0x0";
+            case 0x1: return L"Forced 0x1";
+            case 0x3: return L"Sleep 0x3";
+            case 0x4: return L"Suspend 0x4";
+            default: return L"";
+            }
+        case EXTRA_1:
+            switch (setting)
+            {
+            case BMM150_REPXY_LOWPOWER: return L"Low XY Rep. 0x01";
+            case BMM150_REPXY_REGULAR: return L"Regular XY Rep. 0x04";
+            case BMM150_REPXY_ENHANCED: return L"Enhanced XY Rep. 0x07";
+            case BMM150_REPXY_HIGHACCURACY: return L"Perf. XY Rep. 0x17";
+            default: return L"";
+            }
+        case EXTRA_2:
+            switch (setting)
+            {
+            case BMM150_REPZ_LOWPOWER: return L"Low Z Rep. 0x01";
+            case BMM150_REPZ_REGULAR: return L"Regular Z Rep. 0x07";
+            case BMM150_REPZ_ENHANCED: return L"Enhanced Z Rep. 0x0D";
+            case BMM150_REPZ_HIGHACCURACY: return L"Perf. Z Rep. 0x29";
+            default: return L"";
             }
         default: return L"";
         }

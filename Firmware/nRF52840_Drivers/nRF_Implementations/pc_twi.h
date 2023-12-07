@@ -39,6 +39,10 @@ void twi_address_scan(uint8_t* addresses, uint8_t* device_count, nrf_drv_twi_t c
 int32_t sensor_read_register(void *bus, uint8_t add, uint8_t reg, uint8_t *bufp, uint16_t len);
 int32_t sensor_write_register(void *bus, uint8_t add, uint8_t reg, const uint8_t *bufp, uint16_t len);
 
+//DEBUG
+void turn_on_mic();
+void turn_off_mic();
+
 #ifdef __cplusplus
 }
 #endif
