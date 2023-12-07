@@ -353,11 +353,21 @@ static void default_sensor_select()
  */
 static void sensors_init(bool discovery)
 {
-    //When first turning on the Personal Caddie we need to scan both the internal
+    //When first turning on the Personal Caddie we need send power to all sensors on
+    //both the internal and external lines. We then scan both the internal
     //and external TWI bus to see what sensors are available so we can populate some
-    //arrays with this information. Subsequent calls to this method don't require this.
+    //arrays with this information. If there are no sensors on the external line then 
+    //power will be shut off (there will always be sensors on the internal line).
+    //Subsequent calls to this method don't require this procedure.
     //Regardless of whether or not we enter this method in discovery mode, both TWI buses
     //need to be enabled.
+
+    //Enable the power lines
+    power_line_init();
+    enable_internal_power_line();
+    enable_external_power_line();
+
+    //Then enable the TWI lines
     enable_twi_bus(get_internal_twi_bus_id());
     enable_twi_bus(get_external_twi_bus_id());
     delay_microseconds(50000); //slight delay so sensors have time to power on
@@ -402,6 +412,11 @@ static void sensors_init(bool discovery)
 
         err_code = sd_ble_gatts_value_set(m_conn_handle, m_ss.available_handle.value_handle, &external_available_sensors);
         APP_ERROR_CHECK(err_code);
+
+        //If no sensors were found on the external line it means that nothing is actually
+        //hooked up which will leach current so there's no need to keep the external
+        //power line enabled
+        if (external_sensors_found == 0) disable_external_power_line();
     }
 
     //Scan the external sensors to see if any of them match the default sensors that were

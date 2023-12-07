@@ -14,7 +14,8 @@ extern "C" {
 void bmi270init(imu_communication_t* comm, uint8_t sensors, uint8_t* settings);
 #endif
 
-int32_t bmi270_idle_mode_enable(bool init);
+int32_t bmi270_connected_mode_enable(bool init);
+int32_t bmi270_idle_mode_enable(bool active);
 int32_t bmi270_active_mode_enable();
 
 void bmi270_get_actual_settings();

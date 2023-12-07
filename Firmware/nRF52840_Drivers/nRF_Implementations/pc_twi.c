@@ -107,39 +107,23 @@ void twi_init()
     err_code = nrf_drv_twi_init(&m_twi_internal, &twi_internal_config, internal_twi_handler, NULL);
     err_code = nrf_drv_twi_init(&m_twi_external, &twi_external_config, external_twi_handler, NULL);
     APP_ERROR_CHECK(err_code);
-
-    //After initializing the buses, configure the pins needed to power up IMU sensors
-    nrf_gpio_cfg(INTERNAL_SENSOR_POWER_PIN, NRF_GPIO_PIN_DIR_OUTPUT, NRF_GPIO_PIN_INPUT_CONNECT, NRF_GPIO_PIN_NOPULL, NRF_GPIO_PIN_S0H1, NRF_GPIO_PIN_NOSENSE);
-    nrf_gpio_cfg(EXTERNAL_SENSOR_POWER_PIN, NRF_GPIO_PIN_DIR_OUTPUT, NRF_GPIO_PIN_INPUT_CONNECT, NRF_GPIO_PIN_NOPULL, NRF_GPIO_PIN_S0H1, NRF_GPIO_PIN_NOSENSE);
-    //nrf_gpio_cfg(INTERNAL_SENSOR_POWER_PIN, NRF_GPIO_PIN_DIR_OUTPUT, NRF_GPIO_PIN_INPUT_CONNECT, NRF_GPIO_PIN_NOPULL, NRF_GPIO_PIN_S0S1, NRF_GPIO_PIN_NOSENSE);
-    //nrf_gpio_cfg(EXTERNAL_SENSOR_POWER_PIN, NRF_GPIO_PIN_DIR_OUTPUT, NRF_GPIO_PIN_INPUT_CONNECT, NRF_GPIO_PIN_NOPULL, NRF_GPIO_PIN_S0S1, NRF_GPIO_PIN_NOSENSE);
-
-    //Microphone Pin Test
-    nrf_gpio_cfg(INTERNAL_MIC_POWER_PIN, NRF_GPIO_PIN_DIR_OUTPUT, NRF_GPIO_PIN_INPUT_CONNECT, NRF_GPIO_PIN_NOPULL, NRF_GPIO_PIN_S0H1, NRF_GPIO_PIN_NOSENSE);
-    nrf_gpio_cfg(INTERNAL_MIC_CLOCK_PIN, NRF_GPIO_PIN_DIR_OUTPUT, NRF_GPIO_PIN_INPUT_CONNECT, NRF_GPIO_PIN_NOPULL, NRF_GPIO_PIN_S0H1, NRF_GPIO_PIN_NOSENSE);
-
-    //Configure pullup resistor pins if necessary
-    if (INTERNAL_PULLUP != 0) nrf_gpio_cfg_output(INTERNAL_PULLUP);
-    if (EXTERNAL_PULLUP != 0) nrf_gpio_cfg_output(EXTERNAL_PULLUP);
 }
 
 void enable_twi_bus(int instance_id)
 {
-    //This method enables the given twi bus instance, as well as turns on any 
-    //necessary power and pullup resistor pins. Before enabling, make sure the
-    //current instance isn't already enabled as this will cause an error.
+    //This method enables the given twi bus instance/
     if (instance_id == INTERNAL_TWI_INSTANCE_ID)
     {
         if (!m_twi_internal.u.twim.p_twim->ENABLE)
         {
             //Send power to the internal sensors and any pullup resistors,
             //also make sure that power for the external sensors is off
-            nrf_gpio_pin_set(INTERNAL_SENSOR_POWER_PIN);
-            if (INTERNAL_PULLUP != 0)
-            {
-                nrf_gpio_pin_set(INTERNAL_PULLUP);
-                SEGGER_RTT_WriteString(0, "Internal Pullup Enabled.\n");
-            }
+            //nrf_gpio_pin_set(INTERNAL_SENSOR_POWER_PIN);
+            //if (INTERNAL_PULLUP != 0)
+            //{
+            //    nrf_gpio_pin_set(INTERNAL_PULLUP);
+            //    SEGGER_RTT_WriteString(0, "Internal Pullup Enabled.\n");
+            //}
 
             nrf_drv_twi_enable(&m_twi_internal); //enable the bus
             SEGGER_RTT_WriteString(0, "Internal TWI Bus Enabled.\n");
@@ -151,12 +135,12 @@ void enable_twi_bus(int instance_id)
         {
             //Send power to the external sensors. also make sure that power,
             //afor the internal sensors and the pullup resistor is off
-            nrf_gpio_pin_set(EXTERNAL_SENSOR_POWER_PIN);
-            if (EXTERNAL_PULLUP != 0)
-            {
-                nrf_gpio_pin_set(EXTERNAL_PULLUP);
-                SEGGER_RTT_WriteString(0, "External Pullup Enabled.\n");
-            }
+            //nrf_gpio_pin_set(EXTERNAL_SENSOR_POWER_PIN);
+            //if (EXTERNAL_PULLUP != 0)
+            //{
+            //    nrf_gpio_pin_set(EXTERNAL_PULLUP);
+            //    SEGGER_RTT_WriteString(0, "External Pullup Enabled.\n");
+            //}
 
             nrf_drv_twi_enable(&m_twi_external); //enable the bus
             SEGGER_RTT_WriteString(0, "External TWI Bus Enabled.\n");
@@ -164,46 +148,46 @@ void enable_twi_bus(int instance_id)
     }
 }
 
-void enable_twi_bus_test(int instance_id)
-{
-    //This method enables the given twi bus instance, as well as turns on any 
-    //necessary power and pullup resistor pins. Before enabling, make sure the
-    //current instance isn't already enabled as this will cause an error.
-    if (instance_id == INTERNAL_TWI_INSTANCE_ID)
-    {
-        if (!m_twi_internal.u.twim.p_twim->ENABLE)
-        {
-            //Send power to the internal sensors and any pullup resistors,
-            //also make sure that power for the external sensors is off
-            nrf_gpio_pin_set(INTERNAL_SENSOR_POWER_PIN);
-            //if (INTERNAL_PULLUP != 0)
-            //{
-            //    nrf_gpio_pin_set(INTERNAL_PULLUP);
-            //    SEGGER_RTT_WriteString(0, "Internal Pullup Enabled.\n");
-            //}
+//void enable_twi_bus_test(int instance_id)
+//{
+//    //This method enables the given twi bus instance, as well as turns on any 
+//    //necessary power and pullup resistor pins. Before enabling, make sure the
+//    //current instance isn't already enabled as this will cause an error.
+//    if (instance_id == INTERNAL_TWI_INSTANCE_ID)
+//    {
+//        if (!m_twi_internal.u.twim.p_twim->ENABLE)
+//        {
+//            //Send power to the internal sensors and any pullup resistors,
+//            //also make sure that power for the external sensors is off
+//            nrf_gpio_pin_set(INTERNAL_SENSOR_POWER_PIN);
+//            //if (INTERNAL_PULLUP != 0)
+//            //{
+//            //    nrf_gpio_pin_set(INTERNAL_PULLUP);
+//            //    SEGGER_RTT_WriteString(0, "Internal Pullup Enabled.\n");
+//            //}
 
-            //nrf_drv_twi_enable(&m_twi_internal); //enable the bus
-            //SEGGER_RTT_WriteString(0, "Internal TWI Bus Enabled.\n");
-        }
-    }
-    else
-    {
-        if (!m_twi_external.u.twim.p_twim->ENABLE)
-        {
-            //Send power to the external sensors. also make sure that power,
-            //afor the internal sensors and the pullup resistor is off
-            nrf_gpio_pin_set(EXTERNAL_SENSOR_POWER_PIN);
-            //if (EXTERNAL_PULLUP != 0)
-            //{
-            //    nrf_gpio_pin_set(EXTERNAL_PULLUP);
-            //    SEGGER_RTT_WriteString(0, "External Pullup Enabled.\n");
-            //}
+//            //nrf_drv_twi_enable(&m_twi_internal); //enable the bus
+//            //SEGGER_RTT_WriteString(0, "Internal TWI Bus Enabled.\n");
+//        }
+//    }
+//    else
+//    {
+//        if (!m_twi_external.u.twim.p_twim->ENABLE)
+//        {
+//            //Send power to the external sensors. also make sure that power,
+//            //afor the internal sensors and the pullup resistor is off
+//            nrf_gpio_pin_set(EXTERNAL_SENSOR_POWER_PIN);
+//            //if (EXTERNAL_PULLUP != 0)
+//            //{
+//            //    nrf_gpio_pin_set(EXTERNAL_PULLUP);
+//            //    SEGGER_RTT_WriteString(0, "External Pullup Enabled.\n");
+//            //}
 
-            //nrf_drv_twi_enable(&m_twi_external); //enable the bus
-            //SEGGER_RTT_WriteString(0, "External TWI Bus Enabled.\n");
-        }
-    }
-}
+//            //nrf_drv_twi_enable(&m_twi_external); //enable the bus
+//            //SEGGER_RTT_WriteString(0, "External TWI Bus Enabled.\n");
+//        }
+//    }
+//}
 
 void disable_twi_bus(int instance_id)
 {
@@ -211,17 +195,19 @@ void disable_twi_bus(int instance_id)
     //off power to any gpio pins that it requires.
     if (instance_id == INTERNAL_TWI_INSTANCE_ID)
     {
-        nrf_gpio_pin_clear(INTERNAL_SENSOR_POWER_PIN);
-        nrf_gpio_pin_clear(INTERNAL_PULLUP);
+        //nrf_gpio_pin_clear(INTERNAL_SENSOR_POWER_PIN);
+        //nrf_gpio_pin_clear(INTERNAL_PULLUP);
 
         nrf_drv_twi_disable(&m_twi_internal); //disable the current bus
+        SEGGER_RTT_WriteString(0, "Internal TWI Bus Disabled.\n");
     }
     else
     {
-        nrf_gpio_pin_clear(EXTERNAL_SENSOR_POWER_PIN);
-        nrf_gpio_pin_clear(EXTERNAL_PULLUP);
+        //nrf_gpio_pin_clear(EXTERNAL_SENSOR_POWER_PIN);
+        //nrf_gpio_pin_clear(EXTERNAL_PULLUP);
 
         nrf_drv_twi_disable(&m_twi_external); //disable the current bus
+        SEGGER_RTT_WriteString(0, "External TWI Bus Disabled.\n");
     }
 }
 
@@ -243,6 +229,54 @@ int get_internal_twi_bus_id()
 int get_external_twi_bus_id()
 {
     return EXTERNAL_TWI_INSTANCE_ID;
+}
+
+void power_line_init()
+{
+    //Configure GPIO pins needed to power sensors that are on the internal and external TWI lines
+    nrf_gpio_cfg(INTERNAL_SENSOR_POWER_PIN, NRF_GPIO_PIN_DIR_OUTPUT, NRF_GPIO_PIN_INPUT_CONNECT, NRF_GPIO_PIN_NOPULL, NRF_GPIO_PIN_S0H1, NRF_GPIO_PIN_NOSENSE);
+    nrf_gpio_cfg(EXTERNAL_SENSOR_POWER_PIN, NRF_GPIO_PIN_DIR_OUTPUT, NRF_GPIO_PIN_INPUT_CONNECT, NRF_GPIO_PIN_NOPULL, NRF_GPIO_PIN_S0H1, NRF_GPIO_PIN_NOSENSE);
+
+    //Microphone Sensor Pins: This is a sensor that exists on the internal line which we need to power
+    //up and manually make sure it isn't drawing unwanted current
+    nrf_gpio_cfg(INTERNAL_MIC_POWER_PIN, NRF_GPIO_PIN_DIR_OUTPUT, NRF_GPIO_PIN_INPUT_CONNECT, NRF_GPIO_PIN_NOPULL, NRF_GPIO_PIN_S0H1, NRF_GPIO_PIN_NOSENSE);
+    nrf_gpio_cfg(INTERNAL_MIC_CLOCK_PIN, NRF_GPIO_PIN_DIR_OUTPUT, NRF_GPIO_PIN_INPUT_CONNECT, NRF_GPIO_PIN_NOPULL, NRF_GPIO_PIN_S0H1, NRF_GPIO_PIN_NOSENSE);
+
+    //Configure pullup resistor pins if necessary
+    if (INTERNAL_PULLUP != 0) nrf_gpio_cfg_output(INTERNAL_PULLUP);
+    if (EXTERNAL_PULLUP != 0) nrf_gpio_cfg_output(EXTERNAL_PULLUP);
+}
+
+void enable_internal_power_line()
+{
+    //Enable power to the internal sensor line
+    nrf_gpio_pin_set(INTERNAL_SENSOR_POWER_PIN);
+    if (INTERNAL_PULLUP != 0) nrf_gpio_pin_set(INTERNAL_PULLUP);
+    SEGGER_RTT_WriteString(0, "Internal Sensor Power Line Enabled.\n");
+}
+
+void disable_internal_power_line()
+{
+    //Disable power to the internal sensor line
+    nrf_gpio_pin_clear(INTERNAL_SENSOR_POWER_PIN);
+    if (INTERNAL_PULLUP != 0) nrf_gpio_pin_clear(INTERNAL_PULLUP);
+    SEGGER_RTT_WriteString(0, "Internal Sensor Power Line Disabled.\n");
+}
+
+void enable_external_power_line()
+{
+    //Enable power to the external sensor line
+    nrf_gpio_pin_set(EXTERNAL_SENSOR_POWER_PIN);
+    if (EXTERNAL_PULLUP != 0) nrf_gpio_pin_set(EXTERNAL_PULLUP);
+    SEGGER_RTT_WriteString(0, "External Sensor Power Line Enabled.\n");
+}
+
+void disable_external_power_line()
+{
+    //Disable power to the external sensor line
+    nrf_gpio_pin_clear(EXTERNAL_SENSOR_POWER_PIN);
+    if (EXTERNAL_PULLUP != 0) nrf_gpio_pin_clear(EXTERNAL_PULLUP);
+    SEGGER_RTT_WriteString(0, "External Sensor Power Line Disabled.\n");
 }
 
 void twi_address_scan(uint8_t* addresses, uint8_t* device_count, nrf_drv_twi_t const * bus)
@@ -396,20 +430,6 @@ void turn_on_mic()
 {
     nrf_gpio_pin_set(INTERNAL_MIC_POWER_PIN);
     nrf_gpio_pin_set(INTERNAL_MIC_CLOCK_PIN);
-
-    nrf_gpio_pin_set(INTERNAL_SENSOR_POWER_PIN);
-    if (INTERNAL_PULLUP != 0)
-    {
-        nrf_gpio_pin_set(INTERNAL_PULLUP);
-        SEGGER_RTT_WriteString(0, "Internal Pullup Enabled.\n");
-    }
-
-    nrf_gpio_pin_set(EXTERNAL_SENSOR_POWER_PIN);
-    if (EXTERNAL_PULLUP != 0)
-    {
-        nrf_gpio_pin_set(EXTERNAL_PULLUP);
-        SEGGER_RTT_WriteString(0, "External Pullup Enabled.\n");
-    }
 }
 
 void turn_off_mic()

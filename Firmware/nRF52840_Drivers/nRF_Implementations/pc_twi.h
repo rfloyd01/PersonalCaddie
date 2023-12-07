@@ -34,6 +34,13 @@ const nrf_drv_twi_t* get_external_twi_bus();
 int get_internal_twi_bus_id();
 int get_external_twi_bus_id();
 
+//Power Line Methods
+void power_line_init();
+void enable_internal_power_line();
+void disable_internal_power_line();
+void enable_external_power_line();
+void disable_external_power_line();
+
 //Reading/Writing Methods
 void twi_address_scan(uint8_t* addresses, uint8_t* device_count, nrf_drv_twi_t const * bus);
 int32_t sensor_read_register(void *bus, uint8_t add, uint8_t reg, uint8_t *bufp, uint16_t len);

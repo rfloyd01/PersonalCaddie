@@ -74,41 +74,79 @@ void bmi270init(imu_communication_t* comm, uint8_t sensors, uint8_t* settings)
     }
 }
 
-int32_t bmi270_idle_mode_enable(bool init)
+int32_t bmi270_connected_mode_enable(bool init)
 {
-    //Unlike other IMU sensors, the BMI270 needs to have a configuration file 
-    //loaded up any time it's turned on. This means we need to load this file
-    //every time we move from connected mode to sensor idle mode. If we go to 
-    //sensor idle mode from sensor active mode we don't need to worry about this.
+    //In connected mode the BMI270 sensor is placed into its "Suspend" power mode. In this mode
+    //the average current draw is only 3.5 uA (0.0000035 A). While in suspend mode, the IMU
+    //functions of the chip are inaccessible, however, the information in all registers is
+    //retained.
 
-    if (imu_comm->sensor_model[ACC_SENSOR] == BMI270_ACC || imu_comm->sensor_model[GYR_SENSOR] == BMI270_GYR)
+    //Any time the chip is first powered on (or initiates a soft reset) a configuration file needs to be 
+    //loaded to ensure the sensor works properly. The only times a soft reset are initiated automatically
+    //within the BMI270 API are when the bmi270_init(), bmi2_nvm_prog() or bmi2_perform_accel_self_test()
+    //methods are called. Because of this, when connected mode is first entered we call the init
+    //method here. Any other time connected mode is entered (i.e. when we go back to one of the 
+    //menus in the front end app) there's no need to call the init method again as the 
+    //configuration document has already been loaded up.
+    if (imu_comm->sensor_model[ACC_SENSOR] != BMI270_ACC && imu_comm->sensor_model[GYR_SENSOR] != BMI270_GYR) return 0; //no need to do anything if neither sensor is in use
+    
+    int8_t rslt = 0;
+    if (init)
     {
-        int8_t rslt = 0;
-        if (init)
-        {
-            rslt = bmi270_init(&bmi270);
-            if (rslt != BMI2_OK) SEGGER_RTT_WriteString(0, "Error: Couldn't initialize BMI270 Sensor.\n");
-        }
-        else
-        {
-            //Put the bmi270 into Suspend mode, which shuts off the IMU capabilities but
-            //keeps the TWI module active
-            rslt = bmi2_set_adv_power_save(1, &bmi270);
-
-            uint8_t sensor_list[2] = { BMI2_ACCEL, BMI2_GYRO };
-            return bmi2_sensor_disable(sensor_list, 2, &bmi270); //disable both sensors, regardless of wheter both are currently active
-        }
+        rslt = bmi270_init(&bmi270);
+        if (rslt != BMI2_OK) SEGGER_RTT_WriteString(0, "Error: Couldn't initialize BMI270 Sensor.\n");
     }
+    else
+    {
+        //When coming to connected mode from sensor idle mode, the acc. and gyr. power 
+        //bits of the POWER_CTRL register should already be set to off so all we need to do is write the 
+        //advanced power save bit of the POWER_CONF register to put the chip back into
+        //the Suspend power mode.
+        rslt = bmi2_set_adv_power_save(1, &bmi270);
+        if (rslt != BMI2_OK) SEGGER_RTT_WriteString(0, "Error: Couldn't put BMI270 Sensor into Connected Mode.\n");
+    }
+
+    return rslt;
+}
+
+int32_t bmi270_idle_mode_enable(bool active)
+{
+    //In sensor idle mode the BMI270 is placed into its "Configuration" power mode. In this mode
+    //the average current draw is 120 uA (0.000120 A). While in configuration mode, the IMU functions
+    //are accessible although the chip isn't actively measuring anything. To enter configuration mode
+    //from the Personal Caddie connected mode all we need to do is write the advanced power saving bit
+    //of the POWER_CONF register to 0. To enter configuration mode from the Personal Caddie sensor active
+    //mode we also need to write the acc and gyr power bits of the POWER_CTRL register to 0.
+    if (imu_comm->sensor_model[ACC_SENSOR] != BMI270_ACC && imu_comm->sensor_model[GYR_SENSOR] != BMI270_GYR) return 0; //no need to do anything if neither sensor is in use
+    
+    int8_t rslt = 0;
+    if (active)
+    {
+        //We've come from sensor active mode so we need to write the acc and gyr power bits.
+        uint8_t sensor_list[2] = { BMI2_ACCEL, BMI2_GYRO };
+        rslt = bmi2_sensor_disable(sensor_list, 2, &bmi270);
+
+        if (rslt != BMI2_OK) SEGGER_RTT_WriteString(0, "Error: Couldn't take BMI270 Sensor out of Sensor Active Mode.\n");
+    }
+    
+    //Make sure that the advanced power save bit is set to 0
+    rslt = bmi2_set_adv_power_save(0, &bmi270);
+    if (rslt != BMI2_OK) SEGGER_RTT_WriteString(0, "Error: Couldn't put BMI270 Sensor into Connected Mode.\n");
+
+    return rslt;
 }
 
 int32_t bmi270_active_mode_enable()
 {
-    //Make sure that one of the bmi270 sensors is actually in use
-    if (imu_comm->sensor_model[ACC_SENSOR] != BMI270_ACC && imu_comm->sensor_model[GYR_SENSOR] != BMI270_GYR) return 0;
+    //In sensor active mode there are three different power levels for the BMI270. There is "Low" power mode
+    //which has a current draw of ~0.42 mA, "Normal" power mode which has a current draw of ~0.685 mA and 
+    //"Performance" power mode which has a current draw of ~0.97 mA. Depending on the settings currently in
+    //the sensor settings array the chip will enter one of these power states.
+    if (imu_comm->sensor_model[ACC_SENSOR] != BMI270_ACC && imu_comm->sensor_model[GYR_SENSOR] != BMI270_GYR) return 0; //Make sure that one of the bmi270 sensors is actually in use
 
     int8_t rslt = 0;
 
-    //Both BMI270 sensors are in use
+    //Add both sensor types to the config structure, even if only 1 is actuall in use
     struct bmi2_sens_config config[2];
 
     config[ACC_SENSOR].type = BMI2_ACCEL;
@@ -204,7 +242,7 @@ int32_t bmi270_active_mode_enable()
         //Set the advanced power saving bit based on the current power setting
         rslt = bmi2_set_adv_power_save(power_save, &bmi270);
     }
-    else SEGGER_RTT_WriteString(0, "Error: BMI270 enabled with incorrect settings.\n");
+    else SEGGER_RTT_WriteString(0, "Error: BMI270 active mode enabled with incorrect settings.\n");
 
     //DEBUG: Confirm the sensor config was updated
     rslt = bmi2_get_sensor_config(config, 2, &bmi270);
