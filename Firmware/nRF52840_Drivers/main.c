@@ -998,19 +998,46 @@ static void sensor_active_mode_start()
 
 static void connected_mode_start()
 {
-    //We'll other be put into this mode from advertising mode (in which case all we need to do is 
-    //change the color of the blinking LED, or from sensor_idle mode, in which case we need to 
-    //disable the power going to the sensor and the TWI bus.
-    if (current_operating_mode == SENSOR_IDLE_MODE)
+    //There are two ways to enter connected mode. We either enter this mode when a connection is
+    //first established, or when we navigate to one of the menu screens in the front end. In the 
+    //case where the connection is first established, we use this opportunity to initialize any
+    //sensors that need an initialization (as of this writing only the BMI270 sensor requires
+    //this). After this initialization is complete, or if connected mode is entered via menu
+    //navigation in the front end, we make sure that any active sensors are placed into sleep mode
+    //and that any TWI busses are turned off. We also change the on-board blinking LED to green.
+
+    bool bmi270_init = false;
+    if (current_operating_mode == ADVERTISING_MODE)
     {
-        //The chip is currently in sensor idle mode so we need to power off the sensors and disable any active TWI bus
-        disable_twi_bus(imu_comm.acc_comm.twi_bus->inst_idx);
-        disable_twi_bus(imu_comm.gyr_comm.twi_bus->inst_idx);
-        disable_twi_bus(imu_comm.mag_comm.twi_bus->inst_idx);
+        if (default_sensors[0] == BMI270_ACC || default_sensors[1] == BMI270_GYR)
+        {
+            //enable necessary TWI bus(es) to communicate with the BMI270 sensor
+            enable_twi_bus(imu_comm.acc_comm.twi_bus->inst_idx);
+            enable_twi_bus(imu_comm.gyr_comm.twi_bus->inst_idx);
+
+            bmi270_init = true; //this will make the below call to the bmi270_connected_mode_enable() method initialize the sensor
+        }
     }
 
+    //Call the connected_mode_enable() method for all sensors. Only sensors that are in active
+    //use will actually do anything with these methods
+    bmi270_connected_mode_enable(bmi270_init);
+    //TODO: Create connected mode enable methods for all other sensors
+
+    //Disable all active TWI busses
+    disable_twi_bus(imu_comm.acc_comm.twi_bus->inst_idx);
+    disable_twi_bus(imu_comm.gyr_comm.twi_bus->inst_idx);
+    disable_twi_bus(imu_comm.mag_comm.twi_bus->inst_idx);
+
     //change the color of the blinking LED to green, also make sure that the red
-    //and blue LEDs are off
+    //and blue LEDs are off. If we're coming here from sensor active mode then 
+    //we're going to need to turn on the LED first and also deactivate the data timer
+    if (current_operating_mode == SENSOR_ACTIVE_MODE)
+    {
+        data_timers_stop();
+        led_timers_start();
+    }
+
     active_led = GREEN_LED;
     nrf_gpio_pin_set(RED_LED); //LEDs must be set high to turn off
     nrf_gpio_pin_set(BLUE_LED); //LEDs must be set high to turn off
@@ -1221,12 +1248,15 @@ static void power_saving_init()
     uint32_t err_code = sd_power_dcdc_mode_set(NRF_POWER_DCDC_ENABLE);
     APP_ERROR_CHECK(err_code);
 
+    //Voltage Regulator 0 can only be enabled if the nRF52840 is being run
+    //in High Voltage mode. This requires a voltage > 3.6V to be supplied to
+    //the VDDH pin (which won't be the case when running from a coin cell battery).
     err_code = sd_power_dcdc0_mode_set(NRF_POWER_DCDC_ENABLE);
     APP_ERROR_CHECK(err_code);
 
     SEGGER_RTT_WriteString(0, "DCDC Engaged.\n");
 
-    turn_on_mic(); //used for lowering overall power consumption (prevents GPIO pin from floating)
+    turn_off_mic(); //used for lowering overall power consumption (prevents GPIO pin from floating)
 }
 
 /**@brief Function for application main entry.
@@ -1274,9 +1304,7 @@ int main(void)
 
         //after the CPU get's woken up (at a minimum this should happen once every
         //connection interval), see if the data ready flag has been set to true and
-        //if so, send out data notifications).
-        //SEGGER_RTT_printf(0, "idle state handle exited at %d ticks.\n", get_current_data_time());
-
+        //if so, send out data notifications).=
         if (m_data_ready)
         {
             //SEGGER_RTT_printf(0, "charactieristic update called at %d ticks.\n", get_current_data_time());

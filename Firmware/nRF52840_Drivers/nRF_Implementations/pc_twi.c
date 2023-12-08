@@ -195,19 +195,19 @@ void disable_twi_bus(int instance_id)
     //off power to any gpio pins that it requires.
     if (instance_id == INTERNAL_TWI_INSTANCE_ID)
     {
-        //nrf_gpio_pin_clear(INTERNAL_SENSOR_POWER_PIN);
-        //nrf_gpio_pin_clear(INTERNAL_PULLUP);
-
-        nrf_drv_twi_disable(&m_twi_internal); //disable the current bus
-        SEGGER_RTT_WriteString(0, "Internal TWI Bus Disabled.\n");
+        if (m_twi_internal.u.twim.p_twim->ENABLE)
+        {
+            nrf_drv_twi_disable(&m_twi_internal); //disable the current bus
+            SEGGER_RTT_WriteString(0, "Internal TWI Bus Disabled.\n");
+        }
     }
     else
     {
-        //nrf_gpio_pin_clear(EXTERNAL_SENSOR_POWER_PIN);
-        //nrf_gpio_pin_clear(EXTERNAL_PULLUP);
-
-        nrf_drv_twi_disable(&m_twi_external); //disable the current bus
-        SEGGER_RTT_WriteString(0, "External TWI Bus Disabled.\n");
+        if (m_twi_external.u.twim.p_twim->ENABLE)
+        {
+            nrf_drv_twi_disable(&m_twi_external); //disable the current bus
+            SEGGER_RTT_WriteString(0, "External TWI Bus Disabled.\n");
+        }
     }
 }
 
