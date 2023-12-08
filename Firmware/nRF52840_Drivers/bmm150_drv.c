@@ -2,6 +2,7 @@
 #include "app_error.h"
 #include "SEGGER_RTT.h"
 #include "sensor_settings.h"
+#include "personal_caddie_operating_modes.h"
 
 //set up settings variables
 static imu_communication_t* imu_comm;
@@ -54,36 +55,67 @@ void bmm150init(imu_communication_t* comm, uint8_t sensors, uint8_t* settings)
 
 }
 
-int32_t bmm150_idle_mode_enable(bool init)
+int32_t bmm150_connected_mode_enable(bool init)
 {
-    if (imu_comm->sensor_model[MAG_SENSOR] == BMM150_MAG)
+    //In connected mode the BMM150 gets placed into its "Suspend" power mode. The expected 
+    //current draw in this mode is 1 uA (0.000001 A). In this power mode the contents of
+    //all registers lose their values, and only a handful of registers can actuall be accessed.
+    if (imu_comm->sensor_model[MAG_SENSOR] != BMM150_MAG) return 0; //only proceed if a BMM150 sensor is active
+    
+    int8_t rslt = 0;
+    if (init)
     {
-        int8_t rslt = 0;
-        if (init)
-        {
-            //When calling this method from connected mode we need to call the bmm150
-            //init method. This will turn on and initialize the device, putting it in suspend
-            //mode when complete.
-            rslt = bmm150_init(&bmm150);
-        }
-        else
-        {
-            //When calling this method from sensor active mode we simply put the sensor
-            //into sleep mode to save power.
-            //TODO: Test going all the way to suspend power mode and see if the power savings are worth it
-            struct bmm150_settings settings;
-            settings.pwr_mode = BMM150_POWERMODE_SLEEP;
-            int8_t rslt = bmm150_set_op_mode(&settings, &bmm150);
-        }
-        
-
-        if (rslt != BMM150_OK) SEGGER_RTT_WriteString(0, "Error: BMM150 couldn't be put into sensor idle mode.\n");
+        //like the BMI270, the BMM150 has an initialization function. It doesn't appear that this 
+        //method is crucial to the proper functioning of the BMM150 (unlike with the BMI270), however,
+        //calling this method initializes the bmm150_dev struct with important values so we still
+        //call this init method. The device will be in sleep mode after the init() method returns
+        //so we manually put it back into suspend mode afterwards.
+        rslt = bmm150_init(&bmm150);
+        if (rslt != BMM150_OK) SEGGER_RTT_WriteString(0, "Error: Couldn't initialize BMM150 Sensor.\n");
     }
+
+    struct bmm150_settings settings;
+    settings.pwr_mode = BMM150_POWERMODE_SUSPEND;
+    rslt = bmm150_set_op_mode(&settings, &bmm150);
+    if (rslt != BMM150_OK) SEGGER_RTT_WriteString(0, "Error: BMM150 couldn't be put into connected mode.\n");
+
+    return rslt;
 }
 
-int32_t bmm150_active_mode_enable(float highest_odr)
+int32_t bmm150_idle_mode_enable()
 {
-    //Make sure that the bmm150 sensor is actually in use
+    //In sensor idle mode the BMM150 is placed into its "SLeep" power mode. The expected
+    //current draw in this mode is ??? (not listed in data sheet, may want to get my own
+    //reading with the power profiler). In this power mode all registers can be read, but
+    //the IMU isn't actively taking measurements.
+    if (imu_comm->sensor_model[MAG_SENSOR] != BMM150_MAG) return 0; //only proceed if a BMM150 sensor is active
+
+    int8_t rslt = 0;
+    //When calling this method from sensor active mode we simply put the sensor
+    //into sleep mode to save power.
+    struct bmm150_settings settings;
+    settings.pwr_mode = BMM150_POWERMODE_SLEEP;
+    rslt = bmm150_set_op_mode(&settings, &bmm150);
+    if (rslt != BMM150_OK) SEGGER_RTT_WriteString(0, "Error: BMM150 couldn't be put into sensor idle mode.\n");
+
+    return rslt;
+}
+
+int32_t bmm150_active_mode_enable(float highest_odr, int current_mode)
+{
+    //In sensor active mode the BMM150 will be placed in either its "Normal" or "Forced" power 
+    //mode depending on the contents of the sensor settings array. In normal mode there are 
+    //three different performance states we can have: Low power which has an expected current
+    //draw of 170 uA (0.00017 A), standard power which has an expected current draw of 0.5 mA
+    //(0.0005 A) and performance power which has an expected current draw of 0.8 mA (0.0008 A).
+    //Regardless of the perforamnce state, there will be current spikes in the range of 15-18 mA.
+    //In forced power mode a single reading gets taken and then the sensor is placed back into
+    //sleep mode. Every time the sensor is taken out of sleep mode and placed back into forced 
+    //mode it will always immediately take a reading and go straight back into sleep mode. Using
+    //this mode it's possible to achieve custom ODRs which will all have unique current draws.
+    //Make sure that the bmm150 sensor is actually in use. To ensure data is good, we set a delay
+    //of 3.2 milliseconds (3200 microseconds) when coming from connected mode and 0.2 milliseconds
+    //(200 microseconds) when coming from sensor idle mode.
     if (imu_comm->sensor_model[MAG_SENSOR] != BMM150_MAG) return 0;
 
     //Put the pertinent settings from the sensor setting array into the
@@ -115,7 +147,12 @@ int32_t bmm150_active_mode_enable(float highest_odr)
     {
         rtrn = bmm150_set_sensor_settings(0x000F, &settings, &bmm150); //the 0x000F lets the driver know we want to change the sensor mode
     }
-    else SEGGER_RTT_WriteString(0, "Couldn't turn the BMM150 on.\n");
+    else SEGGER_RTT_WriteString(0, "Error: BMM150 couldn't be put into sensor active mode.\n");
+
+    //After all settings have been applied and the sensor is turned on, wait for the 
+    //necessary amount of time to ensure proper reaedings
+    if (current_mode = CONNECTED_MODE) bmm150_delay(BMM150_SUSPEND_TO_ACTIVE_DELAY_US, bmm150.intf_ptr);
+    else if (current_mode = SENSOR_IDLE_MODE) bmm150_delay(BMM150_SLEEP_TO_ACTIVE_DELAY_US, bmm150.intf_ptr);
     
     return rtrn;
 }
@@ -156,6 +193,8 @@ void bmm150_get_actual_settings()
     if (imu_comm->sensor_model[ACC_SENSOR] == BMI270_ACC)
     {
         SEGGER_RTT_WriteString(0, "BMM150 Mag. Register Values:\n");
+        imu_comm->mag_comm.read_register((void*)imu_comm->mag_comm.twi_bus,  imu_comm->mag_comm.address, BMM150_REG_POWER_CONTROL, &reg_val, 1);
+        SEGGER_RTT_printf(0, "POWER_CONTROL Register: 0x%x\n", reg_val);
         imu_comm->mag_comm.read_register((void*)imu_comm->mag_comm.twi_bus,  imu_comm->mag_comm.address, BMM150_REG_OP_MODE, &reg_val, 1);
         SEGGER_RTT_printf(0, "OP_MODE Register: 0x%x\n", reg_val);
         imu_comm->mag_comm.read_register((void*)imu_comm->mag_comm.twi_bus,  imu_comm->mag_comm.address, BMM150_REG_REP_XY, &reg_val, 1);
@@ -187,7 +226,8 @@ void bmm150_delay(uint32_t period, void *intf_ptr)
     //this. Since the nRF chip has the BLE stack initialized I can't take advantage of
     //the simple nrf_delay() method and instead need to use the nrf_drv_timer library
     //which is a little more complex (although has a resolution of 62.5 nanoseconds).
-    imu_comm->acc_comm.delay(period);
+    sensor_communication_t* comm = (sensor_communication_t*)intf_ptr;
+    comm->delay(period);
 }
 
 int32_t bmm150_get_data(uint8_t* pBuff, uint8_t offset)

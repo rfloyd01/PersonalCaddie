@@ -972,18 +972,16 @@ static void sensor_idle_mode_start()
 
 static void sensor_active_mode_start()
 {
-    if (current_operating_mode != SENSOR_IDLE_MODE) return; //we can only go to active mode from idle mode
-
     //All of the settings for the sensor should have been set already, we just need to activate them
     //and then start the data collection timer. We also disable the LED to save on power
     led_timers_stop();
 
-    //Put all initialized sensors into active mode
+    //Put all initialized sensors into active mode.
     lsm9ds1_active_mode_enable();
     fxos8700_active_mode_enable();
     fxas21002_active_mode_enable();
-    bmi270_active_mode_enable();
-    bmm150_active_mode_enable(sensor_odr_calculate());
+    bmi270_active_mode_enable(current_operating_mode);
+    bmm150_active_mode_enable(sensor_odr_calculate(), current_operating_mode);
 
     //uncomment the below lines to read active sensor registers and confirm settings
     bmm150_get_actual_settings();
@@ -1001,12 +999,12 @@ static void connected_mode_start()
     //There are two ways to enter connected mode. We either enter this mode when a connection is
     //first established, or when we navigate to one of the menu screens in the front end. In the 
     //case where the connection is first established, we use this opportunity to initialize any
-    //sensors that need an initialization (as of this writing only the BMI270 sensor requires
+    //sensors that need an initialization (as of this writing only the BMI/BMM sensors require
     //this). After this initialization is complete, or if connected mode is entered via menu
     //navigation in the front end, we make sure that any active sensors are placed into sleep mode
     //and that any TWI busses are turned off. We also change the on-board blinking LED to green.
 
-    bool bmi270_init = false;
+    bool bmi270_init = false, bmm150_init = false;
     if (current_operating_mode == ADVERTISING_MODE)
     {
         if (default_sensors[0] == BMI270_ACC || default_sensors[1] == BMI270_GYR)
@@ -1014,14 +1012,20 @@ static void connected_mode_start()
             //enable necessary TWI bus(es) to communicate with the BMI270 sensor
             enable_twi_bus(imu_comm.acc_comm.twi_bus->inst_idx);
             enable_twi_bus(imu_comm.gyr_comm.twi_bus->inst_idx);
-
             bmi270_init = true; //this will make the below call to the bmi270_connected_mode_enable() method initialize the sensor
+        }
+
+        if (default_sensors[2] == BMM150_MAG)
+        {
+            enable_twi_bus(imu_comm.mag_comm.twi_bus->inst_idx);
+            bmm150_init = true;
         }
     }
 
     //Call the connected_mode_enable() method for all sensors. Only sensors that are in active
     //use will actually do anything with these methods
     bmi270_connected_mode_enable(bmi270_init);
+    bmm150_connected_mode_enable(bmm150_init);
     //TODO: Create connected mode enable methods for all other sensors
 
     //Disable all active TWI busses

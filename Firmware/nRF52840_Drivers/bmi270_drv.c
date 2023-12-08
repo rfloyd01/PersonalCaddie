@@ -2,6 +2,7 @@
 #include "app_error.h"
 #include "SEGGER_RTT.h"
 #include "sensor_settings.h"
+#include "personal_caddie_operating_modes.h"
 
 //set up settings variables
 static imu_communication_t* imu_comm;
@@ -93,15 +94,19 @@ int32_t bmi270_connected_mode_enable(bool init)
     int8_t rslt = 0;
     if (init)
     {
-        rslt = bmi270_init(&bmi270);
+        rslt = bmi270_init(&bmi270); //The sensor will be in suspend mode when this method returns
         if (rslt != BMI2_OK) SEGGER_RTT_WriteString(0, "Error: Couldn't initialize BMI270 Sensor.\n");
     }
     else
     {
-        //When coming to connected mode from sensor idle mode, the acc. and gyr. power 
-        //bits of the POWER_CTRL register should already be set to off so all we need to do is write the 
-        //advanced power save bit of the POWER_CONF register to put the chip back into
+        //When coming to connected mode from sensor idle mode or sensor active mode, we need
+        //to ensure that the acc. and gyr. power bits of the POWER_CTRL register are 0 and the
+        //advanced power save bit of the POWER_CONF register is set to 1 to put the chip back into
         //the Suspend power mode.
+        uint8_t sensor_list[2] = { BMI2_ACCEL, BMI2_GYRO };
+        rslt = bmi2_sensor_disable(sensor_list, 2, &bmi270);
+        if (rslt != BMI2_OK) SEGGER_RTT_WriteString(0, "Error: Couldn't put BMI270 Sensor into Connected Mode.\n");
+
         rslt = bmi2_set_adv_power_save(1, &bmi270);
         if (rslt != BMI2_OK) SEGGER_RTT_WriteString(0, "Error: Couldn't put BMI270 Sensor into Connected Mode.\n");
     }
@@ -136,12 +141,14 @@ int32_t bmi270_idle_mode_enable(bool active)
     return rslt;
 }
 
-int32_t bmi270_active_mode_enable()
+int32_t bmi270_active_mode_enable(int current_mode)
 {
     //In sensor active mode there are three different power levels for the BMI270. There is "Low" power mode
     //which has a current draw of ~0.42 mA, "Normal" power mode which has a current draw of ~0.685 mA and 
     //"Performance" power mode which has a current draw of ~0.97 mA. Depending on the settings currently in
-    //the sensor settings array the chip will enter one of these power states.
+    //the sensor settings array the chip will enter one of these power states. To ensure we get proper readings
+    //a delay of 45 milliseconds (45,000 microseconds) is applied when coming from connected mode and a delay of 
+    //2 milliseconds (2,000 microseconds) is applied
     if (imu_comm->sensor_model[ACC_SENSOR] != BMI270_ACC && imu_comm->sensor_model[GYR_SENSOR] != BMI270_GYR) return 0; //Make sure that one of the bmi270 sensors is actually in use
 
     int8_t rslt = 0;
@@ -246,6 +253,11 @@ int32_t bmi270_active_mode_enable()
 
     //DEBUG: Confirm the sensor config was updated
     rslt = bmi2_get_sensor_config(config, 2, &bmi270);
+
+    //After all settings have been applied and the sensor is turned on, wait for the 
+    //necessary amount of time to ensure proper reaedings
+    if (current_mode = CONNECTED_MODE) bmi270_delay(BMI270_SUSPEND_TO_ACTIVE_DELAY_US, bmi270.intf_ptr);
+    else if (current_mode = SENSOR_IDLE_MODE) bmi270_delay(BMI270_CONFIG_TO_ACTIVE_DELAY_US, bmi270.intf_ptr);
     
     return rslt;
 }
@@ -307,7 +319,8 @@ void bmi270_delay(uint32_t period, void *intf_ptr)
     //this. Since the nRF chip has the BLE stack initialized I can't take advantage of
     //the simple nrf_delay() method and instead need to use the nrf_drv_timer library
     //which is a little more complex (although has a resolution of 62.5 nanoseconds).
-    imu_comm->acc_comm.delay(period);
+    sensor_communication_t* comm = (sensor_communication_t*)intf_ptr;
+    comm->delay(period);
 }
 
 int32_t bmi270_get_data(uint8_t* pBuff, uint8_t offset)
