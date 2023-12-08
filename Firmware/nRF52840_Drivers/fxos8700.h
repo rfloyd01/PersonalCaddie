@@ -14,7 +14,8 @@ extern "C" {
 void fxos8700init(imu_communication_t* comm, uint8_t sensors, uint8_t* settings);
 #endif
 
-int32_t fxos8700_idle_mode_enable();
+int32_t fxos8700_connected_mode_enable();
+int32_t fxos8700_idle_mode_enable(int current_mode);
 int32_t fxos8700_active_mode_enable();
 
 int32_t fxos8700_acc_apply_setting(uint8_t setting);

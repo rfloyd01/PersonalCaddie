@@ -2,6 +2,7 @@
 #include "app_error.h"
 #include "SEGGER_RTT.h"
 #include "sensor_settings.h"
+#include "personal_caddie_operating_modes.h"
 
 //set up settings variables
 static imu_communication_t* imu_comm;
@@ -25,7 +26,7 @@ void fxos8700init(imu_communication_t* comm, uint8_t sensors, uint8_t* settings)
     {
         //Set up the communication struct needed to use the FXOS8700 driver using my own communication struct
         fxos_com.pComm = (void*)(&comm->acc_comm);
-        sensor_driver.pComHandle = & fxos_com; 
+        sensor_driver.pComHandle = &fxos_com; 
         fxos8700_driver_t* tester = &sensor_driver;
         
         //Apply default settings for the acc
@@ -53,7 +54,7 @@ void fxos8700init(imu_communication_t* comm, uint8_t sensors, uint8_t* settings)
         //This will overwrite the acc communication if it's in place, but this is ok because both mag and acc
         //have the same address and communication methods.
         fxos_com.pComm = (void*)(&comm->mag_comm);
-        sensor_driver.pComHandle = & fxos_com; 
+        sensor_driver.pComHandle = &fxos_com; 
         fxos8700_driver_t* tester = &sensor_driver;
 
         //Apply default settings for the mag. Unlike the accelerometer, the magnetometer
@@ -73,22 +74,31 @@ void fxos8700init(imu_communication_t* comm, uint8_t sensors, uint8_t* settings)
     }
 }
 
-int32_t fxos8700_idle_mode_enable()
+int32_t fxos8700_connected_mode_enable()
 {
-    //Regardless of whether the acc and mag, or just the acc/mag are being used, idle mode
-    //will be the same. Put the chip into standyby mode which has an average current draw of 2 uA.
+    //In connected mode the fxos8700 is placed into its "Standby" power mode. In this power
+    //mode the expected current consumption is 2 uA (0.000002 A). In this mode we can read
+    //any register but none of the analogue circuitry needed for the IMU readings are
+    //enabled. The sensor enters this mode by default when it first gets powered on so 
+    //there's no need to do anything the first time connected mode is entered.
+    if (imu_comm->sensor_model[ACC_SENSOR] != FXOS8700_ACC && imu_comm->sensor_model[MAG_SENSOR] != FXOS8700_MAG) return 0; //only carry out this method if an FXOS sensor is active
 
-    uint8_t ret = 0, mode;
-    if (imu_comm->sensor_model[ACC_SENSOR] == FXOS8700_ACC || imu_comm->sensor_model[MAG_SENSOR] == FXOS8700_MAG)
-    {
-        ret = fxos8700_set_mode(&sensor_driver, FXOS8700_STANDBY_MODE); //First put the chip in standby mode
-        //ret = sensor_comm_read(sensor_driver.pComHandle, FXOS8700_SYSMOD, 1, &mode);
-        
-        //mode &= 0xFC;
-        //mode |= 0x02; //put the register into sleep mode
-        //sensor_comm_write(sensor_driver.pComHandle, FXOS8700_SYSMOD, 1, &mode); //then put it into sleep mode
-    }
+    uint8_t ret = fxos8700_set_mode(&sensor_driver, FXOS8700_STANDBY_MODE); //First put the chip in standby mode
+    if (ret != 0) SEGGER_RTT_WriteString(0, "Error: Couldn't place FXOS8700 into connected mode.\n");
+
     return ret;
+}
+
+int32_t fxos8700_idle_mode_enable(int current_mode)
+{
+    //Unlike other sensors, the FXOS8700 doesn't have an intermediate power mode. If we would
+    //normally be going into sensor idle mode from connected mode, we instead just call the 
+    //active mode enable method. If we'd noramlly be entering sensor idle mode from sensor
+    //active mode we don't do anything here.
+    if (imu_comm->sensor_model[ACC_SENSOR] != FXOS8700_ACC && imu_comm->sensor_model[MAG_SENSOR] != FXOS8700_MAG) return 0; //only carry out this method if an FXOS sensor is active
+
+    if (current_mode == CONNECTED_MODE) return fxos8700_active_mode_enable();
+    else return 0;
 }
 
 int32_t fxos8700_active_mode_enable()
@@ -96,6 +106,8 @@ int32_t fxos8700_active_mode_enable()
     //First we apply the acc full-scale range and filter settings (if the acc is active).
     //We then handle the ODR and Power settings as these values are updated using the same
     //driver method (which also sets the sensor mode to active).
+    if (imu_comm->sensor_model[ACC_SENSOR] != FXOS8700_ACC && imu_comm->sensor_model[MAG_SENSOR] != FXOS8700_MAG) return 0; //only carry out this method if an FXOS sensor is active
+
     int32_t ret = 0;
 
     uint8_t reg_val;
@@ -126,6 +138,13 @@ int32_t fxos8700_active_mode_enable()
     else if (mag_on) ret |= fxos8700_configure_mag(&sensor_driver, *(p_sensor_settings + MAG_START + ODR), FXOS8700_MAG_READ_POLLING_MODE);
 
     if (ret != 0) SEGGER_RTT_WriteString(0, "Error: FXOS8700 enabled with incorrect settings.\n");
+
+    //After the sensor is placed into active mode, wait for the appropriate amount of time
+    //before attempting to take any readings. Normally this this time is dependend on the ODR
+    //of the sensor, however, in the worst case scenario the wait time is only 4.56 milliseconds
+    //so we just wait for 5 milliseconds regardless.
+    sensor_communication_t* comm = (sensor_communication_t*)fxos_com.pComm;
+    comm->delay(5000); //delay for 5000 microseconds
 
     return ret;
 }

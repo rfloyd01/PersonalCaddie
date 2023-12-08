@@ -913,7 +913,7 @@ static void sensor_idle_mode_start()
         //Put all sensors into idle mode, any of the sensors that are active
         //will be properly de-initialized
         lsm9ds1_idle_mode_enable();
-        fxos8700_idle_mode_enable();
+        fxos8700_idle_mode_enable(SENSOR_ACTIVE_MODE);
         fxas21002_idle_mode_enable();
         bmi270_idle_mode_enable(false);
         bmm150_idle_mode_enable(false);
@@ -1007,25 +1007,25 @@ static void connected_mode_start()
     bool bmi270_init = false, bmm150_init = false;
     if (current_operating_mode == ADVERTISING_MODE)
     {
-        if (default_sensors[0] == BMI270_ACC || default_sensors[1] == BMI270_GYR)
-        {
-            //enable necessary TWI bus(es) to communicate with the BMI270 sensor
-            enable_twi_bus(imu_comm.acc_comm.twi_bus->inst_idx);
-            enable_twi_bus(imu_comm.gyr_comm.twi_bus->inst_idx);
-            bmi270_init = true; //this will make the below call to the bmi270_connected_mode_enable() method initialize the sensor
-        }
+        //all of the connected_mode_enabled() methods require the TWI bus(es) to be
+        //on. These buses shouldn't be on when going from advertising mode to 
+        //connected mode so turn them on now to avoid any TWI errors being thrown.
+        enable_twi_bus(imu_comm.acc_comm.twi_bus->inst_idx);
+        enable_twi_bus(imu_comm.gyr_comm.twi_bus->inst_idx);
+        enable_twi_bus(imu_comm.mag_comm.twi_bus->inst_idx);
 
-        if (default_sensors[2] == BMM150_MAG)
-        {
-            enable_twi_bus(imu_comm.mag_comm.twi_bus->inst_idx);
-            bmm150_init = true;
-        }
+        //If any BMI/BMM sensors are selected they will need to be configured before
+        //they can be used. Setting the necessary booleans to true will allow this
+        //configuration to occur.
+        if (default_sensors[0] == BMI270_ACC || default_sensors[1] == BMI270_GYR) bmi270_init = true; 
+        if (default_sensors[2] == BMM150_MAG) bmm150_init = true;
     }
 
     //Call the connected_mode_enable() method for all sensors. Only sensors that are in active
     //use will actually do anything with these methods
     bmi270_connected_mode_enable(bmi270_init);
     bmm150_connected_mode_enable(bmm150_init);
+    fxos8700_connected_mode_enable();
     //TODO: Create connected mode enable methods for all other sensors
 
     //Disable all active TWI busses
