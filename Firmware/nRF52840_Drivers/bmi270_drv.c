@@ -178,6 +178,9 @@ int32_t bmi270_active_mode_enable(int current_mode)
     //The Filter and Power modes are tied together. The front end should ensure that
     //the ACC and GYR power modes are the same buit if for whaterver reason they
     //aren't we default to the accelerometer power setting
+
+    //TODO: I should let the gyroscope set it's own power mode in the case a different
+    //accelerometer is used.
     int power_save = 0;
     bool sensor_enable = true;
     switch (p_sensor_settings[ACC_START + POWER])
