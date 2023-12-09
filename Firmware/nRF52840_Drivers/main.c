@@ -858,6 +858,9 @@ void set_sensor_samples(int actual_connection_interval)
         SEGGER_RTT_printf(0, "Based on connection interval and ODR, sensor samples have been adjusted to %d.\n", m_current_sensor_samples);
     }
 
+    //Make sure we collect at least 1 sample
+    if (m_current_sensor_samples < 1) m_current_sensor_samples = 1;
+
     //Set the data characteristic pointer to the appropriately sized characteristic
     //based on the number of samples
     if (m_current_sensor_samples < 5)

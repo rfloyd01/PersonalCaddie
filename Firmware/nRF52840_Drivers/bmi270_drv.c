@@ -162,9 +162,14 @@ int32_t bmi270_active_mode_enable(int current_mode)
     //Get the existing configuration for the sensors
     rslt = bmi2_get_sensor_config(config, 2, &bmi270);
 
-    //Set ODR
-    config[ACC_SENSOR].cfg.acc.odr = p_sensor_settings[ACC_START + ODR];
-    config[GYR_SENSOR].cfg.gyr.odr = p_sensor_settings[GYR_START + ODR];
+    //Set ODR. I use a custom ODR value to turn individual sensors
+    //off. Since this won't be a valid value for the driver I need 
+    //to handle this case specially
+    if (p_sensor_settings[ACC_START + ODR] != 0) config[ACC_SENSOR].cfg.acc.odr = p_sensor_settings[ACC_START + ODR];
+    else config[ACC_SENSOR].cfg.acc.odr = BMI2_ACC_ODR_50HZ;
+
+    if (p_sensor_settings[GYR_START + ODR] != 0) config[GYR_SENSOR].cfg.gyr.odr = p_sensor_settings[GYR_START + ODR];
+    else config[ACC_SENSOR].cfg.acc.odr = BMI2_GYR_ODR_50HZ;
 
     //Set Fullscale Range
     config[ACC_SENSOR].cfg.acc.range = p_sensor_settings[ACC_START + FS_RANGE];
@@ -229,21 +234,27 @@ int32_t bmi270_active_mode_enable(int current_mode)
     //Apply the above settings to the appropriate sensors
     if (rslt == BMI2_OK)
     {
-        //Activate the appropriate sensors if the sensor_enable variable is true
-        if ((imu_comm->sensor_model[ACC_SENSOR] == BMI270_ACC && imu_comm->sensor_model[GYR_SENSOR] == BMI270_GYR) && sensor_enable)
+        //Activate the appropriate sensors if the sensor_enable variable is true and the sensor
+        //odr is greater than 0.
+        if ((imu_comm->sensor_model[ACC_SENSOR] == BMI270_ACC && imu_comm->sensor_model[GYR_SENSOR] == BMI270_GYR) && 
+        (p_sensor_settings[ACC_START + ODR] != 0 && p_sensor_settings[GYR_START + ODR] != 0) && sensor_enable)
         {
             uint8_t sensor_list[2] = { BMI2_ACCEL, BMI2_GYRO };
             rslt = bmi2_sensor_enable(sensor_list, 2, &bmi270);
         }
-        else if (imu_comm->sensor_model[ACC_SENSOR] == BMI270_ACC && sensor_enable)
+        else if ((imu_comm->sensor_model[ACC_SENSOR] == BMI270_ACC && p_sensor_settings[ACC_START + ODR] != 0) && sensor_enable)
         {
             uint8_t sensor_list[1] = { BMI2_ACCEL };
             rslt = bmi2_sensor_enable(sensor_list, 1, &bmi270);
         }
-        else if (imu_comm->sensor_model[GYR_SENSOR] == BMI270_GYR && sensor_enable)
+        else if ((imu_comm->sensor_model[GYR_SENSOR] == BMI270_GYR && p_sensor_settings[GYR_START + ODR] != 0) && sensor_enable)
         {
             uint8_t sensor_list[1] = { BMI2_GYRO };
             rslt = bmi2_sensor_enable(sensor_list, 1, &bmi270);
+        }
+        else
+        {
+            return 0; //no sensors are actually being turned on here so there's nothing more to do
         }
 
         //Set the advanced power saving bit based on the current power setting
