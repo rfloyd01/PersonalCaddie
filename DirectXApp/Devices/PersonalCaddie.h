@@ -15,12 +15,11 @@ using namespace Windows::Devices;
 #define ERROR_CHARACTERISTIC_UUID              0xBF41
 #define SENSOR_SERVICE_UUID                    0xBF34
 #define SETTINGS_CHARACTERISTIC_UUID           0xBF35
-#define ACC_DATA_CHARACTERISTIC_UUID           0xBF36
-#define GYR_DATA_CHARACTERISTIC_UUID           0xBF37
-#define MAG_DATA_CHARACTERISTIC_UUID           0xBF38
+#define SMALL_DATA_CHARACTERISTIC_UUID         0xBF36
+#define MEDIUM_DATA_CHARACTERISTIC_UUID        0xBF37
+#define LARGE_DATA_CHARACTERISTIC_UUID         0xBF38
 #define AVAILABLE_SENSORS_CHARACTERISTIC_UUID  0xBF39
-#define COMPOSITE_DATA_CHARACTERISTIC_UUID     0xBF40
-#define MAX_SENSOR_SAMPLES                     39 //at most we can hold 39 sensor readings in a single characteristic and send out the notification in a single packet
+#define MAX_SENSOR_SAMPLES                     39 //at most we can hold 39 sensor readings in a single characteristic and still send out the notification in a single packet
 
 //enums and structs used by the Personal Caddie class
 enum PersonalCaddiePowerMode
@@ -136,7 +135,6 @@ private:
 	//BLE Functionality
 	void getDataCharacteristics(Bluetooth::GenericAttributeProfile::GattDeviceService& data_service);
 	void getErrorCharacteristic(Bluetooth::GenericAttributeProfile::GattDeviceService& pc_service);
-	void dataCharacteristicEventHandler(Bluetooth::GenericAttributeProfile::GattCharacteristic& car, Bluetooth::GenericAttributeProfile::GattValueChangedEventArgs& args);
 	void compositeDataCharacteristicEventHandler(Bluetooth::GenericAttributeProfile::GattCharacteristic& car, Bluetooth::GenericAttributeProfile::GattValueChangedEventArgs& args);
 	void automaticallyConnect();
 
@@ -159,10 +157,9 @@ private:
 	Bluetooth::GenericAttributeProfile::GattCharacteristic m_error_characteristic{ nullptr };
 	Bluetooth::GenericAttributeProfile::GattCharacteristic m_settings_characteristic{ nullptr };
 	Bluetooth::GenericAttributeProfile::GattCharacteristic m_available_sensors_characteristic{ nullptr };
-	Bluetooth::GenericAttributeProfile::GattCharacteristic m_accelerometer_data_characteristic{ nullptr };
-	Bluetooth::GenericAttributeProfile::GattCharacteristic m_gyroscope_data_characteristic{ nullptr };
-	Bluetooth::GenericAttributeProfile::GattCharacteristic m_magnetometer_data_characteristic{ nullptr };
-	Bluetooth::GenericAttributeProfile::GattCharacteristic m_composite_data_characteristic{ nullptr };
+	Bluetooth::GenericAttributeProfile::GattCharacteristic m_small_data_characteristic{ nullptr };
+	Bluetooth::GenericAttributeProfile::GattCharacteristic m_medium_data_characteristic{ nullptr };
+	Bluetooth::GenericAttributeProfile::GattCharacteristic m_large_data_characteristic{ nullptr };
 
 	//    Methods and fields from original BluetoothLE Class     //
 	//Internal Updating Functions

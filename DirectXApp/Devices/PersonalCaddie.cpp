@@ -151,10 +151,9 @@ void PersonalCaddie::disconnectFromDevice()
         //set all the characteristics to null as well
         m_error_characteristic = nullptr;
         m_settings_characteristic = nullptr;
-        m_accelerometer_data_characteristic = nullptr;
-        m_gyroscope_data_characteristic = nullptr;
-        m_magnetometer_data_characteristic = nullptr;
-        m_composite_data_characteristic = nullptr;
+        m_small_data_characteristic = nullptr;
+        m_medium_data_characteristic = nullptr;
+        m_large_data_characteristic = nullptr;
         m_available_sensors_characteristic = nullptr;
 
         p_ble->terminateConnection();
@@ -330,25 +329,15 @@ void PersonalCaddie::getDataCharacteristics(Bluetooth::GenericAttributeProfile::
 
         switch (short_uuid)
         {
-        case ACC_DATA_CHARACTERISTIC_UUID:
-            this->m_accelerometer_data_characteristic = data_characteristics.GetAt(i);
+        case SMALL_DATA_CHARACTERISTIC_UUID:
+            this->m_small_data_characteristic = data_characteristics.GetAt(i);
             break;
-        case GYR_DATA_CHARACTERISTIC_UUID:
-            this->m_gyroscope_data_characteristic = data_characteristics.GetAt(i);
+        case MEDIUM_DATA_CHARACTERISTIC_UUID:
+            this->m_medium_data_characteristic = data_characteristics.GetAt(i);
             break;
-        case MAG_DATA_CHARACTERISTIC_UUID:
-            this->m_magnetometer_data_characteristic = data_characteristics.GetAt(i);
+        case LARGE_DATA_CHARACTERISTIC_UUID:
+            this->m_large_data_characteristic = data_characteristics.GetAt(i);
             break;
-        case COMPOSITE_DATA_CHARACTERISTIC_UUID:
-            this->m_composite_data_characteristic = data_characteristics.GetAt(i);
-            //set the notification event handler for the composite data characteristic in the switch statement
-            //and continue to next iteration of loop instead of breaking out of switch
-            data_characteristics.GetAt(i).ValueChanged(Windows::Foundation::TypedEventHandler<GattCharacteristic, GattValueChangedEventArgs>(
-                [this](GattCharacteristic car, GattValueChangedEventArgs args)
-                {
-                    compositeDataCharacteristicEventHandler(car, args); //handler defined elsewhere to prevent multiple identical code blocks being needed here
-                }));
-            continue;
         case SETTINGS_CHARACTERISTIC_UUID:
             this->m_settings_characteristic = data_characteristics.GetAt(i);
             setup_notifcations = false; //the settings characteristic doesn't have notification capability
@@ -365,7 +354,7 @@ void PersonalCaddie::getDataCharacteristics(Bluetooth::GenericAttributeProfile::
             data_characteristics.GetAt(i).ValueChanged(Windows::Foundation::TypedEventHandler<GattCharacteristic, GattValueChangedEventArgs>(
                 [this](GattCharacteristic car, GattValueChangedEventArgs args)
                 {
-                    dataCharacteristicEventHandler(car, args); //handler defined elsewhere to prevent multiple identical code blocks being needed here
+                    compositeDataCharacteristicEventHandler(car, args); //handler defined elsewhere to prevent multiple identical code blocks being needed here
                 }));
         }
     }
@@ -437,88 +426,6 @@ void PersonalCaddie::getErrorCharacteristic(Bluetooth::GenericAttributeProfile::
     }
 }
 
-void PersonalCaddie::dataCharacteristicEventHandler(Bluetooth::GenericAttributeProfile::GattCharacteristic& car, Bluetooth::GenericAttributeProfile::GattValueChangedEventArgs& args)
-{
-    //this method gets automatically called when one of the data characteristics has its value changed and notifications turned on
-
-    //First we read the data from the characteristic and put it into the appropriate raw data vector
-    auto uuid = (car.Uuid().Data1 & 0xFFFF); //TODO: Can this just be passed in to the lambda function when the ValueChanged() property is set?
-    DataType rdt = DataType::EULER_ANGLES, dt = DataType::EULER_ANGLES; //this is just to initialize the variables, they will get changed to either acc, gyr or mag equivalents
-    sensor_type_t sensor_type;
-    std::pair<const float*, const float**> calibration_data;
-    std::vector<int> axis_orientation_data;
-
-    //Get the appropriate data type by looking at the characteristic's UUID so we know which vector to update
-    switch (uuid)
-    {
-    case ACC_DATA_CHARACTERISTIC_UUID:
-        rdt = DataType::RAW_ACCELERATION;
-        dt = DataType::ACCELERATION;
-        sensor_type = ACC_SENSOR;
-        calibration_data = this->p_imu->getAccelerometerCalibrationNumbers();
-        axis_orientation_data = this->p_imu->getAccelerometerAxisOrientations();
-        break;
-    case GYR_DATA_CHARACTERISTIC_UUID:
-        rdt = DataType::RAW_ROTATION;
-        dt = DataType::ROTATION;
-        sensor_type = GYR_SENSOR;
-        calibration_data = this->p_imu->getGyroscopeCalibrationNumbers();
-        axis_orientation_data = this->p_imu->getGyroscopeAxisOrientations();
-        break;
-    case MAG_DATA_CHARACTERISTIC_UUID:
-        rdt = DataType::RAW_MAGNETIC;
-        dt = DataType::MAGNETIC;
-        sensor_type = MAG_SENSOR;
-        calibration_data = this->p_imu->getMagnetometerCalibrationNumbers();
-        axis_orientation_data = this->p_imu->getMagnetometerAxisOrientations();
-        break;
-    default:
-        return; //if something other than a data characteristic calls this handler, return without doing anything
-    }
-
-    //read the physical data
-    auto read_buffer = Windows::Storage::Streams::DataReader::FromBuffer(args.CharacteristicValue());
-    read_buffer.ByteOrder(Windows::Storage::Streams::ByteOrder::LittleEndian); //the nRF52840 uses little endian so we match it here
-
-    //Transfer the data in 16-bit chunks to the appropriate data array. A single reading of the sensor is comprised of 6 bytes, 2 each 
-    //for each axes so the data in the read_buffer looks like so: [XL0, XH0, YL0, YH0, ZL0, ZH0, XL1, XH1, YL1, YH1, ...]. Since the 
-    //data is little endian the least significant byte comes before the most significant.
-    for (int i = 0; i < MAX_SENSOR_SAMPLES; i++)
-    {
-        //Each characteristic has a length of MAX_SENSOR_SAMPLES + 5 bytes. The first MAX_SENSOR_SAMPLES bytes contain actual 
-        //sensor data, the next 4 bytes contain a time stamp of when the first bit of data was recorded and the final byte holds
-        //the number of actual samples. The number of actual data samples in the characteritic
-        //isn't constant (it can change based on the sensor odr and bluetooth connection interval), however, we must read the 
-        //whole characteristic to get the time stamp and useful data byte.
-
-        //TODO: Make sure the correct axis is being read, and having the appropriate polarity applied to it
-        for (int axis = X; axis <= Z; axis++)
-        {
-            int16_t axis_reading = read_buffer.ReadInt16();
-            int actual_axis = axis_orientation_data[axis];
-            this->sensor_data[static_cast<int>(rdt)][actual_axis][i] = axis_reading * this->p_imu->getConversionRate(sensor_type) * axis_orientation_data[axis + 3]; //Apply appropriate conversion from LSB to the current unit
-        }
-    }
-
-    //After reading the sensor samples, extract the time stamp from the characteristic (this value is the same in all three data
-    //characteristics so it will get overwritten with the same value twice, but currently there's no good way around this)
-    uint32_t timer_ticks = read_buffer.ReadUInt32();
-    m_first_data_time_stamp = convertTicksToSeconds(timer_ticks);
-
-    //once the raw data has been read update it with the appropriate calibration numbers for each sensor
-    updateRawDataWithCalibrationNumbers(rdt, dt, sensor_type, calibration_data.first, calibration_data.second);
-
-    //The last byte holds the number of relevent data samples, update the number_of_samples variable to reflect
-    //this amount. Like with the time stamp, this will get overwritten twice
-    number_of_samples = read_buffer.ReadByte();
-
-    //Check to see if the length of the data vectors matches the number_of_samples
-
-    //DEBUG:
-    //std::wstring bug_string = L"Notification " + std::to_wstring(++debug_notifications_received) + L" received.\n";
-    //OutputDebugString(&bug_string[0]);
-}
-
 void PersonalCaddie::compositeDataCharacteristicEventHandler(Bluetooth::GenericAttributeProfile::GattCharacteristic& car, Bluetooth::GenericAttributeProfile::GattValueChangedEventArgs& args)
 {
     //After a few months of using separate characteristics for each sensor I decided it would be based to put all sensor data into 
@@ -541,7 +448,7 @@ void PersonalCaddie::compositeDataCharacteristicEventHandler(Bluetooth::GenericA
 
     //The first four bytes of the characteristic contain a timestamp for when the first set of data in the 
     //set was recorded. This is useful for keeping track of any delays the occur between transmissions and
-    //lost data packets
+    //notice lost data packets
     uint32_t timer_ticks = read_buffer.ReadUInt32();
     m_first_data_time_stamp = convertTicksToSeconds(timer_ticks);
 
@@ -653,7 +560,7 @@ void PersonalCaddie::enableDataNotifications()
 {
     //If the sensor data characteristics aren't currently notifying, then their CCCD descriptors will be written
     //so that they are.
-    auto cccdRead = m_accelerometer_data_characteristic.ReadClientCharacteristicConfigurationDescriptorAsync();
+    auto cccdRead = m_small_data_characteristic.ReadClientCharacteristicConfigurationDescriptorAsync();
 
     cccdRead.Completed([this](
         IAsyncOperation<GattReadClientCharacteristicConfigurationDescriptorResult> const& sender,
@@ -664,37 +571,37 @@ void PersonalCaddie::enableDataNotifications()
             {
                 //the data characteristics are currently set to notify so turn off notifications. There are three characteristic descriptors to write
                 //so nest the asynchronous calls to make sure all calls actually get processed.
-                auto cccdAccWriteOff = m_accelerometer_data_characteristic.WriteClientCharacteristicConfigurationDescriptorAsync(GattClientCharacteristicConfigurationDescriptorValue::Notify);
+                auto cccdAccWriteOff = m_small_data_characteristic.WriteClientCharacteristicConfigurationDescriptorAsync(GattClientCharacteristicConfigurationDescriptorValue::Notify);
                 cccdAccWriteOff.Completed([this](IAsyncOperation<GattCommunicationStatus> const& sender, AsyncStatus const status)
                     {
                         bool accSuccess = cccdWriteHandler(sender, status);
                         if (!accSuccess)
                         {
-                            std::wstring message = L"An error occured when trying to enable ACC data notifications.\n";
+                            std::wstring message = L"An error occured when trying to enable small data notifications.\n";
                             event_handler(PersonalCaddieEventType::BLE_ALERT, (void*)&message);
                             return;
                         }
 
                         //initiaite the second asynchronous call after the first one completes.
-                        auto cccdGyrWriteOff = m_gyroscope_data_characteristic.WriteClientCharacteristicConfigurationDescriptorAsync(GattClientCharacteristicConfigurationDescriptorValue::Notify);
+                        auto cccdGyrWriteOff = m_medium_data_characteristic.WriteClientCharacteristicConfigurationDescriptorAsync(GattClientCharacteristicConfigurationDescriptorValue::Notify);
                         cccdGyrWriteOff.Completed([this](IAsyncOperation<GattCommunicationStatus> const& sender, AsyncStatus const status)
                             {
                                 bool gyrSuccess = cccdWriteHandler(sender, status);
                                 if (!gyrSuccess)
                                 {
-                                    std::wstring message = L"An error occured when trying to enable GYR data notifications.\n";
+                                    std::wstring message = L"An error occured when trying to enable medium data notifications.\n";
                                     event_handler(PersonalCaddieEventType::BLE_ALERT, (void*)&message);
                                     return;
                                 }
 
                                 //initiaite the third asynchronous call after the second one completes.
-                                auto cccdMagWriteOff = m_magnetometer_data_characteristic.WriteClientCharacteristicConfigurationDescriptorAsync(GattClientCharacteristicConfigurationDescriptorValue::Notify);
+                                auto cccdMagWriteOff = m_large_data_characteristic.WriteClientCharacteristicConfigurationDescriptorAsync(GattClientCharacteristicConfigurationDescriptorValue::Notify);
                                 cccdMagWriteOff.Completed([this](IAsyncOperation<GattCommunicationStatus> const& sender, AsyncStatus const status)
                                     {
                                         bool magSuccess = cccdWriteHandler(sender, status);
                                         if (!magSuccess)
                                         {
-                                            std::wstring message = L"An error occured when trying to enable MAG data notifications.\n";
+                                            std::wstring message = L"An error occured when trying to enable large data notifications.\n";
                                             event_handler(PersonalCaddieEventType::BLE_ALERT, (void*)&message);
                                             return;
                                         }
@@ -710,38 +617,13 @@ void PersonalCaddie::enableDataNotifications()
                     });
             }
         });
-
-    //Handle the composite data characteristic separately from the others
-    auto compositeCccdRead = m_composite_data_characteristic.ReadClientCharacteristicConfigurationDescriptorAsync();
-
-    compositeCccdRead.Completed([this](
-        IAsyncOperation<GattReadClientCharacteristicConfigurationDescriptorResult> const& sender,
-        AsyncStatus const status)
-        {
-            auto cccd_value = sender.get().ClientCharacteristicConfigurationDescriptor();
-            if (cccd_value == Bluetooth::GenericAttributeProfile::GattClientCharacteristicConfigurationDescriptorValue::None)
-            {
-                //the composite data characteristic isn't currently set to notify so turn on notifications now.
-                auto cccdCompWriteOn = m_composite_data_characteristic.WriteClientCharacteristicConfigurationDescriptorAsync(GattClientCharacteristicConfigurationDescriptorValue::Notify);
-                cccdCompWriteOn.Completed([this](IAsyncOperation<GattCommunicationStatus> const& sender, AsyncStatus const status)
-                    {
-                        bool compSuccess = cccdWriteHandler(sender, status);
-                        if (!compSuccess)
-                        {
-                            std::wstring message = L"An error occured when trying to enable composite data notifications.\n";
-                            event_handler(PersonalCaddieEventType::BLE_ALERT, (void*)&message);
-                            return;
-                        }
-                    });
-            }
-        });
 }
 
 void PersonalCaddie::disableDataNotifications()
 {
     //If the sensor data characteristics aren currently notifying, then their CCCD descriptors will be written
     //so that they aren't notifying any longer
-    auto cccdRead = m_accelerometer_data_characteristic.ReadClientCharacteristicConfigurationDescriptorAsync();// .get().ClientCharacteristicConfigurationDescriptor();
+    auto cccdRead = m_small_data_characteristic.ReadClientCharacteristicConfigurationDescriptorAsync();// .get().ClientCharacteristicConfigurationDescriptor();
     cccdRead.Completed([this](
         IAsyncOperation<GattReadClientCharacteristicConfigurationDescriptorResult> const& sender,
         AsyncStatus const status)
@@ -751,37 +633,37 @@ void PersonalCaddie::disableDataNotifications()
             {
                 //the data characteristics are currently set to notify so turn off notifications. There are three characteristic descriptors to write
                 //so nest the asynchronous calls to make sure all calls actually get processed.
-                auto cccdAccWriteOff = m_accelerometer_data_characteristic.WriteClientCharacteristicConfigurationDescriptorAsync(GattClientCharacteristicConfigurationDescriptorValue::None);
+                auto cccdAccWriteOff = m_small_data_characteristic.WriteClientCharacteristicConfigurationDescriptorAsync(GattClientCharacteristicConfigurationDescriptorValue::None);
                 cccdAccWriteOff.Completed([this](IAsyncOperation<GattCommunicationStatus> const& sender, AsyncStatus const status)
                     {
                         bool accSuccess = cccdWriteHandler(sender, status);
                         if (!accSuccess)
                         {
-                            std::wstring message = L"An error occured when trying to disable ACC data notifications.\n";
+                            std::wstring message = L"An error occured when trying to disable small data notifications.\n";
                             event_handler(PersonalCaddieEventType::BLE_ALERT, (void*)&message);
                             return;
                         }
 
                         //initiaite the second asynchronous call after the first one completes.
-                        auto cccdGyrWriteOff = m_gyroscope_data_characteristic.WriteClientCharacteristicConfigurationDescriptorAsync(GattClientCharacteristicConfigurationDescriptorValue::None);
+                        auto cccdGyrWriteOff = m_medium_data_characteristic.WriteClientCharacteristicConfigurationDescriptorAsync(GattClientCharacteristicConfigurationDescriptorValue::None);
                         cccdGyrWriteOff.Completed([this](IAsyncOperation<GattCommunicationStatus> const& sender, AsyncStatus const status)
                             {
                                 bool gyrSuccess = cccdWriteHandler(sender, status);
                                 if (!gyrSuccess)
                                 {
-                                    std::wstring message = L"An error occured when trying to disable GYR data notifications.\n";
+                                    std::wstring message = L"An error occured when trying to disable medium data notifications.\n";
                                     event_handler(PersonalCaddieEventType::BLE_ALERT, (void*)&message);
                                     return;
                                 }
 
                                 //initiaite the third asynchronous call after the second one completes.
-                                auto cccdMagWriteOff = m_magnetometer_data_characteristic.WriteClientCharacteristicConfigurationDescriptorAsync(GattClientCharacteristicConfigurationDescriptorValue::None);
+                                auto cccdMagWriteOff = m_large_data_characteristic.WriteClientCharacteristicConfigurationDescriptorAsync(GattClientCharacteristicConfigurationDescriptorValue::None);
                                 cccdMagWriteOff.Completed([this](IAsyncOperation<GattCommunicationStatus> const& sender, AsyncStatus const status)
                                     {
                                         bool magSuccess = cccdWriteHandler(sender, status);
                                         if (!magSuccess)
                                         {
-                                            std::wstring message = L"An error occured when trying to disable MAG data notifications.\n";
+                                            std::wstring message = L"An error occured when trying to disable large data notifications.\n";
                                             event_handler(PersonalCaddieEventType::BLE_ALERT, (void*)&message);
                                             return;
                                         }
@@ -799,31 +681,6 @@ void PersonalCaddie::disableDataNotifications()
                                         }
                                     });
                             });
-                    });
-            }
-        });
-
-    //Handle the composite data characteristic separately from the others
-    auto compositeCccdRead = m_composite_data_characteristic.ReadClientCharacteristicConfigurationDescriptorAsync();
-
-    compositeCccdRead.Completed([this](
-        IAsyncOperation<GattReadClientCharacteristicConfigurationDescriptorResult> const& sender,
-        AsyncStatus const status)
-        {
-            auto cccd_value = sender.get().ClientCharacteristicConfigurationDescriptor();
-            if (cccd_value == Bluetooth::GenericAttributeProfile::GattClientCharacteristicConfigurationDescriptorValue::Notify)
-            {
-                //the composite data characteristic is currently set to notify so turn off notifications now.
-                auto cccdCompWriteOff = m_composite_data_characteristic.WriteClientCharacteristicConfigurationDescriptorAsync(GattClientCharacteristicConfigurationDescriptorValue::None);
-                cccdCompWriteOff.Completed([this](IAsyncOperation<GattCommunicationStatus> const& sender, AsyncStatus const status)
-                    {
-                        bool compSuccess = cccdWriteHandler(sender, status);
-                        if (!compSuccess)
-                        {
-                            std::wstring message = L"An error occured when trying to disable composite data notifications.\n";
-                            event_handler(PersonalCaddieEventType::BLE_ALERT, (void*)&message);
-                            return;
-                        }
                     });
             }
         });

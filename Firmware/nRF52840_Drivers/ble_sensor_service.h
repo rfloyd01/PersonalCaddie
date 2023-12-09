@@ -16,24 +16,26 @@ extern "C" {
  * @param   _name   Name of the instance.
  * @hideinitializer
  */
-#define BLE_SENSOR_SERVICE_DEF(_name)                                          \
-static ble_sensor_service_t _name;                                                       \
-NRF_SDH_BLE_OBSERVER(_name ## _obs,                                                      \
-                     2,                                                                  \
+#define BLE_SENSOR_SERVICE_DEF(_name)                                       \
+static ble_sensor_service_t _name;                                          \
+NRF_SDH_BLE_OBSERVER(_name ## _obs,                                         \
+                     2,                                                     \
                      ble_sensor_service_on_ble_evt, &_name)
 
 #define SENSOR_SERRVICE_UUID_BASE        {0xF9, 0xF8, 0xA9, 0x3D, 0x6C, 0x8D, 0x4A, 0x4A, \
                                           0x84, 0x32, 0x79, 0x26, 0x00, 0x00, 0x30, 0x2B} 
 #define SENSOR_SERVICE_UUID               0xBF34
 #define SETTINGS_CHARACTERISTIC_UUID      0xBF35
-#define ACC_DATA_CHARACTERISTIC_UUID      0xBF36
-#define GYR_DATA_CHARACTERISTIC_UUID      0xBF37
-#define MAG_DATA_CHARACTERISTIC_UUID      0xBF38
-#define DATA_CHARACTERISTIC_UUID          0xBF40
+#define SMALL_DATA_CHARACTERISTIC_UUID    0xBF36
+#define MEDIUM_DATA_CHARACTERISTIC_UUID   0xBF37
+#define LARGE_DATA_CHARACTERISTIC_UUID    0xBF38
 #define AVAILABLE_SENSORS_CHAR_UUID       0xBF39
 
 #define MAX_SENSOR_SAMPLES 39                /**< The max number of sensor samples we can put into a characteristic and still send out all data with 1 notification*/
 #define SAMPLE_SIZE     6                    /**< The size (in bytes) of a full sensor sample reading (includes x, y and z axes) */
+#define SMALL_DATA_CHARACTERISTIC_SIZE 5 + 3 * 4 * SAMPLE_SIZE
+#define MEDIUM_DATA_CHARACTERISTIC_SIZE 5 + 3 * 8 * SAMPLE_SIZE
+#define LARGE_DATA_CHARACTERISTIC_SIZE 5 + 3 * MAX_SENSOR_SAMPLES / 3 * SAMPLE_SIZE
 
 // Forward declaration of the ble_sensor_service_t type.
 typedef struct ble_sensor_service_s ble_sensor_service_t;
@@ -51,7 +53,7 @@ typedef struct
 struct ble_sensor_service_s
 {
     uint16_t                    service_handle;                         /**< Handle of Sensor Service (as provided by the BLE stack). */
-    ble_gatts_char_handles_t    data_handles[4];                        /**< Handles related to the Data Characteristic. */
+    ble_gatts_char_handles_t    data_handles[3];                        /**< Handles related to the Data Characteristic. */
     ble_gatts_char_handles_t    settings_handles;                       /**< Handles related to the Settings Characteristic. */
     ble_gatts_char_handles_t    available_handle;                       /**< Handle related to the Available Sensors Characteristic. */
     uint8_t                     uuid_type;                              /**< UUID type for the Sensor Service. */

@@ -71,90 +71,70 @@ uint32_t ble_sensor_service_init(ble_sensor_service_t * p_ss, const ble_sensor_s
 
 uint32_t ble_sensor_service_data_char_add(ble_sensor_service_t * p_ss)
 {
-    ble_add_char_params_t add_acc_char_params, add_gyr_char_params, add_mag_char_params, add_data_char_params;
+    ble_add_char_params_t add_small_char_params, add_med_char_params, add_large_char_params;
 
-    //Each characteristic will be 5 + SAMPLE_SIZE * MAX_SENSOR_SAMPLES bytes in length.
-    //The first SAMPLE_SIZE * MAX_SENSOR_SAMPLES bytes are for storing sensor data while
-    //the last 5 bytes are for storing a float which represents the time at which the 
-    //first data sample was recorded, as well as the number of samples currently in the 
-    //characteristic (to maximize data throughput it may be optimal to use less than
-    //MAX_SENSOR_SAMPLES based on the current connection interval and sensor ODR).
+    //There are three different characteristics for holding sensor data, a small, medium and 
+    //large characteristic. The reason for this is that the number of samples we send to the 
+    //front end during each connection interval will vary with the sensor ODR. If a single
+    //data characteristic is used that's sized for the largest possible case, then there will 
+    //be a lot of unneccessary bits that get sent when the ODR is reduced. The longer the
+    //antenna is on, the more current draw there is which we want to minimize.
 
-    // Add Accelerometer Data characteristic.
-    memset(&add_acc_char_params, 0, sizeof(add_acc_char_params));
-    add_acc_char_params.uuid              = ACC_DATA_CHARACTERISTIC_UUID;
-    add_acc_char_params.uuid_type         = p_ss->uuid_type;
-    add_acc_char_params.init_len          = (5 + SAMPLE_SIZE * MAX_SENSOR_SAMPLES) * sizeof(uint8_t); 
-    add_acc_char_params.max_len           = (5 + SAMPLE_SIZE * MAX_SENSOR_SAMPLES) * sizeof(uint8_t);
-    add_acc_char_params.char_props.read   = 1;
-    add_acc_char_params.char_props.notify = 1;
+    // Add Small Data characteristic.
+    memset(&add_small_char_params, 0, sizeof(add_small_char_params));
+    add_small_char_params.uuid              = SMALL_DATA_CHARACTERISTIC_UUID;
+    add_small_char_params.uuid_type         = p_ss->uuid_type;
+    add_small_char_params.init_len          = SMALL_DATA_CHARACTERISTIC_SIZE * sizeof(uint8_t); 
+    add_small_char_params.max_len           = SMALL_DATA_CHARACTERISTIC_SIZE * sizeof(uint8_t);
+    add_small_char_params.char_props.read   = 1;
+    add_small_char_params.char_props.notify = 1;
 
-    add_acc_char_params.read_access       = SEC_OPEN;
-    add_acc_char_params.cccd_write_access = SEC_OPEN;
+    add_small_char_params.read_access       = SEC_OPEN;
+    add_small_char_params.cccd_write_access = SEC_OPEN;
 
     uint32_t err_code = characteristic_add(p_ss->service_handle,
-                                  &add_acc_char_params,
+                                  &add_small_char_params,
                                   &p_ss->data_handles[0]);
     if (err_code != NRF_SUCCESS)
     {
         return err_code;
     }
 
-    // Add Gyroscope Data characteristic.
-    memset(&add_gyr_char_params, 0, sizeof(add_gyr_char_params));
-    add_gyr_char_params.uuid              = GYR_DATA_CHARACTERISTIC_UUID;
-    add_gyr_char_params.uuid_type         = p_ss->uuid_type;
-    add_gyr_char_params.init_len          = (5 + SAMPLE_SIZE * MAX_SENSOR_SAMPLES) * sizeof(uint8_t);
-    add_gyr_char_params.max_len           = (5 + SAMPLE_SIZE * MAX_SENSOR_SAMPLES) * sizeof(uint8_t);
-    add_gyr_char_params.char_props.read   = 1;
-    add_gyr_char_params.char_props.notify = 1;
+    // Add Medium Data characteristic.
+    memset(&add_med_char_params, 0, sizeof(add_med_char_params));
+    add_med_char_params.uuid              = MEDIUM_DATA_CHARACTERISTIC_UUID;
+    add_med_char_params.uuid_type         = p_ss->uuid_type;
+    add_med_char_params.init_len          = MEDIUM_DATA_CHARACTERISTIC_SIZE * sizeof(uint8_t);
+    add_med_char_params.max_len           = MEDIUM_DATA_CHARACTERISTIC_SIZE * sizeof(uint8_t);
+    add_med_char_params.char_props.read   = 1;
+    add_med_char_params.char_props.notify = 1;
 
-    add_gyr_char_params.read_access       = SEC_OPEN;
-    add_gyr_char_params.cccd_write_access = SEC_OPEN;
+    add_med_char_params.read_access       = SEC_OPEN;
+    add_med_char_params.cccd_write_access = SEC_OPEN;
 
     err_code = characteristic_add(p_ss->service_handle,
-                                  &add_gyr_char_params,
+                                  &add_med_char_params,
                                   &p_ss->data_handles[1]);
     if (err_code != NRF_SUCCESS)
     {
         return err_code;
     }
 
-    // Add Magnetometer Data characteristic.
-    memset(&add_mag_char_params, 0, sizeof(add_mag_char_params));
-    add_mag_char_params.uuid              = MAG_DATA_CHARACTERISTIC_UUID;
-    add_mag_char_params.uuid_type         = p_ss->uuid_type;
-    add_mag_char_params.init_len          = (5 + SAMPLE_SIZE * MAX_SENSOR_SAMPLES) * sizeof(uint8_t);
-    add_mag_char_params.max_len           = (5 + SAMPLE_SIZE * MAX_SENSOR_SAMPLES) * sizeof(uint8_t);
-    add_mag_char_params.char_props.read   = 1;
-    add_mag_char_params.char_props.notify = 1;
+    // Add Large Data characteristic.
+    memset(&add_large_char_params, 0, sizeof(add_large_char_params));
+    add_large_char_params.uuid              = LARGE_DATA_CHARACTERISTIC_UUID;
+    add_large_char_params.uuid_type         = p_ss->uuid_type;
+    add_large_char_params.init_len          = LARGE_DATA_CHARACTERISTIC_SIZE * sizeof(uint8_t);
+    add_large_char_params.max_len           = LARGE_DATA_CHARACTERISTIC_SIZE * sizeof(uint8_t);
+    add_large_char_params.char_props.read   = 1;
+    add_large_char_params.char_props.notify = 1;
 
-    add_mag_char_params.read_access       = SEC_OPEN;
-    add_mag_char_params.cccd_write_access = SEC_OPEN;
-
-    err_code = characteristic_add(p_ss->service_handle,
-                                  &add_mag_char_params,
-                                  &p_ss->data_handles[2]);
-    if (err_code != NRF_SUCCESS)
-    {
-        return err_code;
-    }
-
-    // Add Composite Data characteristic.
-    memset(&add_data_char_params, 0, sizeof(add_data_char_params));
-    add_data_char_params.uuid              = DATA_CHARACTERISTIC_UUID;
-    add_data_char_params.uuid_type         = p_ss->uuid_type;
-    add_data_char_params.init_len          = (5 + SAMPLE_SIZE * MAX_SENSOR_SAMPLES) * sizeof(uint8_t);
-    add_data_char_params.max_len           = (5 + SAMPLE_SIZE * MAX_SENSOR_SAMPLES) * sizeof(uint8_t);
-    add_data_char_params.char_props.read   = 1;
-    add_data_char_params.char_props.notify = 1;
-
-    add_data_char_params.read_access       = SEC_OPEN;
-    add_data_char_params.cccd_write_access = SEC_OPEN;
+    add_large_char_params.read_access       = SEC_OPEN;
+    add_large_char_params.cccd_write_access = SEC_OPEN;
 
     return characteristic_add(p_ss->service_handle,
-                                  &add_data_char_params,
-                                  &p_ss->data_handles[3]);
+                                  &add_large_char_params,
+                                  &p_ss->data_handles[2]);
 }
 
 uint32_t ble_sensor_service_settings_char_add(ble_sensor_service_t * p_ss, const uint8_t settings_length)

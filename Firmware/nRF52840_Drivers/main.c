@@ -38,7 +38,7 @@ BLE_PC_SERVICE_DEF(m_pc);                                                       
 uint16_t m_conn_handle = BLE_CONN_HANDLE_INVALID;                                  /**< Handle of the current connection. */
 
 //IMU Sensor Parameters
-static uint8_t default_sensors[3] = {BMI270_ACC, BMI270_GYR, BMM150_MAG};   /**< Default sensors that are attempted to be initialized first. */
+static uint8_t default_sensors[3] = {BMI270_ACC, BMI270_GYR, BMM150_MAG};          /**< Default sensors that are attempted to be initialized first. */
 //static uint8_t default_sensors[3] = {FXOS8700_ACC, FXAS21002_GYR, FXOS8700_MAG};
 static bool sensors_initialized[3] = {false, false, false};                        /**< Keep track of which sensors are currently initialized */
 static uint8_t internal_sensors[10];                                               /**< An array for holding the addresses of sensors on the internal TWI line */
@@ -47,10 +47,10 @@ static uint8_t internal_sensors_found = 0;
 static uint8_t external_sensors_found = 0;
 
 //IMU Sensor Data Parameters
-static uint8_t acc_characteristic_data[5 + MAX_SENSOR_SAMPLES * SAMPLE_SIZE];       /**< An array for holding current accelerometer readings */
-static uint8_t gyr_characteristic_data[5 + MAX_SENSOR_SAMPLES * SAMPLE_SIZE];       /**< An array for holding current gyroscope readings */
-static uint8_t mag_characteristic_data[5 + MAX_SENSOR_SAMPLES * SAMPLE_SIZE];       /**< An array for holding current magnetometer readings */
-static uint8_t composite_characteristic_data[5 + MAX_SENSOR_SAMPLES * SAMPLE_SIZE]; /**< An array for holding current combined sensor readings */
+static uint8_t small_characteristic_data[SMALL_DATA_CHARACTERISTIC_SIZE];           /**< A small array for holding current sensor readings */
+static uint8_t medium_characteristic_data[MEDIUM_DATA_CHARACTERISTIC_SIZE];         /**< A medium array for holding current sensor readings */
+static uint8_t large_characteristic_data[LARGE_DATA_CHARACTERISTIC_SIZE];           /**< A large array for holding current sensor readings */
+static uint8_t* composite_characteristic_data;                                      /**< A pointer to the current data characteristic (changes with number of sensor samples */
 uint8_t sensor_settings[SENSOR_SETTINGS_LENGTH];                                    /**< An array represnting the IMU sensor settings */
 uint8_t m_current_sensor_samples = 10;                                              /**< The number of sensor samples currently being put into the acc,gy and mag characteristics (must be less than MAX_SENSOR_SAMPLES */
 uint32_t m_time_stamp;                                                              /**< Keeps track of the time that each data set is read at (this is measured in ticks of a 16MHz clock, i.e. 1 LSB = 1/16000000s = 62.5ns) */
@@ -559,23 +559,38 @@ static uint32_t data_notification_error_handler(uint32_t* ret)
 
 static void characteristic_update_and_notify_composite_characteristic()
 {
+    //Add data to the appropriate characteristic based on the number of 
+    //samples we're collecting (which is a factor of the current sensor
+    //ODR and BLE connection interval).
+    uint16_t data_characteristic_size, characteristic_handle;
+    if (composite_characteristic_data == small_characteristic_data)
+    {
+        data_characteristic_size = SMALL_DATA_CHARACTERISTIC_SIZE; //5 bytes for time and samples + 4 samples max * 6 bytes/sample * 3 sensors
+        characteristic_handle = m_ss.data_handles[0].value_handle;
+    }
+    else if (composite_characteristic_data == medium_characteristic_data)
+    {
+        data_characteristic_size = MEDIUM_DATA_CHARACTERISTIC_SIZE; //5 bytes for time and samples + 8 samples max * 6 bytes/sample * 3 sensors
+        characteristic_handle = m_ss.data_handles[1].value_handle;
+    }
+    else
+    {
+        data_characteristic_size = LARGE_DATA_CHARACTERISTIC_SIZE; //5 bytes for time and samples + 13 samples max * 6 bytes/sample * 3 sensors
+        characteristic_handle = m_ss.data_handles[2].value_handle;
+    }
+
     //Add the time stamp for the current data set and current number of 
     //samples to the beginning of the characteristic.
-    for (int i = 0; i < 4; i++)
-    {
-        uint8_t* time_start = (uint8_t*)&m_time_stamp; //cast the float to a 32-bit integer to take up 4 array slots
-        composite_characteristic_data[i] = *(time_start + i);
-    }
+    uint8_t* time_start = (uint8_t*)&m_time_stamp; //cast the float to a 32-bit integer to take up 4 array slots
+    for (int i = 0; i < 4; i++) composite_characteristic_data[i] = *(time_start + i);
     composite_characteristic_data[4] = m_current_sensor_samples;
 
     //Setup composite data notification
     ble_gatts_hvx_params_t data_notify_params;
     memset(&data_notify_params, 0, sizeof(data_notify_params));
-
-    uint16_t data_characteristic_size = 5 + MAX_SENSOR_SAMPLES * SAMPLE_SIZE;
     
     data_notify_params.type = BLE_GATT_HVX_NOTIFICATION;
-    data_notify_params.handle = m_ss.data_handles[3].value_handle;
+    data_notify_params.handle = characteristic_handle;
     data_notify_params.p_data = composite_characteristic_data;
     data_notify_params.p_len  = &data_characteristic_size;
     data_notify_params.offset = 0;
@@ -596,87 +611,87 @@ static void characteristic_update_and_notify_composite_characteristic()
 
 static void characteristic_update_and_notify_individual_characteristics()
 {
-    //Add the time stamp for the current data set and current number of 
-    //samples to the end of each of the data characteristics.
-    for (int i = 0; i < 4; i++)
-    {
-        uint8_t* time_start = (uint8_t*)&m_time_stamp; //cast the float to a 32-bit integer to take up 4 array slots
+//    //Add the time stamp for the current data set and current number of 
+//    //samples to the end of each of the data characteristics.
+//    for (int i = 0; i < 4; i++)
+//    {
+//        uint8_t* time_start = (uint8_t*)&m_time_stamp; //cast the float to a 32-bit integer to take up 4 array slots
 
-        acc_characteristic_data[MAX_SENSOR_SAMPLES * SAMPLE_SIZE + i] = *(time_start + i);
-        gyr_characteristic_data[MAX_SENSOR_SAMPLES * SAMPLE_SIZE + i] = *(time_start + i);
-        mag_characteristic_data[MAX_SENSOR_SAMPLES * SAMPLE_SIZE + i] = *(time_start + i);
-    }
+//        acc_characteristic_data[MAX_SENSOR_SAMPLES * SAMPLE_SIZE + i] = *(time_start + i);
+//        gyr_characteristic_data[MAX_SENSOR_SAMPLES * SAMPLE_SIZE + i] = *(time_start + i);
+//        mag_characteristic_data[MAX_SENSOR_SAMPLES * SAMPLE_SIZE + i] = *(time_start + i);
+//    }
 
-    acc_characteristic_data[MAX_SENSOR_SAMPLES * SAMPLE_SIZE + 4] = m_current_sensor_samples;
-    gyr_characteristic_data[MAX_SENSOR_SAMPLES * SAMPLE_SIZE + 4] = m_current_sensor_samples;
-    mag_characteristic_data[MAX_SENSOR_SAMPLES * SAMPLE_SIZE + 4] = m_current_sensor_samples;
+//    acc_characteristic_data[MAX_SENSOR_SAMPLES * SAMPLE_SIZE + 4] = m_current_sensor_samples;
+//    gyr_characteristic_data[MAX_SENSOR_SAMPLES * SAMPLE_SIZE + 4] = m_current_sensor_samples;
+//    mag_characteristic_data[MAX_SENSOR_SAMPLES * SAMPLE_SIZE + 4] = m_current_sensor_samples;
 
-    ble_gatts_hvx_params_t acc_notify_params, gyr_notify_params, mag_notify_params;
-    memset(&acc_notify_params, 0, sizeof(acc_notify_params));
-    memset(&gyr_notify_params, 0, sizeof(gyr_notify_params));
-    memset(&mag_notify_params, 0, sizeof(mag_notify_params));
+//    ble_gatts_hvx_params_t acc_notify_params, gyr_notify_params, mag_notify_params;
+//    memset(&acc_notify_params, 0, sizeof(acc_notify_params));
+//    memset(&gyr_notify_params, 0, sizeof(gyr_notify_params));
+//    memset(&mag_notify_params, 0, sizeof(mag_notify_params));
 
-    //uint16_t acc_data_characteristic_size = 5 + MAX_SENSOR_SAMPLES * SAMPLE_SIZE;
-    uint16_t acc_data_characteristic_size = 5;
-    uint16_t gyr_data_characteristic_size = 5 + MAX_SENSOR_SAMPLES * SAMPLE_SIZE;
-    uint16_t mag_data_characteristic_size = 5 + MAX_SENSOR_SAMPLES * SAMPLE_SIZE;
+//    //uint16_t acc_data_characteristic_size = 5 + MAX_SENSOR_SAMPLES * SAMPLE_SIZE;
+//    uint16_t acc_data_characteristic_size = 5;
+//    uint16_t gyr_data_characteristic_size = 5 + MAX_SENSOR_SAMPLES * SAMPLE_SIZE;
+//    uint16_t mag_data_characteristic_size = 5 + MAX_SENSOR_SAMPLES * SAMPLE_SIZE;
 
-    //Setup accelerometer notification first
-    acc_notify_params.type = BLE_GATT_HVX_NOTIFICATION;
-    acc_notify_params.handle = m_ss.data_handles[0].value_handle;
-    acc_notify_params.p_data = acc_characteristic_data;
-    acc_notify_params.p_len  = &acc_data_characteristic_size;
-    acc_notify_params.offset = 0;
+//    //Setup accelerometer notification first
+//    acc_notify_params.type = BLE_GATT_HVX_NOTIFICATION;
+//    acc_notify_params.handle = m_ss.data_handles[0].value_handle;
+//    acc_notify_params.p_data = acc_characteristic_data;
+//    acc_notify_params.p_len  = &acc_data_characteristic_size;
+//    acc_notify_params.offset = 0;
 
-    //Setup gyroscope notification second
-    gyr_notify_params.type = BLE_GATT_HVX_NOTIFICATION;
-    gyr_notify_params.handle = m_ss.data_handles[1].value_handle;
-    gyr_notify_params.p_data = gyr_characteristic_data;
-    gyr_notify_params.p_len  = &gyr_data_characteristic_size;
-    gyr_notify_params.offset = 0;
+//    //Setup gyroscope notification second
+//    gyr_notify_params.type = BLE_GATT_HVX_NOTIFICATION;
+//    gyr_notify_params.handle = m_ss.data_handles[1].value_handle;
+//    gyr_notify_params.p_data = gyr_characteristic_data;
+//    gyr_notify_params.p_len  = &gyr_data_characteristic_size;
+//    gyr_notify_params.offset = 0;
 
-    //Setup magnetometer notification third
-    mag_notify_params.type = BLE_GATT_HVX_NOTIFICATION;
-    mag_notify_params.handle = m_ss.data_handles[2].value_handle;
-    mag_notify_params.p_data = mag_characteristic_data;
-    mag_notify_params.p_len  = &mag_data_characteristic_size;
-    mag_notify_params.offset = 0;
+//    //Setup magnetometer notification third
+//    mag_notify_params.type = BLE_GATT_HVX_NOTIFICATION;
+//    mag_notify_params.handle = m_ss.data_handles[2].value_handle;
+//    mag_notify_params.p_data = mag_characteristic_data;
+//    mag_notify_params.p_len  = &mag_data_characteristic_size;
+//    mag_notify_params.offset = 0;
 
-    //Notifications are never just sent out, they get added to an internal
-    //queue on the BLE stack first. When using individual characteristics
-    //for each sensor we need to wait for this queue to completely empty out
-    //before adding more data. This is because during times of higher BLE
-    //traffic we might not be able to transmit all of the notifications in the
-    //queue during the same connection interval. This will cause the queue to 
-    //fill up, which in turn means we will only every try to add data
-    //from the some characteristic into the queue until the queue empties out.
-    //The result is major lag of the image in the front end of the application.
-    while (m_notifications_in_queue > 0) {} //allow all notifications in the queue to transmit before adding more
+//    //Notifications are never just sent out, they get added to an internal
+//    //queue on the BLE stack first. When using individual characteristics
+//    //for each sensor we need to wait for this queue to completely empty out
+//    //before adding more data. This is because during times of higher BLE
+//    //traffic we might not be able to transmit all of the notifications in the
+//    //queue during the same connection interval. This will cause the queue to 
+//    //fill up, which in turn means we will only every try to add data
+//    //from the some characteristic into the queue until the queue empties out.
+//    //The result is major lag of the image in the front end of the application.
+//    while (m_notifications_in_queue > 0) {} //allow all notifications in the queue to transmit before adding more
 
-    uint32_t ret = 0; //start with some arbitrary value that isn't NRF_SUCCESS
-    //while (true)
-    //{
-    //    ret = sd_ble_gatts_hvx(m_conn_handle, &acc_notify_params);
-    //    data_notification_error_handler(&ret);
+//    uint32_t ret = 0; //start with some arbitrary value that isn't NRF_SUCCESS
+//    //while (true)
+//    //{
+//    //    ret = sd_ble_gatts_hvx(m_conn_handle, &acc_notify_params);
+//    //    data_notification_error_handler(&ret);
 
-    //    if (ret == 0x69) break;
-    //    SEGGER_RTT_printf(0, "queue has %d notifications in it.\n", ++m_notifications_in_queue);
-    //}
+//    //    if (ret == 0x69) break;
+//    //    SEGGER_RTT_printf(0, "queue has %d notifications in it.\n", ++m_notifications_in_queue);
+//    //}
 
-    //The above while loop should make it so we're guaranteed to queue the below
-    //three notifications without encountering the NRF_RESOURCES error, however,
-    //we still need to do an error check after each call to to the hvx() method.
-    while (ret != NRF_SUCCESS)
-    {
-        ret = sd_ble_gatts_hvx(m_conn_handle, &acc_notify_params); //acc data notification
-        data_notification_error_handler(&ret);
+//    //The above while loop should make it so we're guaranteed to queue the below
+//    //three notifications without encountering the NRF_RESOURCES error, however,
+//    //we still need to do an error check after each call to to the hvx() method.
+//    while (ret != NRF_SUCCESS)
+//    {
+//        ret = sd_ble_gatts_hvx(m_conn_handle, &acc_notify_params); //acc data notification
+//        data_notification_error_handler(&ret);
 
-        ret = sd_ble_gatts_hvx(m_conn_handle, &gyr_notify_params); //gyr data notification
-        data_notification_error_handler(&ret);
+//        ret = sd_ble_gatts_hvx(m_conn_handle, &gyr_notify_params); //gyr data notification
+//        data_notification_error_handler(&ret);
 
-        ret = sd_ble_gatts_hvx(m_conn_handle, &mag_notify_params); //mag data notification
-        data_notification_error_handler(&ret);
-    }
+//        ret = sd_ble_gatts_hvx(m_conn_handle, &mag_notify_params); //mag data notification
+//        data_notification_error_handler(&ret);
+//    }
 }
 
 
@@ -688,7 +703,7 @@ static void characteristic_update_and_notify()
     }
     else
     {
-        characteristic_update_and_notify_individual_characteristics();
+        characteristic_update_and_notify_individual_characteristics(); //deprecated
     }
 }
 
@@ -842,6 +857,25 @@ void set_sensor_samples(int actual_connection_interval)
         m_current_sensor_samples = maximum_samples;
         SEGGER_RTT_printf(0, "Based on connection interval and ODR, sensor samples have been adjusted to %d.\n", m_current_sensor_samples);
     }
+
+    //Set the data characteristic pointer to the appropriately sized characteristic
+    //based on the number of samples
+    if (m_current_sensor_samples < 5)
+    {
+        composite_characteristic_data = small_characteristic_data;
+        SEGGER_RTT_WriteString(0, "Using small data characteristic.\n");
+    }
+    else if (m_current_sensor_samples < 9)
+    {
+        composite_characteristic_data = medium_characteristic_data;
+        SEGGER_RTT_WriteString(0, "Using medium data characteristic.\n");
+    }
+    else
+    {
+        composite_characteristic_data = large_characteristic_data;
+        SEGGER_RTT_WriteString(0, "Using large data characteristic.\n");
+    }
+    SEGGER_RTT_WriteString(0, "\n");
 }
 
 void data_read_handler(int measurements_taken)
@@ -865,9 +899,9 @@ void data_read_handler(int measurements_taken)
     {
         //If the m_use_composite_data boolean is false then data from all each sensor is
         //stored into their own characteristics
-        imu_comm.acc_comm.get_data(acc_characteristic_data, offset);
-        imu_comm.gyr_comm.get_data(gyr_characteristic_data, offset);
-        imu_comm.mag_comm.get_data(mag_characteristic_data, offset);
+        //imu_comm.acc_comm.get_data(acc_characteristic_data, offset);
+        //imu_comm.gyr_comm.get_data(gyr_characteristic_data, offset);
+        //imu_comm.mag_comm.get_data(mag_characteristic_data, offset);
     }
 }
 
