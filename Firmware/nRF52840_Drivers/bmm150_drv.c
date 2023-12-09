@@ -124,6 +124,7 @@ int32_t bmm150_active_mode_enable(float highest_odr, int current_mode)
 
     settings.pwr_mode = p_sensor_settings[MAG_START + POWER];
     settings.data_rate  = p_sensor_settings[MAG_START + ODR];
+    settings.xyz_axes_control = 0; //This will enable data collection on the x, y and z axes
 
     //I've created a custom setting that matches the BMM150 ODR to that of
     //the accelerometer and gyroscope. This is achieved by putting the
@@ -197,6 +198,8 @@ void bmm150_get_actual_settings()
         SEGGER_RTT_printf(0, "POWER_CONTROL Register: 0x%x\n", reg_val);
         imu_comm->mag_comm.read_register((void*)imu_comm->mag_comm.twi_bus,  imu_comm->mag_comm.address, BMM150_REG_OP_MODE, &reg_val, 1);
         SEGGER_RTT_printf(0, "OP_MODE Register: 0x%x\n", reg_val);
+        imu_comm->mag_comm.read_register((void*)imu_comm->mag_comm.twi_bus,  imu_comm->mag_comm.address, BMM150_REG_AXES_ENABLE, &reg_val, 1);
+        SEGGER_RTT_printf(0, "AXES_ENABLE Register: 0x%x\n", reg_val);
         imu_comm->mag_comm.read_register((void*)imu_comm->mag_comm.twi_bus,  imu_comm->mag_comm.address, BMM150_REG_REP_XY, &reg_val, 1);
         SEGGER_RTT_printf(0, "REP_XY Register: 0x%x\n", reg_val);
         imu_comm->mag_comm.read_register((void*)imu_comm->mag_comm.twi_bus,  imu_comm->mag_comm.address, BMM150_REG_REP_Z, &reg_val, 1);

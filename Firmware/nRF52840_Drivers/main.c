@@ -897,6 +897,7 @@ void data_read_handler(int measurements_taken)
     }
     else
     {
+        //Deprecated block, keeping around for the next few updates just in case
         //If the m_use_composite_data boolean is false then data from all each sensor is
         //stored into their own characteristics
         //imu_comm.acc_comm.get_data(acc_characteristic_data, offset);
@@ -924,17 +925,8 @@ static void sensor_idle_mode_start()
     if (current_operating_mode == SENSOR_ACTIVE_MODE)
     {
         //If we're transitioning from active to idle mode we need to stop the data collection timer
-        //and then put the sensor into sleep mode. There's a different procedure for each sensor
-        //so a specific method is called
+        //and start the led timer back up.
         data_timers_stop();
-        
-        //Put all sensors into idle mode, any of the sensors that are active
-        //will be properly de-initialized
-        lsm9ds1_idle_mode_enable(SENSOR_ACTIVE_MODE);
-        fxos8700_idle_mode_enable(SENSOR_ACTIVE_MODE);
-        fxas21002_idle_mode_enable();
-        bmi270_idle_mode_enable(false);
-        bmm150_idle_mode_enable(false);
 
         //the LED is deactivated during data collection so turn it back on
         led_timers_start();
@@ -947,6 +939,14 @@ static void sensor_idle_mode_start()
         enable_twi_bus(imu_comm.gyr_comm.twi_bus->inst_idx);
         enable_twi_bus(imu_comm.mag_comm.twi_bus->inst_idx);
     }
+
+    //Put all sensors into idle mode, any of the sensors that are active
+    //will be properly de-initialized
+    lsm9ds1_idle_mode_enable(current_operating_mode);
+    fxos8700_idle_mode_enable(current_operating_mode);
+    fxas21002_idle_mode_enable();
+    bmi270_idle_mode_enable(current_operating_mode);
+    bmm150_idle_mode_enable();
 
     current_operating_mode = SENSOR_IDLE_MODE; //set the current operating mode to idle
     SEGGER_RTT_WriteString(0, "Sensor Idle Mode engaged.\n");
@@ -1032,6 +1032,7 @@ static void connected_mode_start()
     nrf_gpio_pin_set(BLUE_LED); //LEDs must be set high to turn off
 
     current_operating_mode = CONNECTED_MODE; //set the current operating mode to idle
+    SEGGER_RTT_WriteString(0, "Connected Mode engaged.\n");
 }
 
 static void advertising_mode_start()

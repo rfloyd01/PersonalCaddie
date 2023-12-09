@@ -114,7 +114,7 @@ int32_t bmi270_connected_mode_enable(bool init)
     return rslt;
 }
 
-int32_t bmi270_idle_mode_enable(bool active)
+int32_t bmi270_idle_mode_enable(int current_mode)
 {
     //In sensor idle mode the BMI270 is placed into its "Configuration" power mode. In this mode
     //the average current draw is 120 uA (0.000120 A). While in configuration mode, the IMU functions
@@ -125,7 +125,7 @@ int32_t bmi270_idle_mode_enable(bool active)
     if (imu_comm->sensor_model[ACC_SENSOR] != BMI270_ACC && imu_comm->sensor_model[GYR_SENSOR] != BMI270_GYR) return 0; //no need to do anything if neither sensor is in use
     
     int8_t rslt = 0;
-    if (active)
+    if (current_mode == SENSOR_ACTIVE_MODE)
     {
         //We've come from sensor active mode so we need to write the acc and gyr power bits.
         uint8_t sensor_list[2] = { BMI2_ACCEL, BMI2_GYRO };
