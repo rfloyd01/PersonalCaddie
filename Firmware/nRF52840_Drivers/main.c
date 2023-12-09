@@ -716,12 +716,12 @@ void calculate_samples_and_connection_interval()
    //ODR of the sensors is updated from the front end application.
    //We want to minimize the amount of lag that occurs with the image on screen,
    //which is accomplished by minimizing the data collection time. 
-   //After some testing, 160 milliseconds seems to be a good target time for the data collection period.
+   //After some testing, 80 milliseconds seems to be a good target time for the data collection period.
    //There is a small lag seen on the screen in this case, but not really that noticeable,
    //and it allows us to collect at least a few samples at lower ODR values, which is 
    //more efficient than sending out samples 1 at a time.
 
-   float desired_lag_time = 0.09; //in seconds.
+   float desired_lag_time = 0.08; //in seconds.
    m_current_sensor_samples = current_sensor_odr * desired_lag_time;
 
    if ((float)m_current_sensor_samples == (float)(current_sensor_odr * desired_lag_time))
@@ -933,7 +933,7 @@ static void sensor_active_mode_start()
     bmm150_active_mode_enable(sensor_odr_calculate(), current_operating_mode);
 
     //uncomment the below lines to read active sensor registers and confirm settings
-    //bmm150_get_actual_settings();
+    bmm150_get_actual_settings();
 
     //start data acquisition by turning on the data timers
     data_timers_start();
@@ -1074,27 +1074,26 @@ static void update_sensor_settings_array()
         //NOTE: I no longer change the connection interval to match the current sensor
         //ODR. I'm leaving this code like this though in the event I ever want to 
         //go back.
-        float temp = current_sensor_odr; //save the original odr in case something goes wrong
-        current_sensor_odr = new_sensor_odr;
-        uint32_t err_code = update_connection_interval();
-        if (err_code != NRF_SUCCESS)
-        {
-            current_sensor_odr = temp; //reset the sensor odr as it wasn't actually updated
-            SEGGER_RTT_WriteString(0, "Couldn't update connection interval.\n");
-            error_notification(err_code);
-        }
-        else
-        {
-            //If the change was successful we also need to update the data
-            //aquisition timer to reflect this new odr
-            update_data_read_timer(1000.0 / current_sensor_odr);
+        //float temp = current_sensor_odr; //save the original odr in case something goes wrong
+        //
+        //uint32_t err_code = update_connection_interval();
+        //if (err_code != NRF_SUCCESS)
+        //{
+        //    current_sensor_odr = temp; //reset the sensor odr as it wasn't actually updated
+        //    SEGGER_RTT_WriteString(0, "Couldn't update connection interval.\n");
+        //    error_notification(err_code);
+        //}
+        //else
+        //{
+           
+        //}
+        current_sensor_odr = new_sensor_odr; //update the ODR;
 
-            //We also need to update the number of sensor samples
-            //to put in the data characteristics (it's possible that
-            //changing the sensor odr wont trigger a connection interval
-            //change which is normally how this method is called).
-            set_sensor_samples(0); //using 0 here forces the method to use the current connection interval
-        }
+        //If the sensor ODR has changed then we need to check if it would be 
+        //more efficient to store more samples in the data characteristic. We
+        //also need to update the data acquisition timer to math the ODR.
+        update_data_read_timer(1000.0 / current_sensor_odr);
+        set_sensor_samples(0); //using 0 here forces the method to use the current connection interval
     }
 }
 
@@ -1299,13 +1298,10 @@ int main(void)
 
         //after the CPU get's woken up (at a minimum this should happen once every
         //connection interval), see if the data ready flag has been set to true and
-        //if so, send out data notifications).=
+        //if so, send out data notifications).
         if (m_data_ready)
         {
-            //SEGGER_RTT_printf(0, "charactieristic update called at %d ticks.\n", get_current_data_time());
             characteristic_update_and_notify();
-            //SEGGER_RTT_printf(0, "charactieristic update returned at %d ticks.\n", get_current_data_time());
-
             m_data_ready = false;
         }
     }

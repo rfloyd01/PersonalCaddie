@@ -48,8 +48,8 @@ void bmm150init(imu_communication_t* comm, uint8_t* settings)
     update_sensor_setting(p_sensor_settings + MAG_START, ODR, BMM150_DATA_RATE_30HZ); //accelerometer ODR (50 Hz)
     update_sensor_setting(p_sensor_settings + MAG_START, POWER, BMM150_POWERMODE_NORMAL); //magnetometer power mode (normal power mode)
 
-    update_sensor_setting(p_sensor_settings + MAG_START, EXTRA_1, BMM150_REPXY_REGULAR); //xy axis repititions (regular)
-    update_sensor_setting(p_sensor_settings + MAG_START, EXTRA_2, BMM150_REPZ_REGULAR); //z axis repititions (regular)
+    update_sensor_setting(p_sensor_settings + MAG_START, EXTRA_1, BMM150_REPXY_LOWPOWER); //xy axis repititions (low power)
+    update_sensor_setting(p_sensor_settings + MAG_START, EXTRA_2, BMM150_REPZ_LOWPOWER); //z axis repititions (low power)
 
     SEGGER_RTT_WriteString(0, "BMM150 Mag initialized.\n");
 

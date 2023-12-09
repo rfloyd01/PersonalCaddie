@@ -373,6 +373,8 @@ static void ble_evt_handler(ble_evt_t const * p_ble_evt, void * p_context)
             SEGGER_RTT_printf(0, "Connected to the Personal Caddie with a connection interval of %u milliseconds.\n",
                               p_ble_evt->evt.gap_evt.params.connected.conn_params.max_conn_interval * 5 / 4);
 
+            sensor_connection_interval = p_ble_evt->evt.gap_evt.params.connected.conn_params.max_conn_interval * 5 / 4;
+            m_ble_event_handlers.gap_update_sensor_samples(sensor_connection_interval); //set the number of sensor samples based on connection interval
             break;
 
         case BLE_GAP_EVT_PHY_UPDATE_REQUEST:
@@ -416,7 +418,7 @@ static void ble_evt_handler(ble_evt_t const * p_ble_evt, void * p_context)
         case BLE_GAP_EVT_DATA_LENGTH_UPDATE:
             //(intentional fallthrough)
         case BLE_GAP_EVT_DATA_LENGTH_UPDATE_REQUEST:
-            SEGGER_RTT_WriteString(0, "A GAP Data Length update has gone through.");
+            //SEGGER_RTT_WriteString(0, "A GAP Data Length update has gone through.");
             break;
 
         default:
