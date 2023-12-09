@@ -19,7 +19,7 @@ enum bmi270_power_mode {
     BMI270_PERFORMANCE_POWER_MODE = 4
 };
 
-void bmm150init(imu_communication_t* comm, uint8_t sensors, uint8_t* settings)
+void bmm150init(imu_communication_t* comm, uint8_t* settings)
 {
     //create a pointer to an array which holds settings for the sensor
     p_sensor_settings = settings;
@@ -51,7 +51,7 @@ void bmm150init(imu_communication_t* comm, uint8_t sensors, uint8_t* settings)
     update_sensor_setting(p_sensor_settings + MAG_START, EXTRA_1, BMM150_REPXY_REGULAR); //xy axis repititions (regular)
     update_sensor_setting(p_sensor_settings + MAG_START, EXTRA_2, BMM150_REPZ_REGULAR); //z axis repititions (regular)
 
-    SEGGER_RTT_WriteString(0, "BMM150 Acc initialized.\n");
+    SEGGER_RTT_WriteString(0, "BMM150 Mag initialized.\n");
 
 }
 

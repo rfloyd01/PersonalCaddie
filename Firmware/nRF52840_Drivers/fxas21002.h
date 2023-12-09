@@ -14,7 +14,7 @@
 extern "C" {
 #else
 
-void fxas21002init(imu_communication_t* comm, uint8_t sensors, uint8_t* settings);
+void fxas21002init(imu_communication_t* comm, uint8_t* settings);
 #endif
 
 int32_t fxas21002_connected_mode_enable();

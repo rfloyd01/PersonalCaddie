@@ -11,10 +11,11 @@
 extern "C" {
 #else
 
-void lsm9ds1_init(imu_communication_t* comm, uint8_t sensors, uint8_t* settings);
+void lsm9ds1_init(imu_communication_t* comm, uint8_t* settings);
 #endif
 
-int32_t lsm9ds1_idle_mode_enable();
+int32_t lsm9ds1_connected_mode_enable();
+int32_t lsm9ds1_idle_mode_enable(int current_mode);
 int32_t lsm9ds1_active_mode_enable();
 
 int32_t lsm9ds1_acc_apply_setting(uint8_t setting);

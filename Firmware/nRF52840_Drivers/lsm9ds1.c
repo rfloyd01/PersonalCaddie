@@ -1,6 +1,7 @@
 #include "lsm9ds1.h"
 #include "app_error.h"
 #include "SEGGER_RTT.h"
+#include "personal_caddie_operating_modes.h"
 
 //set up settings variables
 static imu_communication_t* imu_comm;
@@ -13,21 +14,19 @@ static stmdev_ctx_t lsm9ds1_imu;                                          /**< L
 static stmdev_ctx_t lsm9ds1_mag;                                          /**< LSM9DS1 magnetometer instance. */
 
 static lsm9ds1_id_t whoamI;
-static uint8_t used_sensors;                                              /**< a 3-bit number which lets us know which sensors of the acc, gyro and mag are in use */
 
 static bool lsm9ds1_register_auto_increment = true;                       /**register auto increment function for multiple byte reads of LSM9DS1 chip **/
 
-void lsm9ds1_init(imu_communication_t* comm, uint8_t sensors, uint8_t* settings)
+void lsm9ds1_init(imu_communication_t* comm, uint8_t* settings)
 {
     //create a pointer to an array which holds settings for the sensor
     p_sensor_settings = settings;
 
     //set up communication with the chip
     imu_comm = comm;
-    used_sensors = sensors;
 
-    //initialize read/write methods, addresses, and default settings for acc + gyro
-    if (sensors & 0b001)
+    //initialize read/write methods, addresses, and default settings for acc
+    if (imu_comm->sensor_model[ACC_SENSOR] == LSM9DS1_ACC)
     {
         lsm9ds1_imu.read_reg = lsm9ds1_read_imu;
         lsm9ds1_imu.write_reg = lsm9ds1_write_imu;
@@ -50,7 +49,8 @@ void lsm9ds1_init(imu_communication_t* comm, uint8_t sensors, uint8_t* settings)
         else SEGGER_RTT_WriteString(0, "Error: Couldn't initialize LSM9DS1 Acc.\n");
     }
 
-    if (sensors & 0b010)
+    //initialize read/write methods, addresses, and default settings for gyro
+    if (imu_comm->sensor_model[GYR_SENSOR] == LSM9DS1_GYR)
     {
         lsm9ds1_imu.read_reg = lsm9ds1_read_imu;
         lsm9ds1_imu.write_reg = lsm9ds1_write_imu;
@@ -73,7 +73,7 @@ void lsm9ds1_init(imu_communication_t* comm, uint8_t sensors, uint8_t* settings)
     }
 
     //initialize read/write methods, address, and default settings for mag
-    if (sensors & 0b100)
+    if (imu_comm->sensor_model[MAG_SENSOR] == LSM9DS1_MAG)
     {
         lsm9ds1_mag.read_reg = lsm9ds1_read_mag;
         lsm9ds1_mag.write_reg = lsm9ds1_write_mag;
@@ -92,29 +92,46 @@ void lsm9ds1_init(imu_communication_t* comm, uint8_t sensors, uint8_t* settings)
     }
 }
 
-int32_t lsm9ds1_idle_mode_enable()
+int32_t lsm9ds1_connected_mode_enable()
 {
-    //Set the sensors in the sensor variable to sleep (0b100 = acc, 0b010 = gyr, 0b001 = mag)
+    //In connected mode the LSM9DS1 is placed into its "Power Down" mode. The expected current
+    //draw for this mode isn't given in the data sheet (maybe I should measure it with the 
+    //power profiler)
     int32_t ret = 0;
-    if (used_sensors & 0b011) ret = lsm9ds1_imu_data_rate_set(&lsm9ds1_imu, LSM9DS1_IMU_OFF);
-    if (used_sensors & 0b100) ret = lsm9ds1_mag_data_rate_set(&lsm9ds1_mag, LSM9DS1_MAG_POWER_DOWN);
+    if (imu_comm->sensor_model[ACC_SENSOR] == LSM9DS1_ACC || imu_comm->sensor_model[GYR_SENSOR] == LSM9DS1_GYR) ret = lsm9ds1_imu_data_rate_set(&lsm9ds1_imu, LSM9DS1_IMU_OFF);
+    if (imu_comm->sensor_model[MAG_SENSOR] == LSM9DS1_MAG) ret = lsm9ds1_mag_data_rate_set(&lsm9ds1_mag, LSM9DS1_MAG_POWER_DOWN);
 
     return ret;
+}
+
+int32_t lsm9ds1_idle_mode_enable(int current_mode)
+{
+    //Unlike other sensors, the LSM9DS1 doesn't have an intermediate power mode. If we would
+    //normally be going into sensor idle mode from connected mode, we instead just call the 
+    //active mode enable method. If we'd noramlly be entering sensor idle mode from sensor
+    //active mode we don't do anything here.
+    if (imu_comm->sensor_model[ACC_SENSOR] != LSM9DS1_ACC && imu_comm->sensor_model[GYR_SENSOR] != LSM9DS1_GYR &&
+        imu_comm->sensor_model[MAG_SENSOR] != LSM9DS1_MAG) return 0; //only carry out this method if an LSM9DS1 sensor is active
+
+    if (current_mode == CONNECTED_MODE) return lsm9ds1_active_mode_enable();
+    else return 0;
 }
 
 int32_t lsm9ds1_active_mode_enable()
 {
     //Applies all of the settings stored in the settings array to the LSM9DS1
-    //SEGGER_RTT_WriteString(0, "lsm9ds1 activated with the following settings:\n[");
     int32_t ret = 0;
     for (int i = 0; i < SENSOR_SETTINGS_LENGTH / 3; i++)
     {
-        if (used_sensors & 0b001) ret |= lsm9ds1_acc_apply_setting(i + ACC_START);
-        if (used_sensors & 0b010) ret |= lsm9ds1_gyr_apply_setting(i + GYR_START);
-        if (used_sensors & 0b100) ret |= lsm9ds1_mag_apply_setting(i + MAG_START);
-        //SEGGER_RTT_printf(0, "0x%x ", p_sensor_settings[i]);
+        if (imu_comm->sensor_model[ACC_SENSOR] == LSM9DS1_ACC) ret |= lsm9ds1_acc_apply_setting(i + ACC_START);
+        if (imu_comm->sensor_model[GYR_SENSOR] == LSM9DS1_GYR) ret |= lsm9ds1_gyr_apply_setting(i + GYR_START);
+        if (imu_comm->sensor_model[MAG_SENSOR] == LSM9DS1_MAG) ret |= lsm9ds1_mag_apply_setting(i + MAG_START);
     }
-    //SEGGER_RTT_WriteString(0, "\n\n");
+
+    //The datasheet doesn't mention how much time we should wait before actually
+    //taking readings so to be safe just wait for 10 milliseconds.
+    imu_comm->acc_comm.delay(10000); //can use acc, gyr or mag here, it shouldn't matter
+
     return ret;
 }
 
@@ -232,8 +249,8 @@ static int32_t lsm9ds1_read_imu(void *handle, uint8_t reg, uint8_t *bufp, uint16
     //gyroscope, and since we can have an acc and gyro that are on different chips, we need to 
     //figure out which one actually called this method.
 
-    if (used_sensors & 0b001) imu_comm->acc_comm.read_register((void*)imu_comm->acc_comm.twi_bus, IMU_Address, reg, bufp, len);
-    else if (used_sensors & 0b010) imu_comm->gyr_comm.read_register((void*)imu_comm->gyr_comm.twi_bus, IMU_Address, reg, bufp, len);
+    if (imu_comm->sensor_model[ACC_SENSOR] == LSM9DS1_ACC) imu_comm->acc_comm.read_register((void*)imu_comm->acc_comm.twi_bus, IMU_Address, reg, bufp, len);
+    else if (imu_comm->sensor_model[GYR_SENSOR] == LSM9DS1_GYR) imu_comm->gyr_comm.read_register((void*)imu_comm->gyr_comm.twi_bus, IMU_Address, reg, bufp, len);
 }
 static int32_t lsm9ds1_write_imu(void *handle, uint8_t reg, const uint8_t *bufp, uint16_t len)
 {
@@ -244,8 +261,8 @@ static int32_t lsm9ds1_write_imu(void *handle, uint8_t reg, const uint8_t *bufp,
     //It's possible for this method to be called by both the accelerometer and the 
     //gyroscope, and since we can have an acc and gyro that are on different chips, we need to 
     //figure out which one actually called this method.
-    if (used_sensors & 0b001) imu_comm->acc_comm.write_register((void*)imu_comm->acc_comm.twi_bus, IMU_Address, reg, bufp, 1);
-    else if (used_sensors & 0b010) imu_comm->gyr_comm.write_register((void*)imu_comm->gyr_comm.twi_bus, IMU_Address, reg, bufp, 1);
+    if (imu_comm->sensor_model[ACC_SENSOR] == LSM9DS1_ACC) imu_comm->acc_comm.write_register((void*)imu_comm->acc_comm.twi_bus, IMU_Address, reg, bufp, 1);
+    else if (imu_comm->sensor_model[GYR_SENSOR] == LSM9DS1_GYR) imu_comm->gyr_comm.write_register((void*)imu_comm->gyr_comm.twi_bus, IMU_Address, reg, bufp, 1);
 }
 static int32_t lsm9ds1_read_mag(void *handle, uint8_t reg, uint8_t *bufp, uint16_t len)
 {

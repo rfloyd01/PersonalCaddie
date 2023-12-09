@@ -11,7 +11,7 @@
 extern "C" {
 #else
 
-void fxos8700init(imu_communication_t* comm, uint8_t sensors, uint8_t* settings);
+void fxos8700init(imu_communication_t* comm, uint8_t* settings);
 #endif
 
 int32_t fxos8700_connected_mode_enable();

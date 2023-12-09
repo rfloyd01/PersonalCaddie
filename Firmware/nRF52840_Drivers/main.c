@@ -346,11 +346,6 @@ static void default_sensor_select()
     }
 }
 
-
-/**@brief Function for the LSM9DS1 initialization.
- *
- * @details Initializes the LSM9DS1 accelerometer, gyroscope and magnetometer
- */
 static void sensors_init(bool discovery)
 {
     //When first turning on the Personal Caddie we need send power to all sensors on
@@ -468,40 +463,27 @@ static void sensors_init(bool discovery)
     //function to pick a different default sensor(s).
     default_sensor_select();
 
-    //Handle the initialization of individual sensors. Currently the model for each sensor type
-    //matches the enums for the other sensor models (i.e. lsm9ds1 acc/gyrmag all have enum values of 0x00).
-    //We take advantage of this fact to see how many sensors from each model need to be initialized. This
-    //may not hold up as more sensors get added, but I'll address that when the time comes.
+    //Set the sensor models in the imu_comm struct
     for (int i = 0; i < ACC_MODEL_END; i++)
     {
-        int sensors = 0;
         for (int j = 0; j < 3; j++)
         {
             if (default_sensors[j] == i)
             {
                 imu_comm.sensor_model[j] = i;
-                sensors |= (1 << j);
-            }
-        }
-
-        if (sensors != 0)
-        {
-            switch(i)
-            {
-                case LSM9DS1_ACC:
-                    lsm9ds1_init(&imu_comm, sensors, sensor_settings);
-                    break;
-                case BMI270_ACC:
-                    bmi270init(&imu_comm, sensors, sensor_settings);
-                    bmm150init(&imu_comm, sensors, sensor_settings);
-                    break;
-                case FXOS8700_ACC:
-                    fxos8700init(&imu_comm, sensors, sensor_settings);
-                    fxas21002init(&imu_comm, sensors, sensor_settings);
-                    break;
             }
         }
     }
+
+    //Call the initialization method for eacch type of sensor. Even if a sensor of 
+    //a specific type isn't actually in use, we call the init methods to set some
+    //important pointers which will be needed in the case that we swap to one of 
+    //these sensors later
+    lsm9ds1_init(&imu_comm, sensor_settings);
+    bmi270init(&imu_comm, sensor_settings);
+    bmm150init(&imu_comm, sensor_settings);
+    fxos8700init(&imu_comm, sensor_settings);
+    fxas21002init(&imu_comm, sensor_settings);
 
     //regardless of whether or not any sensors are found, disable the power pins and TWI bus
     disable_twi_bus(get_internal_twi_bus_id());
@@ -894,7 +876,8 @@ void data_read_handler(int measurements_taken)
 static void sensor_idle_mode_start()
 { 
     //In this mode, the appropriate TWI bus(es) is active and power is going to the sensors but the 
-    //sensors are put into sleep mode. A red LED on the board blinks during this mode
+    //sensors are put into a lower power mode and are not actively taking measurements. A red LED
+    //on the board blinks during this mode
     if (current_operating_mode == SENSOR_IDLE_MODE) return; //no need to change anything if already in idle mode
 
     //swap to the red LED, also make sure that the blue and green LEDs are off
@@ -907,12 +890,13 @@ static void sensor_idle_mode_start()
     if (current_operating_mode == SENSOR_ACTIVE_MODE)
     {
         //If we're transitioning from active to idle mode we need to stop the data collection timer
-        //and then put the sensor into sleep mode.
+        //and then put the sensor into sleep mode. There's a different procedure for each sensor
+        //so a specific method is called
         data_timers_stop();
         
         //Put all sensors into idle mode, any of the sensors that are active
         //will be properly de-initialized
-        lsm9ds1_idle_mode_enable();
+        lsm9ds1_idle_mode_enable(SENSOR_ACTIVE_MODE);
         fxos8700_idle_mode_enable(SENSOR_ACTIVE_MODE);
         fxas21002_idle_mode_enable();
         bmi270_idle_mode_enable(false);
@@ -923,46 +907,11 @@ static void sensor_idle_mode_start()
     }
     else 
     {
-        //If we aren't in sensor active or idle mode, it means that we arrived here from connection mode.
-        //This means that both the TWI bus and sensors need to be turned on. There are two reasons why we'd
-        //be turning on the sensors, either we're about to take data readings, or, we want to update the
-        //sensor settings. In both cases we need to turn on the TWI bus to enable communication, but
-        //before doing so we need to see if a call from the front end to use a different sensor has been made.
-        uint8_t new_sensors = 0;
-
-        if (imu_comm.sensor_model[ACC_SENSOR] != sensor_settings[ACC_START + SENSOR_MODEL])
-        {
-            new_sensors |= 0b001;
-            default_sensors[ACC_SENSOR] = sensor_settings[ACC_START + SENSOR_MODEL];
-            sensors_initialized[ACC_SENSOR] = false;
-        }
-
-        if (imu_comm.sensor_model[GYR_SENSOR] != sensor_settings[GYR_START + SENSOR_MODEL])
-        {
-            new_sensors |= 0b010;
-            default_sensors[GYR_SENSOR] = sensor_settings[GYR_START + SENSOR_MODEL];
-            sensors_initialized[GYR_SENSOR] = false;
-        }
-        
-        if (imu_comm.sensor_model[MAG_SENSOR] != sensor_settings[MAG_START + SENSOR_MODEL])
-        {
-            new_sensors |= 0b100;
-            default_sensors[MAG_SENSOR] = sensor_settings[MAG_START + SENSOR_MODEL];
-            sensors_initialized[MAG_SENSOR] = false;
-        }
-
-        //Initialize any new sensors that need it
-        if (new_sensors) sensors_init(false);
-
-        //turn on any TWI buses that are needed by the current sensors
+        //If we're transitioning from connected mode to sensor idle mode then we're going to need 
+        //to turn on any necessary TWI busses to allow for communication with the sensors.
         enable_twi_bus(imu_comm.acc_comm.twi_bus->inst_idx);
         enable_twi_bus(imu_comm.gyr_comm.twi_bus->inst_idx);
         enable_twi_bus(imu_comm.mag_comm.twi_bus->inst_idx);
-
-        //If the BMI270 sensor is being used, it needs to be initialized by loading
-        //the configuration file
-        bmi270_idle_mode_enable(true);
-        bmm150_idle_mode_enable(true);
     }
 
     current_operating_mode = SENSOR_IDLE_MODE; //set the current operating mode to idle
@@ -973,6 +922,7 @@ static void sensor_active_mode_start()
 {
     //All of the settings for the sensor should have been set already, we just need to activate them
     //and then start the data collection timer. We also disable the LED to save on power
+    if (current_operating_mode == SENSOR_ACTIVE_MODE) return; //no need to change anything if already in active mode
     led_timers_stop();
 
     //Put all initialized sensors into active mode.
@@ -983,7 +933,7 @@ static void sensor_active_mode_start()
     bmm150_active_mode_enable(sensor_odr_calculate(), current_operating_mode);
 
     //uncomment the below lines to read active sensor registers and confirm settings
-    bmm150_get_actual_settings();
+    //bmm150_get_actual_settings();
 
     //start data acquisition by turning on the data timers
     data_timers_start();
@@ -1002,6 +952,7 @@ static void connected_mode_start()
     //this). After this initialization is complete, or if connected mode is entered via menu
     //navigation in the front end, we make sure that any active sensors are placed into sleep mode
     //and that any TWI busses are turned off. We also change the on-board blinking LED to green.
+    if (current_operating_mode == CONNECTED_MODE) return; //no need to change anything if already in connected mode
 
     bool bmi270_init = false, bmm150_init = false;
     if (current_operating_mode == ADVERTISING_MODE)
@@ -1026,7 +977,7 @@ static void connected_mode_start()
     bmm150_connected_mode_enable(bmm150_init);
     fxos8700_connected_mode_enable();
     fxas21002_connected_mode_enable();
-    //TODO: Create connected mode enable methods for all other sensors
+    lsm9ds1_connected_mode_enable();
 
     //Disable all active TWI busses
     disable_twi_bus(imu_comm.acc_comm.twi_bus->inst_idx);
@@ -1079,6 +1030,73 @@ static void advertising_mode_start()
     //TODO: Implement this feature
 }
 
+static void update_sensor_settings_array()
+{
+    //This method gets called when the sensor settings array is updated in the front end.
+    //For the most part all we do here is apply the new settings to the physical array
+    //stored in this file, however, depending on the new settings coming in there may be
+    //a few other things to change. For example, if a new ODR for a sensor is selected
+    //then we'll need to adjust the data reading timer.
+
+    //See if a new sensor was selected for use. If so we need to uninitialize the current
+    //sensor and initialize the new one.
+    uint8_t new_sensors = 0;
+
+    if (imu_comm.sensor_model[ACC_SENSOR] != sensor_settings[ACC_START + SENSOR_MODEL])
+    {
+        new_sensors |= 0b001;
+        default_sensors[ACC_SENSOR] = sensor_settings[ACC_START + SENSOR_MODEL];
+        sensors_initialized[ACC_SENSOR] = false;
+    }
+
+    if (imu_comm.sensor_model[GYR_SENSOR] != sensor_settings[GYR_START + SENSOR_MODEL])
+    {
+        new_sensors |= 0b010;
+        default_sensors[GYR_SENSOR] = sensor_settings[GYR_START + SENSOR_MODEL];
+        sensors_initialized[GYR_SENSOR] = false;
+    }
+    
+    if (imu_comm.sensor_model[MAG_SENSOR] != sensor_settings[MAG_START + SENSOR_MODEL])
+    {
+        new_sensors |= 0b100;
+        default_sensors[MAG_SENSOR] = sensor_settings[MAG_START + SENSOR_MODEL];
+        sensors_initialized[MAG_SENSOR] = false;
+    }
+
+    if (new_sensors) sensors_init(false);
+
+    //Check to see if the ODR was updated. If so we update the data reading timer
+    //and update the connection interval accordingly.
+    float new_sensor_odr = sensor_odr_calculate();
+    
+    if (new_sensor_odr != current_sensor_odr)
+    {
+        //NOTE: I no longer change the connection interval to match the current sensor
+        //ODR. I'm leaving this code like this though in the event I ever want to 
+        //go back.
+        float temp = current_sensor_odr; //save the original odr in case something goes wrong
+        current_sensor_odr = new_sensor_odr;
+        uint32_t err_code = update_connection_interval();
+        if (err_code != NRF_SUCCESS)
+        {
+            current_sensor_odr = temp; //reset the sensor odr as it wasn't actually updated
+            SEGGER_RTT_WriteString(0, "Couldn't update connection interval.\n");
+            error_notification(err_code);
+        }
+        else
+        {
+            //If the change was successful we also need to update the data
+            //aquisition timer to reflect this new odr
+            update_data_read_timer(1000.0 / current_sensor_odr);
+
+            //We also need to update the number of sensor samples
+            //to put in the data characteristics (it's possible that
+            //changing the sensor odr wont trigger a connection interval
+            //change which is normally how this method is called).
+            set_sensor_samples(0); //using 0 here forces the method to use the current connection interval
+        }
+    }
+}
 
 /**@brief Function for handling write events to the Sensor Settings Characteristic.
  *
@@ -1101,34 +1119,7 @@ static void sensor_settings_write_handler(uint16_t conn_handle, ble_sensor_servi
             break;
         case 3:
             for (int i = 1; i < SENSOR_SETTINGS_LENGTH; i++) sensor_settings[i] = *(settings_state + i);
-            sensor_idle_mode_start();
-            float new_sensor_odr = sensor_odr_calculate();
-
-            //update connection interval if necessary
-            if (new_sensor_odr != current_sensor_odr)
-            {
-                float temp = current_sensor_odr; //save the original odr in case something goes wrong
-                current_sensor_odr = new_sensor_odr;
-                uint32_t err_code = update_connection_interval();
-                if (err_code != NRF_SUCCESS)
-                {
-                    current_sensor_odr = temp; //reset the sensor odr as it wasn't actually updated
-                    SEGGER_RTT_WriteString(0, "Couldn't update connection interval.\n");
-                    error_notification(err_code);
-                }
-                else
-                {
-                    //If the change was successful we also need to update the data
-                    //aquisition timer to reflect this new odr
-                    update_data_read_timer(1000.0 / current_sensor_odr);
-
-                    //We also need to update the number of sensor samples
-                    //to put in the data characteristics (it's possible that
-                    //changing the sensor odr wont trigger a connection interval
-                    //change which is normally how this method is called).
-                    set_sensor_samples(0); //using 0 here forces the method to use the current connection interval
-                }
-            }
+            update_sensor_settings_array();
             break;
         case 4:
             sensor_settings[*(settings_state + 1)] = *(settings_state + 2);

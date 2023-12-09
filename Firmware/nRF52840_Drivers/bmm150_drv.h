@@ -14,7 +14,7 @@
 extern "C" {
 #else
 
-void bmm150init(imu_communication_t* comm, uint8_t sensors, uint8_t* settings);
+void bmm150init(imu_communication_t* comm, uint8_t* settings);
 #endif
 
 int32_t bmm150_connected_mode_enable(bool init);

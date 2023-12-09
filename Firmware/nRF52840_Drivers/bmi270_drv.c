@@ -19,7 +19,7 @@ enum bmi270_power_mode {
     BMI270_PERFORMANCE_POWER_MODE = 4
 };
 
-void bmi270init(imu_communication_t* comm, uint8_t sensors, uint8_t* settings)
+void bmi270init(imu_communication_t* comm, uint8_t* settings)
 {
     //create a pointer to an array which holds settings for the sensor
     p_sensor_settings = settings;

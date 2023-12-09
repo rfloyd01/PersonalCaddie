@@ -10,7 +10,7 @@ static uint8_t*             p_sensor_settings;
 static fxos8700_driver_t    sensor_driver;
 static sensor_comm_handle_t fxos_com;
 
-void fxos8700init(imu_communication_t* comm, uint8_t sensors, uint8_t* settings)
+void fxos8700init(imu_communication_t* comm, uint8_t* settings)
 {
     //create a pointer to an array which holds settings for the sensor
     p_sensor_settings = settings;

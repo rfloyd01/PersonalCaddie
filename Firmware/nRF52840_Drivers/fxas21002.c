@@ -8,7 +8,7 @@
 static imu_communication_t* imu_comm;
 static uint8_t*             p_sensor_settings;
 
-void fxas21002init(imu_communication_t* comm, uint8_t sensors, uint8_t* settings)
+void fxas21002init(imu_communication_t* comm, uint8_t* settings)
 {
     //create a pointer to an array which holds settings for the sensor
     p_sensor_settings = settings;
