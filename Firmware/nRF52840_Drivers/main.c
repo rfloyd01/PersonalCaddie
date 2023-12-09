@@ -958,7 +958,6 @@ static void sensor_idle_mode_start()
         enable_twi_bus(imu_comm.acc_comm.twi_bus->inst_idx);
         enable_twi_bus(imu_comm.gyr_comm.twi_bus->inst_idx);
         enable_twi_bus(imu_comm.mag_comm.twi_bus->inst_idx);
-        delay_microseconds(50000); //slight delay so sensors have time to power on
 
         //If the BMI270 sensor is being used, it needs to be initialized by loading
         //the configuration file
@@ -979,7 +978,7 @@ static void sensor_active_mode_start()
     //Put all initialized sensors into active mode.
     lsm9ds1_active_mode_enable();
     fxos8700_active_mode_enable();
-    fxas21002_active_mode_enable();
+    fxas21002_active_mode_enable(current_operating_mode);
     bmi270_active_mode_enable(current_operating_mode);
     bmm150_active_mode_enable(sensor_odr_calculate(), current_operating_mode);
 
@@ -1026,6 +1025,7 @@ static void connected_mode_start()
     bmi270_connected_mode_enable(bmi270_init);
     bmm150_connected_mode_enable(bmm150_init);
     fxos8700_connected_mode_enable();
+    fxas21002_connected_mode_enable();
     //TODO: Create connected mode enable methods for all other sensors
 
     //Disable all active TWI busses

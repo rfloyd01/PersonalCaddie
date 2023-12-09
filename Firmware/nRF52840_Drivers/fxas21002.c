@@ -2,6 +2,7 @@
 #include "app_error.h"
 #include "SEGGER_RTT.h"
 #include "sensor_settings.h"
+#include "personal_caddie_operating_modes.h"
 
 //set up settings variables
 static imu_communication_t* imu_comm;
@@ -39,22 +40,49 @@ void fxas21002init(imu_communication_t* comm, uint8_t sensors, uint8_t* settings
     }
 }
 
-int32_t fxas21002_idle_mode_enable()
+int32_t fxas21002_connected_mode_enable()
 {
-    //The fxas21002 has two idle modes, there's a standby mode which is very low power and
-    //only the i2c bus is active, and there's a ready mode where the gyro is on but in a state
-    //of low power. We opt to go into ready mode here so the gyro remains "warmed up"
-    if (imu_comm->sensor_model[GYR_SENSOR] != FXAS21002_GYR) return 0;
-    return fxas21002_power_mode_set(&imu_comm->gyr_comm, FXAS21002_POWER_READY);
+    //In connected mode the FXAS21002 will be placed into its "Standby" power mode which has
+    //an expected current draw of 2.8 uA (0.0000028 A). In this mode the registers of the 
+    //sensor can be read/written with the TWI interface but that's about it. The sensor enters
+    //this mode by default when it first gets powered on so there's no need to do anything the
+    //first time connected mode is entered.
+    if (imu_comm->sensor_model[GYR_SENSOR] != FXAS21002_GYR) return 0; //only carry out this method if an FXAS sensor is active
+
+    uint8_t ret = fxas21002_power_mode_set(&imu_comm->gyr_comm, FXAS21002_POWER_STANDBY); //First put the chip in standby mode
+    if (ret != 0) SEGGER_RTT_WriteString(0, "Error: Couldn't place FXAS21002 into connected mode.\n");
+
+    return ret;
 }
 
-int32_t fxas21002_active_mode_enable()
+int32_t fxas21002_idle_mode_enable()
 {
-    //We first apply the ODR setting, as if this will put the chip in standby/ready mode so
-    //we can safely alter the settings. The last setting we update is the high-pass filter settings
-    //because changing the ODR or the power mode causes these settings to reset.
+    //In sensor idle mode the FXAS21002 will be placed into its "Ready" power mode which has
+    //an expected current draw of 1.6 mA (0.0016 A). In this mode we can't actively take 
+    //gyroscope readings, however, the time to transition to active mode is much less than if
+    //we went from standby mode.
     if (imu_comm->sensor_model[GYR_SENSOR] != FXAS21002_GYR) return 0;
 
+    uint8_t ret = fxas21002_power_mode_set(&imu_comm->gyr_comm, FXAS21002_POWER_READY);
+    if (ret != 0) SEGGER_RTT_WriteString(0, "Error: Couldn't place FXAS21002 into sensor idle mode.\n");
+
+    return ret;
+}
+
+int32_t fxas21002_active_mode_enable(int current_mode)
+{
+    //In sensor active mode the FXAS21002 is placed into its "Active" power mode. The expected
+    //current draw in this mode is 2.7 mA (0.0027 A). This mode is used to actively take
+    //measurements of the gyroscope. To ensure that the gyroscope has enough time to ramp up
+    //to full power we need to delay for a little bit after turning it on. If active mode is
+    //reached from connected mode the time required for this is 61 milliseconds and if active
+    //mode is reached from idle mode the time required for this is only 6 milliseconds.
+    
+    if (imu_comm->sensor_model[GYR_SENSOR] != FXAS21002_GYR) return 0;
+
+    //We first apply the ODR setting as this will put the chip in standby/ready mode so
+    //we can safely alter the settings. The last setting we update is the high-pass filter settings
+    //because changing the ODR or the power mode causes these settings to reset.
     int32_t ret = 0;
     ret |= fxas21002_data_rate_set(&imu_comm->gyr_comm, p_sensor_settings[GYR_START + ODR]);
     ret |= fxas21002_full_scale_range_set(&imu_comm->gyr_comm, p_sensor_settings[GYR_START + FS_RANGE]);
@@ -68,6 +96,11 @@ int32_t fxas21002_active_mode_enable()
     ret |= fxas21002_power_mode_set(&imu_comm->gyr_comm, FXAS21002_POWER_ACTIVE);
 
     if (ret != 0) SEGGER_RTT_WriteString(0, "Error: FXAS21002 enabled with incorrect settings.\n");
+
+    //After all settings have been applied and the sensor is turned on, wait for the 
+    //necessary amount of time to ensure proper readings
+    if (current_mode = CONNECTED_MODE) imu_comm->gyr_comm.delay(FXAS21002_STANDBY_TO_ACTIVE_DELAY_US);
+    else if (current_mode = SENSOR_IDLE_MODE) imu_comm->gyr_comm.delay(FXAS21002_READY_TO_ACTIVE_DELAY_US);
 
     return ret;
 }
