@@ -961,11 +961,20 @@ void CalibrationMode::axisCalibration()
 
 			//record the polarity of the x-axis
 			float true_x_reading = 0.0f;
+			int correct_axis = 0;
 			if (mag_axis_swap[0] == 0) true_x_reading = m_graphDataX.back().y;
-			else if (mag_axis_swap[0] == 1) true_x_reading = m_graphDataY.back().y;
-			else if (mag_axis_swap[0] == 2) true_x_reading = m_graphDataZ.back().y;
+			else if (mag_axis_swap[0] == 1)
+			{
+				true_x_reading = m_graphDataY.back().y;
+				correct_axis = 1;
+			}
+			else if (mag_axis_swap[0] == 2)
+			{
+				true_x_reading = m_graphDataZ.back().y;
+				correct_axis = 2;
+			}
 
-			if (true_x_reading < 0) mag_axis_polarity[0] *= -1;
+			if (true_x_reading < 0) mag_axis_polarity[correct_axis] *= -1;
 
 			m_stageSet = true;
 		}
@@ -1032,11 +1041,20 @@ void CalibrationMode::axisCalibration()
 
 			//record the polarity of the y-axis
 			float true_y_reading = 0.0f;
-			if (mag_axis_swap[1] == 0) true_y_reading = m_graphDataX.back().y;
+			int correct_axis = 1;
+			if (mag_axis_swap[1] == 0)
+			{
+				true_y_reading = m_graphDataX.back().y;
+				correct_axis = 0;
+			}
 			else if (mag_axis_swap[1] == 1) true_y_reading = m_graphDataY.back().y;
-			else if (mag_axis_swap[1] == 2) true_y_reading = m_graphDataZ.back().y;
+			else if (mag_axis_swap[1] == 2)
+			{
+				true_y_reading = m_graphDataZ.back().y;
+				correct_axis = 2;
+			}
 
-			if (true_y_reading < 0) mag_axis_polarity[1] *= -1;
+			if (true_y_reading < 0) mag_axis_polarity[correct_axis] *= -1;
 
 			m_stageSet = true;
 		}
@@ -1103,11 +1121,20 @@ void CalibrationMode::axisCalibration()
 
 			//record the polarity of the y-axis
 			float true_z_reading = 0.0f;
-			if (mag_axis_swap[2] == 0) true_z_reading = m_graphDataX.back().y;
-			else if (mag_axis_swap[2] == 1) true_z_reading = m_graphDataY.back().y;
+			int correct_axis = 2;
+			if (mag_axis_swap[2] == 0)
+			{
+				true_z_reading = m_graphDataX.back().y;
+				correct_axis = 0;
+			}
+			else if (mag_axis_swap[2] == 1)
+			{
+				true_z_reading = m_graphDataY.back().y;
+				correct_axis = 1;
+			}
 			else if (mag_axis_swap[2] == 2) true_z_reading = m_graphDataZ.back().y;
 
-			if (true_z_reading < 0) mag_axis_polarity[2] *= -1;
+			if (true_z_reading < 0) mag_axis_polarity[correct_axis] *= -1;
 
 			m_stageSet = true;
 		}
