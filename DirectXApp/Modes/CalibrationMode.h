@@ -55,6 +55,8 @@ private:
 
 	void calculateCalNumbers();
 
+	void initializeModel();
+
 	void advanceToNextStage();
 	void prepareRecording();
 	void displayGraph();
@@ -84,6 +86,11 @@ private:
 	float m_sensorODR;
 	long long data_timer_duration, data_timer_elapsed;
 	std::chrono::steady_clock::time_point data_timer;
+
+	//Rendering Variables
+	glm::quat m_quaternion; //it's easier for me to do rotation calculations with GLM quaternions than DirectX Vectors
+	DirectX::XMVECTOR m_renderQuaternion; //the current quaternion to be applied on screen
+	int clockwise_rotation = 1;
 
 	//data variables
 	std::vector<DirectX::XMFLOAT2> m_graphDataX, m_graphDataY, m_graphDataZ;

@@ -1,5 +1,7 @@
 #include "pch.h"
 #include "CalibrationMode.h"
+#include "Graphics/Objects/3D/Elements/Face.h"
+#include "Math/quaternion_functions.h"
 
 CalibrationMode::CalibrationMode()
 {
@@ -73,8 +75,12 @@ uint32_t CalibrationMode::initializeMode(winrt::Windows::Foundation::Size window
 	//Initialize any unchanging text
 	initializeTextOverlay(windowSize);
 
-	//Start in the active state
-	return ModeState::CanTransfer;
+	//initialize a model to render on screen
+	initializeModel();
+
+	//The NeedMaterial modeState lets the mode screen know that it needs to pass
+	//a list of materials to this mode that it can use to initialize 3d objects
+	return (ModeState::CanTransfer | ModeState::NeedMaterial);
 }
 
 void CalibrationMode::uninitializeMode()
@@ -298,7 +304,9 @@ void CalibrationMode::update()
 	else if (m_state & CalibrationModeState::ACCELEROMETER) accelerometerCalibration();
 	else if (m_state & CalibrationModeState::GYROSCOPE) gyroscopeCalibration();
 	else if (m_state & CalibrationModeState::MAGNETOMETER) magnetometerCalibration();
-	
+
+	//Render the sensor image if currently required
+	for (int i = 0; i < m_volumeElements.size(); i++) ((Face*)m_volumeElements[i].get())->translateAndRotateFace({ 0.0f, -0.25f, 1.0f }, m_renderQuaternion);
 }
 
 void CalibrationMode::addData(std::vector<std::vector<std::vector<float> > > const& sensorData, float sensorODR, float timeStamp, int totalSamples)
@@ -552,6 +560,9 @@ void CalibrationMode::axisCalibration()
 			((TextOverlay*)m_uiElements[5].get())->updateText(((TextButton*)m_uiElements[5].get())->getText() + L": Accelerometer Phase"); //update the sub-title text
 			//m_state |= CalibrationModeState::ACCELEROMETER; //Set the acc flag so the getData() method knows which data points to grab
 			data_timer_duration = 2000; //the acceleromter needs 5 seconds of data at each stage
+			m_renderQuaternion = { -0.707f, 0.0f, 0.0f, 0.707f };
+			m_needsCamera = true; //alerts the mode screen class to actually render the 3d image
+
 			m_stageSet = true;
 		}
 
@@ -577,6 +588,7 @@ void CalibrationMode::axisCalibration()
 			accAxisCalculate(0);
 
 			((TextOverlay*)m_uiElements[4].get())->updateText(L"Data collection complete. Rotate the sensor so that the +Z axis is pointing up as shown in the image and hold it there for 2 seconds. When ready, press the continue button.");
+			m_renderQuaternion = { -0.174f, 0.0f, 0.0f, 0.985f }; //20 degrees of tilt upwards to help see the front face of the sensor
 			m_stageSet = true;
 		}
 		break;
@@ -589,6 +601,8 @@ void CalibrationMode::axisCalibration()
 			accAxisCalculate(2);
 
 			((TextOverlay*)m_uiElements[4].get())->updateText(L"Data collection complete. Rotate sensor 90 degrees so that the +Y-axis is pointing up as shown in the image. When ready, press the continue button.");
+			m_quaternion = QuaternionMultiply({ 0.707f, 0.0f, 0.0f, 0.707f }, { 0.707f, -0.707f, 0.0f, 0.0f }); //glm quaternions are of the form {w, x, y, z} but DirectX are {x, y, z, w} which can lead to some confusion
+			m_renderQuaternion = { m_quaternion.x, m_quaternion.y, m_quaternion.z, m_quaternion.w };
 			m_stageSet = true;
 
 		}
@@ -606,6 +620,7 @@ void CalibrationMode::axisCalibration()
 				L"New Axes = [" + axisResultString(acc_axis_swap, acc_axis_polarity) + L"]\n\n";
 
 			((TextOverlay*)m_uiElements[4].get())->updateText(completionText);
+			m_needsCamera = true; //resume rendering
 
 			m_stageSet = true;
 
@@ -617,7 +632,8 @@ void CalibrationMode::axisCalibration()
 		if (!m_stageSet)
 		{
 			((TextOverlay*)m_uiElements[5].get())->updateText(L"Axis Calibration: Gyroscope Phase"); //update the sub-title text
-			((TextOverlay*)m_uiElements[4].get())->updateText(L"Rotate the sensor clockwise about the X-axis by 90 degrees, like depicted in the animation. Data will be collected for 2 seconds, press continue when ready");
+			((TextOverlay*)m_uiElements[4].get())->updateText(L"Next the gyroscope axes will be calibrated. Rotate the sensor clockwise about the X-axis by 90 degrees, like depicted in the animation. Data will be collected for 2 seconds, press continue when ready");
+			m_renderQuaternion = { 0.0f, 0.0f, 0.0f, 1.0f };
 			m_stageSet = true;
 
 			//Clear accumulated date before moving the next gyroscope axis calibration stage
@@ -626,6 +642,16 @@ void CalibrationMode::axisCalibration()
 			m_graphDataZ.clear();
 
 			m_state ^= (CalibrationModeState::ACCELEROMETER | CalibrationModeState::GYROSCOPE); //Set the gyr flag and remove the acc flag so the getData() method knows which data points to grab
+		}
+		else
+		{
+			//animate the sensor image so that it's rotating about the x-axis. To be easier to see the 
+			//full rotation of 90 degrees should take 2 seconds. At a frame rate of 60 Hz this means we
+			//need to rotate by 45 deg/s / 60 frame/s = 0.75 deg/frame
+			m_quaternion = QuaternionMultiply({ 0.99997f, 0.0f, 0.0f, 0.00654f }, { m_renderQuaternion.m128_f32[3], m_renderQuaternion.m128_f32[0], m_renderQuaternion.m128_f32[1], m_renderQuaternion.m128_f32[2]}); //glm quaternions are of the form {w, x, y, z} but DirectX are {x, y, z, w} which can lead to some confusion
+			m_renderQuaternion = { m_quaternion.x, m_quaternion.y, m_quaternion.z, m_quaternion.w };
+
+			if (m_quaternion.w < 0.707f) m_renderQuaternion = { 0.0f, 0.0f, 0.0f, 1.0f }; //reset the animation after going about 90 degrees
 		}
 		break;
 	}
@@ -643,7 +669,19 @@ void CalibrationMode::axisCalibration()
 			m_graphDataY.clear();
 			m_graphDataZ.clear();
 
+			m_renderQuaternion = { 0.0f, 0.0f, 0.0f, 1.0f };
+
 			m_stageSet = true;
+		}
+		else
+		{
+			//animate the sensor image so that it's rotating about the y-axis. To be easier to see the 
+			//full rotation of 90 degrees should take 2 seconds. At a frame rate of 60 Hz this means we
+			//need to rotate by 45 deg/s / 60 frame/s = 0.75 deg/frame
+			m_quaternion = QuaternionMultiply({ 0.99997f, 0.00654f, 0.0f, 0.0f }, { m_renderQuaternion.m128_f32[3], m_renderQuaternion.m128_f32[0], m_renderQuaternion.m128_f32[1], m_renderQuaternion.m128_f32[2] }); //glm quaternions are of the form {w, x, y, z} but DirectX are {x, y, z, w} which can lead to some confusion
+			m_renderQuaternion = { m_quaternion.x, m_quaternion.y, m_quaternion.z, m_quaternion.w };
+
+			if (m_quaternion.w < 0.707f) m_renderQuaternion = { 0.0f, 0.0f, 0.0f, 1.0f }; //reset the animation after going about 90 degrees
 		}
 		break;
 	}
@@ -661,7 +699,19 @@ void CalibrationMode::axisCalibration()
 			m_graphDataY.clear();
 			m_graphDataZ.clear();
 
+			m_renderQuaternion = { 0.0f, 0.0f, 0.0f, 1.0f };
+
 			m_stageSet = true;
+		}
+		else
+		{
+			//animate the sensor image so that it's rotating about the x-axis. To be easier to see the 
+			//full rotation of 90 degrees should take 2 seconds. At a frame rate of 60 Hz this means we
+			//need to rotate by 45 deg/s / 60 frame/s = 0.75 deg/frame
+			m_quaternion = QuaternionMultiply({ 0.99997f, 0.0f, 0.00654f, 0.0f }, { m_renderQuaternion.m128_f32[3], m_renderQuaternion.m128_f32[0], m_renderQuaternion.m128_f32[1], m_renderQuaternion.m128_f32[2] }); //glm quaternions are of the form {w, x, y, z} but DirectX are {x, y, z, w} which can lead to some confusion
+			m_renderQuaternion = { m_quaternion.x, m_quaternion.y, m_quaternion.z, m_quaternion.w };
+
+			if (m_quaternion.w < 0.707f) m_renderQuaternion = { 0.0f, 0.0f, 0.0f, 1.0f }; //reset the animation after going about 90 degrees
 		}
 		break;
 	}
@@ -676,6 +726,8 @@ void CalibrationMode::axisCalibration()
 				L"Standard Axes = [X, Y, Z]\n"
 				L"New Axes = [" + axisResultString(gyr_axis_swap, gyr_axis_polarity) + L"]\n\n";
 
+			m_needsCamera = false; //temporarily stop rendering image of sensor
+
 			((TextOverlay*)m_uiElements[4].get())->updateText(completionText);
 			m_stageSet = true;
 		}
@@ -688,7 +740,7 @@ void CalibrationMode::axisCalibration()
 			((TextOverlay*)m_uiElements[5].get())->updateText(L"Axis Calibration: Magnetometer Phase"); //update the sub-title text
 			((TextOverlay*)m_uiElements[4].get())->updateText(L"The magnetometer axis calibration uses Earth's magnetic field, which unlike gravity, changes magnitdue and direction depending on where on the Earth you are. "
 				L"Since the direction of the Magnetic field isn't known, we need to calibrate the axes of the magnetometer in a few distinct stages. The first stage is figuring out which axis is on top of the sensor. "
-			    L"This is accomplished by laying the sensor flat on the table and rotating it by 180 degrees. This rotation is done over the course of 5 seconds, press continue when ready.");
+			    L"This is accomplished by laying the sensor flat on the table and rotating it by 180 degrees like shown in the animation. This rotation is done over the course of 5 seconds, press continue when ready.");
 
 			data_timer_duration = 5000; //set timer to 5000 milliseconds
 
@@ -697,9 +749,22 @@ void CalibrationMode::axisCalibration()
 			m_graphDataY.clear();
 			m_graphDataZ.clear();
 
+			m_needsCamera = true; //resume rendering
+			m_renderQuaternion = { 0.0f, 0.0f, 0.0f, 1.0f };
+
 			m_state ^= (CalibrationModeState::GYROSCOPE | CalibrationModeState::MAGNETOMETER);
 
 			m_stageSet = true;
+		}
+		else
+		{
+			//animate the sensor image so that it's rotating about the z-axis. To be easier to see the 
+			//full rotation of 180 degrees should take 2 seconds. At a frame rate of 60 Hz this means we
+			//need to rotate by 90 deg/s / 60 frame/s = 1.5 deg/frame
+			m_quaternion = QuaternionMultiply({ 0.99991f, 0.0f, 0.01314f, 0.0f }, { m_renderQuaternion.m128_f32[3], m_renderQuaternion.m128_f32[0], m_renderQuaternion.m128_f32[1], m_renderQuaternion.m128_f32[2] }); //glm quaternions are of the form {w, x, y, z} but DirectX are {x, y, z, w} which can lead to some confusion
+			m_renderQuaternion = { m_quaternion.x, m_quaternion.y, m_quaternion.z, m_quaternion.w };
+
+			if (m_quaternion.w < 0.05f) m_renderQuaternion = { 0.0f, 0.0f, 0.0f, 1.0f }; //reset the animation after going about 90 degrees
 		}
 		break;
 	}
@@ -712,6 +777,7 @@ void CalibrationMode::axisCalibration()
 			displayGraph();
 
 			((TextOverlay*)m_uiElements[4].get())->updateText(L"Data collection complete, the graph shows the data set. The line with the least variation in the data represents the data taken from the top of the sensor.");
+			m_needsCamera = false; //stop rendering the sensor temporarily
 
 			m_stageSet = true;
 		}
@@ -779,8 +845,8 @@ void CalibrationMode::axisCalibration()
 		if (!m_stageSet)
 		{
 			((TextOverlay*)m_uiElements[4].get())->updateText(L"Right now there are two possibilities for the sensor's current orientation. Either the x-axis is aligned along North-South, or, it's aligned along East-West. "
-			L"To find out, rotate the sensor clockwise about the y-axis by 45 degrees, reset it back to its current position, and then rotate it counter-clockwise by 45 degrees along the y-axis, and again reset the position. If the sensor is aligned along the North-South line "
-			L"then the y-axis data will remain mostly constant. If the sensor is aligned along the East-West line then the x-asix data will remain mostly constant. You will have 10 seconds to complete these two rotations, press continue when ready.");
+			L"To find out, while keeping the sensor in its current rotation about the Z-axis, rotate it clockwise about the y-axis by 45 degrees, reset it back to its current position, and then rotate it counter-clockwise by 45 degrees along the y-axis, and again reset the position. The movement will be like a see-saw. The animation shows the appropriate movement. If the sensor is aligned along the North-South line "
+			L"then the y-axis data will remain mostly constant. If the sensor is aligned along the East-West line then the x-axis data will remain mostly constant. You will have 10 seconds to complete these two rotations, press continue when ready.");
 
 			data_timer_duration = 10000; //set timer to 10000 milliseconds
 
@@ -789,9 +855,22 @@ void CalibrationMode::axisCalibration()
 			m_graphDataY.clear();
 			m_graphDataZ.clear();
 
+			m_renderQuaternion = { 0.0f, 0.0f, 0.0f, 1.0f };
+			m_needsCamera = true; //resume rendering
+
 			m_stageSet = true;
 		}
+		else
+		{
+			//animate the sensor image so that it's rotating about the z-axis. To be easier to see the 
+			//full rotation of 180 degrees should take 2 seconds. At a frame rate of 60 Hz this means we
+			//need to rotate by 90 deg/s / 60 frame/s = 1.5 deg/frame
+			m_quaternion = QuaternionMultiply({ 0.99991f, clockwise_rotation * 0.01314f, 0.0f, 0.0f }, { m_renderQuaternion.m128_f32[3], m_renderQuaternion.m128_f32[0], m_renderQuaternion.m128_f32[1], m_renderQuaternion.m128_f32[2] }); //glm quaternions are of the form {w, x, y, z} but DirectX are {x, y, z, w} which can lead to some confusion
+			m_renderQuaternion = { m_quaternion.x, m_quaternion.y, m_quaternion.z, m_quaternion.w };
 
+			if (((clockwise_rotation > 0) && m_renderQuaternion.m128_f32[0] > 0.382f) || ((clockwise_rotation < 0 )&& m_renderQuaternion.m128_f32[0] < -0.382f)) clockwise_rotation *= -1; //flip the direction of rotation once we've gone 45 degrees
+
+		}
 		break;
 	}
 	case 23:
@@ -1112,8 +1191,11 @@ void CalibrationMode::accelerometerCalibration()
 	{
 		if (!m_stageSet)
 		{
-			((TextOverlay*)m_uiElements[4].get())->updateText(L"Lay the sensor flat on the table with the +Y axis pointing upwards like shown in the image. Leave the sensor stationary like this for 5 seconds as it collects data. Press the continue button when ready.");
+			((TextOverlay*)m_uiElements[4].get())->updateText(L"Rotate the sensor so that  the +Y axis is pointing upwards like shown in the image. Leave the sensor stationary like this for 5 seconds as it collects data. Press the continue button when ready.");
 			data_timer_duration = 5000; //the acceleromter needs 5 seconds of data at each stage
+			m_quaternion = QuaternionMultiply({ 0.707f, 0.0f, 0.0f, 0.707f }, { 0.707f, -0.707f, 0.0f, 0.0f }); //glm quaternions are of the form {w, x, y, z} but DirectX are {x, y, z, w} which can lead to some confusion
+			m_renderQuaternion = {m_quaternion.x, m_quaternion.y , m_quaternion.z , m_quaternion.w };
+			m_needsCamera = true; //alerts the mode screen class to actually render the 3d image
 			m_stageSet = true;
 		}
 		
@@ -1133,7 +1215,8 @@ void CalibrationMode::accelerometerCalibration()
 	{
 		if (!m_stageSet)
 		{
-			((TextOverlay*)m_uiElements[4].get())->updateText(L"Data collection complete. Rotate the sensor so that the +X axis is pointing down as shown in the image. When ready, press the continue button. Make sure to keep the sensor as still as possible until the timer runs out.");
+			((TextOverlay*)m_uiElements[4].get())->updateText(L"Data collection complete. Rotate the sensor so that the -X axis is pointing up as shown in the image. When ready, press the continue button. Make sure to keep the sensor as still as possible until the timer runs out.");
+			m_renderQuaternion = { 0.707f, 0.0f, 0.0f, 0.707f };
 			m_stageSet = true;
 		}
 		break;
@@ -1142,7 +1225,8 @@ void CalibrationMode::accelerometerCalibration()
 	{
 		if (!m_stageSet)
 		{
-			((TextOverlay*)m_uiElements[4].get())->updateText(L"Data collection complete. Rotate sensor 90 degrees so that the positive Z-axis is pointing up as shown in the image. When ready, press the continue button. Make sure to keep the sensor as still as possible until the timer runs out.");
+			((TextOverlay*)m_uiElements[4].get())->updateText(L"Data collection complete. Lay the sensor flat on the table so that the +Z-axis is pointing up as shown in the image. When ready, press the continue button. Make sure to keep the sensor as still as possible until the timer runs out.");
+			m_renderQuaternion = { -0.174f, 0.0f, 0.0f, 0.985f }; //20 degrees of tilt upwards to help see the front face of the sensor
 			m_stageSet = true;
 		}
 		break;
@@ -1151,7 +1235,8 @@ void CalibrationMode::accelerometerCalibration()
 	{
 		if (!m_stageSet)
 		{
-			((TextOverlay*)m_uiElements[4].get())->updateText(L"Data collection complete. Rotate sensor 90 degrees so that the positive X-axis is pointing up as shown in the image. When ready, press the continue button. Make sure to keep the sensor as still as possible until the timer runs out.");
+			((TextOverlay*)m_uiElements[4].get())->updateText(L"Data collection complete. Rotate sensor 90 degrees so that the +X-axis is pointing up as shown in the image. When ready, press the continue button. Make sure to keep the sensor as still as possible until the timer runs out.");
+			m_renderQuaternion = { -0.707f, 0.0f, 0.0f, 0.707f };
 			m_stageSet = true;
 		}
 		break;
@@ -1160,7 +1245,9 @@ void CalibrationMode::accelerometerCalibration()
 	{
 		if (!m_stageSet)
 		{
-			((TextOverlay*)m_uiElements[4].get())->updateText(L"Data collection complete. Rotate sensor 90 degrees so that the positive Z-axis is pointing down as shown in the image. When ready, press the continue button. Make sure to keep the sensor as still as possible until the timer runs out.");
+			((TextOverlay*)m_uiElements[4].get())->updateText(L"Data collection complete. Rotate sensor 90 degrees so that the -Z-axis is pointing up as shown in the image. When ready, press the continue button. Make sure to keep the sensor as still as possible until the timer runs out.");
+			m_quaternion = QuaternionMultiply({ 0.985f, -0.174f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f, 1.0f }); //glm quaternions are of the form {w, x, y, z} but DirectX are {x, y, z, w} which can lead to some confusion
+			m_renderQuaternion = { m_quaternion.x, m_quaternion.y , m_quaternion.z , m_quaternion.w };
 			m_stageSet = true;
 		}
 		break;
@@ -1169,7 +1256,9 @@ void CalibrationMode::accelerometerCalibration()
 	{
 		if (!m_stageSet)
 		{
-			((TextOverlay*)m_uiElements[4].get())->updateText(L"Data collection complete. Rotate sensor 90 degrees so that the positive Y-axis is pointing down as shown in the image. When ready, press the continue button. Make sure to keep the sensor as still as possible until the timer runs out.");
+			((TextOverlay*)m_uiElements[4].get())->updateText(L"Data collection complete. Rotate sensor 90 degrees so that the -Y-axis is pointing up as shown in the image. When ready, press the continue button. Make sure to keep the sensor as still as possible until the timer runs out.");
+			m_quaternion = QuaternionMultiply({ 0.707f, -0.707f, 0.0f, 0.0f }, { 0.707f, 0.0f, 0.707f, 0.0f }); //glm quaternions are of the form {w, x, y, z} but DirectX are {x, y, z, w} which can lead to some confusion
+			m_renderQuaternion = { m_quaternion.x, m_quaternion.y , m_quaternion.z , m_quaternion.w };
 			m_stageSet = true;
 		}
 		break;
@@ -1193,6 +1282,8 @@ void CalibrationMode::accelerometerCalibration()
 				//momentarily change the text of the continue button to say "yes", also make the "no" button visible
 				m_uiElements[3]->getText()->message = L"Yes";
 				m_uiElements[7]->setState(m_uiElements[7]->getState() ^ UIElementState::Invisible);
+
+				m_needsCamera = false; //stop rendering the 3d image
 
 				m_stageSet = true;
 			}
@@ -1639,6 +1730,36 @@ void CalibrationMode::calculateCalNumbers()
 			mz[i] += og_z_off;
 		}
 	}
+}
+
+void CalibrationMode::initializeModel()
+{
+	//This method is used to initialize a model of the sensor that gets rendered on screen. This is to 
+	//aid the user with the proper orientation and rotations for each portion of the calibration
+	std::shared_ptr<Face> sensorTop = std::make_shared<Face>(DirectX::XMFLOAT3(-0.15f, 0.026f, -0.25f), DirectX::XMFLOAT3(0.15f, 0.026f, -0.25f), DirectX::XMFLOAT3(-0.15f, 0.026f, 0.25f));
+	std::shared_ptr<Face> sensorLeft = std::make_shared<Face>(DirectX::XMFLOAT3(-0.15f, 0.0f, -0.25f), DirectX::XMFLOAT3(-0.15f, -0.052f, -0.25f), DirectX::XMFLOAT3(-0.15f, 0.0f, 0.25f));
+	std::shared_ptr<Face> sensorRight = std::make_shared<Face>(DirectX::XMFLOAT3(0.15f, 0.0f, -0.25f), DirectX::XMFLOAT3(0.15f, -0.052f, -0.25f), DirectX::XMFLOAT3(0.15f, 0.0f, 0.25f));
+	std::shared_ptr<Face> sensorFront = std::make_shared<Face>(DirectX::XMFLOAT3(0.15f, -0.026f, 0.25f), DirectX::XMFLOAT3(-0.15f, -0.026f, 0.25f), DirectX::XMFLOAT3(0.15f, 0.026f, 0.25f));
+	std::shared_ptr<Face> sensorBack = std::make_shared<Face>(DirectX::XMFLOAT3(-0.15f, -0.026f, -0.25f), DirectX::XMFLOAT3(0.15f, -0.026f, -0.25f), DirectX::XMFLOAT3(-0.15f, 0.026f, -0.25f));
+	std::shared_ptr<Face> sensorBottom = std::make_shared<Face>(DirectX::XMFLOAT3(0.15f, -0.026, -0.25f), DirectX::XMFLOAT3(-0.15f, -0.026f, -0.25f), DirectX::XMFLOAT3(0.15f, -0.026f, 0.25f));
+	//note* - the left and right face don't seem to be in the right spot to me, but the sensor is rendered correctly so I'm leaving it
+
+	m_volumeElements.push_back(sensorTop);
+	m_volumeElements.push_back(sensorLeft);
+	m_volumeElements.push_back(sensorRight);
+	m_volumeElements.push_back(sensorFront);
+	m_volumeElements.push_back(sensorBack);
+	m_volumeElements.push_back(sensorBottom);
+
+	//After creating the faces of the sensor, add the appropriate material types for each face.
+	//The index of each material type in the vector needs to match the index of the appropriate
+	//face in the m_volumeElements vector.
+	m_materialTypes.push_back(MaterialType::SENSOR_TOP);
+	m_materialTypes.push_back(MaterialType::SENSOR_LONG_SIDE);
+	m_materialTypes.push_back(MaterialType::SENSOR_LONG_SIDE);
+	m_materialTypes.push_back(MaterialType::SENSOR_SHORT_SIDE);
+	m_materialTypes.push_back(MaterialType::SENSOR_SHORT_SIDE);
+	m_materialTypes.push_back(MaterialType::SENSOR_BOTTOM);
 }
 
 void CalibrationMode::prepareRecording()
