@@ -161,6 +161,9 @@
     <ClCompile Include="Math\SensorFusion\FusionOffset.cpp">
       <Filter>Math\SensorFusion</Filter>
     </ClCompile>
+    <ClCompile Include="Graphics\Utilities\UIElementManager.cpp">
+      <Filter>Graphics\Utilities</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -384,6 +387,9 @@
     </ClInclude>
     <ClInclude Include="Math\SensorFusion\FusionOffset.h">
       <Filter>Math\SensorFusion</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Utilities\UIElementManager.h">
+      <Filter>Graphics\Utilities</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

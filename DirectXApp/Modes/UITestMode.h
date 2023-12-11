@@ -2,6 +2,8 @@
 
 #include "Mode.h"
 
+#include "Graphics/Utilities/UIElementManager.h"
+
 class UITestMode : public Mode
 {
 public:
@@ -14,5 +16,7 @@ public:
 
 private:
 	void initializeTextOverlay(winrt::Windows::Foundation::Size windowSize);
+
+	UIElementManager uiManager;
 
 };

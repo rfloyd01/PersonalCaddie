@@ -34,7 +34,12 @@ struct UIShape
 
 	}
 
-	UIShape() { m_shapeType = UIShapeType::END; }; //this tells other parts of the program that this UIShape hasn't been initialized yet
+	UIShape()
+	{ 
+		m_rectangle = { 0.0f, 0.0f, 0.0f, 0.0f };
+		m_shapeType = UIShapeType::END; //this tells other parts of the program that this UIShape hasn't been initialized yet
+		m_lineWidth = 0.0f;
+	}
 
 	D2D1_RECT_F m_rectangle;          //for now, all UIShapes are simply rectangles
 	UIColor m_color; //holds the different colors of the text (in order)

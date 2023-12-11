@@ -34,7 +34,13 @@ enum UIElementState
 class UIElement
 {
 public:
-	UIElement() { } //empty default initializer
+	UIElement()
+	{
+		m_size = { 0.0f, 0.0f };
+		m_location = { 0.0f, 0.0f };
+		m_fontSize = 0.0f;
+		m_state = 0;
+	}
 	~UIElement()
 	{
 		//Deleting a UI Element should also delete any children that it has.

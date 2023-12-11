@@ -13,8 +13,6 @@
 
 #include "Graphics/Rendering/MasterRenderer.h"
 
-//#include "Math/SensorFusion/FusionMath.h" //was debugging with this, can remove in future
-
 ModeScreen::ModeScreen() :
 	m_currentMode(ModeType::MAIN_MENU),
 	alert_active(false),
@@ -61,14 +59,12 @@ void ModeScreen::setPersonalCaddie(_In_ std::shared_ptr<PersonalCaddie> const& p
 
 void ModeScreen::update()
 {
-	//TODO: the first thing to update is any new data from the Personal Caddie
-
 	//check for any input form the mouse/keyboard that needs processing by the current mode
 	auto inputUpdate = m_inputProcessor->update();
 	if (inputUpdate->currentPressedKey != KeyboardKeys::DeadKey)
 	{
 		processKeyboardInput(inputUpdate->currentPressedKey);
-		m_inputProcessor->setKeyboardState(KeyboardState::KeyProcessed); //let the input processor now to deactivate this key until it's released
+		m_inputProcessor->setKeyboardState(KeyboardState::KeyProcessed); //let the input processor know to deactivate this key until it's released
 	}
 
 	processMouseInput(inputUpdate);
@@ -78,6 +74,10 @@ void ModeScreen::update()
 
 	//finally, check to see if there are any timers that are going on or expired
 	processTimers();
+
+	//After all input, timers and events have been processed we defer to the 
+	//current mode on handling this new information
+	m_modes[static_cast<int>(m_currentMode)]->update();
 
 	//Call any necessary functions based on the current mode state
 	//TODO: Make this a separate method when refactoring in the future

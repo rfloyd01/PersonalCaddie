@@ -1,10 +1,20 @@
 #include "pch.h"
 #include "UITestMode.h"
 
+
 UITestMode::UITestMode()
 {
 	//set a very light gray background color for the mode
 	m_backgroundColor = UIColor::LightBlue;
+
+	TextButton accButton({ 100, 200 }, { 0.16, 0.85 }, { 0.14, 0.1 }, L"Accelerometer Calibration");
+
+	uiManager.addElement(UIElementType::TEXT_BUTTON, std::make_shared<TextButton>(accButton), L"ACC Button");
+	//auto but = uiManager.getButton(L"ACC Button");
+
+	auto yo = uiManager.getElement<FullScrollingTextBox>(L"ACC Button");
+	//auto yeet = yo->getAbsoluteSize();
+	int x = 5;
 }
 
 uint32_t UITestMode::initializeMode(winrt::Windows::Foundation::Size windowSize, uint32_t initialState)

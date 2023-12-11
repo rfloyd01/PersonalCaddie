@@ -184,6 +184,7 @@
     <ClInclude Include="Graphics\Utilities\DirectXSample.h" />
     <ClInclude Include="Graphics\Utilities\GraphicsHelpers.h" />
     <ClInclude Include="Graphics\Utilities\UIElementColors.h" />
+    <ClInclude Include="Graphics\Utilities\UIElementManager.h" />
     <ClInclude Include="Input\InputProcessor.h" />
     <ClInclude Include="Main.h" />
     <ClInclude Include="Math\eigen.h" />
@@ -279,6 +280,7 @@
     <ClCompile Include="Graphics\Utilities\DDSTextureLoader.cpp" />
     <ClCompile Include="Graphics\Utilities\DeviceResources.cpp" />
     <ClCompile Include="Graphics\Utilities\UIElementColors.cpp" />
+    <ClCompile Include="Graphics\Utilities\UIElementManager.cpp" />
     <ClCompile Include="Input\InputProcessor.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Math\ellipse_math.cpp" />
