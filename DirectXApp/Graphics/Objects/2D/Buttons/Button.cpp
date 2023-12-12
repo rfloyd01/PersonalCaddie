@@ -30,18 +30,16 @@ void Button::onClick()
 			while (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - timer).count() < clickTimer) {}
 
 			removeState(UIElementState::Clicked);
-			OutputDebugString(L"Called from asynchronous method\n");
+			((Box*)p_children[0].get())->setBackgrounColor(UIColor::ButtonNotPressed);
 		});
-
-	OutputDebugString(L"Called from non-asynchronous method\n");
 }
 
-void Button::removeState(uint32_t state)
-{
-	//When the clicked state is removed from the button we change its color back
-	if (state & UIElementState::Clicked)
-	{
-		m_state ^= UIElementState::Clicked;
-		((Box*)p_children[0].get())->setBackgrounColor(UIColor::ButtonNotPressed);
-	}
-}
+//void Button::removeState(uint32_t state)
+//{
+//	//When the clicked state is removed from the button we change its color back
+//	if (state & UIElementState::Clicked)
+//	{
+//		m_state ^= UIElementState::Clicked;
+//		((Box*)p_children[0].get())->setBackgrounColor(UIColor::ButtonNotPressed);
+//	}
+//}

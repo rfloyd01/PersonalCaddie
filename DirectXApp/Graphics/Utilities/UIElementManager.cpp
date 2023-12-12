@@ -22,8 +22,9 @@ UIElementManager::UIElementManager()
 
 void UIElementManager::removeAllElements()
 {
-	//Clear out the render vector, the element map and the element grid
+	//Clear out the render and action vectors, the element map and the element grid
 	m_renderElements.clear();
+	m_actionElements.clear();
 
 	for (int i = 0; i < static_cast<int>(UIElementType::END); i++)
 	{
@@ -41,7 +42,6 @@ void UIElementManager::updateGridSquareElements(InputState* input)
 	//If the mouse moves, clicks or scrolls we inspect all of the UIElements that are in the 
 	//same grid square as the mouse and apply these updates. Mouse coordinates come in as 
 	//absolute pixels and not relative ones.
-	//std::pair<int, int> top_left = { GRID_WIDTH * (location.x - size.x / 2.0f), GRID_WIDTH * (location.y - size.y / 2.0f) };
 	std::pair<int, int> mouseGridSquare = { GRID_WIDTH * (input->mousePosition.y / m_windowSize.Height), GRID_WIDTH * (input->mousePosition.x / m_windowSize.Width) };
 
 	//Make sure the mouse calculation puts it inside of the screen
@@ -56,8 +56,8 @@ void UIElementManager::updateGridSquareElements(InputState* input)
 
 	for (int i = 0; i < m_gridLocations[mouseGridSquare.first][mouseGridSquare.second].size(); i++)
 	{
-		auto uiElement = m_gridLocations[mouseGridSquare.first][mouseGridSquare.second][i].get()->element;
-		uint32_t uiElementState = uiElement->update(input);
+		auto uiElement = m_gridLocations[mouseGridSquare.first][mouseGridSquare.second][i];
+		uint32_t uiElementState = uiElement.get()->element->update(input);
 
 		//Look at the state of the UIElement after processing the mouse input. Certain states require
 		//the active mode to take an action (for example if a button is clicked). Any element which has

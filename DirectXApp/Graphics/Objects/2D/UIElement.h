@@ -54,9 +54,11 @@ public:
 
 	winrt::Windows::Foundation::Size getCurrentWindowSize();
 
-	//Getters and Setters
+	//Methods for modifying the state of the UI Element
 	uint32_t getState() { return m_state; }
+	void updateState(UIElementState state) { m_state |= state; } //add the given state to the overall state
 	virtual void setState(uint32_t state);
+	virtual void updateState(uint32_t state);
 	virtual void removeState(uint32_t state);
 
 	void setFontSize(float size) { m_fontSize = size; }

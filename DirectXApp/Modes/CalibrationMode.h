@@ -47,6 +47,8 @@ private:
 	void initializeTextOverlay(winrt::Windows::Foundation::Size windowSize);
 	void initializeCalibrationVariables();
 
+	void uiElementStateChangeHandler(std::shared_ptr<ManagedUIElement> element);
+
 	//Methods for maneuvering through the calibrations
 	void axisCalibration();
 	void accelerometerCalibration();

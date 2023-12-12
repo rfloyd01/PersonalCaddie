@@ -130,7 +130,7 @@ public:
 	//Get Methods for rendering and updating
 	std::vector<std::vector<std::vector<std::shared_ptr<ManagedUIElement> > > > & getElementGrid() { return m_gridLocations; } //not a const reference as we need the ability to change the state of UIElements in teh grid
 	std::vector<std::shared_ptr<UIElement> > const& getRenderElements() { return m_renderElements; }
-	std::vector<std::shared_ptr<UIElement> > & getActionElements() { return m_actionElements; }
+	std::vector<std::shared_ptr<ManagedUIElement> > & getActionElements() { return m_actionElements; }
 
 	//Methods for interactions of UIElements with the Mouse
 	void updateScreenSize(winrt::Windows::Foundation::Size newWindowSize) { m_windowSize = newWindowSize; }
@@ -172,7 +172,7 @@ private:
 	std::map<UIElementType, std::vector<std::shared_ptr<ManagedUIElement> > > m_uiElements;
 	std::vector<std::vector<std::vector<std::shared_ptr<ManagedUIElement> > > > m_gridLocations; //splits the screen into a grid and keeps track of which elements are in which sector, useful for mouse hover detection
 	std::vector<std::shared_ptr<UIElement> > m_renderElements; //A vector of all UI Elements to be rendered on screen
-	std::vector<std::shared_ptr<UIElement> > m_actionElements; //Any UI Elements that have been interacted with and require the current mode to carry out some action will be added to this vector
+	std::vector<std::shared_ptr<ManagedUIElement> > m_actionElements; //Any UI Elements that have been interacted with and require the current mode to carry out some action will be added to this vector
 
 	winrt::Windows::Foundation::Size m_windowSize; //Keeps track of the current size of the window. UIElements have dimensions that are relative to the window size
 
