@@ -112,7 +112,8 @@ void ModeScreen::update()
 		stateUpdate();
 	}
 
-	if (m_modeState & ModeState::Active) m_modes[static_cast<int>(m_currentMode)]->update();
+	m_modes[static_cast<int>(m_currentMode)]->update();
+	//if (m_modeState & ModeState::Active) m_modes[static_cast<int>(m_currentMode)]->update();
 }
 
 void ModeScreen::processKeyboardInput(winrt::Windows::System::VirtualKey pressedKey)
@@ -302,49 +303,61 @@ void ModeScreen::processKeyboardInput(winrt::Windows::System::VirtualKey pressed
 
 void ModeScreen::processMouseInput(InputState* inputState)
 {
-	//need to poll all of the 2D elements in the current mode to see if the mouse is
-	//over any of them
-	auto uiElements = m_modes[static_cast<int>(m_currentMode)]->getUIElements();
-	for (int i = 0; i < uiElements.size(); i++)
+	//If the mouse hasn't moved, been clicked, or the scroll wheel
+	//hasn't rotated then there's nothing to process here.
+	if (!inputState->mouseClick && inputState->scrollWheelDirection == 0 && ((inputState->mousePosition.x == m_previousMousePosition.x) && (inputState->mousePosition.y == m_previousMousePosition.y)))
 	{
-		uint32_t uiElementState = uiElements[i]->update(inputState);
-
-		if (uiElementState & UIElementState::NeedTextPixels)
-		{
-			getTextRenderPixels(uiElements[i]->setTextDimension()); //get the necessary pixels
-			uiElements[i]->repositionText(); //see if any text needs to be repositioned after getting new dimensions
-			uiElements[i]->resize(m_renderer->getCurrentScreenSize()); //and then resize the ui element
-		}
-		
-		if ((uiElementState & UIElementState::Clicked) && inputState->mouseClick)
-		{
-			//The current UI Element has been clicked, see if clicking the button has
-			//any effect outside of the UI Element (like clicking the device watcher
-			//button in device discovery mode).
-			uint32_t new_state = m_modes[static_cast<int>(m_currentMode)]->handleUIElementStateChange(i);
-
-			//start a short timer that will change the color of the button from PRESSED to NOT_PRESSED
-			button_pressed = true;
-			button_pressed_timer = std::chrono::steady_clock::now();
-
-			//TODO: This is too specific for the calibration mode, I really need to revamp mode states
-			if (new_state & CalibrationModeState::ODR_ERROR) createAlert(L"There's an ODR discrepancy, go to settings to fix it.\n", UIColor::Red);
-
-			//See if the button press forced us into or out of active mode
-			if (m_modeState & ModeState::Active)
-			{
-				if (!(new_state & ModeState::Active)) m_modeState |= ModeState::Leave_Active; //leaveActiveState();
-				//else m_modeState |= ModeState::State_Update; //stateUpdate();
-			}
-			else if (!(m_modeState & ModeState::Active))
-			{
-				if (new_state & ModeState::Active) m_modeState |= ModeState::Enter_Active; //enterActiveState();
-				//else m_modeState |= ModeState::State_Update; //stateUpdate();
-			}
-
-			break;
-		}
+		return;
 	}
+
+	//If the mouse HAS moved, clicked or scrolled then the UIElementManager of the currently
+	//active mode will check all of the UIElements that are in the same section of the screen 
+	//(the screen is partitioned into a grid) as the mouse currently is to see if this mouse 
+	//input changes any of their states.
+	m_modes[static_cast<int>(m_currentMode)]->getUIElementManager().updateGridSquareElements(inputState);
+	m_previousMousePosition = inputState->mousePosition; //update the mouse position variable
+
+	//auto uiElements = m_modes[static_cast<int>(m_currentMode)]->getUIElements();
+	//for (int i = 0; i < uiElements.size(); i++)
+	//{
+	//	uint32_t uiElementState = uiElements[i]->update(inputState);
+
+	//	if (uiElementState & UIElementState::NeedTextPixels)
+	//	{
+	//		getTextRenderPixels(uiElements[i]->setTextDimension()); //get the necessary pixels
+	//		uiElements[i]->repositionText(); //see if any text needs to be repositioned after getting new dimensions
+	//		uiElements[i]->resize(m_renderer->getCurrentScreenSize()); //and then resize the ui element
+	//	}
+	//	
+	//	if ((uiElementState & UIElementState::Clicked) && inputState->mouseClick)
+	//	{
+	//		//The current UI Element has been clicked, see if clicking the button has
+	//		//any effect outside of the UI Element (like clicking the device watcher
+	//		//button in device discovery mode).
+	//		uint32_t new_state = m_modes[static_cast<int>(m_currentMode)]->handleUIElementStateChange(i);
+
+	//		//start a short timer that will change the color of the button from PRESSED to NOT_PRESSED
+	//		button_pressed = true;
+	//		button_pressed_timer = std::chrono::steady_clock::now();
+
+	//		//TODO: This is too specific for the calibration mode, I really need to revamp mode states
+	//		if (new_state & CalibrationModeState::ODR_ERROR) createAlert(L"There's an ODR discrepancy, go to settings to fix it.\n", UIColor::Red);
+
+	//		//See if the button press forced us into or out of active mode
+	//		if (m_modeState & ModeState::Active)
+	//		{
+	//			if (!(new_state & ModeState::Active)) m_modeState |= ModeState::Leave_Active; //leaveActiveState();
+	//			//else m_modeState |= ModeState::State_Update; //stateUpdate();
+	//		}
+	//		else if (!(m_modeState & ModeState::Active))
+	//		{
+	//			if (new_state & ModeState::Active) m_modeState |= ModeState::Enter_Active; //enterActiveState();
+	//			//else m_modeState |= ModeState::State_Update; //stateUpdate();
+	//		}
+
+	//		break;
+	//	}
+	//}
 
 	//reset input states if necessary
 	if (inputState->mouseClick) m_inputProcessor->setMouseState(MouseState::ButtonProcessed); //let the input processor know that the click has been handled
@@ -480,6 +493,9 @@ void ModeScreen::resizeCurrentModeUIElements(winrt::Windows::Foundation::Size wi
 {
 	auto uiElements = getCurrentModeUIElements();
 	for (int i = 0; i < uiElements.size(); i++) uiElements[i]->resize(windowSize);
+
+	//Update the m_screenSize variable of the current modes UIElementManager
+	m_modes[static_cast<int>(m_currentMode)]->getUIElementManager().updateScreenSize(windowSize);
 }
 
 std::vector<std::shared_ptr<VolumeElement> > const& ModeScreen::getCurrentModeVolumeElements()

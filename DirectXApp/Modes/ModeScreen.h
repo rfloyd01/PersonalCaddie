@@ -82,6 +82,9 @@ private:
 	Camera                                  m_camera; //a camera for rendering 3D scenes of certain modes
 	std::vector<std::shared_ptr<Material> > m_materials; //materials used for rendering 3D objects
 
+	//Input Variables
+	DirectX::XMFLOAT2                       m_previousMousePosition; //let's us know if the mouse has moved since the last frame was rendered
+
 	//Event variables
 	volatile PersonalCaddieEventType personal_caddy_event; //let's the main thread know that a new alert has been created from a different thread and needs to be rendered
 

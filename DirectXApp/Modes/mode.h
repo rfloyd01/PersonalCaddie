@@ -66,7 +66,7 @@ public:
 		if (m_uiManager.getRenderElements().size() > 0) return m_uiManager.getRenderElements();
 		else return m_uiElements;
 	}
-	UIElementManager const& getUIElementManager() { return m_uiManager; }
+	UIElementManager & getUIElementManager() { return m_uiManager; }
 	std::vector<std::shared_ptr<VolumeElement> > const& getVolumeElements() { return m_volumeElements; }
 
 	uint32_t getModeState() { return m_state; }

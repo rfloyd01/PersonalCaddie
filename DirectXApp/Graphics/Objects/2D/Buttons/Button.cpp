@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "Button.h"
+#include <chrono>
 
 Button::Button(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size,
 	bool isSquare, UIColor fillColor, UIColor outlineColor, UIColor shadowColor)
@@ -20,12 +21,25 @@ void Button::onClick()
 	//revert.
 	//setState(UIElementStateBasic::Clicked);
 	((Box*)p_children[0].get())->setBackgrounColor(UIColor::ButtonPressed);
+
+	//Create a timer and Asynchronously wait for it to complete. When it does,
+	//change the button back to its original color
+	concurrency::task<void> timer([this]()
+		{
+			auto timer = std::chrono::steady_clock::now();
+			while (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - timer).count() < clickTimer) {}
+
+			removeState(UIElementState::Clicked);
+			OutputDebugString(L"Called from asynchronous method\n");
+		});
+
+	OutputDebugString(L"Called from non-asynchronous method\n");
 }
 
 void Button::removeState(uint32_t state)
 {
 	//When the clicked state is removed from the button we change its color back
-	if (state == UIElementState::Clicked)
+	if (state & UIElementState::Clicked)
 	{
 		m_state ^= UIElementState::Clicked;
 		((Box*)p_children[0].get())->setBackgrounColor(UIColor::ButtonNotPressed);
