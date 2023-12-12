@@ -6,15 +6,6 @@ UITestMode::UITestMode()
 {
 	//set a very light gray background color for the mode
 	m_backgroundColor = UIColor::LightBlue;
-
-	TextButton accButton({ 100, 200 }, { 0.16, 0.85 }, { 0.14, 0.1 }, L"Accelerometer Calibration");
-
-	uiManager.addElement(UIElementType::TEXT_BUTTON, std::make_shared<TextButton>(accButton), L"ACC Button");
-	//auto but = uiManager.getButton(L"ACC Button");
-
-	auto yo = uiManager.getElement<FullScrollingTextBox>(L"ACC Button");
-	//auto yeet = yo->getAbsoluteSize();
-	int x = 5;
 }
 
 uint32_t UITestMode::initializeMode(winrt::Windows::Foundation::Size windowSize, uint32_t initialState)
@@ -23,7 +14,7 @@ uint32_t UITestMode::initializeMode(winrt::Windows::Foundation::Size windowSize,
 	initializeTextOverlay(windowSize);
 
 	//CURRENT TEST: Create an options box
-	std::wstring shorterText = L"At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum deleniti atque corrupti quos dolores et quas molestias excepturi sint occaecati cupiditate non provident";
+	/*std::wstring shorterText = L"At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum deleniti atque corrupti quos dolores et quas molestias excepturi sint occaecati cupiditate non provident";
 	std::wstring longerText = L"At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum deleniti atque corrupti quos dolores et quas molestias excepturi sint occaecati cupiditate non provident, similique sunt in culpa qui officia deserunt mollitia animi, id est laborum et dolorum fuga. Et harum quidem rerum facilis est et expedita distinctio. Nam libero tempore, cum soluta nobis est eligendi optio cumque nihil impedit quo minus id quod maxime placeat facere possimus, omnis voluptas assumenda est, omnis dolor repellendus. Temporibus autem quibusdam et aut officiis debitis aut rerum necessitatibus saepe eveniet ut et voluptates repudiandae sint et molestiae non recusandae. Itaque earum rerum hic tenetur a sapiente delectus, ut aut reiciendis voluptatibus maiores alias consequatur aut perferendis doloribus asperiores repellat.";
 	std::wstring options = L"Option 1\nOption 2\nOption Three is Long\nOption 4\nOption 5\nOption 4b.\nOption 6\nOption 4\nOption 5\nOption 4b.\nOption 6";
 
@@ -31,12 +22,20 @@ uint32_t UITestMode::initializeMode(winrt::Windows::Foundation::Size windowSize,
 	DropDownMenu drop(windowSize, { 0.75, 0.5 }, { 0.2, 0.1 }, options, 0.025, 5, false);
 
 	m_uiElements.push_back(std::make_shared<FullScrollingTextBox>(scroll));
-	m_uiElements.push_back(std::make_shared<DropDownMenu>(drop));
+	m_uiElements.push_back(std::make_shared<DropDownMenu>(drop));*/
+
+	TextButton accButton(windowSize, { 0.16, 0.85 }, { 0.14, 0.1 }, L"Accelerometer Calibration");
+	//m_uiElements.push_back(std::make_shared<TextButton>(accButton));
+	m_uiManager.addElement<TextButton>(accButton, L"ACC Button");
+
+	//Test remove element
+	m_uiManager.removeElement<HighlightableTextOverlay>(L"Title");
 
 	//When this mode is initialzed we go into a state of CanTransfer and Active.
 	//Can Transfer allows us to use the esc. key to go back to the settings menu
 	//while active diverts state control to this mode
-	return (ModeState::CanTransfer | ModeState::NeedTextUpdate);
+	//return (ModeState::CanTransfer | ModeState::NeedTextUpdate);
+	return ModeState::CanTransfer;
 }
 
 void UITestMode::uninitializeMode()
@@ -55,18 +54,21 @@ void UITestMode::initializeTextOverlay(winrt::Windows::Foundation::Size windowSi
 	HighlightableTextOverlay title(windowSize, { UIConstants::TitleTextLocationX, UIConstants::TitleTextLocationY }, { UIConstants::TitleTextSizeX, UIConstants::TitleTextSizeY },
 		title_message, UIConstants::TitleTextPointSize, { UIColor::White }, { 0,  (unsigned int)title_message.length() }, UITextJustification::CenterCenter);
 	title.updateSecondaryColor(UIColor::Red);
+	m_uiManager.addElement<HighlightableTextOverlay>(title, L"Title");
 	m_uiElements.push_back(std::make_shared<HighlightableTextOverlay>(title));
 
 	//Sub-Title information
 	std::wstring subtitle_message = L"A place to develop custom UI Elements (hover over the title to see some stuff in action!)";
 	TextOverlay subtitle(windowSize, { UIConstants::SubTitleTextLocationX, UIConstants::SubTitleTextLocationY }, { UIConstants::SubTitleTextSizeX, UIConstants::SubTitleTextSizeY },
 		subtitle_message, UIConstants::SubTitleTextPointSize, { UIColor::White }, { 0,  (unsigned int)subtitle_message.length() }, UITextJustification::CenterCenter);
+	m_uiManager.addElement<TextOverlay>(subtitle, L"Sub-Title");
 	m_uiElements.push_back(std::make_shared<TextOverlay>(subtitle));
 
 	//Footnote information
 	std::wstring footnote_message = L"Press Esc. to return to settings menu";
 	TextOverlay footnote(windowSize, { UIConstants::FootNoteTextLocationX, UIConstants::FootNoteTextLocationY }, { UIConstants::FootNoteTextSizeX, UIConstants::FootNoteTextSizeY },
 		footnote_message, UIConstants::FootNoteTextPointSize, { UIColor::White }, { 0,  (unsigned int)footnote_message.length() }, UITextJustification::LowerRight);
+	m_uiManager.addElement<TextOverlay>(footnote, L"Footnote");
 	m_uiElements.push_back(std::make_shared<TextOverlay>(footnote));
 }
 

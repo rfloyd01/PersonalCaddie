@@ -24,6 +24,8 @@ public:
 		resize(windowSize); //Force a resize so the text is created properly
 	}
 
+	TextButton() {}; //use the Button default constructor
+
 	virtual void setState(uint32_t state) override
 	{
 		m_state = state;

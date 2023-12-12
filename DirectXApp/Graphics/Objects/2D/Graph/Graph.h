@@ -16,6 +16,8 @@ class Graph : public UIElement
 public:
 	Graph(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, bool line = true, UIColor fillColor = UIColor::White, UIColor outlineColor = UIColor::Black);
 
+	Graph() {} //empty default constructor
+
 	void addDataSet(std::vector<DirectX::XMFLOAT2> const& dataPoints, UIColor lineColor);
 
 	void setAxisMaxAndMins(DirectX::XMFLOAT2 axis_minimums, DirectX::XMFLOAT2 axis_maximums);

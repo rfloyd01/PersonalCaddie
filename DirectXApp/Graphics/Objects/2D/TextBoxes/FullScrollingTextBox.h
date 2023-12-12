@@ -24,6 +24,8 @@ public:
 		bool highlightableText = true, bool dynamicSize = true,
 		UITextJustification justification = UITextJustification::UpperLeft, UIColor textFillColor = UIColor::White, bool isSquare = false,  UIColor outlineColor = UIColor::Black, UIColor shadowColor = UIColor::DarkGray);
 
+	FullScrollingTextBox() {} //empty default constructor
+
 	void addText(std::wstring text, winrt::Windows::Foundation::Size windowSize = { 0, 0 }, bool highlightable = false, bool existingText = true);
 	void clearText();
 

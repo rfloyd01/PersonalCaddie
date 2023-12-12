@@ -35,6 +35,8 @@ public:
 		}
 	}
 
+	ArrowButton() {} //empty default constructor
+
 	virtual void setAbsoluteSize(DirectX::XMFLOAT2 size) override
 	{
 		//Since the sides of the arrows are tied to either the top or bottom of the central arrow,
