@@ -91,8 +91,8 @@ void CalibrationMode::uninitializeMode()
 {
 	//The only thing to do when leaving the main menu mode is to clear
 	//out all text in the text map and color map
-	for (int i = 0; i < m_uiElements.size(); i++) m_uiElements[i] = nullptr;
-	m_uiElements.clear();
+	//for (int i = 0; i < m_uiElements.size(); i++) m_uiElements[i] = nullptr;
+	//m_uiElements.clear();
 
 	m_uiManager.removeAllElements();
 	int x = 5;
@@ -295,96 +295,96 @@ void CalibrationMode::uiElementStateChangeHandler(std::shared_ptr<ManagedUIEleme
 
 uint32_t CalibrationMode::handleUIElementStateChange(int i)
 {
-	if (i <= 2)
-	{
-		//one of the sensor calibration buttons was clicked, update the current mode state
-		//and make the buttons invisible
-		m_state |= (2 << i);
-		/*m_uiElements[0]->setState(m_uiElements[0]->getState() | UIElementState::Invisible);
-		m_uiElements[1]->setState(m_uiElements[1]->getState() | UIElementState::Invisible);
-		m_uiElements[2]->setState(m_uiElements[2]->getState() | UIElementState::Invisible);
-		m_uiElements[12]->setState(m_uiElements[12]->getState() | UIElementState::Invisible);
-		m_uiElements[3]->setState(m_uiElements[3]->getState() ^ UIElementState::Invisible); //make the continue button visible
-		m_uiElements[5]->setState(m_uiElements[5]->getState() ^ UIElementState::Invisible); //make the sub-title visible
-		m_uiElements[8]->setState(m_uiElements[8]->getState() | UIElementState::Invisible); //make the data toggle switch invisible*/
+	//if (i <= 2)
+	//{
+	//	//one of the sensor calibration buttons was clicked, update the current mode state
+	//	//and make the buttons invisible
+	//	m_state |= (2 << i);
+	//	/*m_uiElements[0]->setState(m_uiElements[0]->getState() | UIElementState::Invisible);
+	//	m_uiElements[1]->setState(m_uiElements[1]->getState() | UIElementState::Invisible);
+	//	m_uiElements[2]->setState(m_uiElements[2]->getState() | UIElementState::Invisible);
+	//	m_uiElements[12]->setState(m_uiElements[12]->getState() | UIElementState::Invisible);
+	//	m_uiElements[3]->setState(m_uiElements[3]->getState() ^ UIElementState::Invisible); //make the continue button visible
+	//	m_uiElements[5]->setState(m_uiElements[5]->getState() ^ UIElementState::Invisible); //make the sub-title visible
+	//	m_uiElements[8]->setState(m_uiElements[8]->getState() | UIElementState::Invisible); //make the data toggle switch invisible*/
 
-		m_uiManager.getElement<TextButton>(L"Acc Button")->updateState(UIElementState::Invisible);
-		m_uiManager.getElement<TextButton>(L"Gyr Button")->updateState(UIElementState::Invisible);
-		m_uiManager.getElement<TextButton>(L"Mag Button")->updateState(UIElementState::Invisible);
-		m_uiManager.getElement<TextButton>(L"Continue Button")->updateState(UIElementState::Invisible);
-		m_uiManager.getElement<TextButton>(L"Toggle Button")->updateState(UIElementState::Invisible);
+	//	m_uiManager.getElement<TextButton>(L"Acc Button")->updateState(UIElementState::Invisible);
+	//	m_uiManager.getElement<TextButton>(L"Gyr Button")->updateState(UIElementState::Invisible);
+	//	m_uiManager.getElement<TextButton>(L"Mag Button")->updateState(UIElementState::Invisible);
+	//	m_uiManager.getElement<TextButton>(L"Continue Button")->updateState(UIElementState::Invisible);
+	//	m_uiManager.getElement<TextButton>(L"Toggle Button")->updateState(UIElementState::Invisible);
 
-		//Set the sub-title and body text based on the calibration selected
-		std::wstring subtitle_text, body_text;
-		
-		switch (i)
-		{
-		case 0:
-			body_text = L"A 6-point tumble calibration will be performed on the accelerometer. Press the continue button when ready to begin and then follow the on-screen instructions.";
-			subtitle_text = L"Accelerometer Calibration";
-			break;
-		case 1:
-			body_text = L"Two tests will be performed to calibrate the gyroscope. The first test is easy and just involves keeping the gyroscope still. The second test is carried out in three stages. In each of these stages we rotate the gyroscope by 90 degrees about one of its axes.";
-			subtitle_text = L"Gyroscope Calibration";
-			break;
-		case 2:
-			body_text = L"To calibrate the magnetometer we need to take sources of interference into account. These include both the hard and soft iron deposits (large scale deviations in magnetic field, like large iron deposits in the ground, and small scale deviations in magnetic field, such as from nearby metal like a golf club shaft).";
-			subtitle_text = L"Magnetometer Calibration";
-			break;
-		}
+	//	//Set the sub-title and body text based on the calibration selected
+	//	std::wstring subtitle_text, body_text;
+	//	
+	//	switch (i)
+	//	{
+	//	case 0:
+	//		body_text = L"A 6-point tumble calibration will be performed on the accelerometer. Press the continue button when ready to begin and then follow the on-screen instructions.";
+	//		subtitle_text = L"Accelerometer Calibration";
+	//		break;
+	//	case 1:
+	//		body_text = L"Two tests will be performed to calibrate the gyroscope. The first test is easy and just involves keeping the gyroscope still. The second test is carried out in three stages. In each of these stages we rotate the gyroscope by 90 degrees about one of its axes.";
+	//		subtitle_text = L"Gyroscope Calibration";
+	//		break;
+	//	case 2:
+	//		body_text = L"To calibrate the magnetometer we need to take sources of interference into account. These include both the hard and soft iron deposits (large scale deviations in magnetic field, like large iron deposits in the ground, and small scale deviations in magnetic field, such as from nearby metal like a golf club shaft).";
+	//		subtitle_text = L"Magnetometer Calibration";
+	//		break;
+	//	}
 
-		m_uiManager.getElement<TextOverlay>(L"Subtitle Text")->updateText(subtitle_text);
-		m_uiManager.getElement<TextOverlay>(L"Subtitle Text")->updateState(UIElementState::Invisible);
-		m_uiManager.getElement<TextOverlay>(L"Body Text")->updateText(body_text);
-		//((TextOverlay*)m_uiElements[5].get())->updateText(((TextButton*)m_uiElements[i].get())->getText()); //update the sub-title text
+	//	m_uiManager.getElement<TextOverlay>(L"Subtitle Text")->updateText(subtitle_text);
+	//	m_uiManager.getElement<TextOverlay>(L"Subtitle Text")->updateState(UIElementState::Invisible);
+	//	m_uiManager.getElement<TextOverlay>(L"Body Text")->updateText(body_text);
+	//	//m_uiManager.getElement<TextOverlay>(L"Subtitle Text")->updateText(((TextButton*)m_uiElements[i].get())->getText()); //update the sub-title text
 
-		m_state |= ModeState::Active;
-	}
-	else if (i == 3)
-	{
-		//The continue button was clicked, this has the effect of advancing the current stage by 1
-		advanceToNextStage();
-	}
-	else if (i == 7)
-	{
-		//The no button was clicked, set the accept_cal bool to false and advance to the next stage
-		accept_cal = false;
-		advanceToNextStage();
-	}
-	else if (i == 8)
-	{
-		//Toggles whether or not we use raw or calibrated data during the calibration. The point of using
-		//already calibrated data is to benchmark how good the current calibration numbers are.
-		if (!m_useCalibratedData) m_uiManager.getElement<TextButton>(L"Toggle Button")->updateText(L"Use Raw Data");
-		else m_uiManager.getElement<TextButton>(L"Toggle Button")->updateText(L"Use Calibrated Data");
-		m_useCalibratedData = !m_useCalibratedData;
-	}
-	else if (i == 12)
-	{
-		//The axis calibration button was clicked, update the main body text and change the current mode state
-		m_uiManager.getElement<TextOverlay>(L"Body Text")->updateText(L"It's possible that the axes of the individual sensors don't align (i.e. the +X-axis of the accelerometer is lined up with the -Y-axis of the magnetometer), or that the direction of axes are inverted from what we expect (i.e. the +X-axis points towards the back of the sensor"
-			L" instead of towards the front). The purpose of the axis calibration is to make sure that data from each sensor lines up and is as we expect it to be.");
-		/*((TextOverlay*)m_uiElements[4].get())->updateText(L"It's possible that the axes of the individual sensors don't align (i.e. the +X-axis of the accelerometer is lined up with the -Y-axis of the magnetometer), or that the direction of axes are inverted from what we expect (i.e. the +X-axis points towards the back of the sensor"
-			L" instead of towards the front). The purpose of the axis calibration is to make sure that data from each sensor lines up and is as we expect it to be.");*/
-		m_state |= (CalibrationModeState::AXES | CalibrationModeState::ACCELEROMETER);
+	//	m_state |= ModeState::Active;
+	//}
+	//else if (i == 3)
+	//{
+	//	//The continue button was clicked, this has the effect of advancing the current stage by 1
+	//	advanceToNextStage();
+	//}
+	//else if (i == 7)
+	//{
+	//	//The no button was clicked, set the accept_cal bool to false and advance to the next stage
+	//	accept_cal = false;
+	//	advanceToNextStage();
+	//}
+	//else if (i == 8)
+	//{
+	//	//Toggles whether or not we use raw or calibrated data during the calibration. The point of using
+	//	//already calibrated data is to benchmark how good the current calibration numbers are.
+	//	if (!m_useCalibratedData) m_uiManager.getElement<TextButton>(L"Toggle Button")->updateText(L"Use Raw Data");
+	//	else m_uiManager.getElement<TextButton>(L"Toggle Button")->updateText(L"Use Calibrated Data");
+	//	m_useCalibratedData = !m_useCalibratedData;
+	//}
+	//else if (i == 12)
+	//{
+	//	//The axis calibration button was clicked, update the main body text and change the current mode state
+	//	m_uiManager.getElement<TextOverlay>(L"Body Text")->updateText(L"It's possible that the axes of the individual sensors don't align (i.e. the +X-axis of the accelerometer is lined up with the -Y-axis of the magnetometer), or that the direction of axes are inverted from what we expect (i.e. the +X-axis points towards the back of the sensor"
+	//		L" instead of towards the front). The purpose of the axis calibration is to make sure that data from each sensor lines up and is as we expect it to be.");
+	//	/*m_uiManager.getElement<TextOverlay>(L"Body Text")->updateText(L"It's possible that the axes of the individual sensors don't align (i.e. the +X-axis of the accelerometer is lined up with the -Y-axis of the magnetometer), or that the direction of axes are inverted from what we expect (i.e. the +X-axis points towards the back of the sensor"
+	//		L" instead of towards the front). The purpose of the axis calibration is to make sure that data from each sensor lines up and is as we expect it to be.");*/
+	//	m_state |= (CalibrationModeState::AXES | CalibrationModeState::ACCELEROMETER);
 
-		//Make all buttons invisible
-		//TODO: This is copied and pasted from the i <= 2 case, should consider combining these blocks
-		m_uiElements[0]->setState(m_uiElements[0]->getState() | UIElementState::Invisible);
-		m_uiElements[1]->setState(m_uiElements[1]->getState() | UIElementState::Invisible);
-		m_uiElements[2]->setState(m_uiElements[2]->getState() | UIElementState::Invisible);
-		m_uiElements[12]->setState(m_uiElements[12]->getState() | UIElementState::Invisible);
+	//	//Make all buttons invisible
+	//	//TODO: This is copied and pasted from the i <= 2 case, should consider combining these blocks
+	//	m_uiElements[0]->setState(m_uiElements[0]->getState() | UIElementState::Invisible);
+	//	m_uiElements[1]->setState(m_uiElements[1]->getState() | UIElementState::Invisible);
+	//	m_uiElements[2]->setState(m_uiElements[2]->getState() | UIElementState::Invisible);
+	//	m_uiElements[12]->setState(m_uiElements[12]->getState() | UIElementState::Invisible);
 
-		m_uiElements[3]->setState(m_uiElements[3]->getState() ^ UIElementState::Invisible); //make the continue button visible
-		m_uiElements[5]->setState(m_uiElements[5]->getState() ^ UIElementState::Invisible); //make the sub-title visible
+	//	m_uiElements[3]->setState(m_uiElements[3]->getState() ^ UIElementState::Invisible); //make the continue button visible
+	//	m_uiElements[5]->setState(m_uiElements[5]->getState() ^ UIElementState::Invisible); //make the sub-title visible
 
-		((TextOverlay*)m_uiElements[5].get())->updateText(((TextButton*)m_uiElements[i].get())->getText()); //update the sub-title text
+	//	m_uiManager.getElement<TextOverlay>(L"Subtitle Text")->updateText(((TextButton*)m_uiElements[i].get())->getText()); //update the sub-title text
 
-		m_uiElements[8]->setState(m_uiElements[8]->getState() | UIElementState::Invisible); //make the data toggle switch invisible
+	//	m_uiElements[8]->setState(m_uiElements[8]->getState() | UIElementState::Invisible); //make the data toggle switch invisible
 
-		m_state |= (ModeState::Active | CalibrationModeState::SET_AXES_NUMBERS);
-		int x = 5;
-	}
+	//	m_state |= (ModeState::Active | CalibrationModeState::SET_AXES_NUMBERS);
+	//	int x = 5;
+	//}
 
 	return m_state;
 }
@@ -667,9 +667,8 @@ void CalibrationMode::axisCalibration()
 	{
 		if (!m_stageSet)
 		{
-			((TextOverlay*)m_uiElements[4].get())->updateText(L"First the accelerometer axes will be aligned. Point the +X-axis of the sensor straight upwards like depicted in the image and hold it there for 2 seconds. Press continue when ready to proceed.");
-			((TextOverlay*)m_uiElements[5].get())->updateText(((TextButton*)m_uiElements[5].get())->getText() + L": Accelerometer Phase"); //update the sub-title text
-			//m_state |= CalibrationModeState::ACCELEROMETER; //Set the acc flag so the getData() method knows which data points to grab
+			m_uiManager.getElement<TextOverlay>(L"Body Text")->updateText(L"First the accelerometer axes will be aligned. Point the +X-axis of the sensor straight upwards like depicted in the image and hold it there for 2 seconds. Press continue when ready to proceed.");
+			m_uiManager.getElement<TextOverlay>(L"Subtitle Text")->updateText(L"Axis Calibration: Accelerometer Phase"); //update the sub-title text
 			data_timer_duration = 2000; //the acceleromter needs 5 seconds of data at each stage
 			m_renderQuaternion = { -0.707f, 0.0f, 0.0f, 0.707f };
 			m_needsCamera = true; //alerts the mode screen class to actually render the 3d image
@@ -698,7 +697,7 @@ void CalibrationMode::axisCalibration()
 			//With the data collected, see if a swap or inversion needs to occur for the x-axis
 			accAxisCalculate(0);
 
-			((TextOverlay*)m_uiElements[4].get())->updateText(L"Data collection complete. Rotate the sensor so that the +Z axis is pointing up as shown in the image and hold it there for 2 seconds. When ready, press the continue button.");
+			m_uiManager.getElement<TextOverlay>(L"Body Text")->updateText(L"Data collection complete. Rotate the sensor so that the +Z axis is pointing up as shown in the image and hold it there for 2 seconds. When ready, press the continue button.");
 			m_renderQuaternion = { -0.174f, 0.0f, 0.0f, 0.985f }; //20 degrees of tilt upwards to help see the front face of the sensor
 			m_stageSet = true;
 		}
@@ -711,7 +710,7 @@ void CalibrationMode::axisCalibration()
 			//With the data collected, see if a swap or inversion needs to occur for the z-axis
 			accAxisCalculate(2);
 
-			((TextOverlay*)m_uiElements[4].get())->updateText(L"Data collection complete. Rotate sensor 90 degrees so that the +Y-axis is pointing up as shown in the image. When ready, press the continue button.");
+			m_uiManager.getElement<TextOverlay>(L"Body Text")->updateText(L"Data collection complete. Rotate sensor 90 degrees so that the +Y-axis is pointing up as shown in the image. When ready, press the continue button.");
 			m_quaternion = QuaternionMultiply({ 0.707f, 0.0f, 0.0f, 0.707f }, { 0.707f, -0.707f, 0.0f, 0.0f }); //glm quaternions are of the form {w, x, y, z} but DirectX are {x, y, z, w} which can lead to some confusion
 			m_renderQuaternion = { m_quaternion.x, m_quaternion.y, m_quaternion.z, m_quaternion.w };
 			m_stageSet = true;
@@ -730,7 +729,7 @@ void CalibrationMode::axisCalibration()
 				L"Standard Axes = [X, Y, Z]\n"
 				L"New Axes = [" + axisResultString(acc_axis_swap, acc_axis_polarity) + L"]\n\n";
 
-			((TextOverlay*)m_uiElements[4].get())->updateText(completionText);
+			m_uiManager.getElement<TextOverlay>(L"Body Text")->updateText(completionText);
 			m_needsCamera = true; //resume rendering
 
 			m_stageSet = true;
@@ -742,8 +741,8 @@ void CalibrationMode::axisCalibration()
 	{
 		if (!m_stageSet)
 		{
-			((TextOverlay*)m_uiElements[5].get())->updateText(L"Axis Calibration: Gyroscope Phase"); //update the sub-title text
-			((TextOverlay*)m_uiElements[4].get())->updateText(L"Next the gyroscope axes will be calibrated. Rotate the sensor clockwise about the X-axis by 90 degrees, like depicted in the animation. Data will be collected for 2 seconds, press continue when ready");
+			m_uiManager.getElement<TextOverlay>(L"Subtitle Text")->updateText(L"Axis Calibration: Gyroscope Phase"); //update the sub-title text
+			m_uiManager.getElement<TextOverlay>(L"Body Text")->updateText(L"Next the gyroscope axes will be calibrated. Rotate the sensor clockwise about the X-axis by 90 degrees, like depicted in the animation. Data will be collected for 2 seconds, press continue when ready");
 			m_renderQuaternion = { 0.0f, 0.0f, 0.0f, 1.0f };
 			m_stageSet = true;
 
@@ -773,7 +772,7 @@ void CalibrationMode::axisCalibration()
 			//With the data collected, see if a swap or inversion needs to occur for the y-axis
 			gyrAxisCalculate(0);
 
-			((TextOverlay*)m_uiElements[4].get())->updateText(L"Data collection complete. Rotate the sensor clockwise about the Y-axis by 90 degrees, like depicted in the animation. Data will be collected for 2 seconds, press continue when ready");
+			m_uiManager.getElement<TextOverlay>(L"Body Text")->updateText(L"Data collection complete. Rotate the sensor clockwise about the Y-axis by 90 degrees, like depicted in the animation. Data will be collected for 2 seconds, press continue when ready");
 
 			//Clear accumulated date before moving the next gyroscope axis calibration stage
 			m_graphDataX.clear();
@@ -803,7 +802,7 @@ void CalibrationMode::axisCalibration()
 			//With the data collected, see if a swap or inversion needs to occur for the y-axis
 			gyrAxisCalculate(1);
 
-			((TextOverlay*)m_uiElements[4].get())->updateText(L"Data collection complete. Rotate the sensor clockwise about the Z-axis by 90 degrees, like depicted in the animation. Data will be collected for 2 seconds, press continue when ready");
+			m_uiManager.getElement<TextOverlay>(L"Body Text")->updateText(L"Data collection complete. Rotate the sensor clockwise about the Z-axis by 90 degrees, like depicted in the animation. Data will be collected for 2 seconds, press continue when ready");
 
 			//Clear accumulated date before moving the next gyroscope axis calibration stage
 			m_graphDataX.clear();
@@ -839,7 +838,7 @@ void CalibrationMode::axisCalibration()
 
 			m_needsCamera = false; //temporarily stop rendering image of sensor
 
-			((TextOverlay*)m_uiElements[4].get())->updateText(completionText);
+			m_uiManager.getElement<TextOverlay>(L"Body Text")->updateText(completionText);
 			m_stageSet = true;
 		}
 		break;
@@ -848,8 +847,8 @@ void CalibrationMode::axisCalibration()
 	{
 		if (!m_stageSet)
 		{
-			((TextOverlay*)m_uiElements[5].get())->updateText(L"Axis Calibration: Magnetometer Phase"); //update the sub-title text
-			((TextOverlay*)m_uiElements[4].get())->updateText(L"The magnetometer axis calibration uses Earth's magnetic field, which unlike gravity, changes magnitdue and direction depending on where on the Earth you are. "
+			m_uiManager.getElement<TextOverlay>(L"Subtitle Text")->updateText(L"Axis Calibration: Magnetometer Phase"); //update the sub-title text
+			m_uiManager.getElement<TextOverlay>(L"Body Text")->updateText(L"The magnetometer axis calibration uses Earth's magnetic field, which unlike gravity, changes magnitdue and direction depending on where on the Earth you are. "
 				L"Since the direction of the Magnetic field isn't known, we need to calibrate the axes of the magnetometer in a few distinct stages. The first stage is figuring out which axis is on top of the sensor. "
 			    L"This is accomplished by laying the sensor flat on the table and rotating it by 180 degrees like shown in the animation. This rotation is done over the course of 5 seconds, press continue when ready.");
 
@@ -887,7 +886,7 @@ void CalibrationMode::axisCalibration()
 			magAxisCalculate(2);
 			displayGraph();
 
-			((TextOverlay*)m_uiElements[4].get())->updateText(L"Data collection complete, the graph shows the data set. The line with the least variation in the data represents the data taken from the top of the sensor.");
+			m_uiManager.getElement<TextOverlay>(L"Body Text")->updateText(L"Data collection complete, the graph shows the data set. The line with the least variation in the data represents the data taken from the top of the sensor.");
 			m_needsCamera = false; //stop rendering the sensor temporarily
 
 			m_stageSet = true;
@@ -898,7 +897,7 @@ void CalibrationMode::axisCalibration()
 	{
 		if (!m_stageSet)
 		{
-			((TextOverlay*)m_uiElements[4].get())->updateText(L"With the z-axis discovered we now move on to the x-axis. On the next screen, a reading that represents the current magnetic field strength along the x-axis will be displayed. "
+			m_uiManager.getElement<TextOverlay>(L"Body Text")->updateText(L"With the z-axis discovered we now move on to the x-axis. On the next screen, a reading that represents the current magnetic field strength along the x-axis will be displayed. "
 				L"The goal is to (with the sensor still flat on the table) rotate the sensor until this reading reaches it's maximal value. It's possible that this value will be a negative number. The sensor will most likely need to be "
 			    L"rotated by 360 degrees to find this maximum value. Once the maximum value is found, press the continue button and leave the sensor exactly as it is. Press continue when ready.");
 
@@ -907,7 +906,7 @@ void CalibrationMode::axisCalibration()
 			m_graphDataY.clear();
 			m_graphDataZ.clear();
 
-			m_uiElements[6]->setState(m_uiElements[6]->getState() | UIElementState::Invisible); //make the graph invisible from the previous step
+			m_uiManager.getElement<Graph>(L"Acc Graph")->updateState(UIElementState::Invisible); //make the graph invisible from the previous step
 
 			m_stageSet = true; 
 		}
@@ -937,7 +936,7 @@ void CalibrationMode::axisCalibration()
 					m_graphDataZ = { current_data };
 				}
 
-				((TextOverlay*)m_uiElements[4].get())->updateText(message);
+				m_uiManager.getElement<TextOverlay>(L"Body Text")->updateText(message);
 			}
 		}
 		break;
@@ -955,7 +954,7 @@ void CalibrationMode::axisCalibration()
 	{
 		if (!m_stageSet)
 		{
-			((TextOverlay*)m_uiElements[4].get())->updateText(L"Right now there are two possibilities for the sensor's current orientation. Either the x-axis is aligned along North-South, or, it's aligned along East-West. "
+			m_uiManager.getElement<TextOverlay>(L"Body Text")->updateText(L"Right now there are two possibilities for the sensor's current orientation. Either the x-axis is aligned along North-South, or, it's aligned along East-West. "
 			L"To find out, while keeping the sensor in its current rotation about the Z-axis, rotate it clockwise about the y-axis by 45 degrees, reset it back to its current position, and then rotate it counter-clockwise by 45 degrees along the y-axis, and again reset the position. The movement will be like a see-saw. The animation shows the appropriate movement. If the sensor is aligned along the North-South line "
 			L"then the y-axis data will remain mostly constant. If the sensor is aligned along the East-West line then the x-axis data will remain mostly constant. You will have 10 seconds to complete these two rotations, press continue when ready.");
 
@@ -993,14 +992,14 @@ void CalibrationMode::axisCalibration()
 			magAxisCalculate(0);
 
 			//Show graph of most recent data set
-			((Graph*)m_uiElements[6].get())->removeAllLines(); //clear previous data from graph
+			m_uiManager.getElement<Graph>(L"Acc Graph")->removeAllLines(); //clear previous data from graph
 			displayGraph();
 
 			std::wstring completionText = L"At this point we've now figured out the orientation of each axis of the magnetometer, see them displayed below. We still need to calculate the polarity of each axis, press continue to do so.\n\n\n"
 				L"Standard Axes = [X, Y, Z]\n"
 				L"New Axes = [" + axisResultString(mag_axis_swap, mag_axis_polarity) + L"]\n\n";
 
-			((TextOverlay*)m_uiElements[4].get())->updateText(completionText);
+			m_uiManager.getElement<TextOverlay>(L"Body Text")->updateText(completionText);
 
 			m_stageSet = true;
 		}
@@ -1020,9 +1019,9 @@ void CalibrationMode::axisCalibration()
 			m_graphDataY.clear();
 			m_graphDataZ.clear();
 
-			m_uiElements[6]->setState(m_uiElements[6]->getState() | UIElementState::Invisible); //make the graph invisible from the previous step
+			m_uiManager.getElement<Graph>(L"Acc Graph")->updateState(UIElementState::Invisible); //make the graph invisible from the previous step
 
-			((TextOverlay*)m_uiElements[4].get())->updateText(completionText);
+			m_uiManager.getElement<TextOverlay>(L"Body Text")->updateText(completionText);
 
 			m_stageSet = true;
 		}
@@ -1059,7 +1058,7 @@ void CalibrationMode::axisCalibration()
 					m_graphDataZ = { current_data };
 				}
 
-				((TextOverlay*)m_uiElements[4].get())->updateText(message);
+				m_uiManager.getElement<TextOverlay>(L"Body Text")->updateText(message);
 			}
 		}
 		break;
@@ -1102,7 +1101,7 @@ void CalibrationMode::axisCalibration()
 			m_graphDataY.clear();
 			m_graphDataZ.clear();
 
-			((TextOverlay*)m_uiElements[4].get())->updateText(completionText);
+			m_uiManager.getElement<TextOverlay>(L"Body Text")->updateText(completionText);
 
 			m_stageSet = true;
 		}
@@ -1139,7 +1138,7 @@ void CalibrationMode::axisCalibration()
 					m_graphDataZ = { current_data };
 				}
 
-				((TextOverlay*)m_uiElements[4].get())->updateText(message);
+				m_uiManager.getElement<TextOverlay>(L"Body Text")->updateText(message);
 			}
 		}
 		break;
@@ -1182,7 +1181,7 @@ void CalibrationMode::axisCalibration()
 			m_graphDataY.clear();
 			m_graphDataZ.clear();
 
-			((TextOverlay*)m_uiElements[4].get())->updateText(completionText);
+			m_uiManager.getElement<TextOverlay>(L"Body Text")->updateText(completionText);
 
 			m_stageSet = true;
 		}
@@ -1219,7 +1218,7 @@ void CalibrationMode::axisCalibration()
 					m_graphDataZ = { current_data };
 				}
 
-				((TextOverlay*)m_uiElements[4].get())->updateText(message);
+				m_uiManager.getElement<TextOverlay>(L"Body Text")->updateText(message);
 			}
 		}
 		break;
@@ -1260,11 +1259,11 @@ void CalibrationMode::axisCalibration()
 				L"Gyroscope Axes = [" + axisResultString(gyr_axis_swap, gyr_axis_polarity) + L"]\n"
 				L"Magnetometer Axes = [" + axisResultString(mag_axis_swap, mag_axis_polarity) + L"]\n";
 
-			((TextOverlay*)m_uiElements[4].get())->updateText(completionText);
+			m_uiManager.getElement<TextOverlay>(L"Body Text")->updateText(completionText);
 
 			//momentarily change the text of the continue button to say "yes", also make the "no" button visible
-			m_uiElements[3]->getText()->message = L"Yes";
-			m_uiElements[7]->setState(m_uiElements[7]->getState() ^ UIElementState::Invisible);
+			m_uiManager.getElement<TextButton>(L"Continue Button")->updateText(L"Yes");
+			m_uiManager.getElement<TextButton>(L"No Button")->removeState(UIElementState::Invisible);
 
 			m_stageSet = true;
 		}
@@ -1281,23 +1280,22 @@ void CalibrationMode::axisCalibration()
 				m_state |= CalibrationModeState::UPDATE_AXES_NUMBERS;
 			}
 
-			m_uiElements[0]->setState(m_uiElements[0]->getState() ^ UIElementState::Invisible);
-			m_uiElements[1]->setState(m_uiElements[1]->getState() ^ UIElementState::Invisible);
-			m_uiElements[2]->setState(m_uiElements[2]->getState() ^ UIElementState::Invisible);
-			m_uiElements[12]->setState(m_uiElements[12]->getState() ^ UIElementState::Invisible); //make the axis button visible
+			m_uiManager.getElement<TextButton>(L"Acc Button")->removeState(UIElementState::Invisible);
+			m_uiManager.getElement<TextButton>(L"Gyr Button")->removeState(UIElementState::Invisible);
+			m_uiManager.getElement<TextButton>(L"Mag Button")->removeState(UIElementState::Invisible);
+			m_uiManager.getElement<TextButton>(L"Axes Button")->removeState(UIElementState::Invisible);
 
 			//Update the body text
-			((TextOverlay*)m_uiElements[4].get())->updateText(L"In calibration mode we can manually calculate the offsets and cross-axis gains for the accelerometer, gyroscope and magnetometer on the Personal Caddie to get more accurate data. Select one of the sensors using the buttons below to begin the calibration process.");
+			m_uiManager.getElement<TextOverlay>(L"Body Text")->updateText(L"In calibration mode we can manually calculate the offsets and cross-axis gains for the accelerometer, gyroscope and magnetometer on the Personal Caddie to get more accurate data. Select one of the sensors using the buttons below to begin the calibration process.");
 
-			m_uiElements[3]->getText()->message = L"Continue"; //change the text back to "Continue" for the continue button
-			m_uiElements[3]->setState(m_uiElements[3]->getState() | UIElementState::Invisible); //make the continue button invisible
-			m_uiElements[5]->setState(m_uiElements[5]->getState() | UIElementState::Invisible); //make the sub-title invisible
-			m_uiElements[6]->setState(m_uiElements[6]->getState() | UIElementState::Invisible); //make the graph invisible
-			m_uiElements[7]->setState(m_uiElements[7]->getState() | UIElementState::Invisible); //make the no button invisible
-			m_uiElements[8]->setState(m_uiElements[8]->getState() ^ UIElementState::Invisible); //make the data toggle switch visible
-			
+			m_uiManager.getElement<TextButton>(L"Continue Button")->updateText(L"Continue"); //change the text back to "Continue" for the continue button
+			m_uiManager.getElement<TextButton>(L"Continue Button")->updateState(UIElementState::Invisible); //make the continue button invisible
+			m_uiManager.getElement<TextOverlay>(L"Subtitle Text")->updateState(UIElementState::Invisible); //make the sub-title invisible
+			m_uiManager.getElement<Graph>(L"Acc Graph")->updateState(UIElementState::Invisible); //make the continue button invisible
+			m_uiManager.getElement<TextButton>(L"No Button")->updateState(UIElementState::Invisible); //make the continue button invisible
+			m_uiManager.getElement<TextButton>(L"Toggle Button")->removeState(UIElementState::Invisible); //make the continue button invisible
 
-			((Graph*)m_uiElements[6].get())->removeAllLines(); //clear everything out from the graph when done viewing it
+			m_uiManager.getElement<Graph>(L"Acc Graph")->removeAllLines(); //clear everything out from the graph when done viewing it
 
 			m_stageSet = true;
 		}
@@ -1439,22 +1437,22 @@ void CalibrationMode::accelerometerCalibration()
 				m_state |= CalibrationModeState::UPDATE_CAL_NUMBERS;
 			}
 
-			m_uiElements[0]->setState(m_uiElements[0]->getState() ^ UIElementState::Invisible);
-			m_uiElements[1]->setState(m_uiElements[1]->getState() ^ UIElementState::Invisible);
-			m_uiElements[2]->setState(m_uiElements[2]->getState() ^ UIElementState::Invisible);
-			m_uiElements[12]->setState(m_uiElements[12]->getState() ^ UIElementState::Invisible); //make the axis button visible
+			m_uiManager.getElement<TextButton>(L"Acc Button")->removeState(UIElementState::Invisible);
+			m_uiManager.getElement<TextButton>(L"Gyr Button")->removeState(UIElementState::Invisible);
+			m_uiManager.getElement<TextButton>(L"Mag Button")->removeState(UIElementState::Invisible);
+			m_uiManager.getElement<TextButton>(L"Axes Button")->removeState(UIElementState::Invisible);
 
 			//Update the body text
-			((TextOverlay*)m_uiElements[4].get())->updateText(L"In calibration mode we can manually calculate the offsets and cross-axis gains for the accelerometer, gyroscope and magnetometer on the Personal Caddie to get more accurate data. Select one of the sensors using the buttons below to begin the calibration process.");
+			m_uiManager.getElement<TextOverlay>(L"Body Text")->updateText(L"In calibration mode we can manually calculate the offsets and cross-axis gains for the accelerometer, gyroscope and magnetometer on the Personal Caddie to get more accurate data. Select one of the sensors using the buttons below to begin the calibration process.");
 
 			m_uiManager.getElement<TextButton>(L"Continue Button")->updateText(L"Continue"); //change the text back to "Continue" for the continue button
-			m_uiElements[3]->setState(m_uiElements[3]->getState() | UIElementState::Invisible); //make the continue button invisible
-			m_uiElements[5]->setState(m_uiElements[5]->getState() | UIElementState::Invisible); //make the sub-title invisible
-			m_uiElements[6]->setState(m_uiElements[6]->getState() | UIElementState::Invisible); //make the graph invisible
-			m_uiElements[7]->setState(m_uiElements[7]->getState() | UIElementState::Invisible); //make the no button invisible
-			m_uiElements[8]->setState(m_uiElements[8]->getState() ^ UIElementState::Invisible); //make the data toggle switch visible
+			m_uiManager.getElement<TextButton>(L"Continue Button")->updateState(UIElementState::Invisible); //make the continue button invisible
+			m_uiManager.getElement<TextOverlay>(L"Subtitle Text")->updateState(UIElementState::Invisible); //make the sub-title invisible
+			m_uiManager.getElement<Graph>(L"Acc Graph")->updateState(UIElementState::Invisible);; //make the continue button invisible
+			m_uiManager.getElement<TextButton>(L"No Button")->updateState(UIElementState::Invisible);; //make the continue button invisible
+			m_uiManager.getElement<TextButton>(L"Toggle Button")->removeState(UIElementState::Invisible);; //make the continue button invisible
 
-			((Graph*)m_uiElements[6].get())->removeAllLines(); //clear everything out from the graph when done viewing it
+			m_uiManager.getElement<Graph>(L"Acc Graph")->removeAllLines(); //clear everything out from the graph when done viewing it
 
 			m_stageSet = true;
 		}
@@ -1486,7 +1484,7 @@ void CalibrationMode::gyroscopeCalibration()
 	{
 		if (!m_stageSet)
 		{
-			((TextOverlay*)m_uiElements[4].get())->updateText(L"Lay the gyroscope flat on the table for 5 seconds while the axes offsets are calculated. Click continue when ready.");
+			m_uiManager.getElement<TextOverlay>(L"Body Text")->updateText(L"Lay the gyroscope flat on the table for 5 seconds while the axes offsets are calculated. Click continue when ready.");
 			data_timer_duration = 5000; //the acceleromter needs 5 seconds of data at each stage
 			m_stageSet = true;
 		}
@@ -1507,7 +1505,7 @@ void CalibrationMode::gyroscopeCalibration()
 		{
 			
 			calculateCalNumbers(); //Calculate the gyroscope axes offsets
-			((TextOverlay*)m_uiElements[4].get())->updateText(L"Data collection complete. Next, the gryoscope axis gain needs to be calculated. This is done in three stages, one for each axis. For this first stage we rotate the sensor counter-clockwise about the y-axis. Slowly rotate the sensor as close to 90 degrees as possible over the course of 5 seconds. Press continue when ready.");
+			m_uiManager.getElement<TextOverlay>(L"Body Text")->updateText(L"Data collection complete. Next, the gryoscope axis gain needs to be calculated. This is done in three stages, one for each axis. For this first stage we rotate the sensor counter-clockwise about the y-axis. Slowly rotate the sensor as close to 90 degrees as possible over the course of 5 seconds. Press continue when ready.");
 			m_stageSet = true;
 		}
 		break;
@@ -1517,7 +1515,7 @@ void CalibrationMode::gyroscopeCalibration()
 		if (!m_stageSet)
 		{
 			calculateCalNumbers(); //Calculate the gyroscope y-axis gain
-			((TextOverlay*)m_uiElements[4].get())->updateText(L"Data collection complete. We know slowly rotate the sensor 90 degrees counter-clockwise about the Z-axis over the course of 5 seconds. Press continue when ready.");
+			m_uiManager.getElement<TextOverlay>(L"Body Text")->updateText(L"Data collection complete. We know slowly rotate the sensor 90 degrees counter-clockwise about the Z-axis over the course of 5 seconds. Press continue when ready.");
 			m_stageSet = true;
 		}
 		break;
@@ -1527,7 +1525,7 @@ void CalibrationMode::gyroscopeCalibration()
 		if (!m_stageSet)
 		{
 			calculateCalNumbers(); //Calculate the gyroscopezy-axis gain
-			((TextOverlay*)m_uiElements[4].get())->updateText(L"Data collection complete. We know slowly rotate the sensor 90 degrees counter-clockwise about the X-axis over the course of 5 seconds. Press continue when ready.");
+			m_uiManager.getElement<TextOverlay>(L"Body Text")->updateText(L"Data collection complete. We know slowly rotate the sensor 90 degrees counter-clockwise about the X-axis over the course of 5 seconds. Press continue when ready.");
 			m_stageSet = true;
 		}
 		break;
@@ -1544,12 +1542,12 @@ void CalibrationMode::gyroscopeCalibration()
 					L"              [" + std::to_wstring(gyr_gain[0][0]) + L"]\n"
 					L"Gains  =  [" + std::to_wstring(gyr_gain[1][1]) + L"]\n"
 					L"               [" + std::to_wstring(gyr_gain[2][2]) + L"]";
-				((TextOverlay*)m_uiElements[4].get())->updateText(completionText);
+				m_uiManager.getElement<TextOverlay>(L"Body Text")->updateText(completionText);
 				displayGraph();
 
 				//momentarily change the text of the continue button to say "yes", also make the "no" button visible
-				m_uiElements[3]->getText()->message = L"Yes";
-				m_uiElements[7]->setState(m_uiElements[7]->getState() ^ UIElementState::Invisible);
+				m_uiManager.getElement<TextButton>(L"Continue Button")->updateText(L"Yes");
+				m_uiManager.getElement<TextButton>(L"No Button")->updateState(UIElementState::Invisible);
 
 				m_stageSet = true;
 			}
@@ -1567,21 +1565,21 @@ void CalibrationMode::gyroscopeCalibration()
 				m_state |= CalibrationModeState::UPDATE_CAL_NUMBERS;
 			}
 
-			m_uiElements[0]->setState(m_uiElements[0]->getState() ^ UIElementState::Invisible);
-			m_uiElements[1]->setState(m_uiElements[1]->getState() ^ UIElementState::Invisible);
-			m_uiElements[2]->setState(m_uiElements[2]->getState() ^ UIElementState::Invisible);
-			m_uiElements[12]->setState(m_uiElements[12]->getState() ^ UIElementState::Invisible); //make the axis button visible
+			m_uiManager.getElement<TextButton>(L"Acc Button")->removeState(UIElementState::Invisible);
+			m_uiManager.getElement<TextButton>(L"Gyr Button")->removeState(UIElementState::Invisible);
+			m_uiManager.getElement<TextButton>(L"Mag Button")->removeState(UIElementState::Invisible);
+			m_uiManager.getElement<TextButton>(L"Axes Button")->removeState(UIElementState::Invisible);
 
 			//Update the body text
-			((TextOverlay*)m_uiElements[4].get())->updateText(L"In calibration mode we can manually calculate the offsets and cross-axis gains for the accelerometer, gyroscope and magnetometer on the Personal Caddie to get more accurate data. Select one of the sensors using the buttons below to begin the calibration process.");
+			m_uiManager.getElement<TextOverlay>(L"Body Text")->updateText(L"In calibration mode we can manually calculate the offsets and cross-axis gains for the accelerometer, gyroscope and magnetometer on the Personal Caddie to get more accurate data. Select one of the sensors using the buttons below to begin the calibration process.");
 
-			m_uiElements[3]->getText()->message = L"Continue"; //change the text back to "Continue" for the continue button
-			m_uiElements[3]->setState(m_uiElements[3]->getState() | UIElementState::Invisible); //make the continue button invisible
-			m_uiElements[5]->setState(m_uiElements[5]->getState() | UIElementState::Invisible); //make the sub-title invisible
-			m_uiElements[6]->setState(m_uiElements[6]->getState() | UIElementState::Invisible); //make the graph invisible
-			m_uiElements[7]->setState(m_uiElements[7]->getState() | UIElementState::Invisible); //make the no button invisible
-			m_uiElements[8]->setState(m_uiElements[8]->getState() ^ UIElementState::Invisible); //make the data toggle switch visible
-
+			m_uiManager.getElement<TextButton>(L"Continue Button")->updateText(L"Continue"); //change the text back to "Continue" for the continue button
+			m_uiManager.getElement<TextButton>(L"Continue Button")->updateState(UIElementState::Invisible); //make the continue button invisible
+			m_uiManager.getElement<TextOverlay>(L"Subtitle Text")->updateState(UIElementState::Invisible); //make the sub-title invisible
+			m_uiManager.getElement<Graph>(L"Acc Graph")->updateState(UIElementState::Invisible);; //make the continue button invisible
+			m_uiManager.getElement<TextButton>(L"No Button")->updateState(UIElementState::Invisible);; //make the continue button invisible
+			m_uiManager.getElement<TextButton>(L"Toggle Button")->removeState(UIElementState::Invisible);; //make the continue button invisible
+			
 			m_stageSet = true;
 		}
 
@@ -1612,7 +1610,7 @@ void CalibrationMode::magnetometerCalibration()
 	{
 		if (!m_stageSet)
 		{
-			((TextOverlay*)m_uiElements[4].get())->updateText(L"Take the sensor in your hand and rotate it along all three axes in figure-8 patterns for 20 seconds. Imaging the sensor is inside a sphere and you're trying to make the front of the sensor point at as many locations in the sphere as possible. Press the continue button when ready.");
+			m_uiManager.getElement<TextOverlay>(L"Body Text")->updateText(L"Take the sensor in your hand and rotate it along all three axes in figure-8 patterns for 20 seconds. Imaging the sensor is inside a sphere and you're trying to make the front of the sensor point at as many locations in the sphere as possible. Press the continue button when ready.");
 			data_timer_duration = 20000; //the acceleromter needs 5 seconds of data at each stage
 			m_stageSet = true;
 		}
@@ -1634,12 +1632,12 @@ void CalibrationMode::magnetometerCalibration()
 				L"              [" + std::to_wstring(mag_gain[0][0]) + L", " + std::to_wstring(mag_gain[0][1]) + L", " + std::to_wstring(mag_gain[0][2]) + L"]\n"
 				L"Gains  =  [" + std::to_wstring(mag_gain[1][0]) + L", " + std::to_wstring(mag_gain[1][1]) + L", " + std::to_wstring(mag_gain[1][2]) + L"]\n"
 				L"               [" + std::to_wstring(mag_gain[2][0]) + L", " + std::to_wstring(mag_gain[2][1]) + L", " + std::to_wstring(mag_gain[2][2]) + L"]";
-			((TextOverlay*)m_uiElements[4].get())->updateText(completionText);
+			m_uiManager.getElement<TextOverlay>(L"Body Text")->updateText(completionText);
 			displayGraph();
 
 			//momentarily change the text of the continue button to say "yes", also make the "no" button visible
-			m_uiElements[3]->getText()->message = L"Yes";
-			m_uiElements[7]->setState(m_uiElements[7]->getState() ^ UIElementState::Invisible);
+			m_uiManager.getElement<TextButton>(L"Continue Button")->updateText(L"Yes");
+			m_uiManager.getElement<TextButton>(L"No Button")->updateState(UIElementState::Invisible);
 
 			m_stageSet = true;
 		}
@@ -1656,37 +1654,37 @@ void CalibrationMode::magnetometerCalibration()
 				m_state |= CalibrationModeState::UPDATE_CAL_NUMBERS;
 			}
 
-			m_uiElements[0]->setState(m_uiElements[0]->getState() ^ UIElementState::Invisible);
-			m_uiElements[1]->setState(m_uiElements[1]->getState() ^ UIElementState::Invisible);
-			m_uiElements[2]->setState(m_uiElements[2]->getState() ^ UIElementState::Invisible);
-			m_uiElements[12]->setState(m_uiElements[12]->getState() ^ UIElementState::Invisible); //make the axis button visible
+			m_uiManager.getElement<TextButton>(L"Acc Button")->removeState(UIElementState::Invisible);
+			m_uiManager.getElement<TextButton>(L"Gyr Button")->removeState(UIElementState::Invisible);
+			m_uiManager.getElement<TextButton>(L"Mag Button")->removeState(UIElementState::Invisible);
+			m_uiManager.getElement<TextButton>(L"Axes Button")->removeState(UIElementState::Invisible);
 
 			//Update the body text
-			((TextOverlay*)m_uiElements[4].get())->updateText(L"In calibration mode we can manually calculate the offsets and cross-axis gains for the accelerometer, gyroscope and magnetometer on the Personal Caddie to get more accurate data. Select one of the sensors using the buttons below to begin the calibration process.");
+			m_uiManager.getElement<TextOverlay>(L"Body Text")->updateText(L"In calibration mode we can manually calculate the offsets and cross-axis gains for the accelerometer, gyroscope and magnetometer on the Personal Caddie to get more accurate data. Select one of the sensors using the buttons below to begin the calibration process.");
 
-			m_uiElements[3]->getText()->message = L"Continue"; //change the text back to "Continue" for the continue button
-			m_uiElements[3]->setState(m_uiElements[3]->getState() | UIElementState::Invisible); //make the continue button invisible
-			m_uiElements[5]->setState(m_uiElements[5]->getState() | UIElementState::Invisible); //make the sub-title invisible
-			m_uiElements[7]->setState(m_uiElements[7]->getState() | UIElementState::Invisible); //make the no button invisible
-			m_uiElements[8]->setState(m_uiElements[8]->getState() ^ UIElementState::Invisible); //make the data toggle switch visible
+			m_uiManager.getElement<TextButton>(L"Continue Button")->updateText(L"Continue"); //change the text back to "Continue" for the continue button
+			m_uiManager.getElement<TextButton>(L"Continue Button")->updateState(UIElementState::Invisible); //make the continue button invisible
+			m_uiManager.getElement<TextOverlay>(L"Subtitle Text")->updateState(UIElementState::Invisible); //make the sub-title invisible
+			m_uiManager.getElement<TextButton>(L"No Button")->updateState(UIElementState::Invisible);; //make the continue button invisible
+			m_uiManager.getElement<TextButton>(L"Toggle Button")->removeState(UIElementState::Invisible);; //make the continue button invisible
 
 			//Remove the current data sets from each graph and then make them invisible
-			((Graph*)m_uiElements[9].get())->removeAllLines();
-			((Graph*)m_uiElements[10].get())->removeAllLines();
-			((Graph*)m_uiElements[11].get())->removeAllLines();
-			m_uiElements[9]->setState(m_uiElements[9]->getState() | UIElementState::Invisible); //make the graph invisible
-			m_uiElements[10]->setState(m_uiElements[10]->getState() | UIElementState::Invisible); //make the graph invisible
-			m_uiElements[11]->setState(m_uiElements[11]->getState() | UIElementState::Invisible); //make the graph invisible
+			m_uiManager.getElement<Graph>(L"Mag1 Graph")->removeAllLines();
+			m_uiManager.getElement<Graph>(L"Mag1 Graph")->updateState(UIElementState::Invisible);
+			m_uiManager.getElement<Graph>(L"Mag2 Graph")->removeAllLines();
+			m_uiManager.getElement<Graph>(L"Mag2 Graph")->updateState(UIElementState::Invisible);
+			m_uiManager.getElement<Graph>(L"Mag3 Graph")->removeAllLines();
+			m_uiManager.getElement<Graph>(L"Mag3 Graph")->updateState(UIElementState::Invisible);
 
 			//clear out existing data
 			m_graphDataX.clear();
 			m_graphDataY.clear();
 			m_graphDataZ.clear();
 
-			//Clear everything out from the graphs when done viewing them
-			((Graph*)m_uiElements[9].get())->removeAllLines();
-			((Graph*)m_uiElements[10].get())->removeAllLines();
-			((Graph*)m_uiElements[11].get())->removeAllLines();
+			////Clear everything out from the graphs when done viewing them
+			//m_uiManager.getElement<Graph>(L"Mag1 Graph")->removeAllLines();
+			//m_uiManager.getElement<Graph>(L"Mag2 Graph")->removeAllLines();
+			//m_uiManager.getElement<Graph>(L"Mag3 Graph")->removeAllLines();
 
 			m_stageSet = true;
 		}
@@ -1912,7 +1910,7 @@ void CalibrationMode::prepareRecording()
 	else if (m_state & CalibrationModeState::RECORDING_DATA)
 	{
 		std::wstring message = L"Recording Data, hold sensor steady for " + std::to_wstring((float)(data_timer_duration - data_timer_elapsed) / 1000.0f) + L" more seconds.";
-		((TextOverlay*)m_uiElements[4].get())->updateText(message);
+		m_uiManager.getElement<TextOverlay>(L"Body Text")->updateText(message);
 	}
 }
 
@@ -1928,31 +1926,31 @@ void CalibrationMode::displayGraph()
 		//calibration is being carried out.
 		float centerLineLocation, upperLineLocation, lowerLineLocation;
 
-		((Graph*)m_uiElements[6].get())->setAxisMaxAndMins({ 0,  -60.0 }, { m_graphDataX.back().x, 60.0 });
+		m_uiManager.getElement<Graph>(L"Acc Graph")->setAxisMaxAndMins({0,  -60.0}, {m_graphDataX.back().x, 60.0});
 
 		//add a few axis lines to the graph
 		centerLineLocation = 0.0f;
 		upperLineLocation = 50.0f;
 		lowerLineLocation = -50.0f;
 
-		((Graph*)m_uiElements[6].get())->addDataSet(m_graphDataX, UIColor::Red);
-		((Graph*)m_uiElements[6].get())->addDataSet(m_graphDataY, UIColor::Blue);
-		((Graph*)m_uiElements[6].get())->addDataSet(m_graphDataZ, UIColor::Green);
+		m_uiManager.getElement<Graph>(L"Acc Graph")->addDataSet(m_graphDataX, UIColor::Red);
+		m_uiManager.getElement<Graph>(L"Acc Graph")->addDataSet(m_graphDataY, UIColor::Blue);
+		m_uiManager.getElement<Graph>(L"Acc Graph")->addDataSet(m_graphDataZ, UIColor::Green);
 
-		((Graph*)m_uiElements[6].get())->addAxisLine(0, centerLineLocation);
-		((Graph*)m_uiElements[6].get())->addAxisLine(0, upperLineLocation);
-		((Graph*)m_uiElements[6].get())->addAxisLine(0, lowerLineLocation);
+		m_uiManager.getElement<Graph>(L"Acc Graph")->addAxisLine(0, centerLineLocation);
+		m_uiManager.getElement<Graph>(L"Acc Graph")->addAxisLine(0, upperLineLocation);
+		m_uiManager.getElement<Graph>(L"Acc Graph")->addAxisLine(0, lowerLineLocation);
 
 		std::wstring axisText = std::to_wstring(centerLineLocation);
-		((Graph*)m_uiElements[6].get())->addAxisLabel(axisText, centerLineLocation);
+		m_uiManager.getElement<Graph>(L"Acc Graph")->addAxisLabel(axisText, centerLineLocation);
 
 		axisText = std::to_wstring(upperLineLocation);
-		((Graph*)m_uiElements[6].get())->addAxisLabel(axisText, upperLineLocation);
+		m_uiManager.getElement<Graph>(L"Acc Graph")->addAxisLabel(axisText, upperLineLocation);
 
 		axisText = std::to_wstring(lowerLineLocation);
-		((Graph*)m_uiElements[6].get())->addAxisLabel(axisText, lowerLineLocation);
+		m_uiManager.getElement<Graph>(L"Acc Graph")->addAxisLabel(axisText, lowerLineLocation);
 
-		m_uiElements[6]->setState(m_uiElements[6]->getState() ^ UIElementState::Invisible); //lastly, make the graph visible
+		m_uiManager.getElement<Graph>(L"Acc Graph")->removeState(UIElementState::Invisible); //lastly, make the graph visible
 	}
 	else if (m_state & CalibrationModeState::ACCELEROMETER)
 	{
@@ -1960,30 +1958,30 @@ void CalibrationMode::displayGraph()
 		//calibration is being carried out.
 		float centerLineLocation, upperLineLocation, lowerLineLocation;
 
-		((Graph*)m_uiElements[6].get())->setAxisMaxAndMins({ 0,  -12.0 }, { m_graphDataX.back().x, 12.0 });
+		m_uiManager.getElement<Graph>(L"Acc Graph")->setAxisMaxAndMins({ 0,  -12.0 }, { m_graphDataX.back().x, 12.0 });
 		//add a few axis lines to the graph
 		centerLineLocation = 0.0f; //The average of the highest and lowest data point
 		upperLineLocation = GRAVITY; //95% of the highest data point
 		lowerLineLocation = -GRAVITY; //95% of the lowest data point
 
-		((Graph*)m_uiElements[6].get())->addDataSet(m_graphDataX, UIColor::Red);
-		((Graph*)m_uiElements[6].get())->addDataSet(m_graphDataY, UIColor::Blue);
-		((Graph*)m_uiElements[6].get())->addDataSet(m_graphDataZ, UIColor::Green);
+		m_uiManager.getElement<Graph>(L"Acc Graph")->addDataSet(m_graphDataX, UIColor::Red);
+		m_uiManager.getElement<Graph>(L"Acc Graph")->addDataSet(m_graphDataY, UIColor::Blue);
+		m_uiManager.getElement<Graph>(L"Acc Graph")->addDataSet(m_graphDataZ, UIColor::Green);
 
-		((Graph*)m_uiElements[6].get())->addAxisLine(0, centerLineLocation);
-		((Graph*)m_uiElements[6].get())->addAxisLine(0, upperLineLocation);
-		((Graph*)m_uiElements[6].get())->addAxisLine(0, lowerLineLocation);
+		m_uiManager.getElement<Graph>(L"Acc Graph")->addAxisLine(0, centerLineLocation);
+		m_uiManager.getElement<Graph>(L"Acc Graph")->addAxisLine(0, upperLineLocation);
+		m_uiManager.getElement<Graph>(L"Acc Graph")->addAxisLine(0, lowerLineLocation);
 
 		std::wstring axisText = std::to_wstring(centerLineLocation);
-		((Graph*)m_uiElements[6].get())->addAxisLabel(axisText, centerLineLocation);
+		m_uiManager.getElement<Graph>(L"Acc Graph")->addAxisLabel(axisText, centerLineLocation);
 
 		axisText = std::to_wstring(upperLineLocation);
-		((Graph*)m_uiElements[6].get())->addAxisLabel(axisText, upperLineLocation);
+		m_uiManager.getElement<Graph>(L"Acc Graph")->addAxisLabel(axisText, upperLineLocation);
 
 		axisText = std::to_wstring(lowerLineLocation);
-		((Graph*)m_uiElements[6].get())->addAxisLabel(axisText, lowerLineLocation);
+		m_uiManager.getElement<Graph>(L"Acc Graph")->addAxisLabel(axisText, lowerLineLocation);
 
-		m_uiElements[6]->setState(m_uiElements[6]->getState() ^ UIElementState::Invisible); //lastly, make the graph visible
+		m_uiManager.getElement<Graph>(L"Acc Graph")->removeState(UIElementState::Invisible); //lastly, make the graph visible
 	}
 	else if (m_state & CalibrationModeState::MAGNETOMETER)
 	{
@@ -2010,30 +2008,30 @@ void CalibrationMode::displayGraph()
 			yzc.push_back({ my[i], mz[i] });
 		}
 
-		((Graph*)m_uiElements[9].get())->setAxisMaxAndMins({ -125.0f,  -125.0f }, { 125.0f, 125.0f });
-		((Graph*)m_uiElements[9].get())->addDataSet(xy, UIColor::Red);
-		((Graph*)m_uiElements[9].get())->addDataSet(xyc, UIColor::Green);
-		((Graph*)m_uiElements[9].get())->addAxisLine(0, 0);
-		((Graph*)m_uiElements[9].get())->addAxisLine(1, 0);
+		m_uiManager.getElement<Graph>(L"Mag1 Graph")->setAxisMaxAndMins({ -125.0f,  -125.0f }, { 125.0f, 125.0f });
+		m_uiManager.getElement<Graph>(L"Mag1 Graph")->addDataSet(xy, UIColor::Red);
+		m_uiManager.getElement<Graph>(L"Mag1 Graph")->addDataSet(xyc, UIColor::Green);
+		m_uiManager.getElement<Graph>(L"Mag1 Graph")->addAxisLine(0, 0);
+		m_uiManager.getElement<Graph>(L"Mag1 Graph")->addAxisLine(1, 0);
 		
-		((Graph*)m_uiElements[10].get())->setAxisMaxAndMins({ -125.0f,  -125.0f }, { 125.0f, 125.0f });
-		((Graph*)m_uiElements[10].get())->addDataSet(xz, UIColor::Blue);
-		((Graph*)m_uiElements[10].get())->addDataSet(xzc, UIColor::Green);
-		((Graph*)m_uiElements[10].get())->addAxisLine(0, 0);
-		((Graph*)m_uiElements[10].get())->addAxisLine(1, 0);
+		m_uiManager.getElement<Graph>(L"Mag2 Graph")->setAxisMaxAndMins({ -125.0f,  -125.0f }, { 125.0f, 125.0f });
+		m_uiManager.getElement<Graph>(L"Mag2 Graph")->addDataSet(xz, UIColor::Blue);
+		m_uiManager.getElement<Graph>(L"Mag2 Graph")->addDataSet(xzc, UIColor::Green);
+		m_uiManager.getElement<Graph>(L"Mag2 Graph")->addAxisLine(0, 0);
+		m_uiManager.getElement<Graph>(L"Mag2 Graph")->addAxisLine(1, 0);
 
-		((Graph*)m_uiElements[11].get())->setAxisMaxAndMins({ -125.0f,  -125.0f }, { 125.0f, 125.0f });
-		((Graph*)m_uiElements[11].get())->addDataSet(yz, UIColor::Yellow);
-		((Graph*)m_uiElements[11].get())->addDataSet(yzc, UIColor::Green);
-		((Graph*)m_uiElements[11].get())->addAxisLine(0, 0);
-		((Graph*)m_uiElements[11].get())->addAxisLine(1, 0);
+		m_uiManager.getElement<Graph>(L"Mag3 Graph")->setAxisMaxAndMins({ -125.0f,  -125.0f }, { 125.0f, 125.0f });
+		m_uiManager.getElement<Graph>(L"Mag3 Graph")->addDataSet(yz, UIColor::Yellow);
+		m_uiManager.getElement<Graph>(L"Mag3 Graph")->addDataSet(yzc, UIColor::Green);
+		m_uiManager.getElement<Graph>(L"Mag3 Graph")->addAxisLine(0, 0);
+		m_uiManager.getElement<Graph>(L"Mag3 Graph")->addAxisLine(1, 0);
 
 		//TODO: add axis lines
 
 		//lastly, make the graphs visible
-		m_uiElements[9]->setState(m_uiElements[9]->getState() ^ UIElementState::Invisible); 
-		m_uiElements[10]->setState(m_uiElements[10]->getState() ^ UIElementState::Invisible);
-		m_uiElements[11]->setState(m_uiElements[11]->getState() ^ UIElementState::Invisible);
+		m_uiManager.getElement<Graph>(L"Mag1 Graph")->removeState(UIElementState::Invisible);
+		m_uiManager.getElement<Graph>(L"Mag2 Graph")->removeState(UIElementState::Invisible);
+		m_uiManager.getElement<Graph>(L"Mag3 Graph")->removeState(UIElementState::Invisible);
 	}
 }
 

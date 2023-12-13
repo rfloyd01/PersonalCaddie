@@ -27,9 +27,9 @@ uint32_t DeviceDiscoveryMode::initializeMode(winrt::Windows::Foundation::Size wi
 	if (!(initialState & DeviceDiscoveryState::CONNECTED)) connectButton.setState(UIElementState::Disabled); //The button is disabled until an actual device is selected
 	else deviceWatcherButton.setState(UIElementState::Disabled); //disable until we disconnect from the current device
 
-	m_uiElements.push_back(std::make_shared<FullScrollingTextBox>(deviceWatcherResults));
-	m_uiElements.push_back(std::make_shared<TextButton>(deviceWatcherButton));
-	m_uiElements.push_back(std::make_shared<TextButton>(connectButton));
+	m_uiManager.addElement<FullScrollingTextBox>(deviceWatcherResults, L"Device Watcher Text Box");
+	m_uiManager.addElement<TextButton>(deviceWatcherButton, L"Device Watcher Button");
+	m_uiManager.addElement<TextButton>(connectButton, L"Connect Button");
 
 	initializeTextOverlay(windowSize);
 
@@ -45,8 +45,7 @@ void DeviceDiscoveryMode::uninitializeMode()
 {
 	//The only thing to do when leaving the main menu mode is to clear
 	//out all text in the text map and color map
-	for (int i = 0; i < m_uiElements.size(); i++) m_uiElements[i] = nullptr;
-	m_uiElements.clear();
+	m_uiManager.removeAllElements();
 }
 
 void DeviceDiscoveryMode::initializeTextOverlay(winrt::Windows::Foundation::Size windowSize)
@@ -55,13 +54,13 @@ void DeviceDiscoveryMode::initializeTextOverlay(winrt::Windows::Foundation::Size
 	std::wstring title_message = L"Device Discovery";
 	TextOverlay title(windowSize, { UIConstants::TitleTextLocationX, UIConstants::TitleTextLocationY }, { UIConstants::TitleTextSizeX, UIConstants::TitleTextSizeY },
 		title_message, UIConstants::TitleTextPointSize, { UIColor::White }, { 0,  (unsigned int)title_message.length() }, UITextJustification::CenterCenter);
-	m_uiElements.push_back(std::make_shared<TextOverlay>(title));
+	m_uiManager.addElement<TextOverlay>(title, L"Title Text");
 
 	//Footnote information
 	std::wstring footnote_message = L"Press Esc. to return to settings menu.";
 	TextOverlay footnote(windowSize, { UIConstants::FootNoteTextLocationX, UIConstants::FootNoteTextLocationY }, { UIConstants::FootNoteTextSizeX, UIConstants::FootNoteTextSizeY },
 		footnote_message, UIConstants::FootNoteTextPointSize, { UIColor::White }, { 0,  (unsigned int)footnote_message.length() }, UITextJustification::LowerRight);
-	m_uiElements.push_back(std::make_shared<TextOverlay>(footnote));
+	m_uiManager.addElement<TextOverlay>(footnote, L"Footnote Text");
 }
 
 uint32_t DeviceDiscoveryMode::handleUIElementStateChange(int i)
@@ -70,21 +69,21 @@ uint32_t DeviceDiscoveryMode::handleUIElementStateChange(int i)
 	{
 		//This represent the large scrolling text box on the page. When clicking
 		//this we're interested in whether or not any device has been selected.
-		m_currentlySelectedDeviceAddress = ((FullScrollingTextBox*)m_uiElements[0].get())->getLastSelectedText();
+		m_currentlySelectedDeviceAddress = m_uiManager.getElement<FullScrollingTextBox>(L"Device Watcher Text Box")->getLastSelectedText();
 
 		//extract the 64-bit address from the selected string
 		std::wstring trimText = L"Address: ";
 		int addressStartIndex = m_currentlySelectedDeviceAddress.find(trimText) + trimText.length();
 		m_currentlySelectedDeviceAddress = m_currentlySelectedDeviceAddress.substr(addressStartIndex);
 
-		m_uiElements[0]->removeState(UIElementState::Clicked); //remove the clicked state from the scroll box
+		m_uiManager.getElement<FullScrollingTextBox>(L"Device Watcher Text Box")->removeState(UIElementState::Clicked); //remove the clicked state from the scroll box
 
 		if (m_currentlySelectedDeviceAddress != L"")
 		{
 			//enable the connect button if it isn't already
-			if (m_uiElements[2]->getState() & UIElementState::Disabled)
+			if (m_uiManager.getElement<TextButton>(L"Connect Button")->getState() & UIElementState::Disabled)
 			{
-				m_uiElements[2]->removeState(UIElementState::Disabled);
+				m_uiManager.getElement<TextButton>(L"Connect Button")->removeState(UIElementState::Disabled);
 			}
 		}
 	}
@@ -93,16 +92,16 @@ uint32_t DeviceDiscoveryMode::handleUIElementStateChange(int i)
 		//UI Element 1 is the device watcher button
 		if (!(m_state & DeviceDiscoveryState::DISCOVERY))
 		{
-			m_uiElements[1]->getText()->message = L"Stop Device Watcher";
-			((FullScrollingTextBox*)m_uiElements[0].get())->clearText();
+			m_uiManager.getElement<TextButton>(L"Device Watcher Button")->updateText(L"Stop Device Watcher");
+			m_uiManager.getElement<FullScrollingTextBox>(L"Device Watcher Text Box")->clearText();
 
 			//since we're clearing the text, nothing is selected so disable the connect button
-			m_uiElements[2]->setState(m_uiElements[2]->getState() | UIElementState::Disabled);
+			m_uiManager.getElement<TextButton>(L"Connect Button")->updateState(UIElementState::Disabled);
 		}
 		else if (m_state & DeviceDiscoveryState::DISCOVERY)
 		{
 			//m_state ^= (DeviceDiscoveryState::DISCOVERY | DeviceDiscoveryState::IDLE); //switch the discovery and idle states
-			m_uiElements[1]->getText()->message = L"Start Device Watcher";
+			m_uiManager.getElement<TextButton>(L"Device Watcher Button")->updateText(L"Start Device Watcher");
 			//return ModeState::Idle;
 		}
 		m_state ^= DeviceDiscoveryState::DISCOVERY; //switch the discovery and idle states
@@ -132,18 +131,17 @@ void DeviceDiscoveryMode::handlePersonalCaddieConnectionEvent(bool connectionSta
 	{
 		//if we lose the connection to the personal caddie while on the device discovery page it
 	    //disables the Disconnect button and enables the Start device watcher button
-		m_uiElements[1]->removeState(UIElementState::Disabled); //enable the device watcher button
+		m_uiManager.getElement<TextButton>(L"Device Watcher Button")->removeState(UIElementState::Disabled); //enable the device watcher button
 
 		//update the connect button
 		std::wstring buttonMessage = L"Connect to Device";
-		m_uiElements[2]->setState(m_uiElements[2]->getState() | UIElementState::Disabled);
-		m_uiElements[2]->getText()->message = L"Connect to Device";
-		m_uiElements[2]->getText()->colorLocations = { 0, (unsigned int) buttonMessage.length() };
+		m_uiManager.getElement<TextButton>(L"Connect Button")->updateState(UIElementState::Disabled);
+		m_uiManager.getElement<TextButton>(L"Connect Button")->updateText(L"Connect to Device");
 
 		//update the scroll box text
 		std::wstring scrollText = L"Start the device watcher to begin enumerating nearby BluetoothLE devices...";
-		((FullScrollingTextBox*)m_uiElements[0].get())->clearText();
-		((FullScrollingTextBox*)m_uiElements[0].get())->addText(scrollText, { 0, 0 }, false, false);
+		m_uiManager.getElement<FullScrollingTextBox>(L"Device Watcher Text Box")->clearText();
+		m_uiManager.getElement<FullScrollingTextBox>(L"Device Watcher Text Box")->addText(scrollText, { 0, 0 }, false, false);
 		
 		//If the disconnect was initiated from the device discovery page then we can remove the
 		//disconnect flag from the current state
@@ -153,18 +151,17 @@ void DeviceDiscoveryMode::handlePersonalCaddieConnectionEvent(bool connectionSta
 	{
 		//If we successfully connect to a device while on this page then it should
 		//disable the device watcher button and enable the connect button.
-		if (m_uiElements[2]->getState() & UIElementState::Disabled) m_uiElements[2]->removeState(UIElementState::Disabled);
-		m_uiElements[1]->setState(m_uiElements[2]->getState() | UIElementState::Disabled);
+		if (m_uiManager.getElement<TextButton>(L"Connect Button")->getState() & UIElementState::Disabled) m_uiManager.getElement<TextButton>(L"Connect Button")->removeState(UIElementState::Disabled);
+		m_uiManager.getElement<TextButton>(L"Device Watcher Button")->setState(m_uiManager.getElement<TextButton>(L"Connect Button")->getState() | UIElementState::Disabled);
 
 		//update the disconnect button
 		std::wstring buttonMessage = L"Disconnect from Device";
-		m_uiElements[2]->getText()->message = buttonMessage;
-		m_uiElements[2]->getText()->colorLocations = { 0, (unsigned int)buttonMessage.length() };
+		m_uiManager.getElement<TextButton>(L"Connect Button")->updateText(buttonMessage);
 
 		//update the scroll box text
 		std::wstring scrollText = L"Disconnect from the current device to use the device watcher...";
-		((FullScrollingTextBox*)m_uiElements[0].get())->clearText();
-		((FullScrollingTextBox*)m_uiElements[0].get())->addText(scrollText, { 0, 0 }, false, false);
+		m_uiManager.getElement<FullScrollingTextBox>(L"Device Watcher Text Box")->clearText();
+		m_uiManager.getElement<FullScrollingTextBox>(L"Device Watcher Text Box")->addText(scrollText, { 0, 0 }, false, false);
 
 		//If the connection was initiated from the device discovery page then we can remove the
 		//attempt_connect flag from the current state

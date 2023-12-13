@@ -20,6 +20,7 @@ enum class UIElementType
 	HIGHLIGHTABLE_TEXT_OVERLAY,
 	DROP_DOWN_MENU,
 	GRAPH,
+	LINE,
 	END
 };
 
@@ -28,10 +29,9 @@ struct ManagedUIElement
 	std::wstring name;
 	std::shared_ptr<UIElement> element;
 	std::vector<std::pair<int, int> > grid_locations;
+	UIElementType type;
 };
 
-/*
-*/
 class UIElementManager
 {
 public:
@@ -58,7 +58,7 @@ public:
 		//Bottom Right location = {floor(GRID_WIDTH * (location.x + size.x / 2.0)), floor(GRID_WIDTH * (location.y + size.y / 2.0))}
 		//We just iterate over all grid square from the top left to the bottom right
 
-		ManagedUIElement me = { name, std::make_shared<T>(element), {} };
+		ManagedUIElement me = { name, std::make_shared<T>(element), {}, type };
 		auto managedElement = std::make_shared<ManagedUIElement>(me); //create a copy of the element so we can get the absolute size and location
 
 		auto size = managedElement->element->getAbsoluteSize();
@@ -126,6 +126,7 @@ public:
 	}
 
 	void removeAllElements();
+	void removeElementType(UIElementType type);
 
 	//Get Methods for rendering and updating
 	std::vector<std::vector<std::vector<std::shared_ptr<ManagedUIElement> > > > & getElementGrid() { return m_gridLocations; } //not a const reference as we need the ability to change the state of UIElements in teh grid
@@ -134,6 +135,7 @@ public:
 
 	//Methods for interactions of UIElements with the Mouse
 	void updateScreenSize(winrt::Windows::Foundation::Size newWindowSize) { m_windowSize = newWindowSize; }
+	winrt::Windows::Foundation::Size getScreenSize() { return m_windowSize; }
 	void updateGridSquareElements(InputState* input);
 
 	template <typename T>
@@ -229,4 +231,7 @@ private:
 
 	template<>
 	UIElementType type_to_UIElementType<Graph>() { return UIElementType::GRAPH; }
+
+	template<>
+	UIElementType type_to_UIElementType<Line>() { return UIElementType::LINE; }
 };

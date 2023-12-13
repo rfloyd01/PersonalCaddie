@@ -34,6 +34,8 @@ private:
 	void initializeTextOverlay(winrt::Windows::Foundation::Size windowSize);
 	void createDropDownMenus(winrt::Windows::Foundation::Size windowSize, bool use_current = false);
 
+	void uiElementStateChangeHandler(std::shared_ptr<ManagedUIElement> element);
+
 	void populateDropDownText();
 
 	void updateSetting(sensor_type_t sensor_type, sensor_settings_t setting_type, uint8_t setting);

@@ -20,6 +20,31 @@ UIElementManager::UIElementManager()
 	}
 }
 
+void UIElementManager::removeElementType(UIElementType type)
+{
+	//Removes all UI Elements with the given type
+	for (auto it = m_uiElements.at(type).begin(); it != m_uiElements.at(type).end(); it++)
+	{
+		//Remove the UIElement from the render vector first.
+		auto render_it = std::find(m_renderElements.begin(), m_renderElements.end(), it->get()->element);
+		m_renderElements.erase(render_it);
+
+		for (int i = 0; i < it->get()->grid_locations.size(); i++)
+		{
+			//The grid vectors aren't ordered so we need to search for the appropriate
+			//smart pointer. This may not seem super effecient, especially because removing
+			//elements from a vector forces all other elements to shift, however, if
+			//the grid is small enough then there should never be more than a handful of 
+			//pointers in each vector so this should be alright.
+			std::pair<int, int> grid_location = { it->get()->grid_locations[i].first, it->get()->grid_locations[i].second };
+			auto grid_it = findElementByName(m_gridLocations[it->get()->grid_locations[i].first][it->get()->grid_locations[i].second], it->get()->name);
+			m_gridLocations[it->get()->grid_locations[i].first][it->get()->grid_locations[i].second].erase(grid_it);
+		}
+	}
+	
+	m_uiElements.at(type).clear(); //finally clear out the appropriate vector in the ui element map
+}
+
 void UIElementManager::removeAllElements()
 {
 	//Clear out the render and action vectors, the element map and the element grid

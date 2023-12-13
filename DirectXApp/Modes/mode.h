@@ -60,12 +60,7 @@ public:
 
 	const UIColor getBackgroundColor();
 
-	std::vector<std::shared_ptr<UIElement> > const& getUIElements()
-	{
-		//TODO: Once uiManager class is complete simply return the manager's render vector
-		if (m_uiManager.getRenderElements().size() > 0) return m_uiManager.getRenderElements();
-		else return m_uiElements;
-	}
+	std::vector<std::shared_ptr<UIElement> > const& getUIElements() { return m_uiManager.getRenderElements(); }
 	UIElementManager & getUIElementManager() { return m_uiManager; }
 	std::vector<std::shared_ptr<VolumeElement> > const& getVolumeElements() { return m_volumeElements; }
 
@@ -91,7 +86,7 @@ public:
 protected:
 	UIColor m_backgroundColor; //represents the background color when this mode is being rendered
 
-	std::vector<std::shared_ptr<UIElement> >  m_uiElements; //2d objects like Drop downs, combo boxes, buttons and text
+	//std::vector<std::shared_ptr<UIElement> >  m_uiElements; //2d objects like Drop downs, combo boxes, buttons and text
 	std::vector<std::shared_ptr<VolumeElement> >  m_volumeElements; //3d objects to be rendered on screen (not all modes feature 3D objects)
 	std::vector<MaterialType> m_materialTypes; //A vector of material types to be applied to 3d rendered objects
 	UIElementManager m_uiManager; //a class that helps us manage the UI Elements in the mode

@@ -25,7 +25,8 @@ enum UIElementState
 	Hovered = 16,
 	NeedTextPixels = 32,
 	Selected = 64,
-	Disabled = 128
+	Disabled = 128,
+	Dummy = 256
 };
 
 //used to make sure all parts of the UI element are rendered
@@ -39,7 +40,7 @@ public:
 		m_size = { 0.0f, 0.0f };
 		m_location = { 0.0f, 0.0f };
 		m_fontSize = 0.0f;
-		m_state = 0;
+		m_state = Dummy;
 	}
 	~UIElement()
 	{

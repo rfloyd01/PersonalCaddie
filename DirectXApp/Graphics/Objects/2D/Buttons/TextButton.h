@@ -61,5 +61,8 @@ public:
 	{
 		//changes the text inside the button
 		m_text.message = newText;
+
+		//Also update the color position vector to match the new length.
+		m_text.colorLocations.back() = newText.length();
 	}
 };
