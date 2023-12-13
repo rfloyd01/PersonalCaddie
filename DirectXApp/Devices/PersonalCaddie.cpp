@@ -255,7 +255,7 @@ void PersonalCaddie::BLEDeviceHandler(BLEState state)
         }
 
         //After confirming the device is here and reading the gatt table, make sure that all data notifications
-        //are currently off (as this setting can persist between connections)
+        //are enabled. Notifications should be enabled for the duration of the connection.
         disableDataNotifications();
 
         //Check to see if this device is currently paired with the computer. If it isn't, pair it for quicker
@@ -268,7 +268,6 @@ void PersonalCaddie::BLEDeviceHandler(BLEState state)
         //Read the sensor settings characteristic to get some basic information about the sensors attached to
         //the Personal Caddie
         uint8_t sensor_settings_array[SENSOR_SETTINGS_LENGTH] = { 0 };
-
         try
         {
             auto sensor_settings_buffer = m_settings_characteristic.ReadValueAsync(Bluetooth::BluetoothCacheMode::Uncached).get().Value(); //use unchached to read value from the device

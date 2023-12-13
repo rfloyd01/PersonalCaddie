@@ -596,7 +596,7 @@ void ModeScreen::PersonalCaddieHandler(PersonalCaddieEventType pcEvent, void* ev
 		else if (alertText == L"The Personal Caddie has been placed into Connected Mode")
 		{
 			//When entering connected mode, we make sure that data notifications are turned off
-			m_personalCaddie->disableDataNotifications();
+			//m_personalCaddie->disableDataNotifications();
 		}
 		break;
 	}
@@ -688,8 +688,37 @@ void ModeScreen::PersonalCaddieHandler(PersonalCaddieEventType pcEvent, void* ev
 
 void ModeScreen::ModeHandler(ModeAction action, void* eventArgs)
 {
-	//TODO: Fill this out with stuff
-	int x = 12;
+	//Since the individual mode classes don't have direct access to the Personal Caddie class this handler
+	//method is used to forward on actions that the current mode needs onwards to the Personal 
+	//Caddie (and by extension the BLE and Sensor classes). As an example, when Discovery mode is active,
+	//we need to turn on the BLE class's device watcher to start scanning for Personal Caddie devices.
+	//When the scan button is clicked in the mode it forwards the request to this handler method, which 
+	//then asks the BLE class to turn on the device watcher. The decision to deny direct access between
+	//Personal Caddie and mode classes was deliberate. The mode screen class can almost be thought of as
+	//like ther service layer in a three layerd software architecture.
+	switch (action)
+	{
+	case PersonalCaddieChangeMode:
+	{
+		//We want to change the power mode of the personal caddie. The event args
+		//in this case will be an instance of the PersonalCaddiePowerMode enum. Other
+		//handler methods will handle getting data to the mode if and when necessary.
+		m_personalCaddie->changePowerMode(*((PersonalCaddiePowerMode*)eventArgs));
+		break;
+	}
+	case RendererGetMaterial:
+	{
+		//The current mode needs something from the renderer class. This can either be
+		//a material for a model to be rendered, or, the dimensions of text inside a 
+		//text box.
+	}
+	case MadgwickUpdateFilter:
+	case SensorSettings:
+	case SensorCalibration:
+	case BLEDeviceWatcher:
+	case BLEConnection:
+	default: return;
+	}
 }
 
 void ModeScreen::enterActiveState()

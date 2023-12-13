@@ -6,6 +6,7 @@
 #include "Graphics/Rendering/Material.h"
 #include "Input/InputProcessor.h"
 #include "Math/glm.h"
+#include "Devices/PersonalCaddie.h"
 
 #include <string>
 #include <functional>
@@ -53,21 +54,13 @@ enum ModeState
 //holds different actions that the active mode can ask the mode screen class to take on its behalf.
 enum ModeAction
 {
-	PersonalCaddieActivateConnectedMode,
-	PersonalCaddieActivateIdleMode,
-	PersonalCaddieActivateActiveMode,
-	RendererGetTextSize,
+	PersonalCaddieChangeMode,
 	RendererGetMaterial,
 	MadgwickUpdateFilter,
-	SensorUpdateSettings,
-	SensorUpdateCalibration,
-	SensorUpdateAxisCalibration,
-	SensorGetSettings,
-	SensorGetCalibration,
-	BLEEnableDeviceWatcher,
-	BLEDisableDeviceWatcher,
-	BLEConnectToDevice,
-	BLEDisconnectFromDevice
+	SensorSettings,
+	SensorCalibration,
+	BLEDeviceWatcher,
+	BLEConnection
 };
 
 //Class definition

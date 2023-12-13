@@ -61,6 +61,7 @@ private:
 
 	void advanceToNextStage();
 	void prepareRecording();
+	void stopRecording();
 	void displayGraph();
 
 	void accAxisCalculate(int axis);

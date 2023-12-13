@@ -89,13 +89,8 @@ uint32_t CalibrationMode::initializeMode(winrt::Windows::Foundation::Size window
 
 void CalibrationMode::uninitializeMode()
 {
-	//The only thing to do when leaving the main menu mode is to clear
-	//out all text in the text map and color map
-	//for (int i = 0; i < m_uiElements.size(); i++) m_uiElements[i] = nullptr;
-	//m_uiElements.clear();
-
+	//Delete everything in the UIElement Manager
 	m_uiManager.removeAllElements();
-	int x = 5;
 }
 
 void CalibrationMode::initializeTextOverlay(winrt::Windows::Foundation::Size windowSize)
@@ -162,15 +157,19 @@ void CalibrationMode::startDataCapture()
 	//sensor active mode and is ready to start recording data. Furthermore, all IMU sensors have a slight wake up time
 	//where data they generate will be "junk". We can also use this method to wait for a brief moment after turning on
 	//the sensors to actually record data.
-	if (m_state & CalibrationModeState::READY_TO_RECORD)
-	{
-		//Wait a moment to let the sensor warm up
-		auto start = std::chrono::steady_clock::now();
-		while (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start).count() < 750) {}
+	//if (m_state & CalibrationModeState::READY_TO_RECORD)
+	//{
+	//	//Wait a moment to let the sensor warm up
+	//	auto start = std::chrono::steady_clock::now();
+	//	while (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start).count() < 750) {}
 
-		m_state ^= (CalibrationModeState::READY_TO_RECORD | CalibrationModeState::RECORDING_DATA);
-		data_timer = std::chrono::steady_clock::now();
-	}
+	//	m_state ^= (CalibrationModeState::READY_TO_RECORD | CalibrationModeState::RECORDING_DATA);
+	//	data_timer = std::chrono::steady_clock::now();
+	//}
+	// 
+	
+	m_state ^= CalibrationModeState::RECORDING_DATA;
+	data_timer = std::chrono::steady_clock::now();
 }
 
 void CalibrationMode::stopDataCapture()
@@ -394,16 +393,10 @@ void CalibrationMode::advanceToNextStage()
 	//We call this method to move to the next stage of the current calibration
 	m_currentStage++;
 	m_stageSet = false;
-	//update();
 }
 
 void CalibrationMode::update()
 {
-	//TEST: Call mode screen function pointer
-	int x = 5;
-
-	m_mode_screen_handler(ModeAction::BLEConnectToDevice, (void*)&x);
-
 	//First process any changes that clicks or key presses had on the UI elements
 	if (m_uiManager.getActionElements().size() > 0)
 	{
@@ -415,7 +408,7 @@ void CalibrationMode::update()
 		}
 	}
 
-	//when in active mode it means that the device watcher is running
+	//Depending on the current active calibration, call the appropriate method.
 	if (m_state & CalibrationModeState::AXES) axisCalibration(); //this line must come before the others as the acc, gyr and mag flags can also be set during the axes calibration
 	else if (m_state & CalibrationModeState::ACCELEROMETER) accelerometerCalibration();
 	else if (m_state & CalibrationModeState::GYROSCOPE) gyroscopeCalibration();
@@ -433,7 +426,6 @@ void CalibrationMode::addData(std::vector<std::vector<std::vector<float> > > con
 
 	if (m_state & CalibrationModeState::RECORDING_DATA) //only add date if we're actively recording
 	{
-		//m_timeStamp = (float)std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - data_timer).count() / 1000000000.0;
 		float timeIncrement = 1.0f / sensorODR;
 		int current_stage = m_currentStage / 2 - 1;
 
@@ -482,8 +474,6 @@ void CalibrationMode::addData(std::vector<std::vector<std::vector<float> > > con
 				acc_cal[2][current_stage] += sensorData[calibrationType][2][i];
 				avg_count++;
 			}
-
-			//m_timeStamp += timeIncrement;
 		}
 	}
 }
@@ -659,8 +649,8 @@ void CalibrationMode::axisCalibration()
 
 			if (data_timer_elapsed >= data_timer_duration)
 			{
-				m_state ^= (CalibrationModeState::RECORDING_DATA | CalibrationModeState::STOP_RECORD);
-				advanceToNextStage();
+				//m_state ^= (CalibrationModeState::RECORDING_DATA | CalibrationModeState::STOP_RECORD);
+				stopRecording();
 				return; //since advance to next stage is called above we leave this method after it returns
 			}
 		}
@@ -674,7 +664,7 @@ void CalibrationMode::axisCalibration()
 		{
 			m_uiManager.getElement<TextOverlay>(L"Body Text")->updateText(L"First the accelerometer axes will be aligned. Point the +X-axis of the sensor straight upwards like depicted in the image and hold it there for 2 seconds. Press continue when ready to proceed.");
 			m_uiManager.getElement<TextOverlay>(L"Subtitle Text")->updateText(L"Axis Calibration: Accelerometer Phase"); //update the sub-title text
-			data_timer_duration = 2000; //the acceleromter needs 5 seconds of data at each stage
+			data_timer_duration = 2000;
 			m_renderQuaternion = { -0.707f, 0.0f, 0.0f, 0.707f };
 			m_needsCamera = true; //alerts the mode screen class to actually render the 3d image
 
@@ -699,6 +689,7 @@ void CalibrationMode::axisCalibration()
 	{
 		if (!m_stageSet)
 		{
+			stopRecording();
 			//With the data collected, see if a swap or inversion needs to occur for the x-axis
 			accAxisCalculate(0);
 
@@ -1909,13 +1900,27 @@ void CalibrationMode::prepareRecording()
 	//so it's more efficient to just create a method to carry the actions out
 	if (!m_stageSet)
 	{
-		m_state |= CalibrationModeState::READY_TO_RECORD; //This will initiate data recording
+		auto mode = PersonalCaddiePowerMode::SENSOR_ACTIVE_MODE;
+		m_mode_screen_handler(ModeAction::PersonalCaddieChangeMode, (void*)&mode);//request the Personal Caddie to be placed into active mode to start recording data
+
 		m_stageSet = true;
 	}
 	else if (m_state & CalibrationModeState::RECORDING_DATA)
 	{
 		std::wstring message = L"Recording Data, hold sensor steady for " + std::to_wstring((float)(data_timer_duration - data_timer_elapsed) / 1000.0f) + L" more seconds.";
 		m_uiManager.getElement<TextOverlay>(L"Body Text")->updateText(message);
+	}
+}
+
+void CalibrationMode::stopRecording()
+{
+	if (m_state & CalibrationModeState::RECORDING_DATA)
+	{
+		m_state ^= CalibrationModeState::RECORDING_DATA;
+		auto mode = PersonalCaddiePowerMode::CONNECTED_MODE;
+
+		m_mode_screen_handler(ModeAction::PersonalCaddieChangeMode, (void*)&mode);//request the Personal Caddie to be placed into active mode to start recording data
+		advanceToNextStage();
 	}
 }
 
