@@ -72,9 +72,11 @@ public:
 	void addUIElement(T const& element) { m_uiElements.push_back(std::make_shared<T>(element)); }
 
 	//Alert Methods
-	void createAlert(std::wstring message, UIColor color, winrt::Windows::Foundation::Size windowSize);
-	void createAlert(TextOverlay& alert);
-	virtual TextOverlay removeAlerts(); //some modes need to maintain a specific order for elements and removing alerts can change this. This method is virtual so those modes can override this one.
+	void createAlert(std::wstring message, UIColor color, winrt::Windows::Foundation::Size windowSize, long long duration = 2500); //default to 2.5 second alerts
+	//void createAlert(TextOverlay& alert);
+	//virtual TextOverlay removeAlerts(); //some modes need to maintain a specific order for elements and removing alerts can change this. This method is virtual so those modes can override this one.
+	std::vector<std::shared_ptr<ManagedUIElement>> const& removeAlerts();
+	void overwriteAlerts(std::vector<std::shared_ptr<ManagedUIElement>> const& alerts);
 
 	virtual uint32_t handleUIElementStateChange(int i) = 0;
 

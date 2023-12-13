@@ -13,4 +13,5 @@
 #include "TextBoxes/FullScrollingTextBox.h"
 #include "TextBoxes/HighlightableTextOverlay.h"
 #include "TextBoxes/DropDownMenu.h"
+#include "TextBoxes/Alert.h"
 #include "Graph/Graph.h"

@@ -433,7 +433,8 @@ void ModeScreen::changeCurrentMode(ModeType mt)
 
 	//First, get any active alerts before deleting the text and color map of the 
 	//current mode
-	auto currentAlerts = m_modes[static_cast<int>(m_currentMode)]->removeAlerts();// .getText();
+	//auto currentAlerts = m_modes[static_cast<int>(m_currentMode)]->removeAlerts();// .getText();
+	auto currentAlerts = m_modes[static_cast<int>(m_currentMode)]->removeAlerts();
 
 	//Check to see if the current mode is in the active state, if so then take it out
 	//of that state. Then uninitialize the mode.
@@ -474,7 +475,8 @@ void ModeScreen::changeCurrentMode(ModeType mt)
 	
 	//After initializing, add any alerts that were copied over to the text and
 	//color maps and then create text and color resources in the renderer
-	if (currentAlerts.getText()->message != L"") m_modes[static_cast<int>(m_currentMode)]->createAlert(currentAlerts);
+	//if (currentAlerts.getText()->message != L"") m_modes[static_cast<int>(m_currentMode)]->createAlert(currentAlerts);
+	m_modes[static_cast<int>(m_currentMode)]->overwriteAlerts(currentAlerts);
 }
 
 void ModeScreen::getTextRenderPixels(std::vector<UIText*> const& text)

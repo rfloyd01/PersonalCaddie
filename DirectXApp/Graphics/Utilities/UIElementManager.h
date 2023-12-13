@@ -21,6 +21,7 @@ enum class UIElementType
 	DROP_DOWN_MENU,
 	GRAPH,
 	LINE,
+	ALERT,
 	END
 };
 
@@ -61,27 +62,31 @@ public:
 		ManagedUIElement me = { name, std::make_shared<T>(element), {}, type };
 		auto managedElement = std::make_shared<ManagedUIElement>(me); //create a copy of the element so we can get the absolute size and location
 
-		auto size = managedElement->element->getAbsoluteSize();
-		auto location = managedElement->element->getAbsoluteLocation();
-
-		std::pair<int, int> top_left = { GRID_WIDTH * (location.x - size.x / 2.0f), GRID_WIDTH * (location.y - size.y / 2.0f) };
-		std::pair<int, int> bottom_right = { GRID_WIDTH * (location.x + size.x / 2.0f), GRID_WIDTH * (location.y + size.y / 2.0f) };
-
-		//Ignore any squares that fall outside of the grid
-		for (int row = top_left.second; row <= bottom_right.second; row++)
+		if (type != UIElementType::ALERT)
 		{
-			if (row < 0) continue;
-			else if (row >= GRID_WIDTH) break;
+			//We don't add alerts to the grid as they can't be interacted with
+			auto size = managedElement->element->getAbsoluteSize();
+			auto location = managedElement->element->getAbsoluteLocation();
 
-			for (int col = top_left.first; col <= bottom_right.first; col++)
+			std::pair<int, int> top_left = { GRID_WIDTH * (location.x - size.x / 2.0f), GRID_WIDTH * (location.y - size.y / 2.0f) };
+			std::pair<int, int> bottom_right = { GRID_WIDTH * (location.x + size.x / 2.0f), GRID_WIDTH * (location.y + size.y / 2.0f) };
+
+			//Ignore any squares that fall outside of the grid
+			for (int row = top_left.second; row <= bottom_right.second; row++)
 			{
-				if (col < 0) continue;
-				else if (col >= GRID_WIDTH) break;
+				if (row < 0) continue;
+				else if (row >= GRID_WIDTH) break;
 
-				//Add the grid location to the managed element, and a reference to the managed element
-				//in the appropriate grid location
-				managedElement->grid_locations.push_back({ row, col });
-				m_gridLocations[row][col].push_back(managedElement);
+				for (int col = top_left.first; col <= bottom_right.first; col++)
+				{
+					if (col < 0) continue;
+					else if (col >= GRID_WIDTH) break;
+
+					//Add the grid location to the managed element, and a reference to the managed element
+					//in the appropriate grid location
+					managedElement->grid_locations.push_back({ row, col });
+					m_gridLocations[row][col].push_back(managedElement);
+				}
 			}
 		}
 
@@ -169,6 +174,11 @@ public:
 		}
 	}
 
+	//void createAlert(TextOverlay& alert);
+	void checkAlerts();
+	std::vector<std::shared_ptr<ManagedUIElement>> const& removeAlerts();
+	void overwriteAlerts(std::vector<std::shared_ptr<ManagedUIElement>> const& alerts);
+
 private:
 	//Data Structures
 	std::map<UIElementType, std::vector<std::shared_ptr<ManagedUIElement> > > m_uiElements;
@@ -177,6 +187,7 @@ private:
 	std::vector<std::shared_ptr<ManagedUIElement> > m_actionElements; //Any UI Elements that have been interacted with and require the current mode to carry out some action will be added to this vector
 
 	winrt::Windows::Foundation::Size m_windowSize; //Keeps track of the current size of the window. UIElements have dimensions that are relative to the window size
+	long long m_alertTimer = 2000; //The amount of time (in milliseconds) that alerts remain on screen before disappearing
 
 	std::vector<std::shared_ptr<ManagedUIElement> >::iterator findElementByName(std::vector<std::shared_ptr<ManagedUIElement> > & vec, std::wstring name);
 
@@ -234,4 +245,7 @@ private:
 
 	template<>
 	UIElementType type_to_UIElementType<Line>() { return UIElementType::LINE; }
+
+	template<>
+	UIElementType type_to_UIElementType<Alert>() { return UIElementType::ALERT; }
 };

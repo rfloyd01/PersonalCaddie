@@ -391,6 +391,9 @@
     <ClInclude Include="Graphics\Utilities\UIElementManager.h">
       <Filter>Graphics\Utilities</Filter>
     </ClInclude>
+    <ClInclude Include="Graphics\Objects\2D\TextBoxes\Alert.h">
+      <Filter>Graphics\Objects\2D\TextBoxes</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Assets\Wide310x150Logo.scale-200.png">

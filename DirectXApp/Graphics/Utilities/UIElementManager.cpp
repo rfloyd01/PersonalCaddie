@@ -2,6 +2,8 @@
 #include "UIElementManager.h"
 #include "algorithm"
 
+#include <chrono>
+
 UIElementManager::UIElementManager()
 {
 	//create the map with an empty entry for each type of UI Element
@@ -93,6 +95,71 @@ void UIElementManager::updateGridSquareElements(InputState* input)
 			m_actionElements.push_back(uiElement);
 		}
 	}
+}
+
+//void UIElementManager::createAlert(TextOverlay& alert)
+//{
+//	//Alerts are special kinds of text overlays. The pop up on the screen and only last for 
+//	//a few seconds before disappearing again. Also, unlike other UIElements they persist
+//	//between modes.
+//	ManagedUIElement me = { L"Alert " + std::to_wstring(m_uiElements.at(UIElementType::ALERT).size()), std::make_shared<TextOverlay>(alert), {}, UIElementType::ALERT};
+//	auto me_point = std::make_shared<ManagedUIElement>(me);
+//	m_uiElements.at(UIElementType::ALERT).push_back(me_point);
+//
+//	//Also add the alert to the render list so we can see it
+//	m_renderElements.push_back(me_point->element);
+//
+//	//After creating the alert set a timer, once the timer goes off we then 
+//	//remove the alert
+//	concurrency::task<void> timer([this, me_point]()
+//		{
+//			auto timer = std::chrono::steady_clock::now();
+//			while (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - timer).count() < m_alertTimer) {}
+//
+//			//Remove the alert from the render vector
+//			auto render_it = std::find(m_renderElements.begin(), m_renderElements.end(), me_point->element);
+//			m_renderElements.erase(render_it);
+//
+//			//Then remove it from the element map
+//			auto map_it = findElementByName(m_uiElements.at(UIElementType::ALERT), me_point->name);
+//			m_uiElements.at(UIElementType::ALERT).erase(map_it);
+//		});
+//}
+
+void UIElementManager::checkAlerts()
+{
+	//Alerts get automatically deleted when they've been on screen for a set period of time.
+	//Since it's possible for alerts to persist between different modes, we can't leave the 
+	//destruction of the alerts up to themselves, but instead the UIElementManager class
+	//(unlike buttons for example which have their own timers for how long they stay pressed).
+	//Simply iterate through the alert array of the element map and check the timestampe of when
+	//the alert was first created. If it's longer than the alerts slotted duration, it gets
+	//deleted
+	auto timestamp = std::chrono::steady_clock::now();
+	for (int i = m_uiElements.at(UIElementType::ALERT).size() - 1; i >= 0; i--) //iterate backwards so removing alerts won't effect the iteration
+	{
+		auto alert = ((Alert*)m_uiElements.at(UIElementType::ALERT)[i]->element.get());
+		if (std::chrono::duration_cast<std::chrono::milliseconds>(timestamp - alert->m_startTime).count() >= alert->m_duration)
+		{
+			removeElement<Alert>(m_uiElements.at(UIElementType::ALERT)[i]->name);
+		}
+	}
+}
+
+std::vector<std::shared_ptr<ManagedUIElement>> const& UIElementManager::removeAlerts()
+{
+	//When we leave one mode and go to another, any active alerts are brought over as well.
+	//To do this, we just copy the entire alert array that's inside of the element map and
+	//set it as the alert array for the new mode. We don't need to worry about deleting the 
+	//alerts in the current mode as this will happen automatically when the mode is 
+	//uninitialized..
+	return m_uiElements.at(UIElementType::ALERT);
+}
+
+void UIElementManager::overwriteAlerts(std::vector<std::shared_ptr<ManagedUIElement>> const& alerts)
+{
+	//Overwrite the alerts for the current mode with the given vector.
+	m_uiElements.at(UIElementType::ALERT) = alerts;
 }
 
 std::vector<std::shared_ptr<ManagedUIElement> >::iterator UIElementManager::findElementByName(std::vector<std::shared_ptr<ManagedUIElement> >& vec, std::wstring name)

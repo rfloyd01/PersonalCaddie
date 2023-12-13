@@ -26,7 +26,7 @@ public:
 	void getCurrentSettings(winrt::Windows::Foundation::Size windowSize, std::vector<uint8_t*> settings, std::vector<uint8_t> const& availableSensors, bool use_current = false);
 	uint8_t* getNewSettings() { return m_newSettings; }
 
-	virtual TextOverlay removeAlerts() override;
+	//virtual TextOverlay removeAlerts() override;
 
 	bool dropDownsSet;
 
@@ -39,6 +39,8 @@ private:
 	void populateDropDownText();
 
 	void updateSetting(sensor_type_t sensor_type, sensor_settings_t setting_type, uint8_t setting);
+
+	std::wstring getSettingString(int setting);
 
 	uint8_t convertStringToHex(std::wstring hexString);
 

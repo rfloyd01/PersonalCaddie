@@ -871,16 +871,16 @@ std::wstring IMUSettingsMode::getSettingString(int setting)
 	}
 }
 
-TextOverlay IMUSettingsMode::removeAlerts()
-{
-	//If an alert is removed from in front of the drop down boxes then we need to updated the starting locations
-	//for each of the sensors. If not though then nothing needs to be changed
-	TextOverlay alert({ 0, 0 }, { 0, 0 }, { 0, 0 }, L"", 0, { UIColor::Black }, { 0, 0 }, UITextJustification::CenterCenter);
-	
-	//TODO: Need to revamp method for passing alerts between different modes
-
-	return alert;
-}
+//TextOverlay IMUSettingsMode::removeAlerts()
+//{
+//	//If an alert is removed from in front of the drop down boxes then we need to updated the starting locations
+//	//for each of the sensors. If not though then nothing needs to be changed
+//	TextOverlay alert({ 0, 0 }, { 0, 0 }, { 0, 0 }, L"", 0, { UIColor::Black }, { 0, 0 }, UITextJustification::CenterCenter);
+//	
+//	//TODO: Need to revamp method for passing alerts between different modes
+//
+//	return alert;
+//}
 
 void IMUSettingsMode::handlePersonalCaddieConnectionEvent(bool connectionStatus)
 {

@@ -23,4 +23,6 @@ public:
 			m_text.colorLocations[i] = newLocations[i];
 		}
 	}
+
+
 };

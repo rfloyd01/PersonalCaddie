@@ -1,5 +1,7 @@
 #include "pch.h"
 #include "Button.h"
+
+#include <ppltasks.h>
 #include <chrono>
 
 Button::Button(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size,
@@ -33,13 +35,3 @@ void Button::onClick()
 			((Box*)p_children[0].get())->setBackgrounColor(UIColor::ButtonNotPressed);
 		});
 }
-
-//void Button::removeState(uint32_t state)
-//{
-//	//When the clicked state is removed from the button we change its color back
-//	if (state & UIElementState::Clicked)
-//	{
-//		m_state ^= UIElementState::Clicked;
-//		((Box*)p_children[0].get())->setBackgrounColor(UIColor::ButtonNotPressed);
-//	}
-//}

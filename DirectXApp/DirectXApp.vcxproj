@@ -156,6 +156,7 @@
     <ClInclude Include="Graphics\Objects\2D\Interfaces\IHoverableUI.h" />
     <ClInclude Include="Graphics\Objects\2D\Interfaces\IScrollableUI.h" />
     <ClInclude Include="Graphics\Objects\2D\Interfaces\ITextDimensionsUI.h" />
+    <ClInclude Include="Graphics\Objects\2D\TextBoxes\Alert.h" />
     <ClInclude Include="Graphics\Objects\2D\TextBoxes\DropDownMenu.h" />
     <ClInclude Include="Graphics\Objects\2D\TextBoxes\FullScrollingTextBox.h" />
     <ClInclude Include="Graphics\Objects\2D\TextBoxes\HighlightableTextOverlay.h" />

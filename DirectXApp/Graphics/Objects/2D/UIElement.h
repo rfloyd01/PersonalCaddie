@@ -78,8 +78,8 @@ public:
 	virtual std::vector<UIText*> setTextDimension() { return {}; }; //empty getTextDimension method can be overriden by ITextDimension element users
 	virtual void repositionText() {}; //empty repositionText method can be overriden by ITextDimension element users
 
-	bool isAlert() { return m_isAlert; }
-	void setAlert() { m_isAlert = true; }
+	bool isAlert() { return m_isAlert; } //deprecated
+	void setAlert() { m_isAlert = true; } //deprecated
 
 protected:
 	int pixelCompare(float pixelOne, float pixelTwo);
