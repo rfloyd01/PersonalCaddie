@@ -24,7 +24,6 @@ public:
 	virtual std::vector<UIText*> setTextDimension() override;
 
 	void setSelectedOption(std::wstring option);
-
 	std::wstring getSelectedOption() { return m_currentlySelectedOption; }
 
 protected:
