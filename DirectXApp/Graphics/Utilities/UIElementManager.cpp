@@ -146,13 +146,14 @@ void UIElementManager::checkAlerts()
 	}
 }
 
-std::vector<std::shared_ptr<ManagedUIElement>> const& UIElementManager::removeAlerts()
+std::vector<std::shared_ptr<ManagedUIElement>> UIElementManager::removeAlerts()
 {
 	//When we leave one mode and go to another, any active alerts are brought over as well.
 	//To do this, we just copy the entire alert array that's inside of the element map and
 	//set it as the alert array for the new mode. We don't need to worry about deleting the 
 	//alerts in the current mode as this will happen automatically when the mode is 
-	//uninitialized..
+	//uninitialized.. We create a copy of the alerts so that they persist after being
+	//delete in this mode.
 	return m_uiElements.at(UIElementType::ALERT);
 }
 
@@ -160,6 +161,9 @@ void UIElementManager::overwriteAlerts(std::vector<std::shared_ptr<ManagedUIElem
 {
 	//Overwrite the alerts for the current mode with the given vector.
 	m_uiElements.at(UIElementType::ALERT) = alerts;
+
+	//The alerts also get placed into the render vector
+	for (int i = 0; i < alerts.size(); i++) m_renderElements.push_back(alerts[i]->element);
 }
 
 std::vector<std::shared_ptr<ManagedUIElement> >::iterator UIElementManager::findElementByName(std::vector<std::shared_ptr<ManagedUIElement> >& vec, std::wstring name)

@@ -13,6 +13,8 @@
 
 #include "Graphics/Rendering/MasterRenderer.h"
 
+#include <functional>
+
 ModeScreen::ModeScreen() :
 	m_currentMode(ModeType::MAIN_MENU),
 	alert_active(false),
@@ -31,6 +33,10 @@ ModeScreen::ModeScreen() :
 	m_modes[static_cast<int>(ModeType::IMU_SETTINGS)] = std::make_shared<IMUSettingsMode>();
 	m_modes[static_cast<int>(ModeType::MADGWICK)] = std::make_shared<MadgwickTestMode>();
 	m_modes[static_cast<int>(ModeType::CALIBRATION)] = std::make_shared<CalibrationMode>();
+
+	//After creating the modes, bind the mode handler method to the mode class so that all
+	//different mode types can use it
+	Mode::setHandlerMethod(std::bind(&ModeScreen::ModeHandler, this, std::placeholders::_1, std::placeholders::_2));
 
 	//Set default times for various timers (in milliseconds)
 	alert_timer_duration = 2500;
@@ -73,11 +79,11 @@ void ModeScreen::update()
 	processEvents();
 
 	//finally, check to see if there are any timers that are going on or expired
-	processTimers();
+	//processTimers();
 
 	//After all input, timers and events have been processed we defer to the 
 	//current mode on handling this new information
-	m_modes[static_cast<int>(m_currentMode)]->update();
+	//m_modes[static_cast<int>(m_currentMode)]->update();
 
 	//Call any necessary functions based on the current mode state
 	//TODO: Make this a separate method when refactoring in the future
@@ -382,7 +388,8 @@ void ModeScreen::processEvents()
 		break;
 	}
 
-	//Other event types can be added down here once they're created
+	//Check to see if any active alerts need to be removed
+	m_modes[static_cast<int>(m_currentMode)]->checkAlerts();
 }
 
 void ModeScreen::processTimers()
@@ -517,8 +524,8 @@ void ModeScreen::createAlert(std::wstring message, UIColor color)
 	m_modes[static_cast<int>(m_currentMode)]->createAlert(message, color, m_renderer->getCurrentScreenSize());
 
 	//after creating the alert, set the alert timer
-	alert_active = true;
-	alert_timer = std::chrono::steady_clock::now();
+	//alert_active = true;
+	//alert_timer = std::chrono::steady_clock::now();
 }
 
 void ModeScreen::PersonalCaddieHandler(PersonalCaddieEventType pcEvent, void* eventArgs)
@@ -677,6 +684,12 @@ void ModeScreen::PersonalCaddieHandler(PersonalCaddieEventType pcEvent, void* ev
 	}
 	}
 
+}
+
+void ModeScreen::ModeHandler(ModeAction action, void* eventArgs)
+{
+	//TODO: Fill this out with stuff
+	int x = 12;
 }
 
 void ModeScreen::enterActiveState()

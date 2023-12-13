@@ -399,6 +399,11 @@ void CalibrationMode::advanceToNextStage()
 
 void CalibrationMode::update()
 {
+	//TEST: Call mode screen function pointer
+	int x = 5;
+
+	m_mode_screen_handler(ModeAction::BLEConnectToDevice, (void*)&x);
+
 	//First process any changes that clicks or key presses had on the UI elements
 	if (m_uiManager.getActionElements().size() > 0)
 	{

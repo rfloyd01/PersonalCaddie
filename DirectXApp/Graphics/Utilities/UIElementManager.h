@@ -176,7 +176,7 @@ public:
 
 	//void createAlert(TextOverlay& alert);
 	void checkAlerts();
-	std::vector<std::shared_ptr<ManagedUIElement>> const& removeAlerts();
+	std::vector<std::shared_ptr<ManagedUIElement>> removeAlerts();
 	void overwriteAlerts(std::vector<std::shared_ptr<ManagedUIElement>> const& alerts);
 
 private:

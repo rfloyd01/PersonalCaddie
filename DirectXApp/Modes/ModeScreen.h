@@ -41,6 +41,7 @@ public:
 
 	//Handler Methods
 	void PersonalCaddieHandler(PersonalCaddieEventType pcEvent, void* eventArgs);
+	void ModeHandler(ModeAction action, void* eventArgs);
 
 	//2D Rendering Methods
 	std::vector<std::shared_ptr<UIElement> > const& getCurrentModeUIElements();

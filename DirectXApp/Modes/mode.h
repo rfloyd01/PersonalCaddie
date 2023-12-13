@@ -8,6 +8,7 @@
 #include "Math/glm.h"
 
 #include <string>
+#include <functional>
 
 
 //Classes, structs and enums that are helpful for this class
@@ -46,6 +47,29 @@ enum ModeState
 	Leave_Active = 512
 };
 
+//Sometimes there are certain actions that we need to take inside the given mode, however, the mode doesn't have
+//the power to actually take the action. For example, in calibration mode we need to turn on the Personal Caddie
+//so that it starts taking data measurements, but this can only be done from the Mode Screen class. This enum
+//holds different actions that the active mode can ask the mode screen class to take on its behalf.
+enum ModeAction
+{
+	PersonalCaddieActivateConnectedMode,
+	PersonalCaddieActivateIdleMode,
+	PersonalCaddieActivateActiveMode,
+	RendererGetTextSize,
+	RendererGetMaterial,
+	MadgwickUpdateFilter,
+	SensorUpdateSettings,
+	SensorUpdateCalibration,
+	SensorUpdateAxisCalibration,
+	SensorGetSettings,
+	SensorGetCalibration,
+	BLEEnableDeviceWatcher,
+	BLEDisableDeviceWatcher,
+	BLEConnectToDevice,
+	BLEDisconnectFromDevice
+};
+
 //Class definition
 class Mode
 {
@@ -75,8 +99,9 @@ public:
 	void createAlert(std::wstring message, UIColor color, winrt::Windows::Foundation::Size windowSize, long long duration = 2500); //default to 2.5 second alerts
 	//void createAlert(TextOverlay& alert);
 	//virtual TextOverlay removeAlerts(); //some modes need to maintain a specific order for elements and removing alerts can change this. This method is virtual so those modes can override this one.
-	std::vector<std::shared_ptr<ManagedUIElement>> const& removeAlerts();
+	std::vector<std::shared_ptr<ManagedUIElement>> removeAlerts();
 	void overwriteAlerts(std::vector<std::shared_ptr<ManagedUIElement>> const& alerts);
+	void checkAlerts();
 
 	virtual uint32_t handleUIElementStateChange(int i) = 0;
 
@@ -84,6 +109,8 @@ public:
 	virtual void addQuaternions(std::vector<glm::quat> const& quaternions, int quaternion_number, float time_stamp, float delta_t) {} //A method that modes can overwrite when they need data from the Personal Caddie
 
 	bool m_needsCamera = false; //Modes that require 3D rendering will set this variable to true to let the ModeScreen know that its camera is needed
+
+	static void setHandlerMethod(std::function<void(ModeAction, void*)> func) { m_mode_screen_handler = func; } //static method for setting the function pointer in the mode state class
 
 protected:
 	UIColor m_backgroundColor; //represents the background color when this mode is being rendered
@@ -94,4 +121,8 @@ protected:
 	UIElementManager m_uiManager; //a class that helps us manage the UI Elements in the mode
 
 	uint32_t m_state; //the state of the current mode
+
+	//static function pointer to Mode Screen class goes here. The handler method is the same for all
+	//modes which is why the function pointer is static
+	static std::function<void(ModeAction, void*)> m_mode_screen_handler; //pointer to an event handler in the Personal Caddie class
 };
