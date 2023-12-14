@@ -69,6 +69,8 @@ private:
 	void stateUpdate();
 	void leaveActiveState();
 
+	std::shared_ptr<Mode> getCurrentMode() { return m_modes[static_cast<int>(m_currentMode)]; }
+
 	uint32_t                                m_modeState; //holds info on the current mode state
 
 	std::shared_ptr<PersonalCaddie>         m_personalCaddie;

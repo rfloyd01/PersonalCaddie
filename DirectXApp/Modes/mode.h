@@ -60,7 +60,8 @@ enum ModeAction
 	SensorSettings,
 	SensorCalibration,
 	BLEDeviceWatcher,
-	BLEConnection
+	BLEConnection,
+	BLENotifications
 };
 
 //Forward Declerations
@@ -99,6 +100,9 @@ public:
 	void overwriteAlerts(std::vector<std::shared_ptr<ManagedUIElement>> const& alerts);
 	void checkAlerts();
 
+	virtual void getSensorCalibrationNumbers(sensor_type_t sensor, std::pair<const float*, const float**> cal_numbers) {};
+	virtual void getSensorAxisCalibrationNumbers(sensor_type_t sensor, std::pair<const int*, const int*> cal_numbers) {};
+
 	virtual uint32_t handleUIElementStateChange(int i) = 0;
 
 	virtual void addData(std::vector<std::vector<std::vector<float> > > const& sensorData, float sensorODR, float timeStamp, int totalSamples) {} //A method that modes can overwrite when they need data from the Personal Caddie
@@ -108,6 +112,7 @@ public:
 
 	//Methods for handling Personal Caddie, BLE and Sensor Events
 	virtual void pc_ModeChange(PersonalCaddiePowerMode newMode) {};
+	virtual void ble_NotificationsChange(int state) {};
 	static void setHandlerMethod(std::function<void(ModeAction, void*)> func) { m_mode_screen_handler = func; } //static method for setting the function pointer in the mode state class
 
 protected:

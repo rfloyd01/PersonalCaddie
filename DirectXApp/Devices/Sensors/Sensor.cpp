@@ -21,10 +21,10 @@ std::pair<const float*, const float**> Sensor::getCalibrationNumbers()
 	return { this->calibration_offsets, this->calibration_gains };
 }
 
-std::vector<int> Sensor::getAxisOrientations()
+std::pair<const int*, const int*> Sensor::getAxisOrientations()
 {
 	//return the axis orientations for the sensor
-	return { axes_swap[0], axes_swap[1], axes_swap[2], axes_polarity[0], axes_polarity[1] , axes_polarity[2] };
+	return { axes_swap, axes_polarity };
 }
 
 void Sensor::setCalibrationNumbers(float* offset, float** gain)
@@ -50,17 +50,17 @@ void Sensor::setCalibrationNumbers(float* offset, float** gain)
 	setCalibrationNumbersInTextFile();
 }
 
-void Sensor::setAxesOrientations(std::vector<int> axes_parameters)
+void Sensor::setAxesOrientations(int* swap, int* polarity)
 {
 	//Takes the input axes orientations and updates the local variables,
 	//as well as the text file which gets persisted
-	axes_swap[0] = axes_parameters[0];
-	axes_swap[1] = axes_parameters[1];
-	axes_swap[2] = axes_parameters[2];
+	axes_swap[0] = *swap;
+	axes_swap[1] = *(swap + 1);
+	axes_swap[2] = *(swap + 2);
 
-	axes_polarity[0] = axes_parameters[3];
-	axes_polarity[1] = axes_parameters[4];
-	axes_polarity[2] = axes_parameters[5];
+	axes_polarity[0] = *polarity;
+	axes_polarity[1] = *(polarity + 1);
+	axes_polarity[2] = *(polarity + 2);
 
 	setAxisOrientationsInTextFile();
 }

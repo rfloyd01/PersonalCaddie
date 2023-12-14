@@ -448,8 +448,8 @@ void ModeScreen::changeCurrentMode(ModeType mt)
 	if (m_modeState & ModeState::Active) leaveActiveState();
 
 	//If we're in sensor active mode, we need to first enter sensor idle mode, and then connected mode
-	if (m_modeState & ModeState::PersonalCaddieSensorIdleMode) m_personalCaddie->changePowerMode(PersonalCaddiePowerMode::CONNECTED_MODE);
-	else if (m_modeState & ModeState::PersonalCaddieSensorActiveMode) m_personalCaddie->changePowerMode(PersonalCaddiePowerMode::SENSOR_IDLE_MODE);
+	//if (m_modeState & ModeState::PersonalCaddieSensorIdleMode) m_personalCaddie->changePowerMode(PersonalCaddiePowerMode::CONNECTED_MODE);
+	//else if (m_modeState & ModeState::PersonalCaddieSensorActiveMode) m_personalCaddie->changePowerMode(PersonalCaddiePowerMode::SENSOR_IDLE_MODE);
 
 	m_modeState = 0;
 	m_modes[static_cast<int>(m_currentMode)]->uninitializeMode();
@@ -477,8 +477,8 @@ void ModeScreen::changeCurrentMode(ModeType mt)
 	}
 
 	m_modeState = m_modes[static_cast<int>(m_currentMode)]->initializeMode(m_renderer->getCurrentScreenSize(), startingModeState);
-	if (m_modeState & ModeState::PersonalCaddieSensorIdleMode) m_personalCaddie->changePowerMode(PersonalCaddiePowerMode::SENSOR_IDLE_MODE);
-	else if (m_modeState & ModeState::PersonalCaddieSensorActiveMode) m_personalCaddie->changePowerMode(PersonalCaddiePowerMode::SENSOR_ACTIVE_MODE);
+	//if (m_modeState & ModeState::PersonalCaddieSensorIdleMode) m_personalCaddie->changePowerMode(PersonalCaddiePowerMode::SENSOR_IDLE_MODE);
+	//else if (m_modeState & ModeState::PersonalCaddieSensorActiveMode) m_personalCaddie->changePowerMode(PersonalCaddiePowerMode::SENSOR_ACTIVE_MODE);
 	
 	//After initializing, add any alerts that were copied over to the text and
 	//color maps and then create text and color resources in the renderer
@@ -600,8 +600,9 @@ void ModeScreen::PersonalCaddieHandler(PersonalCaddieEventType pcEvent, void* ev
 		else if (alertText == L"The Personal Caddie has been placed into Connected Mode")
 		{
 			m_modes[static_cast<int>(m_currentMode)]->pc_ModeChange(PersonalCaddiePowerMode::CONNECTED_MODE);
+
 			//When entering connected mode, we make sure that data notifications are turned off
-			//m_personalCaddie->disableDataNotifications();
+			m_personalCaddie->disableDataNotifications();
 		}
 		break;
 	}
@@ -614,7 +615,7 @@ void ModeScreen::PersonalCaddieHandler(PersonalCaddieEventType pcEvent, void* ev
 		{
 			if (m_currentMode == ModeType::CALIBRATION)
 			{
-				((CalibrationMode*)m_modes[static_cast<int>(m_currentMode)].get())->updateComplete();
+				//((CalibrationMode*)m_modes[static_cast<int>(m_currentMode)].get())->updateComplete();
 				m_modeState ^= ModeState::Active; //completing the update causes us to leave active mode
 			}
 		}
@@ -651,14 +652,23 @@ void ModeScreen::PersonalCaddieHandler(PersonalCaddieEventType pcEvent, void* ev
 		//sensor active mode in this event.
 
 		//Enabling notifications have the ability to a
-		if (*((std::wstring*)eventArgs) == L"On")
-		{
-			if (m_modeState & ModeState::PersonalCaddieSensorIdleMode) m_personalCaddie->changePowerMode(PersonalCaddiePowerMode::SENSOR_IDLE_MODE);
-			else if (m_modeState & ModeState::PersonalCaddieSensorActiveMode) m_personalCaddie->changePowerMode(PersonalCaddiePowerMode::SENSOR_ACTIVE_MODE);
-		}
-		
 		std::wstring alertText = L"Data Notifications have been turned " + *((std::wstring*)eventArgs) + L"\n";
 		createAlert(alertText, UIColor::Blue);
+
+		if (*((std::wstring*)eventArgs) == L"On")
+		{
+			//m_modes[static_cast<int>(m_currentMode)]->ble_NotificationsChange(1);
+			//if (m_modeState & ModeState::PersonalCaddieSensorIdleMode) m_personalCaddie->changePowerMode(PersonalCaddiePowerMode::SENSOR_IDLE_MODE);
+			//else if (m_modeState & ModeState::PersonalCaddieSensorActiveMode) m_personalCaddie->changePowerMode(PersonalCaddiePowerMode::SENSOR_ACTIVE_MODE);
+
+			//TODO: Due to a timing bug in the firmware we need to wait for notifications to be turned on before
+			//entering sensor idle mode, and we must enter sensor idle mode before sensor active mode. This means 
+			//that any time notifications are enabled we should default to changing the power mode to sensor idle
+			m_personalCaddie->changePowerMode(PersonalCaddiePowerMode::SENSOR_IDLE_MODE);
+		}
+		else m_modes[static_cast<int>(m_currentMode)]->ble_NotificationsChange(0);
+		
+		
 		break;
 	}
 	case PersonalCaddieEventType::DATA_READY:
@@ -708,7 +718,18 @@ void ModeScreen::ModeHandler(ModeAction action, void* eventArgs)
 		//We want to change the power mode of the personal caddie. The event args
 		//in this case will be an instance of the PersonalCaddiePowerMode enum. Other
 		//handler methods will handle getting data to the mode if and when necessary.
-		m_personalCaddie->changePowerMode(*((PersonalCaddiePowerMode*)eventArgs));
+		
+		//TODO: There's a bug in the firmware that messes up the timing between enabling
+		//characteristic notifications and starting to read data. To prevent this, we need to
+		//make sure that notifications are enabled BEFORE the sensor is put into sensor idle
+		//mode. For now, hardcode it so that when entering idle mode from connected mode we
+		//wait for notifications to be enabled first, and when entering connected mode from 
+		//idle mode we disbale notifications AFTER.
+		PersonalCaddiePowerMode currentMode = m_personalCaddie->getCurrentPowerMode();
+		PersonalCaddiePowerMode newMode = *((PersonalCaddiePowerMode*)eventArgs);
+
+		if (newMode == PersonalCaddiePowerMode::SENSOR_IDLE_MODE && currentMode == PersonalCaddiePowerMode::CONNECTED_MODE) m_personalCaddie->enableDataNotifications();
+		else m_personalCaddie->changePowerMode(newMode);
 		break;
 	}
 	case RendererGetMaterial:
@@ -716,10 +737,45 @@ void ModeScreen::ModeHandler(ModeAction action, void* eventArgs)
 		//The current mode needs something from the renderer class. This can either be
 		//a material for a model to be rendered, or, the dimensions of text inside a 
 		//text box.
+		break;
+	}
+	case BLENotifications:
+	{
+		//We pass in a value of 1 to enable notifications and a value of 0 to disable them.
+		//Cast the evenArgs to an integer to see what we need to do here.
+		if (*((int*)eventArgs)) m_personalCaddie->enableDataNotifications();
+		else m_personalCaddie->disableDataNotifications();
+
+		break;
+	}
+	case SensorCalibration:
+	{
+		//There are four main actions we can take here. We can get the current sensor calibration, set the current sensor calibration,
+		//get the IMU axis calibration or set the IMU axis calibration. Since there are 3 different sensors that make up the IMU then
+		//in reality there are 8 different things we can do here. One of these 8 options is wrapped inside the eventArgs. If we just
+		//want to get an existing cal all we need is the action, however, if we want to update an existing cal then we need the new
+		//numbers. These are also wrapped inside of the event args. A struct called CalibrationRequest is used to wrap all of this info
+		//together.
+		auto cal_info = *((CalibrationRequest*)eventArgs);
+		switch (cal_info.action)
+		{
+		case SensorCalibrationAction::GET_SENSOR_CAL:
+			getCurrentMode()->getSensorCalibrationNumbers(cal_info.sensor, m_personalCaddie->getSensorCalibrationNumbers(cal_info.sensor));
+			break;
+		case SensorCalibrationAction::SET_SENSOR_CAL:
+			m_personalCaddie->updateSensorCalibrationNumbers(cal_info.sensor, cal_info.cal_numbers);
+			break;
+		case SensorCalibrationAction::GET_SENSOR_AXIS_CAL:
+			getCurrentMode()->getSensorAxisCalibrationNumbers(cal_info.sensor, m_personalCaddie->getSensorAxisCalibrationNumbers(cal_info.sensor));
+			break;
+		case SensorCalibrationAction::SET_SENSOR_AXIS_CAL:
+			m_personalCaddie->updateSensorAxisOrientations(cal_info.sensor, cal_info.axis_numbers);
+			break;
+		}
+		break;
 	}
 	case MadgwickUpdateFilter:
 	case SensorSettings:
-	case SensorCalibration:
 	case BLEDeviceWatcher:
 	case BLEConnection:
 	default: return;
@@ -846,8 +902,8 @@ void ModeScreen::stateUpdate()
 		else if (m_modes[static_cast<int>(m_currentMode)]->getModeState() & CalibrationModeState::STOP_RECORD)
 		{
 			//When we've recorded all the data we need we can put the Personal Caddie back into sensor idle mode
-			m_personalCaddie->changePowerMode(PersonalCaddiePowerMode::SENSOR_IDLE_MODE);
-			m_modeState ^= ModeState::Active; //temporarily leave the active state to make sure we don't change the power mode multiple times
+			//m_personalCaddie->changePowerMode(PersonalCaddiePowerMode::SENSOR_IDLE_MODE);
+			//m_modeState ^= ModeState::Active; //temporarily leave the active state to make sure we don't change the power mode multiple times
 		}
 		else if (m_modes[static_cast<int>(m_currentMode)]->getModeState() & CalibrationModeState::UPDATE_CAL_NUMBERS)
 		{
@@ -905,9 +961,9 @@ void ModeScreen::leaveActiveState()
 	case ModeType::CALIBRATION:
 	{
 		//Entering the active state puts the sensors into idle mode, as well as enables data notifications
-		m_modeState ^= ModeState::PersonalCaddieSensorIdleMode; //swap the sensor idle and active states
-		m_personalCaddie->changePowerMode(PersonalCaddiePowerMode::CONNECTED_MODE);
-		m_personalCaddie->disableDataNotifications();
+		//m_modeState ^= ModeState::PersonalCaddieSensorIdleMode; //swap the sensor idle and active states
+		//m_personalCaddie->changePowerMode(PersonalCaddiePowerMode::CONNECTED_MODE);
+		//m_personalCaddie->disableDataNotifications();
 		break;
 	}
 	}

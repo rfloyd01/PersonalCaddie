@@ -256,7 +256,7 @@ void PersonalCaddie::BLEDeviceHandler(BLEState state)
 
         //After confirming the device is here and reading the gatt table, make sure that all data notifications
         //are enabled. Notifications should be enabled for the duration of the connection.
-        enableDataNotifications();
+        disableDataNotifications(); //TODO: Not getting data when enabling off the bat, why is this the case?
 
         //Check to see if this device is currently paired with the computer. If it isn't, pair it for quicker
         //connection times in the future. Also, update the address of the last connect device in the file inside
@@ -437,9 +437,9 @@ void PersonalCaddie::compositeDataCharacteristicEventHandler(Bluetooth::GenericA
     std::pair<const float*, const float**> gyr_calibration_data = this->p_imu->getGyroscopeCalibrationNumbers();
     std::pair<const float*, const float**> mag_calibration_data = this->p_imu->getMagnetometerCalibrationNumbers();
 
-    std::vector<int> acc_axis_orientation_data = this->p_imu->getAccelerometerAxisOrientations();
-    std::vector<int> gyr_axis_orientation_data = this->p_imu->getGyroscopeAxisOrientations();
-    std::vector<int> mag_axis_orientation_data = this->p_imu->getMagnetometerAxisOrientations();
+    std::pair<const int*, const int*> acc_axis_orientation_data = this->p_imu->getAccelerometerAxisOrientations();
+    std::pair<const int*, const int*> gyr_axis_orientation_data = this->p_imu->getGyroscopeAxisOrientations();
+    std::pair<const int*, const int*> mag_axis_orientation_data = this->p_imu->getMagnetometerAxisOrientations();
 
     //Then read the physical data from the notification PDU
     auto read_buffer = Windows::Storage::Streams::DataReader::FromBuffer(args.CharacteristicValue());
@@ -466,24 +466,24 @@ void PersonalCaddie::compositeDataCharacteristicEventHandler(Bluetooth::GenericA
         for (int axis = X; axis <= Z; axis++)
         {
             int16_t axis_reading = read_buffer.ReadInt16();
-            int actual_axis = acc_axis_orientation_data[axis];
-            this->sensor_data[static_cast<int>(DataType::RAW_ACCELERATION)][actual_axis][i] = axis_reading * this->p_imu->getConversionRate(ACC_SENSOR) * acc_axis_orientation_data[axis + 3]; //Apply appropriate conversion from LSB to the current unit
+            //int actual_axis = acc_axis_orientation_data.first[axis];
+            this->sensor_data[static_cast<int>(DataType::RAW_ACCELERATION)][acc_axis_orientation_data.first[axis]][i] = axis_reading * this->p_imu->getConversionRate(ACC_SENSOR) * acc_axis_orientation_data.second[axis]; //Apply appropriate conversion from LSB to the current unit
         }
 
         //Read gyr data second
         for (int axis = X; axis <= Z; axis++)
         {
             int16_t axis_reading = read_buffer.ReadInt16();
-            int actual_axis = gyr_axis_orientation_data[axis];
-            this->sensor_data[static_cast<int>(DataType::RAW_ROTATION)][actual_axis][i] = axis_reading * this->p_imu->getConversionRate(GYR_SENSOR) * gyr_axis_orientation_data[axis + 3]; //Apply appropriate conversion from LSB to the current unit
+            //int actual_axis = gyr_axis_orientation_data.first[axis];
+            this->sensor_data[static_cast<int>(DataType::RAW_ROTATION)][gyr_axis_orientation_data.first[axis]][i] = axis_reading * this->p_imu->getConversionRate(GYR_SENSOR) * gyr_axis_orientation_data.second[axis]; //Apply appropriate conversion from LSB to the current unit
         }
 
         //Read mag data third
         for (int axis = X; axis <= Z; axis++)
         {
             int16_t axis_reading = read_buffer.ReadInt16();
-            int actual_axis = mag_axis_orientation_data[axis];
-            this->sensor_data[static_cast<int>(DataType::RAW_MAGNETIC)][actual_axis][i] = axis_reading * this->p_imu->getConversionRate(MAG_SENSOR) * mag_axis_orientation_data[axis + 3]; //Apply appropriate conversion from LSB to the current unit
+            //int actual_axis = mag_axis_orientation_data.first[axis];
+            this->sensor_data[static_cast<int>(DataType::RAW_MAGNETIC)][mag_axis_orientation_data.first[axis]][i] = axis_reading * this->p_imu->getConversionRate(MAG_SENSOR) * mag_axis_orientation_data.second[axis]; //Apply appropriate conversion from LSB to the current unit
         }
     }
 
@@ -526,6 +526,14 @@ std::pair<const float*, const float**> PersonalCaddie::getSensorCalibrationNumbe
     else return { nullptr, nullptr };
 }
 
+std::pair<const int*, const int*> PersonalCaddie::getSensorAxisCalibrationNumbers(sensor_type_t sensor)
+{
+    if (sensor == ACC_SENSOR) return this->p_imu->getAccelerometerAxisOrientations();
+    else if (sensor == GYR_SENSOR) return this->p_imu->getGyroscopeAxisOrientations();
+    else if (sensor == MAG_SENSOR) return this->p_imu->getMagnetometerAxisOrientations();
+    else return { nullptr, nullptr };
+}
+
 void PersonalCaddie::updateSensorCalibrationNumbers(sensor_type_t sensor, std::pair<float*, float**> cal_numbers)
 {
     this->p_imu->setCalibrationNumbers(sensor, cal_numbers);
@@ -533,9 +541,9 @@ void PersonalCaddie::updateSensorCalibrationNumbers(sensor_type_t sensor, std::p
     event_handler(PersonalCaddieEventType::IMU_ALERT, (void*)&message);
 }
 
-void PersonalCaddie::updateSensorAxisOrientations(std::vector<int> axis_orientations)
+void PersonalCaddie::updateSensorAxisOrientations(sensor_type_t sensor, std::pair<int*, int*> cal_numbers)
 {
-    this->p_imu->setAxesOrientations(axis_orientations);
+    this->p_imu->setAxesOrientations(sensor, cal_numbers);
     std::wstring message = L"Updated Axis Orientation Info";
     event_handler(PersonalCaddieEventType::IMU_ALERT, (void*)&message);
 }
@@ -614,6 +622,14 @@ void PersonalCaddie::enableDataNotifications()
                                     });
                             });
                     });
+            }
+            else
+            {
+                //Notifications were already enabled, but we should still let the mode screen class know as it may be
+                //waiting for confirmation.
+                std::wstring message = L"On";
+                event_handler(PersonalCaddieEventType::NOTIFICATIONS_TOGGLE, (void*)&message);
+                return;
             }
         });
 }

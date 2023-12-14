@@ -19,6 +19,22 @@ enum CalibrationModeState
 	SET_AXES_NUMBERS = 2048
 };
 
+enum class SensorCalibrationAction
+{
+	GET_SENSOR_CAL,
+	SET_SENSOR_CAL,
+	GET_SENSOR_AXIS_CAL,
+	SET_SENSOR_AXIS_CAL
+};
+
+struct CalibrationRequest
+{
+	SensorCalibrationAction action;
+	sensor_type_t sensor;
+	std::pair<float*, float**> cal_numbers;
+	std::pair<int*, int*> axis_numbers;
+};
+
 class CalibrationMode : public Mode
 {
 public:
@@ -35,15 +51,14 @@ public:
 	virtual uint32_t handleUIElementStateChange(int i) override;
 
 	//Methods called from the Mode Screen class
-	void startDataCapture();
-	void stopDataCapture();
-	void updateComplete();
 	virtual void addData(std::vector<std::vector<std::vector<float> > > const& sensorData, float sensorODR, float timeStamp, int totalSamples) override;
+	virtual void getSensorAxisCalibrationNumbers(sensor_type_t sensor, std::pair<const int*, const int*> cal_numbers) override;
 
 	std::pair<float*, float**> getCalibrationResults();
 	std::vector<int> getNewAxesOrientations();
 
 	virtual void pc_ModeChange(PersonalCaddiePowerMode newMode) override;
+	virtual void ble_NotificationsChange(int state) override;
 
 private:
 	void initializeTextOverlay(winrt::Windows::Foundation::Size windowSize);
@@ -61,12 +76,14 @@ private:
 	void calculateCalNumbers();
 
 	void initializeModel();
+	void loadModeMainPage();
 
 	void advanceToNextStage();
 	void prepareRecording();
 	void stopRecording();
 	void displayGraph();
 
+	void accAverageData();
 	void accAxisCalculate(int axis);
 	void gyrAxisCalculate(int axis);
 	void magAxisCalculate(int axis);
