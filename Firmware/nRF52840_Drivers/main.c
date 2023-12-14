@@ -962,6 +962,18 @@ static void sensor_active_mode_start()
     if (current_operating_mode == SENSOR_ACTIVE_MODE) return; //no need to change anything if already in active mode
     led_timers_stop();
 
+    //TODO: Comment out the twi bus enable commands below and put a break point in the assert_nrf_callback()
+    //method around line 95. See what error it kicks up. In the future, handle this error in that method by
+    //attempting to turn on the twi buses. Use the error characteristic to alert the front end of this action.
+    if (current_operating_mode == CONNECTED_MODE)
+    {
+        //If we're transitioning from connected mode to sensor active mode then we're going to need 
+        //to turn on any necessary TWI busses to allow for communication with the sensors.
+        enable_twi_bus(imu_comm.acc_comm.twi_bus->inst_idx);
+        enable_twi_bus(imu_comm.gyr_comm.twi_bus->inst_idx);
+        enable_twi_bus(imu_comm.mag_comm.twi_bus->inst_idx);
+    }
+
     //Put all initialized sensors into active mode.
     lsm9ds1_active_mode_enable();
     fxos8700_active_mode_enable();
