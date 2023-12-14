@@ -152,6 +152,7 @@ void CalibrationMode::initializeCalibrationVariables()
 
 void CalibrationMode::startDataCapture()
 {
+	//DEPRECATED METHOD
 	//We can't start data capture until the Personal Caddie has been placed into active mode, which happens asynchronously.
 	//Because of that, this method is called from the ModeScreen class once the Personal Caddie has been placed into 
 	//sensor active mode and is ready to start recording data. Furthermore, all IMU sensors have a slight wake up time
@@ -168,8 +169,8 @@ void CalibrationMode::startDataCapture()
 	//}
 	// 
 	
-	m_state ^= CalibrationModeState::RECORDING_DATA;
-	data_timer = std::chrono::steady_clock::now();
+	//m_state ^= CalibrationModeState::RECORDING_DATA;
+	//data_timer = std::chrono::steady_clock::now();
 }
 
 void CalibrationMode::stopDataCapture()
@@ -190,6 +191,34 @@ void CalibrationMode::stopDataCapture()
 			acc_cal[2][current_acc_stage] /= avg_count;
 			avg_count = 0;
 		}
+	}
+}
+
+void CalibrationMode::prepareRecording()
+{
+	//We end up doing the same actions a lot right before we begin recording data,
+	//so it's more efficient to just create a method to carry the actions out
+	if (!m_stageSet)
+	{
+		auto mode = PersonalCaddiePowerMode::SENSOR_ACTIVE_MODE;
+		m_mode_screen_handler(ModeAction::PersonalCaddieChangeMode, (void*)&mode);//request the Personal Caddie to be placed into active mode to start recording data
+
+		m_stageSet = true;
+	}
+	else if (m_state & CalibrationModeState::RECORDING_DATA)
+	{
+		std::wstring message = L"Recording Data, hold sensor steady for " + std::to_wstring((float)(data_timer_duration - data_timer_elapsed) / 1000.0f) + L" more seconds.";
+		m_uiManager.getElement<TextOverlay>(L"Body Text")->updateText(message);
+	}
+}
+
+void CalibrationMode::stopRecording()
+{
+	if (m_state & CalibrationModeState::RECORDING_DATA)
+	{
+		m_state ^= CalibrationModeState::RECORDING_DATA;
+		auto mode = PersonalCaddiePowerMode::SENSOR_IDLE_MODE;
+		m_mode_screen_handler(ModeAction::PersonalCaddieChangeMode, (void*)&mode);//request the Personal Caddie to be placed into active mode to start recording data
 	}
 }
 
@@ -266,6 +295,10 @@ void CalibrationMode::uiElementStateChangeHandler(std::shared_ptr<ManagedUIEleme
 		m_uiManager.getElement<TextOverlay>(L"Body Text")->updateText(body_text);
 
 		m_state |= ModeState::Active;
+
+		//Finally, transition the Personal Caddie into Sensor Idle Mode to ready it for taking readings in the calibration
+		auto mode = PersonalCaddiePowerMode::SENSOR_IDLE_MODE;
+		m_mode_screen_handler(ModeAction::PersonalCaddieChangeMode, (void*)&mode);//request the Personal Caddie to be placed into active mode to start recording data
 	}
 	else if (elementName == L"Continue Button")
 	{
@@ -290,6 +323,37 @@ void CalibrationMode::uiElementStateChangeHandler(std::shared_ptr<ManagedUIEleme
 	{
 		OutputDebugString(L"Couldn't find the proper UI Element.\n");
 	}
+}
+
+void CalibrationMode::pc_ModeChange(PersonalCaddiePowerMode newMode)
+{
+	//Since we need to pass through sensor idle stage to move from active to connected modes (this is only until the 
+	//next firmware update), the timing of when to start recording, when to move onto the next calibration stage, etc.
+	//gets a little bit tricky.
+
+	//In plain English the way it works is:
+	//1. When a calibration is first selected we place the sensor into idle mode, this enables the TWI buses for communication with the sensors
+	//2. When we're ready to record data the prepareRecording() method gets called, requesting the sensor be placed into active mode
+	//3. When active mode is engaged on the device this method is again called. The else if statement below will activate, starting the data timer and putting us into record mode.
+	//4. While the record flag is active data will be recorded for a set amount of time. When this timer is done the stopRecording() method above is called, putting the sensor back into idle mode
+	//5. When sensor idle mode is again activated, since the recording flag is active the embedded if statement will be true this time which causes the recording flag to go away and we proceed to the next stage of the cal..
+
+	if (newMode == PersonalCaddiePowerMode::SENSOR_IDLE_MODE)
+	{
+		if (m_currentStage > 1) advanceToNextStage(); //at stage 1 is when we move into idle mode from connected mode, which requires no action
+		//auto mode = PersonalCaddiePowerMode::CONNECTED_MODE;
+
+		//if (!(m_state & CalibrationModeState::RECORDING_DATA)) mode = PersonalCaddiePowerMode::SENSOR_ACTIVE_MODE;
+		//else m_state ^= CalibrationModeState::RECORDING_DATA; //If we're actively recording then turn it off by removing the flag
+
+		//m_mode_screen_handler(ModeAction::PersonalCaddieChangeMode, (void*)&mode);//request the Personal Caddie to be placed into the appropriate mode
+	}
+	else if (newMode == PersonalCaddiePowerMode::SENSOR_ACTIVE_MODE)
+	{
+		m_state |= CalibrationModeState::RECORDING_DATA;
+		data_timer = std::chrono::steady_clock::now();
+	}
+	//else if (newMode == PersonalCaddiePowerMode::CONNECTED_MODE) advanceToNextStage(); //any time recording has officially stopped it causes us to go to the next calibration stage
 }
 
 uint32_t CalibrationMode::handleUIElementStateChange(int i)
@@ -649,7 +713,6 @@ void CalibrationMode::axisCalibration()
 
 			if (data_timer_elapsed >= data_timer_duration)
 			{
-				//m_state ^= (CalibrationModeState::RECORDING_DATA | CalibrationModeState::STOP_RECORD);
 				stopRecording();
 				return; //since advance to next stage is called above we leave this method after it returns
 			}
@@ -667,7 +730,6 @@ void CalibrationMode::axisCalibration()
 			data_timer_duration = 2000;
 			m_renderQuaternion = { -0.707f, 0.0f, 0.0f, 0.707f };
 			m_needsCamera = true; //alerts the mode screen class to actually render the 3d image
-
 			m_stageSet = true;
 		}
 
@@ -689,7 +751,6 @@ void CalibrationMode::axisCalibration()
 	{
 		if (!m_stageSet)
 		{
-			stopRecording();
 			//With the data collected, see if a swap or inversion needs to occur for the x-axis
 			accAxisCalculate(0);
 
@@ -1293,6 +1354,10 @@ void CalibrationMode::axisCalibration()
 
 			m_uiManager.getElement<Graph>(L"Acc Graph")->removeAllLines(); //clear everything out from the graph when done viewing it
 
+			//Finally, transition the Personal Caddie back into Connected Mode when the calibration is over to lower power consumption
+			auto mode = PersonalCaddiePowerMode::CONNECTED_MODE;
+			m_mode_screen_handler(ModeAction::PersonalCaddieChangeMode, (void*)&mode);//request the Personal Caddie to be placed into active mode to start recording data
+
 			m_stageSet = true;
 		}
 
@@ -1450,6 +1515,10 @@ void CalibrationMode::accelerometerCalibration()
 
 			m_uiManager.getElement<Graph>(L"Acc Graph")->removeAllLines(); //clear everything out from the graph when done viewing it
 
+			//Finally, transition the Personal Caddie back into Connected Mode when the calibration is over to lower power consumption
+			auto mode = PersonalCaddiePowerMode::CONNECTED_MODE;
+			m_mode_screen_handler(ModeAction::PersonalCaddieChangeMode, (void*)&mode);//request the Personal Caddie to be placed into active mode to start recording data
+
 			m_stageSet = true;
 		}
 
@@ -1576,6 +1645,10 @@ void CalibrationMode::gyroscopeCalibration()
 			m_uiManager.getElement<TextButton>(L"No Button")->updateState(UIElementState::Invisible);; //make the continue button invisible
 			m_uiManager.getElement<TextButton>(L"Toggle Button")->removeState(UIElementState::Invisible);; //make the continue button invisible
 			
+			//Finally, transition the Personal Caddie back into Connected Mode when the calibration is over to lower power consumption
+			auto mode = PersonalCaddiePowerMode::CONNECTED_MODE;
+			m_mode_screen_handler(ModeAction::PersonalCaddieChangeMode, (void*)&mode);//request the Personal Caddie to be placed into active mode to start recording data
+
 			m_stageSet = true;
 		}
 
@@ -1681,6 +1754,10 @@ void CalibrationMode::magnetometerCalibration()
 			//m_uiManager.getElement<Graph>(L"Mag1 Graph")->removeAllLines();
 			//m_uiManager.getElement<Graph>(L"Mag2 Graph")->removeAllLines();
 			//m_uiManager.getElement<Graph>(L"Mag3 Graph")->removeAllLines();
+
+			//Finally, transition the Personal Caddie back into Connected Mode when the calibration is over to lower power consumption
+			auto mode = PersonalCaddiePowerMode::CONNECTED_MODE;
+			m_mode_screen_handler(ModeAction::PersonalCaddieChangeMode, (void*)&mode);//request the Personal Caddie to be placed into active mode to start recording data
 
 			m_stageSet = true;
 		}
@@ -1892,36 +1969,6 @@ void CalibrationMode::initializeModel()
 	m_materialTypes.push_back(MaterialType::SENSOR_SHORT_SIDE);
 	m_materialTypes.push_back(MaterialType::SENSOR_SHORT_SIDE);
 	m_materialTypes.push_back(MaterialType::SENSOR_BOTTOM);
-}
-
-void CalibrationMode::prepareRecording()
-{
-	//We end up doing the same actions a lot right before we begin recording data,
-	//so it's more efficient to just create a method to carry the actions out
-	if (!m_stageSet)
-	{
-		auto mode = PersonalCaddiePowerMode::SENSOR_ACTIVE_MODE;
-		m_mode_screen_handler(ModeAction::PersonalCaddieChangeMode, (void*)&mode);//request the Personal Caddie to be placed into active mode to start recording data
-
-		m_stageSet = true;
-	}
-	else if (m_state & CalibrationModeState::RECORDING_DATA)
-	{
-		std::wstring message = L"Recording Data, hold sensor steady for " + std::to_wstring((float)(data_timer_duration - data_timer_elapsed) / 1000.0f) + L" more seconds.";
-		m_uiManager.getElement<TextOverlay>(L"Body Text")->updateText(message);
-	}
-}
-
-void CalibrationMode::stopRecording()
-{
-	if (m_state & CalibrationModeState::RECORDING_DATA)
-	{
-		m_state ^= CalibrationModeState::RECORDING_DATA;
-		auto mode = PersonalCaddiePowerMode::CONNECTED_MODE;
-
-		m_mode_screen_handler(ModeAction::PersonalCaddieChangeMode, (void*)&mode);//request the Personal Caddie to be placed into active mode to start recording data
-		advanceToNextStage();
-	}
 }
 
 void CalibrationMode::displayGraph()

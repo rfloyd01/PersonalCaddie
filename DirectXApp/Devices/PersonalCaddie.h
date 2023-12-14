@@ -5,7 +5,7 @@
 
 #include "IMU.h"
 #include "BLE.h"
-#include "Modes/mode.h"
+//#include "Modes/mode.h"
 
 using namespace winrt;
 using namespace Windows::Devices;

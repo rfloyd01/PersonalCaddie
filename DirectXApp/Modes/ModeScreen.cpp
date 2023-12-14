@@ -560,41 +560,46 @@ void ModeScreen::PersonalCaddieHandler(PersonalCaddieEventType pcEvent, void* ev
 	}
 	case PersonalCaddieEventType::PC_ALERT:
 	{
+		//TODO: Instead of sending a message of text, send an instance of the PeronsalCaddiePowerMode
+		//enum which contains the new mode. Craft an appropriate message depending on the mode obtained.
 		std::wstring alertText = *((std::wstring*)eventArgs); //cast the eventArgs into a wide string
 		createAlert(alertText, UIColor::Yellow);
 
 		if (alertText == L"The Personal Caddie has been placed into Sensor Idle Mode")
 		{
-			if (!(m_modeState & (ModeState::PersonalCaddieSensorIdleMode | ModeState::PersonalCaddieSensorActiveMode)))
-			{
-				//If we're being put into sensor idle mode, and neither the idle mode or active mode flags are
-				//active, it means we're trying to get from active mode to connected mode
-				m_personalCaddie->changePowerMode(PersonalCaddiePowerMode::CONNECTED_MODE);
-			}
-			else if (m_currentMode == ModeType::CALIBRATION)
-			{
-				((CalibrationMode*)m_modes[static_cast<int>(m_currentMode)].get())->stopDataCapture();
-				m_modeState ^= ModeState::Active; //re-enter the active state to resume updates
-			}
-			else if (m_currentMode == ModeType::MADGWICK)
-			{
-				//In Madwick testing mode we go straight into sensor idle mode upon entering
-				m_modeState ^= (ModeState::PersonalCaddieSensorIdleMode | ModeState::PersonalCaddieSensorActiveMode);
-				((MadgwickTestMode*)m_modes[static_cast<int>(m_currentMode)].get())->setHeadingOffset(m_personalCaddie->getHeadingOffset()); //set the heading offset quaternion
-				m_personalCaddie->setMadgwickBeta(2.5f); //increase Madwick filter beta value for faster convergence
-				m_personalCaddie->enableDataNotifications();
-			}
+			m_modes[static_cast<int>(m_currentMode)]->pc_ModeChange(PersonalCaddiePowerMode::SENSOR_IDLE_MODE);
+			//if (!(m_modeState & (ModeState::PersonalCaddieSensorIdleMode | ModeState::PersonalCaddieSensorActiveMode)))
+			//{
+			//	//If we're being put into sensor idle mode, and neither the idle mode or active mode flags are
+			//	//active, it means we're trying to get from active mode to connected mode
+			//	m_personalCaddie->changePowerMode(PersonalCaddiePowerMode::CONNECTED_MODE);
+			//}
+			//else if (m_currentMode == ModeType::CALIBRATION)
+			//{
+			//	((CalibrationMode*)m_modes[static_cast<int>(m_currentMode)].get())->stopDataCapture();
+			//	m_modeState ^= ModeState::Active; //re-enter the active state to resume updates
+			//}
+			//else if (m_currentMode == ModeType::MADGWICK)
+			//{
+			//	//In Madwick testing mode we go straight into sensor idle mode upon entering
+			//	m_modeState ^= (ModeState::PersonalCaddieSensorIdleMode | ModeState::PersonalCaddieSensorActiveMode);
+			//	((MadgwickTestMode*)m_modes[static_cast<int>(m_currentMode)].get())->setHeadingOffset(m_personalCaddie->getHeadingOffset()); //set the heading offset quaternion
+			//	m_personalCaddie->setMadgwickBeta(2.5f); //increase Madwick filter beta value for faster convergence
+			//	m_personalCaddie->enableDataNotifications();
+			//}
 		}
 		else if (alertText == L"The Personal Caddie has been placed into Sensor Active Mode")
 		{
-			if (m_currentMode == ModeType::CALIBRATION)
-			{
-				((CalibrationMode*)m_modes[static_cast<int>(m_currentMode)].get())->startDataCapture();
-				m_modeState ^= ModeState::Active; //re-enter the active state to resume updates
-			}
+			m_modes[static_cast<int>(m_currentMode)]->pc_ModeChange(PersonalCaddiePowerMode::SENSOR_ACTIVE_MODE);
+			//if (m_currentMode == ModeType::CALIBRATION)
+			//{
+			//	((CalibrationMode*)m_modes[static_cast<int>(m_currentMode)].get())->startDataCapture();
+			//	m_modeState ^= ModeState::Active; //re-enter the active state to resume updates
+			//}
 		}
 		else if (alertText == L"The Personal Caddie has been placed into Connected Mode")
 		{
+			m_modes[static_cast<int>(m_currentMode)]->pc_ModeChange(PersonalCaddiePowerMode::CONNECTED_MODE);
 			//When entering connected mode, we make sure that data notifications are turned off
 			//m_personalCaddie->disableDataNotifications();
 		}

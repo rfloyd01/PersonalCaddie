@@ -256,7 +256,7 @@ void PersonalCaddie::BLEDeviceHandler(BLEState state)
 
         //After confirming the device is here and reading the gatt table, make sure that all data notifications
         //are enabled. Notifications should be enabled for the duration of the connection.
-        disableDataNotifications();
+        enableDataNotifications();
 
         //Check to see if this device is currently paired with the computer. If it isn't, pair it for quicker
         //connection times in the future. Also, update the address of the last connect device in the file inside

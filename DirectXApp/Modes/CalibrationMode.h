@@ -43,10 +43,13 @@ public:
 	std::pair<float*, float**> getCalibrationResults();
 	std::vector<int> getNewAxesOrientations();
 
+	virtual void pc_ModeChange(PersonalCaddiePowerMode newMode) override;
+
 private:
 	void initializeTextOverlay(winrt::Windows::Foundation::Size windowSize);
 	void initializeCalibrationVariables();
 
+	//Handler Methods
 	void uiElementStateChangeHandler(std::shared_ptr<ManagedUIElement> element);
 
 	//Methods for maneuvering through the calibrations

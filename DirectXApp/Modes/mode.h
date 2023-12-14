@@ -6,7 +6,7 @@
 #include "Graphics/Rendering/Material.h"
 #include "Input/InputProcessor.h"
 #include "Math/glm.h"
-#include "Devices/PersonalCaddie.h"
+#include "Devices/PersonalCaddie.h" //needed for PersonalCaddiePowerMode enum
 
 #include <string>
 #include <functional>
@@ -63,6 +63,9 @@ enum ModeAction
 	BLEConnection
 };
 
+//Forward Declerations
+//enum PersonalCaddiePowerMode;
+
 //Class definition
 class Mode
 {
@@ -103,6 +106,8 @@ public:
 
 	bool m_needsCamera = false; //Modes that require 3D rendering will set this variable to true to let the ModeScreen know that its camera is needed
 
+	//Methods for handling Personal Caddie, BLE and Sensor Events
+	virtual void pc_ModeChange(PersonalCaddiePowerMode newMode) {};
 	static void setHandlerMethod(std::function<void(ModeAction, void*)> func) { m_mode_screen_handler = func; } //static method for setting the function pointer in the mode state class
 
 protected:
