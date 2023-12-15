@@ -90,6 +90,12 @@ void CalibrationMode::uninitializeMode()
 {
 	//Delete everything in the UIElement Manager
 	m_uiManager.removeAllElements();
+
+	//Clear out all data sets
+	initializeCalibrationVariables();
+
+	//Clear out all volume elements
+	m_volumeElements.clear();
 }
 
 void CalibrationMode::initializeTextOverlay(winrt::Windows::Foundation::Size windowSize)
@@ -147,6 +153,10 @@ void CalibrationMode::initializeCalibrationVariables()
 		mag_axis_swap[i] = -1;
 		mag_axis_polarity[i] = 1;
 	}
+
+	m_graphDataX.clear();
+	m_graphDataY.clear();
+	m_graphDataZ.clear();
 }
 
 void CalibrationMode::prepareRecording()
@@ -201,37 +211,9 @@ void CalibrationMode::uiElementStateChangeHandler(std::shared_ptr<ManagedUIEleme
 		//Set the sub-title and body text based on the calibration selected
 		//std::wstring subtitle_text, body_text;
 
-		if (elementName == L"Acc Button")
-		{
-			//body_text = L"A 6-point tumble calibration will be performed on the accelerometer. Press the continue button when ready to begin and then follow the on-screen instructions.";
-			//subtitle_text = L"Accelerometer Calibration";
-			m_state |= CalibrationModeState::ACCELEROMETER;
-		}
-		else if (elementName == L"Gyr Button")
-		{
-			//body_text = L"Two tests will be performed to calibrate the gyroscope. The first test is easy and just involves keeping the gyroscope still. The second test is carried out in three stages. In each of these stages we rotate the gyroscope by 90 degrees about one of its axes.";
-			//subtitle_text = L"Gyroscope Calibration";
-			m_state |= CalibrationModeState::GYROSCOPE;
-		}
-		else if (elementName == L"Mag Button")
-		{
-			//body_text = L"To calibrate the magnetometer we need to take sources of interference into account. These include both the hard and soft iron deposits (large scale deviations in magnetic field, like large iron deposits in the ground, and small scale deviations in magnetic field, such as from nearby metal like a golf club shaft).";
-			//subtitle_text = L"Magnetometer Calibration";
-			m_state |= CalibrationModeState::MAGNETOMETER;
-		}
-		//else if (elementName == L"Axes Button")
-		//{
-		//	//body_text = L"It's possible that the axes of the individual sensors don't align (i.e. the +X-axis of the accelerometer is lined up with the -Y-axis of the magnetometer), or that the direction of axes are inverted from what we expect (i.e. the +X-axis points towards the back of the sensor"
-		//	//	L" instead of towards the front). The purpose of the axis calibration is to make sure that data from each sensor lines up and is as we expect it to be.";
-		//	//subtitle_text = L"Axis Calibration";
-		//	int get_axes = 3;
-		//	m_mode_screen_handler(ModeAction::SensorCalibration, (void*)&get_axes);
-		//	m_state |= (CalibrationModeState::AXES | CalibrationModeState::ACCELEROMETER);
-		//}
-
-		/*m_uiManager.getElement<TextOverlay>(L"Subtitle Text")->updateText(subtitle_text);
-		m_uiManager.getElement<TextOverlay>(L"Subtitle Text")->removeState(UIElementState::Invisible);
-		m_uiManager.getElement<TextOverlay>(L"Body Text")->updateText(body_text);*/
+		if (elementName == L"Acc Button") m_state |= CalibrationModeState::ACCELEROMETER;
+		else if (elementName == L"Gyr Button") m_state |= CalibrationModeState::GYROSCOPE;
+		else if (elementName == L"Mag Button") m_state |= CalibrationModeState::MAGNETOMETER;
 
 		m_state |= ModeState::Active;
 
@@ -307,6 +289,7 @@ void CalibrationMode::ble_NotificationsChange(int state)
 
 uint32_t CalibrationMode::handleUIElementStateChange(int i)
 {
+	//This method is deprecated and can be removed once it's deleted from the mode class
 	return m_state;
 }
 
@@ -330,9 +313,8 @@ void CalibrationMode::update()
 		}
 	}
 
-	//Depending on the current active calibration, call the appropriate method.
-	//If we're actively recording data then there's nothing much to do, otherwise,
-	//defer to the methods for each individual test to figure out the next action.
+	//If we're currently recording data, check to see if the timer has expired. If not,
+	//then simply display the amount of time that the timer has left on screen.
 	if (m_state & CalibrationModeState::RECORDING_DATA)
 	{
 		if (!unlimited_record)
@@ -346,6 +328,7 @@ void CalibrationMode::update()
 		}
 	}
 	
+	//Take action based on the current calibration being run and the current stage variable
 	if (m_state & CalibrationModeState::ACCELEROMETER)
 	{
 		if (!m_axisCalibration) accelerometerCalibration();
@@ -552,8 +535,8 @@ void CalibrationMode::magAxisCalculate(int axis)
 {
 	if (axis == 1 || axis == 2)
 	{
-		//We take the y and z axes to be the ones with the least amount of fluctuation in the data at the given time
-		//wThat is, that data set with the lowest standard deviation.
+		//We take the y and z axes to be the ones with the least amount of fluctuation in the data at the given time,
+		//that is, that data set with the lowest standard deviation.
 		float data_average[3] = { 0, 0, 0 }, std_deviation[3] = { 0, 0, 0 };
 		for (int i = 0; i < m_graphDataX.size(); i++)
 		{
@@ -639,27 +622,30 @@ std::wstring CalibrationMode::axisResultString(int* axis_swap, int* axis_polarit
 
 void CalibrationMode::accelerometerCalibration()
 {
-	//if (m_state & CalibrationModeState::RECORDING_DATA)
-	//{
-	//	//We're actively recording data from the sensor, check to see if the data timer has expired,
-	//	//if not then no need to do anything. If the timer has expired, we leave the recording state
-	//	//and advnace to the next stage of the calibration.
-	//	data_timer_elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - data_timer).count();
-	//	if (data_timer_elapsed >= data_timer_duration)
-	//	{
-	//		stopRecording();
-	//		return; //since advance to next stage is called above we leave this method after it returns
-	//	}
-	//}
-
 	switch (m_currentStage)
 	{
+	case 0:
+	{
+		if (!m_stageSet)
+		{
+			//Give a brief introduction on what the test entails
+			m_uiManager.getElement<TextOverlay>(L"Body Text")->updateText(L"A 6-point tumble calibration will be performed on the accelerometer. Press the continue button when ready to begin and then follow the on-screen instructions.");
+			
+			//Update and display the subtitle text
+			m_uiManager.getElement<TextOverlay>(L"Subtitle Text")->updateText(L"Accelerometer: Data Calibration");
+			m_uiManager.getElement<TextOverlay>(L"Subtitle Text")->removeState(UIElementState::Invisible);
+			
+			data_timer_duration = 5000; //the acceleromter needs 5 seconds of data at each stage
+			m_stageSet = true;
+		}
+
+		break;
+	}
 	case 1:
 	{
 		if (!m_stageSet)
 		{
 			m_uiManager.getElement<TextOverlay>(L"Body Text")->updateText(L"Rotate the sensor so that  the +Y axis is pointing upwards like shown in the image. Leave the sensor stationary like this for 5 seconds as it collects data. Press the continue button when ready.");
-			data_timer_duration = 5000; //the acceleromter needs 5 seconds of data at each stage
 			m_quaternion = QuaternionMultiply({ 0.707f, 0.0f, 0.0f, 0.707f }, { 0.707f, -0.707f, 0.0f, 0.0f }); //glm quaternions are of the form {w, x, y, z} but DirectX are {x, y, z, w} which can lead to some confusion
 			m_renderQuaternion = {m_quaternion.x, m_quaternion.y , m_quaternion.z , m_quaternion.w };
 			m_needsCamera = true; //alerts the mode screen class to actually render the 3d image
@@ -904,21 +890,26 @@ void CalibrationMode::accelerometerAxisCalibration()
 
 void CalibrationMode::gyroscopeCalibration()
 {
-	//if (m_state & CalibrationModeState::RECORDING_DATA)
-	//{
-	//	//We're actively recording data from the sensor, check to see if the data timer has expired,
-	//	//if not then no need to do anything. If the timer has expired, we leave the recording state
-	//	//and advnace to the next stage of the calibration.
-	//	data_timer_elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - data_timer).count();
-	//	if (data_timer_elapsed >= data_timer_duration)
-	//	{
-	//		stopRecording();
-	//		return; //since advance to next stage is called above we leave this method after it returns
-	//	}
-	//}
-
 	switch (m_currentStage)
 	{
+	case 0:
+	{
+		if (!m_stageSet)
+		{
+			//Give a brief introduction on what the test entails
+			m_uiManager.getElement<TextOverlay>(L"Body Text")->updateText(L"Two tests will be performed to calibrate the gyroscope. "
+				L"The first test is easy and just involves keeping the gyroscope still.The second test is carried out in three stages.In each of these stages we rotate the gyroscope by 90 degrees about one of its axes.");
+
+			//Update and display the subtitle text
+			m_uiManager.getElement<TextOverlay>(L"Subtitle Text")->updateText(L"Gyroscope: Data Calibration");
+			m_uiManager.getElement<TextOverlay>(L"Subtitle Text")->removeState(UIElementState::Invisible);
+
+			data_timer_duration = 5000; //the acceleromter needs 5 seconds of data at each stage
+			m_stageSet = true;
+		}
+
+		break;
+	}
 	case 1:
 	{
 		if (!m_stageSet)
@@ -1209,21 +1200,26 @@ void CalibrationMode::gyroscopeAxisCalibration()
 
 void CalibrationMode::magnetometerCalibration()
 {
-	//if (m_state & CalibrationModeState::RECORDING_DATA)
-	//{
-	//	//We're actively recording data from the sensor, check to see if the data timer has expired,
-	//	//if not then no need to do anything. If the timer has expired, we leave the recording state
-	//	//and advnace to the next stage of the calibration.
-	//	data_timer_elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - data_timer).count();
-	//	if (data_timer_elapsed >= data_timer_duration)
-	//	{
-	//		stopRecording();
-	//		return; //since advance to next stage is called above we leave this method after it returns
-	//	}
-	//}
-
 	switch (m_currentStage)
 	{
+	case 0:
+	{
+		if (!m_stageSet)
+		{
+			//Give a brief introduction on what the test entails
+			m_uiManager.getElement<TextOverlay>(L"Body Text")->updateText(L"To calibrate the magnetometer we need to take sources of interference into account.These include "
+				L"both the hard and soft iron deposits(large scale deviations in magnetic field, like large iron deposits in the ground, and small scale deviations in magnetic field, such as from nearby metal like a golf club shaft).");
+
+			//Update and display the subtitle text
+			m_uiManager.getElement<TextOverlay>(L"Subtitle Text")->updateText(L"Magnetometer: Data Calibration");
+			m_uiManager.getElement<TextOverlay>(L"Subtitle Text")->removeState(UIElementState::Invisible);
+
+			data_timer_duration = 5000; //the acceleromter needs 5 seconds of data at each stage
+			m_stageSet = true;
+		}
+
+		break;
+	}
 	case 1:
 	{
 		if (!m_stageSet)
@@ -1288,7 +1284,7 @@ void CalibrationMode::magnetometerAxisCalibration()
 		{
 			//In the first phase of the test we give a brief intro message on what to expect and set up a few important variables for the test.
 			m_uiManager.getElement<TextOverlay>(L"Body Text")->updateText(L"Welcome to the magnetometer axis calibration. Unlike the accelerometer and gyroscope axis calibrations, the magnetometer calibration is somewhat complicated. "
-				L"This is because the magnetometer relies on Earth's magnetic field which changes magnitdue and direction depending on where on the Earth you currently are. "
+				L"This is because the magnetometer relies on Earth's magnetic field, which changes magnitdue and direction depending on where on the Earth you currently are. "
 				L"Since the direction of the Magnetic field isn't known, we need to calibrate the axes of the magnetometer in a few distinct stages.");
 
 			//Update and display the subtitle text
@@ -1313,8 +1309,9 @@ void CalibrationMode::magnetometerAxisCalibration()
 	{
 		if (!m_stageSet)
 		{
-			m_uiManager.getElement<TextOverlay>(L"Body Text")->updateText(L"The first stage of the calibration is figuring out which axis is on top of the sensor. "
-				L"This is accomplished by laying the sensor flat on the table and rotating it by 180 degrees like shown in the animation. This rotation is done over the course of 5 seconds, press continue when ready.");
+			m_uiManager.getElement<TextOverlay>(L"Body Text")->updateText(L"The first stage of the calibration involves properly mappining each axis of the sensor to its appropriate axis of the Personal Caddie. This can be done "
+				L"by rotating the Personal Caddie about two of its principle axes and examining the data. Whichever axis we rotate the sensor around will have a relatively flat set of data vs. the other two axes whose data "
+			    L"will have ups and downs. First we carry out this test with the Z-axis as it will be the easiest. Lay the sensor flat on the table and  rotate it 360 degrees over the course of 5 seconds as depicted in the animation. Press continue when ready to proceed.");
 
 			m_renderQuaternion = { 0.0f, 0.0f, 0.0f, 1.0f };
 			m_needsCamera = true;
@@ -1334,7 +1331,7 @@ void CalibrationMode::magnetometerAxisCalibration()
 		break;
 	}
 	case 2:
-	case 8:
+	case 5:
 	{
 		prepareRecording();
 		break;
@@ -1347,7 +1344,7 @@ void CalibrationMode::magnetometerAxisCalibration()
 			magAxisCalculate(2);
 			displayGraph();
 
-			m_uiManager.getElement<TextOverlay>(L"Body Text")->updateText(L"Data collection complete, the graph shows the data set. The line with the least variation in the data represents the data taken from the top of the sensor.");
+			m_uiManager.getElement<TextOverlay>(L"Body Text")->updateText(L"Data collection complete, the graph shows the data from each axis. The line with the least variation in it represents the data taken From the Personal Caddie's Z axis.");
 
 			m_stageSet = true;
 		}
@@ -1357,46 +1354,31 @@ void CalibrationMode::magnetometerAxisCalibration()
 	{
 		if (!m_stageSet)
 		{
-			m_uiManager.getElement<TextOverlay>(L"Body Text")->updateText(L"With the Z-axis discovered we now move on to the x-axis. On the next screen, a reading that represents the current magnetic field strength along the x-axis will be displayed. "
-				L"The goal is to (with the sensor still flat on the table) rotate the sensor until this reading reaches it's maximal value. It's possible that this value will be a negative number. The sensor will most likely need to be "
-				L"rotated by 360 degrees to find this maximum value. Once the maximum value is found, press the continue button and leave the sensor exactly as it is. Press continue when ready.");
+			m_uiManager.getElement<TextOverlay>(L"Body Text")->updateText(L"Next will be the figuring out the Y-axis, as it's the next easiest. Take the sensor in your hand and rotate it 360 degrees about the Y axis over the course of "
+			    L"5 seconds like depicted in the animation. Press the continue button when ready to proceed.");
 
-			//Clear accumulated date before moving the next gyroscope axis calibration stage
+			//Make the graph invisible again
+			m_uiManager.getElement<Graph>(L"Acc Graph")->updateState(UIElementState::Invisible);
+
+			//Clear accumulated date before moving the next stage
 			m_graphDataX.clear();
 			m_graphDataY.clear();
 			m_graphDataZ.clear();
 
-			m_uiManager.getElement<Graph>(L"Acc Graph")->updateState(UIElementState::Invisible); //make the graph invisible from the previous step
+			m_renderQuaternion = { 0.0f, 0.0f, 0.0f, 1.0f };
+			m_needsCamera = true;
 
 			m_stageSet = true;
 		}
-		break;
-	}
-	case 5:
-	{
-		if (!m_stageSet)
+		else
 		{
-			prepareRecording();
-			unlimited_record = true; //this allows us to continuously record data instead of recording over a set time limit
-		}
-		else if (m_state & CalibrationModeState::RECORDING_DATA)
-		{
-			if (m_graphDataX.size() > 0)
-			{
-				std::wstring message = L"Magnetometer x-axis reading: " + std::to_wstring(m_graphDataX.back().y) + L" Gauss";
+			//animate the sensor image so that it's rotating about the y-axis. To be easier to see the 
+			//full rotation of 180 degrees should take 2 seconds. At a frame rate of 60 Hz this means we
+			//need to rotate by 90 deg/s / 60 frame/s = 1.5 deg/frame
+			m_quaternion = QuaternionMultiply({ 0.99991f, 0.01314f, 0.0f, 0.0f }, { m_renderQuaternion.m128_f32[3], m_renderQuaternion.m128_f32[0], m_renderQuaternion.m128_f32[1], m_renderQuaternion.m128_f32[2] }); //glm quaternions are of the form {w, x, y, z} but DirectX are {x, y, z, w} which can lead to some confusion
+			m_renderQuaternion = { m_quaternion.x, m_quaternion.y, m_quaternion.z, m_quaternion.w };
 
-				//Data will be continuously added to the data vectors, although, we really only care about the current x-reading.
-				//If the data vectors get too long, erase everything except the current last reading
-				if (m_graphDataX.size() > 1000)
-				{
-					DirectX::XMFLOAT2 current_data = { m_graphDataX.back().x, m_graphDataX.back().y };
-					m_graphDataX = { current_data };
-					m_graphDataY = { current_data };
-					m_graphDataZ = { current_data };
-				}
-
-				m_uiManager.getElement<TextOverlay>(L"Body Text")->updateText(message);
-			}
+			if (m_quaternion.w < 0.05f) m_renderQuaternion = { 0.0f, 0.0f, 0.0f, 1.0f }; //reset the animation after going about 90 degrees
 		}
 		break;
 	}
@@ -1404,7 +1386,17 @@ void CalibrationMode::magnetometerAxisCalibration()
 	{
 		if (!m_stageSet)
 		{
-			unlimited_record = false; //this will stop the current recording session
+			//With the data collected, see if a swap or inversion needs to occur for the y-axis. Once that is complete
+			//we can deduce which axis is the x-axis by the process of elimination
+			magAxisCalculate(1);
+			magAxisCalculate(0);
+
+			//Show graph of most recent data set
+			m_uiManager.getElement<Graph>(L"Acc Graph")->removeAllLines(); //clear previous data from graph
+			displayGraph();
+
+			m_uiManager.getElement<TextOverlay>(L"Body Text")->updateText(L"Data collection complete, the graph shows the data from each axis. The line with the least variation in it represents the data taken From the Personal Caddie's Y axis.");
+
 			m_stageSet = true;
 		}
 		break;
@@ -1413,65 +1405,22 @@ void CalibrationMode::magnetometerAxisCalibration()
 	{
 		if (!m_stageSet)
 		{
-			m_uiManager.getElement<TextOverlay>(L"Body Text")->updateText(L"Right now there are two possibilities for the sensor's current orientation. Either the x-axis is aligned along North-South, or, it's aligned along East-West. "
-				L"To find out, while keeping the sensor in its current rotation about the Z-axis, rotate it clockwise about the y-axis by 45 degrees, reset it back to its current position, and then rotate it counter-clockwise by 45 degrees along the y-axis, and again reset the position. The movement will be like a see-saw. The animation shows the appropriate movement. If the sensor is aligned along the North-South line "
-				L"then the y-axis data will remain mostly constant. If the sensor is aligned along the East-West line then the x-axis data will remain mostly constant. You will have 10 seconds to complete these two rotations, press continue when ready.");
-
-			data_timer_duration = 10000; //set timer to 10000 milliseconds
-
-			//Clear accumulated date before moving the next gyroscope axis calibration stage
-			m_graphDataX.clear();
-			m_graphDataY.clear();
-			m_graphDataZ.clear();
-
-			m_renderQuaternion = { 0.0f, 0.0f, 0.0f, 1.0f };
-			m_needsCamera = true; //resume rendering
-
-			m_stageSet = true;
-		}
-		else
-		{
-			//animate the sensor image so that it's rotating about the z-axis. To be easier to see the 
-			//full rotation of 180 degrees should take 2 seconds. At a frame rate of 60 Hz this means we
-			//need to rotate by 90 deg/s / 60 frame/s = 1.5 deg/frame
-			m_quaternion = QuaternionMultiply({ 0.99991f, clockwise_rotation * 0.01314f, 0.0f, 0.0f }, { m_renderQuaternion.m128_f32[3], m_renderQuaternion.m128_f32[0], m_renderQuaternion.m128_f32[1], m_renderQuaternion.m128_f32[2] }); //glm quaternions are of the form {w, x, y, z} but DirectX are {x, y, z, w} which can lead to some confusion
-			m_renderQuaternion = { m_quaternion.x, m_quaternion.y, m_quaternion.z, m_quaternion.w };
-
-			if (((clockwise_rotation > 0) && m_renderQuaternion.m128_f32[0] > 0.382f) || ((clockwise_rotation < 0) && m_renderQuaternion.m128_f32[0] < -0.382f)) clockwise_rotation *= -1; //flip the direction of rotation once we've gone 45 degrees
-
-		}
-		break;
-	}
-	case 9:
-	{
-		if (!m_stageSet)
-		{
-			//With the data collected, see if a swap or inversion needs to occur for the y-axis
-			magAxisCalculate(1);
-			magAxisCalculate(0);
-
-			//Show graph of most recent data set
-			m_uiManager.getElement<Graph>(L"Acc Graph")->removeAllLines(); //clear previous data from graph
-			displayGraph();
-
-			std::wstring completionText = L"At this point we've now figured out the orientation of each axis of the magnetometer, see them displayed below. We still need to calculate the polarity of each axis, press continue to do so.\n\n\n"
+			std::wstring completionText = L"The X-axis can be deduced vai the process of elimination, so at this point we've now figured out the orientation of each axis of the magnetometer, see them displayed below. We still need to calculate the polarity of each axis, press continue to do so.\n\n\n"
 				L"Standard Axes = [X, Y, Z]\n"
-				L"New Axes = [" + axisResultString(mag_axis_swap, mag_axis_polarity) + L"]\n\n";
+				L"New Axes = [" + axisResultString(test_mag_axis_swap, test_mag_axis_polarity) + L"]\n\n";
 
 			m_uiManager.getElement<TextOverlay>(L"Body Text")->updateText(completionText);
-
 			m_stageSet = true;
 		}
 		break;
 	}
-	case 10:
+	case 8:
 	{
 		if (!m_stageSet)
 		{
-			std::wstring completionText = L"When calculating the polarity of each axis, it isn't actually important that match Earth's magnetic field, all that matters is each axis has the same polarity when pointing straight at the field."
-				L"In more scientific terms, it doesn't actually matter what the magnetic inclination is (magnetic field going into, or out of the Earth), as long as all axes agree on a polarity is what matters. With that said, now that "
-				L"we know which axis is which, we take turns pointing each of the sensor axes directly towards magnetic north. Like was done in the last step, the magnetic reading of the current axis will appear on the screen. Press continue "
-				L"when ready.";
+			std::wstring completionText = L"When calculating the polarity of each axis, it isn't actually important that we match true North, all that matters is that each axis agrees in the direction they 'think' North is. "
+				L"Since we now know which axis is which, we take turns pointing each one directly along the North-South line (this gives us the highest reading possible for each axis) and see whether the readings is positive "
+				L"or negative. To do this, the value of the X-axis will be displayed on screen. Rotate the sensor in your hand until the number on the screen is as big of a positive number is you can make it. Press continue to start.";
 
 			//Clear accumulated date before moving the next gyroscope axis calibration stage
 			m_graphDataX.clear();
@@ -1479,14 +1428,13 @@ void CalibrationMode::magnetometerAxisCalibration()
 			m_graphDataZ.clear();
 
 			m_uiManager.getElement<Graph>(L"Acc Graph")->updateState(UIElementState::Invisible); //make the graph invisible from the previous step
-
 			m_uiManager.getElement<TextOverlay>(L"Body Text")->updateText(completionText);
 
 			m_stageSet = true;
 		}
 		break;
 	}
-	case 11:
+	case 9:
 	{
 		if (!m_stageSet)
 		{
@@ -1500,11 +1448,11 @@ void CalibrationMode::magnetometerAxisCalibration()
 				//The axes swaps that were figured out in the previous few steps won't be applied to the sensor data so we need
 				//to manually make sure that we're taking data from the true x-axis
 				float true_x_reading = 0.0f;
-				if (mag_axis_swap[0] == 0) true_x_reading = m_graphDataX.back().y;
-				else if (mag_axis_swap[0] == 1) true_x_reading = m_graphDataY.back().y;
-				else if (mag_axis_swap[0] == 2) true_x_reading = m_graphDataZ.back().y;
+				if (test_mag_axis_swap[0] == 0) true_x_reading = m_graphDataX.back().y;
+				else if (test_mag_axis_swap[0] == 1) true_x_reading = m_graphDataY.back().y;
+				else if (test_mag_axis_swap[0] == 2) true_x_reading = m_graphDataZ.back().y;
 
-				std::wstring message = L"Magnetometer x-axis reading: " + std::to_wstring(true_x_reading) + L" Gauss";
+				std::wstring message = L"Magnetometer X-axis reading: " + std::to_wstring(true_x_reading) + L" Gauss";
 
 				//Data will be continuously added to the data vectors, although, we really only care about the current x-reading.
 				//If the data vectors get too long, erase everything except the current last reading
@@ -1521,38 +1469,41 @@ void CalibrationMode::magnetometerAxisCalibration()
 		}
 		break;
 	}
-	case 12:
+	case 10:
 	{
 		if (!m_stageSet)
 		{
-			unlimited_record = false; //this will stop the current recording session
+			//unlimited_record = false; //this will stop the current recording session
+			stopRecording();
 
 			//record the polarity of the x-axis
 			float true_x_reading = 0.0f;
 			int correct_axis = 0;
-			if (mag_axis_swap[0] == 0) true_x_reading = m_graphDataX.back().y;
-			else if (mag_axis_swap[0] == 1)
+			if (test_mag_axis_swap[0] == 0) true_x_reading = m_graphDataX.back().y;
+			else if (test_mag_axis_swap[0] == 1)
 			{
 				true_x_reading = m_graphDataY.back().y;
 				correct_axis = 1;
 			}
-			else if (mag_axis_swap[0] == 2)
+			else if (test_mag_axis_swap[0] == 2)
 			{
 				true_x_reading = m_graphDataZ.back().y;
 				correct_axis = 2;
 			}
 
-			if (true_x_reading < 0) mag_axis_polarity[correct_axis] *= -1;
+			if (true_x_reading < 0) test_mag_axis_polarity[correct_axis] *= -1;
 
 			m_stageSet = true;
 		}
 		break;
 	}
-	case 13:
+	case 11:
 	{
 		if (!m_stageSet)
 		{
-			std::wstring completionText = L"Magnetic x-axis polarity calculated, moving on to the y-axis.";
+			std::wstring completionText = L"Magnetic X-axis polarity calculated, moving on to the Y-axis. Keep the sensor in the exact same orientation, and then rotate it by 90 degrees about the Z-axis "
+				L"so that the +Y-axis points in the same direction that the +X-axis was just pointing in. The value from the Y-axis will be displayed on screen as a guide. It's possible that the number will "
+				L"be negative now which is perfectly ok for this stage of the calibration. Press Continue when ready to proceed.";
 
 			//Clear accumulated date before moving the next gyroscope axis calibration stage
 			m_graphDataX.clear();
@@ -1560,6 +1511,69 @@ void CalibrationMode::magnetometerAxisCalibration()
 			m_graphDataZ.clear();
 
 			m_uiManager.getElement<TextOverlay>(L"Body Text")->updateText(completionText);
+
+			m_stageSet = true;
+		}
+		break;
+	}
+	case 12:
+	{
+		if (!m_stageSet)
+		{
+			prepareRecording();
+			//unlimited_record = true; //this allows us to continuously record data instead of recording over a set time limit
+		}
+		else if (m_state & CalibrationModeState::RECORDING_DATA)
+		{
+			if (m_graphDataX.size() > 0)
+			{
+				//The axes swaps that were figured out in the previous few steps won't be applied to the sensor data so we need
+				//to manually make sure that we're taking data from the true y-axis
+				float true_y_reading = 0.0f;
+				if (test_mag_axis_swap[1] == 0) true_y_reading = m_graphDataX.back().y;
+				else if (test_mag_axis_swap[1] == 1) true_y_reading = m_graphDataY.back().y;
+				else if (test_mag_axis_swap[1] == 2) true_y_reading = m_graphDataZ.back().y;
+
+				std::wstring message = L"Magnetometer Y-axis reading: " + std::to_wstring(true_y_reading) + L" Gauss";
+
+				//Data will be continuously added to the data vectors, although, we really only care about the current x-reading.
+				//If the data vectors get too long, erase everything except the current last reading
+				if (m_graphDataX.size() > 1000)
+				{
+					DirectX::XMFLOAT2 current_data = { m_graphDataX.back().x, m_graphDataX.back().y };
+					m_graphDataX = { current_data };
+					m_graphDataY = { current_data };
+					m_graphDataZ = { current_data };
+				}
+
+				m_uiManager.getElement<TextOverlay>(L"Body Text")->updateText(message);
+			}
+		}
+		break;
+	}
+	case 13:
+	{
+		if (!m_stageSet)
+		{
+			//unlimited_record = false; //this will stop the current recording session
+			stopRecording();
+
+			//record the polarity of the y-axis
+			float true_y_reading = 0.0f;
+			int correct_axis = 1;
+			if (test_mag_axis_swap[1] == 0)
+			{
+				true_y_reading = m_graphDataX.back().y;
+				correct_axis = 0;
+			}
+			else if (test_mag_axis_swap[1] == 1) true_y_reading = m_graphDataY.back().y;
+			else if (test_mag_axis_swap[1] == 2)
+			{
+				true_y_reading = m_graphDataZ.back().y;
+				correct_axis = 2;
+			}
+
+			if (true_y_reading < 0) test_mag_axis_polarity[correct_axis] *= -1;
 
 			m_stageSet = true;
 		}
@@ -1569,69 +1583,9 @@ void CalibrationMode::magnetometerAxisCalibration()
 	{
 		if (!m_stageSet)
 		{
-			prepareRecording();
-			unlimited_record = true; //this allows us to continuously record data instead of recording over a set time limit
-		}
-		else if (m_state & CalibrationModeState::RECORDING_DATA)
-		{
-			if (m_graphDataX.size() > 0)
-			{
-				//The axes swaps that were figured out in the previous few steps won't be applied to the sensor data so we need
-				//to manually make sure that we're taking data from the true y-axis
-				float true_y_reading = 0.0f;
-				if (mag_axis_swap[1] == 0) true_y_reading = m_graphDataX.back().y;
-				else if (mag_axis_swap[1] == 1) true_y_reading = m_graphDataY.back().y;
-				else if (mag_axis_swap[1] == 2) true_y_reading = m_graphDataZ.back().y;
-
-				std::wstring message = L"Magnetometer y-axis reading: " + std::to_wstring(true_y_reading) + L" Gauss";
-
-				//Data will be continuously added to the data vectors, although, we really only care about the current x-reading.
-				//If the data vectors get too long, erase everything except the current last reading
-				if (m_graphDataX.size() > 1000)
-				{
-					DirectX::XMFLOAT2 current_data = { m_graphDataX.back().x, m_graphDataX.back().y };
-					m_graphDataX = { current_data };
-					m_graphDataY = { current_data };
-					m_graphDataZ = { current_data };
-				}
-
-				m_uiManager.getElement<TextOverlay>(L"Body Text")->updateText(message);
-			}
-		}
-		break;
-	}
-	case 15:
-	{
-		if (!m_stageSet)
-		{
-			unlimited_record = false; //this will stop the current recording session
-
-			//record the polarity of the y-axis
-			float true_y_reading = 0.0f;
-			int correct_axis = 1;
-			if (mag_axis_swap[1] == 0)
-			{
-				true_y_reading = m_graphDataX.back().y;
-				correct_axis = 0;
-			}
-			else if (mag_axis_swap[1] == 1) true_y_reading = m_graphDataY.back().y;
-			else if (mag_axis_swap[1] == 2)
-			{
-				true_y_reading = m_graphDataZ.back().y;
-				correct_axis = 2;
-			}
-
-			if (true_y_reading < 0) mag_axis_polarity[correct_axis] *= -1;
-
-			m_stageSet = true;
-		}
-		break;
-	}
-	case 16:
-	{
-		if (!m_stageSet)
-		{
-			std::wstring completionText = L"Magnetic y-axis polarity calculated, moving on to the z-axis.";
+			std::wstring completionText = L"Magnetic Y-axis polarity calculated, moving on to the Z-axis. Keep the sensor in the exact same orientation, and then rotate it by 90 degrees about the X-axis "
+				L"so that the +Z-axis points in the same direction that the +Y-axis was just pointing in. The value from the Y-axis will be displayed on screen as a guide. It's possible that the number will "
+				L"be negative now which is perfectly ok for this stage of the calibration. Press Continue when ready to proceed.";
 
 			//Clear accumulated date before moving the next gyroscope axis calibration stage
 			m_graphDataX.clear();
@@ -1644,12 +1598,12 @@ void CalibrationMode::magnetometerAxisCalibration()
 		}
 		break;
 	}
-	case 17:
+	case 15:
 	{
 		if (!m_stageSet)
 		{
 			prepareRecording();
-			unlimited_record = true; //this allows us to continuously record data instead of recording over a set time limit
+			//unlimited_record = true; //this allows us to continuously record data instead of recording over a set time limit
 		}
 		else if (m_state & CalibrationModeState::RECORDING_DATA)
 		{
@@ -1658,11 +1612,11 @@ void CalibrationMode::magnetometerAxisCalibration()
 				//The axes swaps that were figured out in the previous few steps won't be applied to the sensor data so we need
 				//to manually make sure that we're taking data from the true y-axis
 				float true_z_reading = 0.0f;
-				if (mag_axis_swap[2] == 0) true_z_reading = m_graphDataX.back().y;
-				else if (mag_axis_swap[2] == 1) true_z_reading = m_graphDataY.back().y;
-				else if (mag_axis_swap[2] == 2) true_z_reading = m_graphDataZ.back().y;
+				if (test_mag_axis_swap[2] == 0) true_z_reading = m_graphDataX.back().y;
+				else if (test_mag_axis_swap[2] == 1) true_z_reading = m_graphDataY.back().y;
+				else if (test_mag_axis_swap[2] == 2) true_z_reading = m_graphDataZ.back().y;
 
-				std::wstring message = L"Magnetometer z-axis reading: " + std::to_wstring(true_z_reading) + L" Gauss";
+				std::wstring message = L"Magnetometer Z-axis reading: " + std::to_wstring(true_z_reading) + L" Gauss";
 
 				//Data will be continuously added to the data vectors, although, we really only care about the current x-reading.
 				//If the data vectors get too long, erase everything except the current last reading
@@ -1679,34 +1633,35 @@ void CalibrationMode::magnetometerAxisCalibration()
 		}
 		break;
 	}
-	case 18:
+	case 16:
 	{
 		if (!m_stageSet)
 		{
-			unlimited_record = false; //this will stop the current recording session
+			//unlimited_record = false; //this will stop the current recording session
+			stopRecording();
 
 			//record the polarity of the y-axis
 			float true_z_reading = 0.0f;
 			int correct_axis = 2;
-			if (mag_axis_swap[2] == 0)
+			if (test_mag_axis_swap[2] == 0)
 			{
 				true_z_reading = m_graphDataX.back().y;
 				correct_axis = 0;
 			}
-			else if (mag_axis_swap[2] == 1)
+			else if (test_mag_axis_swap[2] == 1)
 			{
 				true_z_reading = m_graphDataY.back().y;
 				correct_axis = 1;
 			}
-			else if (mag_axis_swap[2] == 2) true_z_reading = m_graphDataZ.back().y;
+			else if (test_mag_axis_swap[2] == 2) true_z_reading = m_graphDataZ.back().y;
 
-			if (true_z_reading < 0) mag_axis_polarity[correct_axis] *= -1;
+			if (true_z_reading < 0) test_mag_axis_polarity[correct_axis] *= -1;
 
 			m_stageSet = true;
 		}
 		break;
 	}
-	case 19:
+	case 17:
 	{
 		if (!m_stageSet)
 		{
@@ -1724,7 +1679,7 @@ void CalibrationMode::magnetometerAxisCalibration()
 		}
 		break;
 	}
-	case 20:
+	case 18:
 	{
 		//Finally, transition the Personal Caddie back into Connected Mode when the calibration is over to lower power consumption
 		auto mode = PersonalCaddiePowerMode::CONNECTED_MODE;
@@ -1967,6 +1922,11 @@ void CalibrationMode::loadModeMainPage()
 
 	//Reset all the calibration variables
 	initializeCalibrationVariables();
+
+	//Remove any acc, gyr or mag flags from the current mode state
+	m_state &= ~(CalibrationModeState::ACCELEROMETER | CalibrationModeState::GYROSCOPE | CalibrationModeState::MAGNETOMETER);
+
+	int x = 5;
 }
 
 void CalibrationMode::displayGraph()
