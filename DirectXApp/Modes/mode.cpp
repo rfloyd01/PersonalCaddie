@@ -4,6 +4,34 @@
 //Initialization of static function pointer
 std::function<void(ModeAction, void*)> Mode::m_mode_screen_handler = nullptr;
 
+void Mode::uiUpdate()
+{
+	//Since all modes contain UIElements, they all share the same method for updating them.
+	//This method gets called in every single iteration of the main render loop.
+
+	//First see if any UIElements need information from the renderer class
+	m_uiManager.checkForTextResize();
+	if (m_uiManager.elementsCurrentlyNeedingTextUpdate() > 0)
+	{
+		auto text = m_uiManager.getResizeText();
+		m_mode_screen_handler(ModeAction::RendererGetTextSize, (void*)&text);
+
+		//Once the text dimensions have been received we can reposition the text and resize the element as necessary
+		m_uiManager.applyTextResizeUpdates();
+	}
+
+	//Then see if any UIElements currently need to have an action checked
+	if (m_uiManager.getActionElements().size() > 0)
+	{
+		//iterate backwards so we can pop each action from the back when complete
+		for (int i = m_uiManager.getActionElements().size() - 1; i >= 0; i--)
+		{
+			uiElementStateChangeHandler(m_uiManager.getActionElements()[i]);
+			m_uiManager.getActionElements().pop_back();
+		}
+	}
+}
+
 const UIColor Mode::getBackgroundColor()
 {
 	return m_backgroundColor;

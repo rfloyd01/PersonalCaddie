@@ -77,36 +77,40 @@ public:
 
 	void startDataTransfer();
 
-	volatile bool ble_device_connected;
+	volatile bool ble_device_connected; //Deprecated, work on removing
 
 	PersonalCaddiePowerMode getCurrentPowerMode();
 
+
+	//BLE Methods
+	bool bleConnectionStatus();
+	bool bleDeviceWatcherStatus();
 	void enableDataNotifications();
 	void disableDataNotifications();
+	void connectToDevice(uint64_t deviceAddress);
+	void disconnectFromDevice();
+	void startBLEAdvertisementWatcher() { return p_ble->startBLEAdvertisementWatcher(); }
+	void stopBLEAdvertisementWatcher() { return p_ble->stopBLEAdvertisementWatcher(); }
 
+	//Data Methods
+	void dataUpdate(); //master update function
+	float getDataPoint(DataType dt, Axis a, int sample_number);
+	void setMadgwickBeta(float b);
+
+	//IMU and Sensor Methods
+	std::vector<uint8_t*> getIMUSettings() { return p_imu->getSensorSettings(); }
+	std::vector<uint8_t> const& getAvailableSensors() { return m_availableSensors; }
 	std::pair<const float*, const float**> getSensorCalibrationNumbers(sensor_type_t sensor);
 	std::pair<const int*, const int*> getSensorAxisCalibrationNumbers(sensor_type_t sensor);
 	void updateSensorCalibrationNumbers(sensor_type_t sensor, std::pair<float*, float**> cal_numbers);
 	void updateSensorAxisOrientations(sensor_type_t sensor, std::pair<int*, int*> cal_numbers);
-
 	int getNumberOfSamples() { return this->number_of_samples; }
 	float getMaxODR() { return this->p_imu->getMaxODR(); }
 	float getDataTimeStamp() { return this->m_first_data_time_stamp; }
-
-	void connectToDevice(uint64_t deviceAddress);
-	void disconnectFromDevice();
-
-	void setMadgwickBeta(float b);
-
-	std::vector<uint8_t*> getIMUSettings() { return p_imu->getSensorSettings(); }
-	std::vector<uint8_t> const& getAvailableSensors() { return m_availableSensors; }
-
 	glm::quat getHeadingOffset() { return m_heading_offset; }
 	void setHeadingOffset(glm::quat offset) { m_heading_offset = offset; }
 
 	//Methods and fields from original BluetoothLE Class
-	void dataUpdate(); //master update function
-	float getDataPoint(DataType dt, Axis a, int sample_number);
 	int getCurrentSample();
 	float getCurrentTime();
 	glm::quat getOpenGLQuaternion(int sample);
@@ -116,9 +120,6 @@ public:
 	void resetPosition(); //resets sensor lin_acc., vel. and loc. to 0 so that club will be rendered back at center of screen
 	//void updateCalibrationNumbers();
 	void setRotationQuaternion(glm::quat q, int sample);
-
-	void startBLEAdvertisementWatcher() { return p_ble->startBLEAdvertisementWatcher(); }
-	void stopBLEAdvertisementWatcher() { return p_ble->stopBLEAdvertisementWatcher(); }
 
 	std::set<DeviceInfoDisplay>* getScannedDevices() { return p_ble->getScannedDevices(); }
 	std::vector<std::vector<std::vector<float> > > const& getSensorData() { return sensor_data; }

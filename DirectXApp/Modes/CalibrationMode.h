@@ -32,8 +32,6 @@ public:
 
 	std::wstring getCurrentlySelectedDevice() { return m_currentlySelectedDeviceAddress; }
 
-	virtual uint32_t handleUIElementStateChange(int i) override;
-
 	//Methods called from the Mode Screen class
 	virtual void addData(std::vector<std::vector<std::vector<float> > > const& sensorData, float sensorODR, float timeStamp, int totalSamples) override;
 	virtual void getSensorAxisCalibrationNumbers(sensor_type_t sensor, std::pair<const int*, const int*> cal_numbers) override;
@@ -49,7 +47,7 @@ private:
 	void initializeCalibrationVariables();
 
 	//Handler Methods
-	void uiElementStateChangeHandler(std::shared_ptr<ManagedUIElement> element);
+	virtual void uiElementStateChangeHandler(std::shared_ptr<ManagedUIElement> element) override;
 
 	//Methods for maneuvering through the calibrations
 	void accelerometerCalibration();

@@ -290,12 +290,6 @@ void CalibrationMode::ble_NotificationsChange(int state)
 	m_mode_screen_handler(ModeAction::PersonalCaddieChangeMode, (void*)&mode);//request the Personal Caddie to be placed into active mode to start recording data
 }
 
-uint32_t CalibrationMode::handleUIElementStateChange(int i)
-{
-	//This method is deprecated and can be removed once it's deleted from the mode class
-	return m_state;
-}
-
 void CalibrationMode::advanceToNextStage()
 {
 	//We call this method to move to the next stage of the current calibration
@@ -305,16 +299,17 @@ void CalibrationMode::advanceToNextStage()
 
 void CalibrationMode::update()
 {
+	//DEPRECATED BLOCKL: The below updates should now be handled by the uiUpdate() method of the parent mode class
 	//First process any changes that clicks or key presses had on the UI elements
-	if (m_uiManager.getActionElements().size() > 0)
-	{
-		//iterate backwards so we can pop each action from the back when complete
-		for (int i = m_uiManager.getActionElements().size() - 1; i >= 0; i--)
-		{
-			uiElementStateChangeHandler(m_uiManager.getActionElements()[i]);
-			m_uiManager.getActionElements().pop_back(); //TODO: For now just remove elements, need to implement actions in the future though
-		}
-	}
+	//if (m_uiManager.getActionElements().size() > 0)
+	//{
+	//	//iterate backwards so we can pop each action from the back when complete
+	//	for (int i = m_uiManager.getActionElements().size() - 1; i >= 0; i--)
+	//	{
+	//		uiElementStateChangeHandler(m_uiManager.getActionElements()[i]);
+	//		m_uiManager.getActionElements().pop_back();
+	//	}
+	//}
 
 	//If we're currently recording data, check to see if the timer has expired. If not,
 	//then simply display the amount of time that the timer has left on screen.

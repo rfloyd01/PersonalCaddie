@@ -103,7 +103,7 @@ void ModeScreen::update()
 	//the current mode needs from the mode state class (i.e. putting the Personal Caddie into sensor active
 	//mode). When that check is complete we then defer to the current mode
 	//to update its own state if necessary. This only occurs when in the Active ModeState
-	if (m_modeState & ModeState::Enter_Active)
+	/*if (m_modeState & ModeState::Enter_Active)
 	{
 		enterActiveState();
 		m_modeState ^= ModeState::Enter_Active;
@@ -116,10 +116,12 @@ void ModeScreen::update()
 	else if (m_modeState & ModeState::Active)
 	{
 		stateUpdate();
-	}
+	}*/
 
-	m_modes[static_cast<int>(m_currentMode)]->update();
-	//if (m_modeState & ModeState::Active) m_modes[static_cast<int>(m_currentMode)]->update();
+	//Have the current state make any necessary updates based on the 
+	//input and events that have just been processed
+	getCurrentMode()->uiUpdate(); //Updates based on interaction with UI Elements on screen
+	getCurrentMode()->update();  //Updates based on internal state of the mode
 }
 
 void ModeScreen::processKeyboardInput(winrt::Windows::System::VirtualKey pressedKey)
@@ -631,13 +633,15 @@ void ModeScreen::PersonalCaddieHandler(PersonalCaddieEventType pcEvent, void* ev
 			devices += L", Address: " + std::to_wstring(it->device_address.first) + L"\n";
 		}
 
-		//Update the text in the device discovery text box
-		if (m_currentMode == ModeType::DEVICE_DISCOVERY)
-		{
-			auto textBox = (FullScrollingTextBox*)(getCurrentModeUIElements()[0].get());
-			textBox->clearText(); //clear the text each time to prevent adding duplicates
-			textBox->addText(devices, m_renderer->getCurrentScreenSize(), true); //this new text will get resized in the main update loop
-		}
+		getCurrentMode()->getString(devices); //pass the list of devices to the current mode
+
+		////Update the text in the device discovery text box
+		//if (m_currentMode == ModeType::DEVICE_DISCOVERY)
+		//{
+		//	auto textBox = (FullScrollingTextBox*)(getCurrentModeUIElements()[0].get());
+		//	textBox->clearText(); //clear the text each time to prevent adding duplicates
+		//	textBox->addText(devices, m_renderer->getCurrentScreenSize(), true); //this new text will get resized in the main update loop
+		//}
 		break;
 	}
 	case PersonalCaddieEventType::NOTIFICATIONS_TOGGLE:
@@ -732,11 +736,69 @@ void ModeScreen::ModeHandler(ModeAction action, void* eventArgs)
 		else m_personalCaddie->changePowerMode(newMode);
 		break;
 	}
-	case RendererGetMaterial:
+	case RendererGetTextSize:
 	{
-		//The current mode needs something from the renderer class. This can either be
-		//a material for a model to be rendered, or, the dimensions of text inside a 
-		//text box.
+		//Some UIElements are sized so that they can perfectly fit their text inside of themselves,
+		//the DropDownMenu is a good example of this. It isn't possible to know just how large the text
+		//will be (in pixels) though until it actually gets rendered. This leads to a strange race scenario
+		//where we need to create a UIElement with dimensions, and yet, can't know what those dimensions are
+		//until after it's already been rendered. To help out with this, we can send a vector containing any
+		//text that we need sized directly to the renderer. This will synchronously create the text while
+		//the UIElement is being created, allowing us to take the dimensions that get placed in the UIText
+		//objects and extracting them to the UIElement. --Warning-- this method can only be called from 
+		//the main render loop or it can lead to unexpected errors.
+		std::vector<UIText*> const& text = *((std::vector<UIText*>*)eventArgs);
+		getTextRenderPixels(text);
+		break;
+	}
+	case BLEConnection:
+	{
+		//There are a few actions we can take regarding the BLE class. We can see the current connection status
+		//(or we connected to a device or not), we can attempt to connect to a device, and we can disconnect from 
+		//the currently connected device. Wrapped inside of the eventArgs is an instance of the BLEState enum class
+		//as well as a 64-bit integer. This integer represents the address of a device that we potentially want to
+		//connect to.
+		std::pair<BLEState, uint64_t> state = *((std::pair<BLEState, uint64_t>*)eventArgs);
+		switch (state.first)
+		{
+		case BLEState::Connected:
+		default:
+			//In this case we're simply curious to see if we're currently connected to a BLEDevice
+			getCurrentMode()->getBLEConnectionStatus(m_personalCaddie->bleConnectionStatus());
+			break;
+		case BLEState::Disconnect:
+			//Disconnect from the current device
+			m_personalCaddie->disconnectFromDevice();
+			break;
+			//
+		case BLEState::Reconnect:
+			m_personalCaddie->connectToDevice(state.second);
+			break;
+		}
+		break;
+	}
+	case BLEDeviceWatcher:
+	{
+		//For the BLE Device Watcher we can more or less take the same actions as for the BLE Connection. That is,
+		//we can confirm if it's currently running, we can turn it on, or we can turn it off. The device watcher status
+		//is wrapped inside of the same BLEState enum class as above.
+		BLEState state = *((BLEState*)eventArgs);
+		switch (state)
+		{		
+		case BLEState::DeviceWatcherStatus:
+		default:
+			//In this case we're simply curious to see if the device watcher is already on
+			getCurrentMode()->getBLEDeviceWatcherStatus(m_personalCaddie->bleDeviceWatcherStatus());
+			break;
+		case BLEState::DisableDeviceWatcher:
+			//Turn off the device watcher
+			m_personalCaddie->stopBLEAdvertisementWatcher();
+			break;
+		case BLEState::EnableDeviceWatcher:
+			//Turn on the device watcher
+			m_personalCaddie->startBLEAdvertisementWatcher();
+			break;
+		}
 		break;
 	}
 	case BLENotifications:
@@ -776,8 +838,6 @@ void ModeScreen::ModeHandler(ModeAction action, void* eventArgs)
 	}
 	case MadgwickUpdateFilter:
 	case SensorSettings:
-	case BLEDeviceWatcher:
-	case BLEConnection:
 	default: return;
 	}
 }
@@ -865,13 +925,13 @@ void ModeScreen::stateUpdate()
 			//disconnect from the current device
 			m_personalCaddie->disconnectFromDevice();
 		}
-		else if (m_modes[static_cast<int>(m_currentMode)]->getModeState() & DeviceDiscoveryState::ATTEMPT_CONNECT)
-		{
-			//attempt to connect to the device currently selected
-			wchar_t* endString;
-			uint64_t deviceAddress = std::wcstoull(&((DeviceDiscoveryMode*)m_modes[static_cast<int>(m_currentMode)].get())->getCurrentlySelectedDevice()[0], &endString, 10);
-			m_personalCaddie->connectToDevice(deviceAddress);
-		}
+		//else if (m_modes[static_cast<int>(m_currentMode)]->getModeState() & DeviceDiscoveryState::ATTEMPT_CONNECT)
+		//{
+		//	//attempt to connect to the device currently selected
+		//	wchar_t* endString;
+		//	uint64_t deviceAddress = std::wcstoull(&((DeviceDiscoveryMode*)m_modes[static_cast<int>(m_currentMode)].get())->getCurrentlySelectedDevice()[0], &endString, 10);
+		//	m_personalCaddie->connectToDevice(deviceAddress);
+		//}
 		break;
 	}
 	case ModeType::IMU_SETTINGS:

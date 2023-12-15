@@ -32,6 +32,8 @@ public:
 	virtual uint32_t update(InputState* inputState) override;
 	virtual std::vector<UIText*> setTextDimension() override;
 
+	virtual void repositionText() override;
+
 	std::wstring getLastSelectedText() { return m_lastSelectedText; }
 	void setLastSelectedText(std::wstring text) { m_lastSelectedText = text; } //TODO: May want to look at all text overlays in the child array and confirm the given text actually exists
 
@@ -41,8 +43,6 @@ protected:
 	virtual void onScrollUp() override;
 	virtual void onScrollDown() override;
 	void calcualteScrollBarLocation(winrt::Windows::Foundation::Size windowSize);
-
-	virtual void repositionText() override;
 
 	float m_buttonSize; //the size of the scroll buttons relative to the height of the text box
 	bool m_highlightableText;

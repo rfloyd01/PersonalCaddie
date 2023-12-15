@@ -88,6 +88,12 @@ bool BLE::isConnected()
     else return false;
 }
 
+bool BLE::isDeviceWatcherOn()
+{
+    auto status = this->m_bleAdvertisementsWatcher.Status();
+    return (status == Bluetooth::Advertisement::BluetoothLEAdvertisementWatcherStatus::Started);
+}
+
 void BLE::addScannedDevice(DeviceInfoDisplay device)
 {
     //attempts to put the given device into the m_scannedDevices set
@@ -182,6 +188,6 @@ void BLE::terminateConnection()
         maintain_connection = false; //let the BLE connection handler know that this disonnect was on purpose
         m_bleDevice.Close();
         m_bleDevice = nullptr;
-        state_change_handler(BLEState::Disconnected);
+        state_change_handler(BLEState::Disconnect);
     }
 }

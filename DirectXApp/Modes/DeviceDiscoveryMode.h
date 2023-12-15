@@ -20,13 +20,17 @@ public:
 
 	virtual void update() override;
 	virtual void handlePersonalCaddieConnectionEvent(bool connectionStatus) override;
+	virtual void getBLEConnectionStatus(bool status) override;
+	virtual void getBLEDeviceWatcherStatus(bool status) override;
 
 	std::wstring getCurrentlySelectedDevice() { return m_currentlySelectedDeviceAddress; }
 
-	virtual uint32_t handleUIElementStateChange(int i) override;
+	virtual void getString(std::wstring message) override;
 
 private:
 	void initializeTextOverlay(winrt::Windows::Foundation::Size windowSize);
+	virtual void uiElementStateChangeHandler(std::shared_ptr<ManagedUIElement> element) override;
 
 	std::wstring m_currentlySelectedDeviceAddress = L"";
+	bool m_connected, m_deviceWatcherActive;
 };

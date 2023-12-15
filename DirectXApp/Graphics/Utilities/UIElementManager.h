@@ -179,14 +179,22 @@ public:
 	std::vector<std::shared_ptr<ManagedUIElement>> removeAlerts();
 	void overwriteAlerts(std::vector<std::shared_ptr<ManagedUIElement>> const& alerts);
 
+	//Automatic Text Updating Methods
+	void checkForTextResize();
+	std::vector<UIText*> getResizeText();
+	void applyTextResizeUpdates();
+	int elementsCurrentlyNeedingTextUpdate() { return m_updateText.size(); }
+
 private:
 	//Data Structures
 	std::map<UIElementType, std::vector<std::shared_ptr<ManagedUIElement> > > m_uiElements;
 	std::vector<std::vector<std::vector<std::shared_ptr<ManagedUIElement> > > > m_gridLocations; //splits the screen into a grid and keeps track of which elements are in which sector, useful for mouse hover detection
 	std::vector<std::shared_ptr<UIElement> > m_renderElements; //A vector of all UI Elements to be rendered on screen
 	std::vector<std::shared_ptr<ManagedUIElement> > m_actionElements; //Any UI Elements that have been interacted with and require the current mode to carry out some action will be added to this vector
+	std::vector<std::shared_ptr<UIElement>> m_updateText; //An array of elements that currently require text dimension info from the Renderer class
 
 	winrt::Windows::Foundation::Size m_windowSize; //Keeps track of the current size of the window. UIElements have dimensions that are relative to the window size
+	static std::vector<UIElementType> m_textUpdateElements;
 	long long m_alertTimer = 2000; //The amount of time (in milliseconds) that alerts remain on screen before disappearing
 
 	std::vector<std::shared_ptr<ManagedUIElement> >::iterator findElementByName(std::vector<std::shared_ptr<ManagedUIElement> > & vec, std::wstring name);

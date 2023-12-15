@@ -81,6 +81,8 @@ public:
 	bool isAlert() { return m_isAlert; } //deprecated
 	void setAlert() { m_isAlert = true; } //deprecated
 
+	void getAllTextNeedingDimensions(std::vector<UIText*>* text);
+
 protected:
 	int pixelCompare(float pixelOne, float pixelTwo);
 

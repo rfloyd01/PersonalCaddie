@@ -55,7 +55,7 @@ enum ModeState
 enum ModeAction
 {
 	PersonalCaddieChangeMode,
-	RendererGetMaterial,
+	RendererGetTextSize,
 	MadgwickUpdateFilter,
 	SensorSettings,
 	SensorCalibration,
@@ -75,6 +75,7 @@ public:
 	virtual uint32_t initializeMode(winrt::Windows::Foundation::Size windowSize, uint32_t initialState = 0) = 0;
 	virtual void uninitializeMode() = 0;
 
+	void uiUpdate();
 	virtual void update() {}; //not a pure virtual method as not all modes require this method
 
 	virtual void handlePersonalCaddieConnectionEvent(bool connectionStatus) {}; //Some modes need the ability to enable or disable features if the Personal Caddie gets disconnected
@@ -100,10 +101,14 @@ public:
 	void overwriteAlerts(std::vector<std::shared_ptr<ManagedUIElement>> const& alerts);
 	void checkAlerts();
 
+	//Methods that interact with the Mode Screen handler
 	virtual void getSensorCalibrationNumbers(sensor_type_t sensor, std::pair<const float*, const float**> cal_numbers) {};
 	virtual void getSensorAxisCalibrationNumbers(sensor_type_t sensor, std::pair<const int*, const int*> cal_numbers) {};
+	virtual void getBLEConnectionStatus(bool status) {};
+	virtual void getBLEDeviceWatcherStatus(bool status) {};
+	virtual void getString(std::wstring message) {}; //This method is used to pass strings from the mode screen to the active mode, it's up to each individual mode on if and how to implement this
 
-	virtual uint32_t handleUIElementStateChange(int i) = 0;
+	virtual uint32_t handleUIElementStateChange(int i) { return 0; };
 
 	virtual void addData(std::vector<std::vector<std::vector<float> > > const& sensorData, float sensorODR, float timeStamp, int totalSamples) {} //A method that modes can overwrite when they need data from the Personal Caddie
 	virtual void addQuaternions(std::vector<glm::quat> const& quaternions, int quaternion_number, float time_stamp, float delta_t) {} //A method that modes can overwrite when they need data from the Personal Caddie
@@ -124,6 +129,9 @@ protected:
 	UIElementManager m_uiManager; //a class that helps us manage the UI Elements in the mode
 
 	uint32_t m_state; //the state of the current mode
+
+	//Handler Methods
+	virtual void uiElementStateChangeHandler(std::shared_ptr<ManagedUIElement> element) {}; //a method where each mode can implement how to handle button clicks and things of that nature
 
 	//static function pointer to Mode Screen class goes here. The handler method is the same for all
 	//modes which is why the function pointer is static

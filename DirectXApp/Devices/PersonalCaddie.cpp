@@ -301,7 +301,7 @@ void PersonalCaddie::BLEDeviceHandler(BLEState state)
 
         break;
     }
-    case BLEState::Disconnected:
+    case BLEState::Disconnect:
     {
         //The connection to the Personal Caddie has been lost, either purposely or by accident. We need
         //to alert the ModeScreen class about this disconnection so it can disable/enable certain features.
@@ -561,6 +561,17 @@ void PersonalCaddie::startDataTransfer()
     case PersonalCaddiePowerMode::CONNECTED_MODE:
         break;
     }
+}
+
+bool PersonalCaddie::bleConnectionStatus()
+{ 
+    //Check to see if we're in an active BLE connection or not
+    return p_ble->isConnected();
+}
+
+bool PersonalCaddie::bleDeviceWatcherStatus()
+{
+    return p_ble->isDeviceWatcherOn();
 }
 
 void PersonalCaddie::enableDataNotifications()
