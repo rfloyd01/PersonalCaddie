@@ -830,15 +830,15 @@ void ModeScreen::enterActiveState()
 	case ModeType::CALIBRATION:
 	{
 		//Entering the active state puts the sensors into idle mode, as well as enables data notifications
-		m_modeState |= ModeState::PersonalCaddieSensorIdleMode;
-		m_personalCaddie->enableDataNotifications();
+		//m_modeState |= ModeState::PersonalCaddieSensorIdleMode;
+		//m_personalCaddie->enableDataNotifications();
 
-		if (m_modes[static_cast<int>(m_currentMode)]->getModeState() & CalibrationModeState::SET_AXES_NUMBERS)
-		{
-			//Before doing an axis calibration we must set the current axes to their default settings. It's easier to do this by
-			//updating the existing variables in the sensor classes so data isn't manipulated as it comes in
-			m_personalCaddie->updateSensorAxisOrientations({ 0, 1, 2, 1, 1, 1, 0, 1, 2, 1, 1, 1, 0, 1, 2, 1, 1, 1 });
-		}
+		//if (m_modes[static_cast<int>(m_currentMode)]->getModeState() & CalibrationModeState::SET_AXES_NUMBERS)
+		//{
+		//	//Before doing an axis calibration we must set the current axes to their default settings. It's easier to do this by
+		//	//updating the existing variables in the sensor classes so data isn't manipulated as it comes in
+		//	m_personalCaddie->updateSensorAxisOrientations({ 0, 1, 2, 1, 1, 1, 0, 1, 2, 1, 1, 1, 0, 1, 2, 1, 1, 1 });
+		//}
 		break;
 	}
 	//case ModeType::MADGWICK:
@@ -892,33 +892,33 @@ void ModeScreen::stateUpdate()
 	}
 	case ModeType::CALIBRATION:
 	{
-		if (m_modes[static_cast<int>(m_currentMode)]->getModeState() & CalibrationModeState::READY_TO_RECORD)
-		{
-			//If the ready_to_recordflag is active it means we need to put the 
-			//Personal Caddie into sensor active mode and start recording data.
-			m_personalCaddie->changePowerMode(PersonalCaddiePowerMode::SENSOR_ACTIVE_MODE);
-			m_modeState ^= ModeState::Active; //temporarily leave the active state to make sure we don't change the power mode multiple times
-		}
-		else if (m_modes[static_cast<int>(m_currentMode)]->getModeState() & CalibrationModeState::STOP_RECORD)
-		{
-			//When we've recorded all the data we need we can put the Personal Caddie back into sensor idle mode
-			//m_personalCaddie->changePowerMode(PersonalCaddiePowerMode::SENSOR_IDLE_MODE);
-			//m_modeState ^= ModeState::Active; //temporarily leave the active state to make sure we don't change the power mode multiple times
-		}
-		else if (m_modes[static_cast<int>(m_currentMode)]->getModeState() & CalibrationModeState::UPDATE_CAL_NUMBERS)
-		{
-			//We've carried out a successful calibration so we need to update the appropriate calibration text file
-			sensor_type_t current_sensor;
-			if (m_modes[static_cast<int>(m_currentMode)]->getModeState() & CalibrationModeState::ACCELEROMETER) current_sensor = ACC_SENSOR;
-			else if (m_modes[static_cast<int>(m_currentMode)]->getModeState() & CalibrationModeState::GYROSCOPE) current_sensor = GYR_SENSOR;
-			else if (m_modes[static_cast<int>(m_currentMode)]->getModeState() & CalibrationModeState::MAGNETOMETER) current_sensor = MAG_SENSOR;
-			m_personalCaddie->updateSensorCalibrationNumbers(current_sensor, ((CalibrationMode*)m_modes[static_cast<int>(m_currentMode)].get())->getCalibrationResults());
-		}
-		else if (m_modes[static_cast<int>(m_currentMode)]->getModeState() & CalibrationModeState::UPDATE_AXES_NUMBERS)
-		{
-			//We've carried out a successful axis calibration so we need to update the appropriate axis calibration text files
-			m_personalCaddie->updateSensorAxisOrientations(((CalibrationMode*)m_modes[static_cast<int>(m_currentMode)].get())->getNewAxesOrientations());
-		}
+		//if (m_modes[static_cast<int>(m_currentMode)]->getModeState() & CalibrationModeState::READY_TO_RECORD)
+		//{
+		//	//If the ready_to_recordflag is active it means we need to put the 
+		//	//Personal Caddie into sensor active mode and start recording data.
+		//	m_personalCaddie->changePowerMode(PersonalCaddiePowerMode::SENSOR_ACTIVE_MODE);
+		//	m_modeState ^= ModeState::Active; //temporarily leave the active state to make sure we don't change the power mode multiple times
+		//}
+		//else if (m_modes[static_cast<int>(m_currentMode)]->getModeState() & CalibrationModeState::STOP_RECORD)
+		//{
+		//	//When we've recorded all the data we need we can put the Personal Caddie back into sensor idle mode
+		//	//m_personalCaddie->changePowerMode(PersonalCaddiePowerMode::SENSOR_IDLE_MODE);
+		//	//m_modeState ^= ModeState::Active; //temporarily leave the active state to make sure we don't change the power mode multiple times
+		//}
+		//else if (m_modes[static_cast<int>(m_currentMode)]->getModeState() & CalibrationModeState::UPDATE_CAL_NUMBERS)
+		//{
+		//	//We've carried out a successful calibration so we need to update the appropriate calibration text file
+		//	sensor_type_t current_sensor;
+		//	if (m_modes[static_cast<int>(m_currentMode)]->getModeState() & CalibrationModeState::ACCELEROMETER) current_sensor = ACC_SENSOR;
+		//	else if (m_modes[static_cast<int>(m_currentMode)]->getModeState() & CalibrationModeState::GYROSCOPE) current_sensor = GYR_SENSOR;
+		//	else if (m_modes[static_cast<int>(m_currentMode)]->getModeState() & CalibrationModeState::MAGNETOMETER) current_sensor = MAG_SENSOR;
+		//	m_personalCaddie->updateSensorCalibrationNumbers(current_sensor, ((CalibrationMode*)m_modes[static_cast<int>(m_currentMode)].get())->getCalibrationResults());
+		//}
+		//else if (m_modes[static_cast<int>(m_currentMode)]->getModeState() & CalibrationModeState::UPDATE_AXES_NUMBERS)
+		//{
+		//	//We've carried out a successful axis calibration so we need to update the appropriate axis calibration text files
+		//	m_personalCaddie->updateSensorAxisOrientations(((CalibrationMode*)m_modes[static_cast<int>(m_currentMode)].get())->getNewAxesOrientations());
+		//}
 		
 		break;
 	}

@@ -68,10 +68,12 @@ private:
 	void uiElementStateChangeHandler(std::shared_ptr<ManagedUIElement> element);
 
 	//Methods for maneuvering through the calibrations
-	void axisCalibration();
 	void accelerometerCalibration();
+	void accelerometerAxisCalibration();
 	void gyroscopeCalibration();
+	void gyroscopeAxisCalibration();
 	void magnetometerCalibration();
+	void magnetometerAxisCalibration();
 
 	void calculateCalNumbers();
 
@@ -79,8 +81,12 @@ private:
 	void loadModeMainPage();
 
 	void advanceToNextStage();
+
+	//Methods for recording data
 	void prepareRecording();
+	void record();
 	void stopRecording();
+	
 	void displayGraph();
 
 	void accAverageData();
@@ -101,6 +107,7 @@ private:
 	int m_currentStage; //keeps track of the current stage of the calibration
 	bool m_stageSet; //a variable used to make sure we don't keep reloading resources when we're on the same calibration stage
 	bool m_useCalibratedData; //use calibrated data to benchmark current calibration numbers
+	bool m_axisCalibration; //If this is set to true then we calibrate a sensor's axes instead of it's data
 
 	int raw_acceleration = 3, raw_rotation = 4, raw_magnetic = 5; //these variables match the DataType enumclass. Trying to use that enumclass here causes a circular reference
 
@@ -143,18 +150,19 @@ private:
 	float mag_gain_z[3] = { 0 };
 	float* mag_gain[3] = { mag_gain_x, mag_gain_y, mag_gain_z };
 
+	int *m_axis_swap, *m_axis_polarity; //variables used to point to the axis calibration data of the sensor currently being calibrated
 	int acc_axis_swap[3] = { 0 };
 	int acc_axis_polarity[3] = { 0 };
-	int existing_acc_axis_swap[3] = { 0 };
-	int existing_acc_axis_polarity[3] = { 0 };
+	int test_acc_axis_swap[3] = { 0 };
+	int test_acc_axis_polarity[3] = { 0 };
 
 	int gyr_axis_swap[3] = { 0 };
 	int gyr_axis_polarity[3] = { 0 };
-	int existing_gyr_axis_swap[3] = { 0 };
-	int existing_gyr_axis_polarity[3] = { 0 };
+	int test_gyr_axis_swap[3] = { 0 };
+	int test_gyr_axis_polarity[3] = { 0 };
 
 	int mag_axis_swap[3] = { -1, -1, -1 };
 	int mag_axis_polarity[3] = { 1, 1, 1 };
-	int existing_mag_axis_swap[3] = { -1, -1, -1 };
-	int existing_mag_axis_polarity[3] = { 1, 1, 1 };
+	int test_mag_axis_swap[3] = { -1, -1, -1 };
+	int test_mag_axis_polarity[3] = { 1, 1, 1 };
 };
