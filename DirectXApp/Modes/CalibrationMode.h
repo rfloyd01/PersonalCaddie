@@ -3,22 +3,6 @@
 #include "Mode.h"
 #include "Math/ellipse_math.h"
 
-enum CalibrationModeState
-{
-	WAITING = 1,
-	ACCELEROMETER = 2,
-	GYROSCOPE = 4,
-	MAGNETOMETER = 8,
-	READY_TO_RECORD = 16,
-	RECORDING_DATA = 32,
-	STOP_RECORD = 64,
-	UPDATE_CAL_NUMBERS = 128,
-	ODR_ERROR = 256,
-	AXES = 512,
-	UPDATE_AXES_NUMBERS = 1024,
-	SET_AXES_NUMBERS = 2048
-};
-
 enum class SensorCalibrationAction
 {
 	GET_SENSOR_CAL,
@@ -105,9 +89,11 @@ private:
 
 	std::wstring m_currentlySelectedDeviceAddress = L"";
 	int m_currentStage; //keeps track of the current stage of the calibration
+	int m_currentSensor; //keeps track of which sensor is currently being calibrated
 	bool m_stageSet; //a variable used to make sure we don't keep reloading resources when we're on the same calibration stage
 	bool m_useCalibratedData; //use calibrated data to benchmark current calibration numbers
 	bool m_axisCalibration; //If this is set to true then we calibrate a sensor's axes instead of it's data
+	bool m_currentlyRecording; //This bool will be true when we're actively reading data from one of the sensors
 
 	int raw_acceleration = 3, raw_rotation = 4, raw_magnetic = 5; //these variables match the DataType enumclass. Trying to use that enumclass here causes a circular reference
 
