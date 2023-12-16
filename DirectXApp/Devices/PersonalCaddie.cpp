@@ -181,7 +181,13 @@ void PersonalCaddie::BLEDeviceHandler(BLEState state)
         std::wstring message = L"Found a Personal Caddie device, attempting to connect...\n";
         event_handler(PersonalCaddieEventType::BLE_ALERT, (void*)&message);
 
+        //TODO: This line causes the program to crash if I recently ran the program and closed it without
+        //disconnecting from the Personal Caddie first. I think it may have something to do with the PC not
+        //properly getting rid of the resources, so the next time I start the program the old resources are 
+        //maybe still in memory but outdated, so I'm able to access them even though I shouldn't be? This 
+        //crash is definitely annoying and I should address it.
         m_services = this->p_ble->getBLEDevice()->GetGattServicesAsync(BluetoothCacheMode::Uncached).get().Services();
+
         //m_services = this->p_ble->getBLEDevice()->GetGattServicesAsync().get().Services();
         if (m_services.Size() == 0)
         {

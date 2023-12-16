@@ -462,21 +462,21 @@ void ModeScreen::changeCurrentMode(ModeType mt)
 
 	//Some modes can be initialized with starting states, check to see if the new
 	//mode applies
-	switch (mt)
-	{
-	case ModeType::DEVICE_DISCOVERY:
-	{
-		//The device discovery mode state depends on whether or not we're currently
-		//connected to a BLE device
-		if (m_personalCaddie->ble_device_connected) startingModeState |= DeviceDiscoveryState::CONNECTED;
-	}
-	case ModeType::IMU_SETTINGS:
-	{
-		//When going to the IMU settings mode, we need to pass in a reference
-		//to the current sensor settings. This will allow the mode to populate
-		//all of the drop down menus.
-	}
-	}
+	//switch (mt)
+	//{
+	//case ModeType::DEVICE_DISCOVERY:
+	//{
+	//	//The device discovery mode state depends on whether or not we're currently
+	//	//connected to a BLE device
+	//	if (m_personalCaddie->ble_device_connected) startingModeState |= DeviceDiscoveryState::CONNECTED;
+	//}
+	//case ModeType::IMU_SETTINGS:
+	//{
+	//	//When going to the IMU settings mode, we need to pass in a reference
+	//	//to the current sensor settings. This will allow the mode to populate
+	//	//all of the drop down menus.
+	//}
+	//}
 
 	m_modeState = m_modes[static_cast<int>(m_currentMode)]->initializeMode(m_renderer->getCurrentScreenSize(), startingModeState);
 	//if (m_modeState & ModeState::PersonalCaddieSensorIdleMode) m_personalCaddie->changePowerMode(PersonalCaddiePowerMode::SENSOR_IDLE_MODE);

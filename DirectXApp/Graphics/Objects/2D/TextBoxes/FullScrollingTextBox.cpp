@@ -105,6 +105,10 @@ void FullScrollingTextBox::addText(std::wstring message, winrt::Windows::Foundat
 		j = message.find(L'\n', i);
 
 		std::wstring textLine = message.substr(i, j - i);
+		i = j + 1; //increment the i variable after finding the next line of text
+
+		//If incoming text is nothing but a newline character then skip over it.
+		if (textLine == L"") continue;
 
 		//Text defaults to a single black color that's left justified. When first creating the text, set the location to the center
 		//of the screen and the size to be the same as the screen size. This will get overriden but it helps to determine the

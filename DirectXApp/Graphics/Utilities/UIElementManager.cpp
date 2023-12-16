@@ -91,45 +91,11 @@ void UIElementManager::updateGridSquareElements(InputState* input)
 		auto uiElement = m_gridLocations[mouseGridSquare.first][mouseGridSquare.second][i];
 		uint32_t uiElementState = uiElement.get()->element->update(input);
 
-		//Look at the state of the UIElement after processing the mouse input. Certain states require
-		//the active mode to take an action (for example if a button is clicked). Any element which has
-		//certain flags of its state change will be added to the action list of the UI Element Manager
-		//for later processing by the current mode.
-		if ((uiElementState & UIElementState::NeedTextPixels) || ((uiElementState & UIElementState::Clicked) && input->mouseClick))
-		{
-			m_actionElements.push_back(uiElement);
-		}
+		//If the given UIElement was clicked then add it to the action list. Elements in this 
+		//list cause logic to happen in the currently active mode.
+		if ((uiElementState & UIElementState::Clicked) && input->mouseClick) m_actionElements.push_back(uiElement);
 	}
 }
-
-//void UIElementManager::createAlert(TextOverlay& alert)
-//{
-//	//Alerts are special kinds of text overlays. The pop up on the screen and only last for 
-//	//a few seconds before disappearing again. Also, unlike other UIElements they persist
-//	//between modes.
-//	ManagedUIElement me = { L"Alert " + std::to_wstring(m_uiElements.at(UIElementType::ALERT).size()), std::make_shared<TextOverlay>(alert), {}, UIElementType::ALERT};
-//	auto me_point = std::make_shared<ManagedUIElement>(me);
-//	m_uiElements.at(UIElementType::ALERT).push_back(me_point);
-//
-//	//Also add the alert to the render list so we can see it
-//	m_renderElements.push_back(me_point->element);
-//
-//	//After creating the alert set a timer, once the timer goes off we then 
-//	//remove the alert
-//	concurrency::task<void> timer([this, me_point]()
-//		{
-//			auto timer = std::chrono::steady_clock::now();
-//			while (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - timer).count() < m_alertTimer) {}
-//
-//			//Remove the alert from the render vector
-//			auto render_it = std::find(m_renderElements.begin(), m_renderElements.end(), me_point->element);
-//			m_renderElements.erase(render_it);
-//
-//			//Then remove it from the element map
-//			auto map_it = findElementByName(m_uiElements.at(UIElementType::ALERT), me_point->name);
-//			m_uiElements.at(UIElementType::ALERT).erase(map_it);
-//		});
-//}
 
 void UIElementManager::checkAlerts()
 {

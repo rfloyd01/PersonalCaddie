@@ -97,6 +97,7 @@ void DeviceDiscoveryMode::uiElementStateChangeHandler(std::shared_ptr<ManagedUIE
 		//This represent the large scrolling text box on the page. When clicking
 		//this we're interested in whether or not any device has been selected.
 		m_currentlySelectedDeviceAddress = m_uiManager.getElement<FullScrollingTextBox>(L"Device Watcher Text Box")->getLastSelectedText();
+		if (m_currentlySelectedDeviceAddress == L"") return; //Nothing was actually selected so don't do anything
 
 		//extract the 64-bit address from the selected string
 		std::wstring trimText = L"Address: ";
@@ -222,5 +223,5 @@ void DeviceDiscoveryMode::getString(std::wstring message)
 	//This method gets called any time a new device is added to the device watcher. To avoid duplicate
 	//entries we erase the text currently inside the scroll box and replaced it with the new string.
 	m_uiManager.getElement<FullScrollingTextBox>(L"Device Watcher Text Box")->clearText();
-	m_uiManager.getElement<FullScrollingTextBox>(L"Device Watcher Text Box")->addText(message, m_uiManager.getScreenSize());
+	m_uiManager.getElement<FullScrollingTextBox>(L"Device Watcher Text Box")->addText(message, m_uiManager.getScreenSize(), true);
 }
