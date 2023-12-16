@@ -62,33 +62,7 @@ public:
 		ManagedUIElement me = { name, std::make_shared<T>(element), {}, type };
 		auto managedElement = std::make_shared<ManagedUIElement>(me); //create a copy of the element so we can get the absolute size and location
 
-		if (type != UIElementType::ALERT)
-		{
-			//We don't add alerts to the grid as they can't be interacted with
-			auto size = managedElement->element->getAbsoluteSize();
-			auto location = managedElement->element->getAbsoluteLocation();
-
-			std::pair<int, int> top_left = { GRID_WIDTH * (location.x - size.x / 2.0f), GRID_WIDTH * (location.y - size.y / 2.0f) };
-			std::pair<int, int> bottom_right = { GRID_WIDTH * (location.x + size.x / 2.0f), GRID_WIDTH * (location.y + size.y / 2.0f) };
-
-			//Ignore any squares that fall outside of the grid
-			for (int row = top_left.second; row <= bottom_right.second; row++)
-			{
-				if (row < 0) continue;
-				else if (row >= GRID_WIDTH) break;
-
-				for (int col = top_left.first; col <= bottom_right.first; col++)
-				{
-					if (col < 0) continue;
-					else if (col >= GRID_WIDTH) break;
-
-					//Add the grid location to the managed element, and a reference to the managed element
-					//in the appropriate grid location
-					managedElement->grid_locations.push_back({ row, col });
-					m_gridLocations[row][col].push_back(managedElement);
-				}
-			}
-		}
+		populateGridLocations(managedElement); //Populate the appropriate arrays of m_gridLocation with pointers to this new ManagedUIElement
 
 		//Then add the element to the back of it's appropriate array in the m_uiElements map
 		m_uiElements.at(type).push_back(managedElement);
@@ -97,7 +71,7 @@ public:
 		//it to the render vector. This vector is what ultimately gets passed to the render class to create
 		//visuals on screen. The order of the elements in this vector matters (things rendered at the back of 
 		//the vector will be rendered on top of elements earlier in the vector in the case of overlap).
-		m_renderElements.push_back(managedElement->element);
+		//m_renderElements.push_back(managedElement->element);
 	}
 
 	template <typename T>
@@ -111,8 +85,8 @@ public:
 		if (it != m_uiElements.at(type).end())
 		{
 			//Remove the UIElement from the render vector first.
-			auto render_it = std::find(m_renderElements.begin(), m_renderElements.end(), it->get()->element);
-			m_renderElements.erase(render_it);
+			/*auto render_it = std::find(m_renderElements.begin(), m_renderElements.end(), it->get()->element);
+			m_renderElements.erase(render_it);*/
 
 			for (int i = 0; i < it->get()->grid_locations.size(); i++)
 			{
@@ -135,11 +109,11 @@ public:
 
 	//Get Methods for rendering and updating
 	std::vector<std::vector<std::vector<std::shared_ptr<ManagedUIElement> > > > & getElementGrid() { return m_gridLocations; } //not a const reference as we need the ability to change the state of UIElements in teh grid
-	std::vector<std::shared_ptr<UIElement> > const& getRenderElements() { return m_renderElements; }
+	//std::vector<std::shared_ptr<UIElement> > const& getRenderElements() { return m_renderElements; }
 	std::vector<std::shared_ptr<ManagedUIElement> > & getActionElements() { return m_actionElements; }
 
 	//Methods for interactions of UIElements with the Mouse
-	void updateScreenSize(winrt::Windows::Foundation::Size newWindowSize) { m_windowSize = newWindowSize; }
+	void updateScreenSize(winrt::Windows::Foundation::Size newWindowSize) { m_windowSize = newWindowSize; } //TODO: This should resize all elements contained inside the manager
 	winrt::Windows::Foundation::Size getScreenSize() { return m_windowSize; }
 	void updateGridSquareElements(InputState* input);
 
@@ -174,7 +148,7 @@ public:
 		}
 	}
 
-	//void createAlert(TextOverlay& alert);
+	//Methods for Handling Alerts
 	void checkAlerts();
 	std::vector<std::shared_ptr<ManagedUIElement>> removeAlerts();
 	void overwriteAlerts(std::vector<std::shared_ptr<ManagedUIElement>> const& alerts);
@@ -184,18 +158,24 @@ public:
 	std::vector<UIText*> getResizeText();
 	void applyTextResizeUpdates();
 	int elementsCurrentlyNeedingTextUpdate() { return m_updateText.size(); }
+	void refreshGrid();
+
+	//Get Methods
+	std::map<UIElementType, std::vector<std::shared_ptr<ManagedUIElement> > > const& getElementsMap() { return m_uiElements; } //useful for rendering elements
 
 private:
 	//Data Structures
 	std::map<UIElementType, std::vector<std::shared_ptr<ManagedUIElement> > > m_uiElements;
 	std::vector<std::vector<std::vector<std::shared_ptr<ManagedUIElement> > > > m_gridLocations; //splits the screen into a grid and keeps track of which elements are in which sector, useful for mouse hover detection
-	std::vector<std::shared_ptr<UIElement> > m_renderElements; //A vector of all UI Elements to be rendered on screen
+	//std::vector<std::shared_ptr<UIElement> > m_renderElements; //A vector of all UI Elements to be rendered on screen
 	std::vector<std::shared_ptr<ManagedUIElement> > m_actionElements; //Any UI Elements that have been interacted with and require the current mode to carry out some action will be added to this vector
 	std::vector<std::shared_ptr<UIElement>> m_updateText; //An array of elements that currently require text dimension info from the Renderer class
 
 	winrt::Windows::Foundation::Size m_windowSize; //Keeps track of the current size of the window. UIElements have dimensions that are relative to the window size
 	static std::vector<UIElementType> m_textUpdateElements;
 	long long m_alertTimer = 2000; //The amount of time (in milliseconds) that alerts remain on screen before disappearing
+
+	void populateGridLocations(std::shared_ptr<ManagedUIElement> managedElement);
 
 	std::vector<std::shared_ptr<ManagedUIElement> >::iterator findElementByName(std::vector<std::shared_ptr<ManagedUIElement> > & vec, std::wstring name);
 

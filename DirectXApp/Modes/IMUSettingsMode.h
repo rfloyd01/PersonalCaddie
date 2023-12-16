@@ -23,7 +23,7 @@ public:
 
 	virtual uint32_t handleUIElementStateChange(int i) override;
 
-	void getCurrentSettings(winrt::Windows::Foundation::Size windowSize, std::vector<uint8_t*> settings, std::vector<uint8_t> const& availableSensors, bool use_current = false);
+	void getCurrentSettings(std::vector<uint8_t*> settings, std::vector<uint8_t> const& availableSensors, bool use_current = false);
 	uint8_t* getNewSettings() { return m_newSettings; }
 
 	//virtual TextOverlay removeAlerts() override;

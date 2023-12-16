@@ -5,6 +5,7 @@
 #include "Modes/ModeScreen.h"
 
 #include <string>
+#include <map>
 
 class UIElementRenderer
 {
@@ -14,6 +15,7 @@ public:
 	void operator=(UIElementRenderer const&) = delete;
 
     void render(std::vector<std::shared_ptr<UIElement> > const& uiElements);
+    void render(std::map<UIElementType, std::vector<std::shared_ptr<ManagedUIElement> > > const& managedUIElements);
 
     void setTextLayoutPixels(UIText* text);
 
@@ -22,6 +24,7 @@ public:
 private:
     void createTextFormats();
 
+    void renderUIElement(std::shared_ptr<UIElement> element);
     void renderShape(const UIShape* shape);
     void renderText(const UIText* text);
 

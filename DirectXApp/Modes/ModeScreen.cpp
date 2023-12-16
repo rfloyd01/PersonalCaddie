@@ -396,42 +396,42 @@ void ModeScreen::processEvents()
 
 void ModeScreen::processTimers()
 {
-	if (alert_active)
-	{
-		//we have an active alert, see if the alert timer has expired yet and if so delete
-		//all active alerts
-		auto time_elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - alert_timer).count();
-		if (time_elapsed >= alert_timer_duration)
-		{
-			//the timer has gone off so turn the timer off so remove all active alerts
-			alert_active = false;
-			m_modes[static_cast<int>(m_currentMode)]->removeAlerts();
-		}
-	}
+	//if (alert_active)
+	//{
+	//	//we have an active alert, see if the alert timer has expired yet and if so delete
+	//	//all active alerts
+	//	auto time_elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - alert_timer).count();
+	//	if (time_elapsed >= alert_timer_duration)
+	//	{
+	//		//the timer has gone off so turn the timer off so remove all active alerts
+	//		alert_active = false;
+	//		m_modes[static_cast<int>(m_currentMode)]->removeAlerts();
+	//	}
+	//}
 
-	if (button_pressed)
-	{
-		//a button has been pressed recently, see if the button press timer has expired yet and if so change the color
-		//of all buttons in the current mode to be PRESSED
-		auto time_elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - button_pressed_timer).count();
-		if (time_elapsed >= button_pressed_duration)
-		{
-			//the timer has gone off so turn the timer off
-			button_pressed = false;
+	//if (button_pressed)
+	//{
+	//	//a button has been pressed recently, see if the button press timer has expired yet and if so change the color
+	//	//of all buttons in the current mode to be PRESSED
+	//	auto time_elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - button_pressed_timer).count();
+	//	if (time_elapsed >= button_pressed_duration)
+	//	{
+	//		//the timer has gone off so turn the timer off
+	//		button_pressed = false;
 
-			//then change the color of all pressed buttons
-			auto uiElements = m_modes[static_cast<int>(m_currentMode)]->getUIElements();
-			for (int i = 0; i < uiElements.size(); i++)
-			{
-				if (uiElements[i]->getState() & UIElementState::Clicked)
-				{
-					//The ui button class overrides the ui element setState() method so case to a UI button
-					//before setting the state to idle
-					uiElements[i]->removeState(UIElementState::Clicked);
-				}
-			}
-		}
-	}
+	//		//then change the color of all pressed buttons
+	//		auto uiElements = m_modes[static_cast<int>(m_currentMode)]->getUIElements();
+	//		for (int i = 0; i < uiElements.size(); i++)
+	//		{
+	//			if (uiElements[i]->getState() & UIElementState::Clicked)
+	//			{
+	//				//The ui button class overrides the ui element setState() method so case to a UI button
+	//				//before setting the state to idle
+	//				uiElements[i]->removeState(UIElementState::Clicked);
+	//			}
+	//		}
+	//	}
+	//}
 }
 
 void ModeScreen::changeCurrentMode(ModeType mt)
@@ -476,16 +476,21 @@ void ModeScreen::getTextRenderPixels(std::vector<UIText*> const& text)
 	for (int i = 0; i < text.size(); i++) m_renderer->setTextLayoutPixels(text[i]);
 }
 
-std::vector<std::shared_ptr<UIElement> > const& ModeScreen::getCurrentModeUIElements()
+//std::vector<std::shared_ptr<UIElement> > const& ModeScreen::getCurrentModeUIElements()
+//{
+//	//returns a reference to all UI elements to be rendered on screen
+//	return m_modes[static_cast<int>(m_currentMode)]->getUIElements();
+//}
+
+std::map<UIElementType, std::vector<std::shared_ptr<ManagedUIElement> > > const& ModeScreen::getCurrentModeUIElementMap()
 {
-	//returns a reference to all UI elements to be rendered on screen
-	return m_modes[static_cast<int>(m_currentMode)]->getUIElements();
+	return getCurrentMode()->getUIElementManager().getElementsMap();
 }
 
 void ModeScreen::resizeCurrentModeUIElements(winrt::Windows::Foundation::Size windowSize)
 {
-	auto uiElements = getCurrentModeUIElements();
-	for (int i = 0; i < uiElements.size(); i++) uiElements[i]->resize(windowSize);
+	//auto uiElements = getCurrentModeUIElements();
+	//for (int i = 0; i < uiElements.size(); i++) uiElements[i]->resize(windowSize);
 
 	//Update the m_screenSize variable of the current modes UIElementManager
 	m_modes[static_cast<int>(m_currentMode)]->getUIElementManager().updateScreenSize(windowSize);
@@ -818,8 +823,17 @@ void ModeScreen::ModeHandler(ModeAction action, void* eventArgs)
 		}
 		break;
 	}
-	case MadgwickUpdateFilter:
 	case SensorSettings:
+	{
+		//For the sensor settings there are two actions we can take. Either we get the current settings, or, we update the 
+		//settings. The eventArgs in this case will be a pointer to an uint8_t type. If the pointer is null it means we want
+		//to simply get the current settings. If the pointer isn't null though, it's pointing to an array with new settings that
+		//will be used to overwrite the current ones.
+		uint8_t* settings = (uint8_t*)eventArgs;
+		if (settings == nullptr) ((IMUSettingsMode*)m_modes[static_cast<int>(m_currentMode)].get())->getCurrentSettings(m_personalCaddie->getIMUSettings(), m_personalCaddie->getAvailableSensors());
+		break;
+	}
+	case MadgwickUpdateFilter:
 	default: return;
 	}
 }
@@ -830,43 +844,43 @@ void ModeScreen::enterActiveState()
 
 	switch (m_currentMode)
 	{
-	case ModeType::DEVICE_DISCOVERY:
-	{
-		//Going into active mode while in device discovery means that we need to start the BLEAdvertisement watcher of 
-		//the Personal Caddie. The device watcher will only alert us when a new device is found. If it has been turned
-		//on previously and already found all devices in the area, then we won't actually get any updates. Because of this
-		//we grab the current list and send it to the device discovery page before turning on the watcher.
-		auto foundDevices = m_personalCaddie->getScannedDevices();
-		std::wstring devices;
-		for (auto it = foundDevices->begin(); it != foundDevices->end(); it++)
-		{
-			devices += L"Name: " + it->device_name;
-			devices += L", Address: " + std::to_wstring(it->device_address.first) + L"\n";
-		}
-		auto textBox = (FullScrollingTextBox*)(getCurrentModeUIElements()[0].get());
-		textBox->clearText(); //clear the text each time to prevent adding duplicates
-		textBox->addText(devices, m_renderer->getCurrentScreenSize(), true); //this new text will get resized in the main update loop
+	//case ModeType::DEVICE_DISCOVERY:
+	//{
+	//	//Going into active mode while in device discovery means that we need to start the BLEAdvertisement watcher of 
+	//	//the Personal Caddie. The device watcher will only alert us when a new device is found. If it has been turned
+	//	//on previously and already found all devices in the area, then we won't actually get any updates. Because of this
+	//	//we grab the current list and send it to the device discovery page before turning on the watcher.
+	//	auto foundDevices = m_personalCaddie->getScannedDevices();
+	//	std::wstring devices;
+	//	for (auto it = foundDevices->begin(); it != foundDevices->end(); it++)
+	//	{
+	//		devices += L"Name: " + it->device_name;
+	//		devices += L", Address: " + std::to_wstring(it->device_address.first) + L"\n";
+	//	}
+	//	//auto textBox = (FullScrollingTextBox*)(getCurrentModeUIElements()[0].get());
+	//	textBox->clearText(); //clear the text each time to prevent adding duplicates
+	//	textBox->addText(devices, m_renderer->getCurrentScreenSize(), true); //this new text will get resized in the main update loop
 
-		m_personalCaddie->startBLEAdvertisementWatcher();
-		break;
-	}
-	case ModeType::GRAPH_MODE:
-	{
-		//When we first enter graph mode the personal caddie is automatically put into the sensor idle
-		//power mode. Entering the active state switches the personal caddie power mode to sensor active
-		//and also enables data notifications.
-		m_modeState ^= (ModeState::PersonalCaddieSensorActiveMode | ModeState::PersonalCaddieSensorIdleMode);
-		m_personalCaddie->enableDataNotifications();
-		break;
-	}
+	//	m_personalCaddie->startBLEAdvertisementWatcher();
+	//	break;
+	//}
+	//case ModeType::GRAPH_MODE:
+	//{
+	//	//When we first enter graph mode the personal caddie is automatically put into the sensor idle
+	//	//power mode. Entering the active state switches the personal caddie power mode to sensor active
+	//	//and also enables data notifications.
+	//	m_modeState ^= (ModeState::PersonalCaddieSensorActiveMode | ModeState::PersonalCaddieSensorIdleMode);
+	//	m_personalCaddie->enableDataNotifications();
+	//	break;
+	//}
 	case ModeType::IMU_SETTINGS:
 	{
 		//When we enter the active state on the IMU Settings page, we make a request to the
 		//Personal Caddie for the current IMU sensor settings. These are used to populate
 		//the text for individual drop down menus
 
-		((IMUSettingsMode*)m_modes[static_cast<int>(m_currentMode)].get())->getCurrentSettings(m_renderer->getCurrentScreenSize(), m_personalCaddie->getIMUSettings(), m_personalCaddie->getAvailableSensors());
-		m_modeState |= ModeState::CanTransfer; //We still need the ability to leave the page after going active
+		//((IMUSettingsMode*)m_modes[static_cast<int>(m_currentMode)].get())->getCurrentSettings(m_renderer->getCurrentScreenSize(), m_personalCaddie->getIMUSettings(), m_personalCaddie->getAvailableSensors());
+		//m_modeState |= ModeState::CanTransfer; //We still need the ability to leave the page after going active
 		break;
 	}
 	case ModeType::CALIBRATION:
@@ -900,18 +914,18 @@ void ModeScreen::stateUpdate()
 	{
 	case ModeType::IMU_SETTINGS:
 	{
-		if (m_modes[static_cast<int>(m_currentMode)]->getModeState() & IMUSettingsState::UPDATE_SETTINGS)
-		{
-			//New settings have been applied, send the new settings array to the personal caddie. Before
-			//doing this, update elements 0 and 31 of the array so that they reflect the current settings
-			//(as these aren't changed in the IMU settings menu).
-			m_personalCaddie->updateIMUSettings(((IMUSettingsMode*)m_modes[static_cast<int>(m_currentMode)].get())->getNewSettings());
-		}
-		else if (m_modes[static_cast<int>(m_currentMode)]->getModeState() & IMUSettingsState::GET_SETTINGS)
-		{
-			//A new sensor has been selected so we need to refresh the drop down menus. Just call the getCurrentSettings
-			((IMUSettingsMode*)m_modes[static_cast<int>(m_currentMode)].get())->getCurrentSettings(m_renderer->getCurrentScreenSize(), m_personalCaddie->getIMUSettings(), m_personalCaddie->getAvailableSensors(), true);
-		}
+		//if (m_modes[static_cast<int>(m_currentMode)]->getModeState() & IMUSettingsState::UPDATE_SETTINGS)
+		//{
+		//	//New settings have been applied, send the new settings array to the personal caddie. Before
+		//	//doing this, update elements 0 and 31 of the array so that they reflect the current settings
+		//	//(as these aren't changed in the IMU settings menu).
+		//	m_personalCaddie->updateIMUSettings(((IMUSettingsMode*)m_modes[static_cast<int>(m_currentMode)].get())->getNewSettings());
+		//}
+		//else if (m_modes[static_cast<int>(m_currentMode)]->getModeState() & IMUSettingsState::GET_SETTINGS)
+		//{
+		//	//A new sensor has been selected so we need to refresh the drop down menus. Just call the getCurrentSettings
+		//	//((IMUSettingsMode*)m_modes[static_cast<int>(m_currentMode)].get())->getCurrentSettings(m_renderer->getCurrentScreenSize(), m_personalCaddie->getIMUSettings(), m_personalCaddie->getAvailableSensors(), true);
+		//}
 		break;
 	}
 	case ModeType::CALIBRATION:

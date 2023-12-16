@@ -44,7 +44,8 @@ public:
 	void ModeHandler(ModeAction action, void* eventArgs);
 
 	//2D Rendering Methods
-	std::vector<std::shared_ptr<UIElement> > const& getCurrentModeUIElements();
+	//std::vector<std::shared_ptr<UIElement> > const& getCurrentModeUIElements();
+	std::map<UIElementType, std::vector<std::shared_ptr<ManagedUIElement> > > const& getCurrentModeUIElementMap();
 	void resizeCurrentModeUIElements(winrt::Windows::Foundation::Size windowSize);
 
 	void createAlert(std::wstring message, UIColor color);

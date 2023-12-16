@@ -33,8 +33,8 @@ void UIElementManager::removeElementType(UIElementType type)
 	for (auto it = m_uiElements.at(type).begin(); it != m_uiElements.at(type).end(); it++)
 	{
 		//Remove the UIElement from the render vector first.
-		auto render_it = std::find(m_renderElements.begin(), m_renderElements.end(), it->get()->element);
-		m_renderElements.erase(render_it);
+		/*auto render_it = std::find(m_renderElements.begin(), m_renderElements.end(), it->get()->element);
+		m_renderElements.erase(render_it);*/
 
 		for (int i = 0; i < it->get()->grid_locations.size(); i++)
 		{
@@ -55,7 +55,7 @@ void UIElementManager::removeElementType(UIElementType type)
 void UIElementManager::removeAllElements()
 {
 	//Clear out the render and action vectors, the element map and the element grid
-	m_renderElements.clear();
+	//m_renderElements.clear();
 	m_actionElements.clear();
 
 	for (int i = 0; i < static_cast<int>(UIElementType::END); i++)
@@ -134,7 +134,7 @@ void UIElementManager::overwriteAlerts(std::vector<std::shared_ptr<ManagedUIElem
 	m_uiElements.at(UIElementType::ALERT) = alerts;
 
 	//The alerts also get placed into the render vector
-	for (int i = 0; i < alerts.size(); i++) m_renderElements.push_back(alerts[i]->element);
+	//for (int i = 0; i < alerts.size(); i++) m_renderElements.push_back(alerts[i]->element);
 }
 
 std::vector<std::shared_ptr<ManagedUIElement> >::iterator UIElementManager::findElementByName(std::vector<std::shared_ptr<ManagedUIElement> >& vec, std::wstring name)
@@ -193,4 +193,61 @@ void UIElementManager::applyTextResizeUpdates()
 
 	//After all updates are made, clear out the m_updateText vector
 	m_updateText.clear();
+}
+
+void UIElementManager::populateGridLocations(std::shared_ptr<ManagedUIElement> managedElement)
+{
+	//Looks at the dimensions and location of the passed in ManagedUIElement and creates pointers to 
+	//the element in each appropriate vector of the m_gridLocations data structure.
+	if (managedElement->type != UIElementType::ALERT) //Since we can't interact with alerts they're excluded from being placed inside the grid
+	{
+		//We don't add alerts to the grid as they can't be interacted with
+		auto size = managedElement->element->getAbsoluteSize();
+		auto location = managedElement->element->getAbsoluteLocation();
+
+		std::pair<int, int> top_left = { GRID_WIDTH * (location.x - size.x / 2.0f), GRID_WIDTH * (location.y - size.y / 2.0f) };
+		std::pair<int, int> bottom_right = { GRID_WIDTH * (location.x + size.x / 2.0f), GRID_WIDTH * (location.y + size.y / 2.0f) };
+
+		//Ignore any squares that fall outside of the grid
+		for (int row = top_left.second; row <= bottom_right.second; row++)
+		{
+			if (row < 0) continue;
+			else if (row >= GRID_WIDTH) break;
+
+			for (int col = top_left.first; col <= bottom_right.first; col++)
+			{
+				if (col < 0) continue;
+				else if (col >= GRID_WIDTH) break;
+
+				//Add the grid location to the managed element, and a reference to the managed element
+				//in the appropriate grid location
+				managedElement->grid_locations.push_back({ row, col });
+				m_gridLocations[row][col].push_back(managedElement);
+			}
+		}
+	}
+}
+
+void UIElementManager::refreshGrid()
+{
+	//There are times when a UI Element might be moved from the original location that it was created at,
+	//A good example of this would be in IMU Settings mode where all dropdowns are initially created at the
+	//location [0, 0] as we don't know where to place them until after they've been physically created (and
+	//have their corresponding sizes). In this scenario, the physical location of the UI Element will no 
+	//longer match its grid location within the UI Management class and we won't be able to interact with it
+	//properly. Calling this method will simply delete the entire grid, and then go over every single UI Element
+	//in the map, re-populating the grid with correct locations.
+
+	//Clear out each vector currently in the grid
+	for (int i = 0; i < GRID_WIDTH; i++)
+	{
+		for (int j = 0; j < GRID_WIDTH; j++) m_gridLocations[i][j].clear();
+	}
+
+	//Iterate through all UI Elements and add new grid locations
+	for (int i = 0; i < static_cast<int>(UIElementType::END); i++)
+	{
+		auto elementVector = m_uiElements.at(static_cast<UIElementType>(i));
+		for (int j = 0; j < elementVector.size(); j++) populateGridLocations(elementVector[j]);
+	}
 }

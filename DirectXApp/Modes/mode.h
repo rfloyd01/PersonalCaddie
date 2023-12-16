@@ -82,7 +82,7 @@ public:
 
 	const UIColor getBackgroundColor();
 
-	std::vector<std::shared_ptr<UIElement> > const& getUIElements() { return m_uiManager.getRenderElements(); }
+	//std::vector<std::shared_ptr<UIElement> > const& getUIElements() { return m_uiManager.getRenderElements(); }
 	UIElementManager & getUIElementManager() { return m_uiManager; }
 	std::vector<std::shared_ptr<VolumeElement> > const& getVolumeElements() { return m_volumeElements; }
 

@@ -13,8 +13,12 @@ IMUSettingsMode::IMUSettingsMode()
 
 uint32_t IMUSettingsMode::initializeMode(winrt::Windows::Foundation::Size windowSize, uint32_t initialState)
 {
+	//Take the current screen size and pass it to the UIElementManager, this is so that the manager knows
+	//how large to make each element.
+	m_uiManager.updateScreenSize(windowSize);
+
 	//Create UI Elements on the page
-	std::wstring buttonText = L"Get Current Settings";
+	std::wstring buttonText = L"Update Settings";
 	TextButton updateButton(windowSize, { 0.5, 0.225 }, { 0.12, 0.1 }, buttonText);
 
 	m_uiManager.addElement<TextButton>(updateButton, L"Update Button");
@@ -32,7 +36,16 @@ uint32_t IMUSettingsMode::initializeMode(winrt::Windows::Foundation::Size window
 		for (int j = SENSOR_MODEL; j <= EXTRA_2; j++) m_dropDownText[i].push_back(L"");
 	}
 	dropDownsSet = false; //This won't get set to true until all drop downs are sized and placed
-	m_state |= IMUSettingsState::GET_SETTINGS;
+	
+	//Get the current sensor settings from the IMU class. Once we get these settings the 
+	//getCurrentSettings() method will be called which will automatically create drop down menus
+	//and populate them with text, based on the settings obtained from the IMU
+	m_mode_screen_handler(ModeAction::SensorSettings, nullptr);
+
+	//The above call to the m_mode_screen_handler() method will cause a multitude of drop down menus to 
+	//be created, however, none of them will be in their proper locations. We call the update method
+	//to not only place the drop downs on the page, but also to delete any empty drop down boxes.
+	//update();
 
 	//When this mode is initialzed we go into a state of CanTransfer and Active.
 	//Can Transfer allows us to use the esc. key to go back to the settings menu
@@ -60,13 +73,13 @@ void IMUSettingsMode::initializeTextOverlay(winrt::Windows::Foundation::Size win
 	m_uiManager.addElement<TextOverlay>(title, L"Title Text");
 
 	//Body information
-	std::wstring body_message =
+	/*std::wstring body_message =
 		L"The IMU settings page allows us to change the settings on the individual sensors of the Personal Caddie. As examples, you could change the "
 		L"full scale range of of the Accelerometer from +/- 2g to +/- 8g, you could turn off the Gyroscope high pass filter, etc. Clicking the button "
 		L"above will populate drop down menus with the current settings. Change the settings as desired and click the button again to apply the changes.";
 	TextOverlay body(windowSize, { UIConstants::BodyTextLocationX, UIConstants::BodyTextLocationY }, { UIConstants::BodyTextSizeX, UIConstants::BodyTextSizeY },
 		body_message, 0.045, { UIColor::White }, { 0,  (unsigned int)title_message.length() }, UITextJustification::UpperLeft);
-	m_uiManager.addElement<TextOverlay>(body, L"Body Text");
+	m_uiManager.addElement<TextOverlay>(body, L"Body Text");*/
 
 	//Footnote information
 	std::wstring footnote_message = L"Press Esc. to return to settings menu.";
@@ -75,7 +88,7 @@ void IMUSettingsMode::initializeTextOverlay(winrt::Windows::Foundation::Size win
 	m_uiManager.addElement<TextOverlay>(footnote, L"Footnote Text");
 }
 
-void IMUSettingsMode::getCurrentSettings(winrt::Windows::Foundation::Size windowSize, std::vector<uint8_t*> settings, std::vector<uint8_t> const& availableSensors, bool use_current)
+void IMUSettingsMode::getCurrentSettings(std::vector<uint8_t*> settings, std::vector<uint8_t> const& availableSensors, bool use_current)
 {
 	if (!use_current)
 	{
@@ -144,8 +157,7 @@ void IMUSettingsMode::getCurrentSettings(winrt::Windows::Foundation::Size window
 
 	//After getting the current settings we need to add some text, as well as
 	//all of the drop down menus on screen
-	createDropDownMenus(windowSize, use_current);
-	m_state ^= IMUSettingsState::GET_SETTINGS; //once the drop downs are populated we remove the GetSettings state
+	createDropDownMenus(m_uiManager.getScreenSize(), use_current);
 }
 
 void IMUSettingsMode::createDropDownMenus(winrt::Windows::Foundation::Size windowSize, bool use_current)
@@ -730,7 +742,7 @@ void IMUSettingsMode::update()
 		    }
 			else
 			{
-				dropdown_name = L"Gyr Setting Drop Down Menu ";
+				dropdown_name = L"Mag Setting Drop Down Menu ";
 		        title_name = L"Mag Setting Drop Down Title ";
 	        }
 
@@ -842,6 +854,7 @@ void IMUSettingsMode::update()
 		m_uiManager.getElement<DropDownMenu>(L"Mag Model Drop Down Menu")->setSelectedOption(sensor_model);
 
 		dropDownsSet = true;
+		m_uiManager.refreshGrid(); //Once all dropdowns are in the correct location, have the UIElement Manager refresh their new locations in the screen grid (needed to click on elements)
 	}
 	else if (m_state & IMUSettingsState::UPDATE_SETTINGS)
 	{
