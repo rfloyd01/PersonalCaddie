@@ -460,24 +460,6 @@ void ModeScreen::changeCurrentMode(ModeType mt)
 	m_currentMode = mt;
 	uint32_t startingModeState = 0;
 
-	//Some modes can be initialized with starting states, check to see if the new
-	//mode applies
-	//switch (mt)
-	//{
-	//case ModeType::DEVICE_DISCOVERY:
-	//{
-	//	//The device discovery mode state depends on whether or not we're currently
-	//	//connected to a BLE device
-	//	if (m_personalCaddie->ble_device_connected) startingModeState |= DeviceDiscoveryState::CONNECTED;
-	//}
-	//case ModeType::IMU_SETTINGS:
-	//{
-	//	//When going to the IMU settings mode, we need to pass in a reference
-	//	//to the current sensor settings. This will allow the mode to populate
-	//	//all of the drop down menus.
-	//}
-	//}
-
 	m_modeState = m_modes[static_cast<int>(m_currentMode)]->initializeMode(m_renderer->getCurrentScreenSize(), startingModeState);
 	//if (m_modeState & ModeState::PersonalCaddieSensorIdleMode) m_personalCaddie->changePowerMode(PersonalCaddiePowerMode::SENSOR_IDLE_MODE);
 	//else if (m_modeState & ModeState::PersonalCaddieSensorActiveMode) m_personalCaddie->changePowerMode(PersonalCaddiePowerMode::SENSOR_ACTIVE_MODE);
@@ -916,24 +898,6 @@ void ModeScreen::stateUpdate()
 {
 	switch (m_currentMode)
 	{
-	case ModeType::DEVICE_DISCOVERY:
-	{
-		//The connect/disconnect button was clicked. Attempt to connect
-		//to the specified device, or disconnect from the current one.
-		if (m_modes[static_cast<int>(m_currentMode)]->getModeState() & DeviceDiscoveryState::DISCONNECT)
-		{
-			//disconnect from the current device
-			m_personalCaddie->disconnectFromDevice();
-		}
-		//else if (m_modes[static_cast<int>(m_currentMode)]->getModeState() & DeviceDiscoveryState::ATTEMPT_CONNECT)
-		//{
-		//	//attempt to connect to the device currently selected
-		//	wchar_t* endString;
-		//	uint64_t deviceAddress = std::wcstoull(&((DeviceDiscoveryMode*)m_modes[static_cast<int>(m_currentMode)].get())->getCurrentlySelectedDevice()[0], &endString, 10);
-		//	m_personalCaddie->connectToDevice(deviceAddress);
-		//}
-		break;
-	}
 	case ModeType::IMU_SETTINGS:
 	{
 		if (m_modes[static_cast<int>(m_currentMode)]->getModeState() & IMUSettingsState::UPDATE_SETTINGS)

@@ -38,6 +38,18 @@ public:
 		UIElement::setState(state);
 	}
 
+	virtual void updateState(uint32_t state) override
+	{
+		if (state & UIElementState::Disabled)
+		{
+			//turn the button text gray when it's disabled
+			m_text.colors[0] = UIColor::Gray;
+		}
+
+		//Call the parent method to actually update the state
+		UIElement::setState(state);
+	}
+
 	void removeState(uint32_t state)
 	{
 		//When enabling a button we change its text color to black

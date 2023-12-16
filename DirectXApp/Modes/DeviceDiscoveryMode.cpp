@@ -53,19 +53,7 @@ uint32_t DeviceDiscoveryMode::initializeMode(winrt::Windows::Foundation::Size wi
 
 	initializeTextOverlay(windowSize);
 
-	//Since a FullScrollingTextBox element has been added we'll need to get the appropriate dimensions
-	//for text inside of it.
-	//auto text = m_uiManager.getElement<FullScrollingTextBox>(L"Device Watcher Text Box")->setTextDimension();
-	//m_mode_screen_handler(ModeAction::RendererGetTextSize, (void*)&text);
-
-	////Once the text dimensions have been received we can reposition the text and resize the element as necessary
-	//m_uiManager.getElement<FullScrollingTextBox>(L"Device Watcher Text Box")->repositionText(); //see if any text needs to be repositioned after getting new dimensions
-	//m_uiManager.getElement<FullScrollingTextBox>(L"Device Watcher Text Box")->resize(m_uiManager.getScreenSize()); //and then resize the ui element
-
-	//When this mode is initialzed we go into a state of CanTransfer and Active.
-	//Can Transfer allows us to use the esc. key to go back to the settings menu
-	//while active diverts state control to this mode
-	return (ModeState::CanTransfer | ModeState::NeedTextUpdate);
+	return ModeState::CanTransfer;
 }
 
 void DeviceDiscoveryMode::uninitializeMode()
@@ -73,6 +61,14 @@ void DeviceDiscoveryMode::uninitializeMode()
 	//The only thing to do when leaving the main menu mode is to clear
 	//out all text in the text map and color map
 	m_uiManager.removeAllElements();
+
+	//Check to see if the device watcher was left on, if so, turn it off
+	if (m_deviceWatcherActive)
+	{
+		BLEState ble_state = BLEState::DisableDeviceWatcher;
+		m_mode_screen_handler(ModeAction::BLEDeviceWatcher, (void*)&ble_state);
+		m_deviceWatcherActive = false;
+	}
 }
 
 void DeviceDiscoveryMode::initializeTextOverlay(winrt::Windows::Foundation::Size windowSize)
@@ -123,6 +119,7 @@ void DeviceDiscoveryMode::uiElementStateChangeHandler(std::shared_ptr<ManagedUIE
 			//should also update to reflect that clicking again will turn off the device watcher.
 			BLEState ble_state = BLEState::EnableDeviceWatcher;
 			m_mode_screen_handler(ModeAction::BLEDeviceWatcher, (void*)&ble_state);
+			m_deviceWatcherActive = true;
 
 			m_uiManager.getElement<TextButton>(L"Device Watcher Button")->updateText(L"Stop Device Watcher");
 			m_uiManager.getElement<FullScrollingTextBox>(L"Device Watcher Text Box")->clearText();
@@ -136,10 +133,10 @@ void DeviceDiscoveryMode::uiElementStateChangeHandler(std::shared_ptr<ManagedUIE
 			//should also update to reflect that clicking again will turn on the device watcher.
 			BLEState ble_state = BLEState::DisableDeviceWatcher;
 			m_mode_screen_handler(ModeAction::BLEDeviceWatcher, (void*)&ble_state);
+			m_deviceWatcherActive = false;
 
 			m_uiManager.getElement<TextButton>(L"Device Watcher Button")->updateText(L"Start Device Watcher");
 		}
-		m_state ^= DeviceDiscoveryState::DISCOVERY; //switch the discovery and idle states
 	}
 	else if (element->name == L"Connect Button")
 	{
@@ -163,19 +160,13 @@ void DeviceDiscoveryMode::uiElementStateChangeHandler(std::shared_ptr<ManagedUIE
 	}
 }
 
-void DeviceDiscoveryMode::update()
-{
-	//As of right now all updates to this method can be handled by the uiUpdate() method
-}
-
 void DeviceDiscoveryMode::handlePersonalCaddieConnectionEvent(bool connectionStatus)
 {
-	m_state ^= DeviceDiscoveryState::CONNECTED; //inverte the current connected state
-
 	if (!connectionStatus)
 	{
 		//if we lose the connection to the personal caddie while on the device discovery page it
 	    //disables the Disconnect button and enables the Start device watcher button
+		m_connected = false;
 		m_uiManager.getElement<TextButton>(L"Device Watcher Button")->removeState(UIElementState::Disabled); //enable the device watcher button
 
 		//update the connect button
@@ -187,10 +178,6 @@ void DeviceDiscoveryMode::handlePersonalCaddieConnectionEvent(bool connectionSta
 		std::wstring scrollText = L"Start the device watcher to begin enumerating nearby BluetoothLE devices...";
 		m_uiManager.getElement<FullScrollingTextBox>(L"Device Watcher Text Box")->clearText();
 		m_uiManager.getElement<FullScrollingTextBox>(L"Device Watcher Text Box")->addText(scrollText, { 0, 0 }, false, false);
-		
-		//If the disconnect was initiated from the device discovery page then we can remove the
-		//disconnect flag from the current state
-		if (m_state & DeviceDiscoveryState::DISCONNECT) m_state ^= DeviceDiscoveryState::DISCONNECT;
 	}
 	else
 	{
@@ -208,9 +195,10 @@ void DeviceDiscoveryMode::handlePersonalCaddieConnectionEvent(bool connectionSta
 		m_uiManager.getElement<FullScrollingTextBox>(L"Device Watcher Text Box")->clearText();
 		m_uiManager.getElement<FullScrollingTextBox>(L"Device Watcher Text Box")->addText(scrollText, { 0, 0 }, false, false);
 
-		//If the connection was initiated from the device discovery page then we can remove the
-		//attempt_connect flag from the current state
-		if (m_state & DeviceDiscoveryState::ATTEMPT_CONNECT) m_state ^= DeviceDiscoveryState::ATTEMPT_CONNECT;
+		//Update the connection status on this page and turn off the device watcher
+		m_connected = true;
+		BLEState ble_state = BLEState::DisableDeviceWatcher;
+		m_mode_screen_handler(ModeAction::BLEDeviceWatcher, (void*)&ble_state);
 	}
 }
 
