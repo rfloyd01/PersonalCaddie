@@ -11,6 +11,10 @@ MadgwickTestMode::MadgwickTestMode()
 
 uint32_t MadgwickTestMode::initializeMode(winrt::Windows::Foundation::Size windowSize, uint32_t initialState)
 {
+	//Take the current screen size and pass it to the UIElementManager, this is so that the manager knows
+	//how large to make each element.
+	m_uiManager.updateScreenSize(windowSize);
+
 	//Create UI Elements on the page
 	initializeTextOverlay(windowSize);
 
@@ -94,9 +98,14 @@ uint32_t MadgwickTestMode::initializeMode(winrt::Windows::Foundation::Size windo
 	FusionAhrsSetSettings(&m_ahrs, &settings);
 	m_useNewFilter = false;
 
+	//We spend the entirety of our time in this mode with the Personal Caddie in Sensor Active
+	//Mode. To get there we need to first put the Sensor into Idle mode
+	auto mode = PersonalCaddiePowerMode::SENSOR_IDLE_MODE;
+	m_mode_screen_handler(ModeAction::PersonalCaddieChangeMode, (void*)&mode);
+
 	//The NeedMaterial modeState lets the mode screen know that it needs to pass
 	//a list of materials to this mode that it can use to initialize 3d objects
-	return (ModeState::CanTransfer | ModeState::NeedMaterial | ModeState::Active | ModeState::PersonalCaddieSensorIdleMode);
+	return (ModeState::CanTransfer | ModeState::NeedMaterial | ModeState::Active);
 }
 
 void MadgwickTestMode::uninitializeMode()
@@ -107,6 +116,11 @@ void MadgwickTestMode::uninitializeMode()
 
 	for (int i = 0; i < m_volumeElements.size(); i++) m_volumeElements[i] = nullptr;
 	m_volumeElements.clear();
+
+	//Put the Personal Caddie back into Connected Mode when leaving this page. This can be 
+	//done without going into Sensor Idle Mode first.
+	auto mode = PersonalCaddiePowerMode::CONNECTED_MODE;
+	m_mode_screen_handler(ModeAction::PersonalCaddieChangeMode, (void*)&mode);
 }
 
 void MadgwickTestMode::initializeTextOverlay(winrt::Windows::Foundation::Size windowSize)
@@ -177,6 +191,28 @@ uint32_t MadgwickTestMode::handleUIElementStateChange(int i)
 		return 1;
 	}
 	return 0;
+}
+
+void MadgwickTestMode::pc_ModeChange(PersonalCaddiePowerMode newMode)
+{
+	//As soon as we enter Sensor Idle Mode we jump straight into Sensor Active mode. Before that,
+	//however, we also get the current Heading for the sensor which is located in the Personal Caddie
+	//class and temporarily update the beta value of the Madgewick filter. The heading allows the sensor
+	//to line up with the orientation of the computer screen while the beta value allows the sensor to 
+	//quickly converge to the correct location.
+	if (newMode == PersonalCaddiePowerMode::SENSOR_IDLE_MODE)
+	{
+		//Get the current Heading Offset
+		m_mode_screen_handler(ModeAction::IMUHeading, nullptr);
+
+		//Temporarily increase Madgwick beta gain to 2.5
+		float initial_beta_value = 2.5f;
+		m_mode_screen_handler(ModeAction::MadgwickUpdateFilter, (void*)&initial_beta_value);
+
+		//Put the Sensor into Active mode to start taking readings
+		auto mode = PersonalCaddiePowerMode::SENSOR_ACTIVE_MODE;
+		m_mode_screen_handler(ModeAction::PersonalCaddieChangeMode, (void*)&mode);
+	}
 }
 
 void MadgwickTestMode::addQuaternions(std::vector<glm::quat> const& quaternions, int quaternion_number, float time_stamp, float delta_t)
@@ -363,7 +399,15 @@ void MadgwickTestMode::switchDisplayDataType(int n)
 	m_display_data_index = n - 1;
 }
 
-glm::quat MadgwickTestMode::getCurrentHeadingOffset()
+void MadgwickTestMode::getIMUHeadingOffset(glm::quat heading)
+{
+	//This method gets the heading offset saved in the IMU class and updates
+	//the local heading offset variable with it. This variable is used to make
+	//sure the rendered image aligns with the computer monitor
+	m_headingOffset = heading;
+}
+
+void MadgwickTestMode::setCurrentHeadingOffset()
 {
 	//The Madgwick filter uses due North as a reference for the magnetic field, so if the computer monitor
 	//isn't aligned with this direction then the sensor will appear to have an improper heading while being
@@ -388,7 +432,8 @@ glm::quat MadgwickTestMode::getCurrentHeadingOffset()
 
 	//return the proper rotation quaternion about the y-axis as opposed to the z-axis
 	//as it gets applied after the Madgwick filter (so +y is up instead of +z)
-	return { cos(angle / 2.0f), 0.0f, 0.0f, sin(angle / 2.0f)};
+	m_headingOffset = { cos(angle / 2.0f), 0.0f, 0.0f, sin(angle / 2.0f)};
+	m_mode_screen_handler(ModeAction::IMUHeading, (void*)&m_headingOffset);
 }
 
 void MadgwickTestMode::convergenceCheck()
@@ -418,8 +463,9 @@ void MadgwickTestMode::convergenceCheck()
 		if (y_error > error_threshold || y_error < -error_threshold) return;
 		if (z_error > error_threshold || z_error < -error_threshold) return;
 
-		//If all error check pass we reset the beta value of the filter by updating the current mode state
-		m_state |= MadgwickModeState::BETA_UPDATE;
+		//If all error check pass we reset the beta value of the filter to once again bias the gyro readings
+		float initial_beta_value = 0.041f;
+		m_mode_screen_handler(ModeAction::MadgwickUpdateFilter, (void*)&initial_beta_value);;
 
 		//And do a little clean up
 		m_convergenceQuaternions.clear();
@@ -427,9 +473,9 @@ void MadgwickTestMode::convergenceCheck()
 	}
 }
 
-void MadgwickTestMode::betaUpdate()
-{
-	//The Madgwick filter has converged and the beta value of the filter has successfully been reset.
-	//We remove the BETA_UPDATE flag from the mode state
-	if (m_state & MadgwickModeState::BETA_UPDATE) m_state ^= MadgwickModeState::BETA_UPDATE;
-}
+//void MadgwickTestMode::betaUpdate()
+//{
+//	//The Madgwick filter has converged and the beta value of the filter has successfully been reset.
+//	//We remove the BETA_UPDATE flag from the mode state
+//	if (m_state & MadgwickModeState::BETA_UPDATE) m_state ^= MadgwickModeState::BETA_UPDATE;
+//}

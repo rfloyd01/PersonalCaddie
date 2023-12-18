@@ -5,11 +5,6 @@
 #include "Math/SensorFusion/FusionAhrs.h"
 #include "Math/SensorFusion/FusionOffset.h"
 
-enum MadgwickModeState
-{
-	BETA_UPDATE = 2
-};
-
 class MadgwickTestMode : public Mode
 {
 public:
@@ -19,18 +14,19 @@ public:
 	virtual void uninitializeMode() override;
 
 	virtual uint32_t handleUIElementStateChange(int i) override;
+	virtual void pc_ModeChange(PersonalCaddiePowerMode newMode) override;
 
 	virtual void update() override;
+	virtual void getIMUHeadingOffset(glm::quat heading) override;
 	virtual void addQuaternions(std::vector<glm::quat> const& quaternions, int quaternion_number, float time_stamp, float delta_t) override;
 	virtual void addData(std::vector<std::vector<std::vector<float> > > const& sensorData, float sensorODR, float timeStamp, int totalSamples) override;
 
 	void toggleDisplayData();
 	void switchDisplayDataType(int n);
 
-	glm::quat getCurrentHeadingOffset();
-	void setHeadingOffset(glm::quat offset) { m_headingOffset = offset; }
+	void setCurrentHeadingOffset();
 
-	void betaUpdate();
+	//void betaUpdate();
 	void toggleFilter() { m_useNewFilter = !m_useNewFilter; }
 
 private:
@@ -48,7 +44,6 @@ private:
 	volatile bool m_update_in_process;
 	DirectX::XMVECTOR m_renderQuaternion; //the current quaternion to be applied on screen
 	std::vector<glm::quat> m_quaternions;
-	//glm::quat m_offsetQuaternion = { 0.9848f,  0.0f, 0.0f, -0.1736f };
 	glm::quat m_headingOffset = { 1.0f, 0.0f, 0.0f, 0.0f };
 	std::vector<float> m_timeStamps;
 

@@ -291,9 +291,7 @@ void ModeScreen::processKeyboardInput(winrt::Windows::System::VirtualKey pressed
 		if (m_currentMode == ModeType::MADGWICK)
 		{
 			//Pressing the space key will reset the heading offset rotation quaternion for the Personal Caddie
-			glm::quat heading_offset = ((MadgwickTestMode*)m_modes[static_cast<int>(m_currentMode)].get())->getCurrentHeadingOffset();
-			((MadgwickTestMode*)m_modes[static_cast<int>(m_currentMode)].get())->setHeadingOffset(heading_offset); //set the heading offset quaternion in Madgwick test mode
-			m_personalCaddie->setHeadingOffset(heading_offset);
+			((MadgwickTestMode*)m_modes[static_cast<int>(m_currentMode)].get())->setCurrentHeadingOffset();
 		}
 		break;
 	}
@@ -792,7 +790,33 @@ void ModeScreen::ModeHandler(ModeAction action, void* eventArgs)
 		else m_personalCaddie->updateIMUSettings(settings);
 		break;
 	}
+	case IMUHeading:
+	{
+		//Gets or sets the heading offset quaternion from the IMU class. The Madgwick filter uses magnetic north as the reference direction for 
+		//Earth's magnetic field, so if the computer monitor isn't aligned perfectly North-South, then anything being rendered on screen
+		//will be offset. Rotating all images being rendered on screen by this offset will effectively change the direction of magnetic
+		//North to line up with the computer monitor so all images will match their real world counter parts. If a nullptr is passed in as the
+		//eventArgs it means we simply want to get the current heading. If we want to set a new heading offset then a qlm::Quat stucture is
+		//passed in.
+		
+		if (eventArgs == nullptr) getCurrentMode()->getIMUHeadingOffset(m_personalCaddie->getHeadingOffset());
+		else
+		{
+			glm::quat heading = *((glm::quat*)eventArgs);
+			m_personalCaddie->setHeadingOffset(heading);
+		}
+		break;
+	}
 	case MadgwickUpdateFilter:
+	{
+		//We can alter the beta value for the Madgwick filter to allow for a quicker convergence of the current rotation quaternion.
+		//The higher the beta value is, the more heavily biased the filter is towards the accelerometer and magnetometer readings as opposed
+		//to the gyroscope. Once the orientation of the image on screen has converged on its real world orientation, we can then lower the 
+		//beta value of the filter back to its standard value so the readings once again are more heavily weighted towards the gyro.
+		float beta_value = *((float*)eventArgs);
+		m_personalCaddie->setMadgwickBeta(beta_value);
+		break;
+	}
 	default: return;
 	}
 }
@@ -921,12 +945,12 @@ void ModeScreen::stateUpdate()
 	}
 	case ModeType::MADGWICK:
 	{
-		if (m_modes[static_cast<int>(m_currentMode)]->getModeState() & MadgwickModeState::BETA_UPDATE)
-		{
-			//The filter has converged so we change the beta value back to its standard value
-			m_personalCaddie->setMadgwickBeta(0.041f);
-			((MadgwickTestMode*)m_modes[static_cast<int>(m_currentMode)].get())->betaUpdate(); //let the Madwick test mode that the filter has successfully been updated
-		}
+		//if (m_modes[static_cast<int>(m_currentMode)]->getModeState() & MadgwickModeState::BETA_UPDATE)
+		//{
+		//	//The filter has converged so we change the beta value back to its standard value
+		//	m_personalCaddie->setMadgwickBeta(0.041f);
+		//	((MadgwickTestMode*)m_modes[static_cast<int>(m_currentMode)].get())->betaUpdate(); //let the Madwick test mode that the filter has successfully been updated
+		//}
 		break;
 	}
 	}

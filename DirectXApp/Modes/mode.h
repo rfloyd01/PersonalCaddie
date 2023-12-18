@@ -61,7 +61,8 @@ enum ModeAction
 	SensorCalibration,
 	BLEDeviceWatcher,
 	BLEConnection,
-	BLENotifications
+	BLENotifications,
+	IMUHeading
 };
 
 //Forward Declerations
@@ -107,6 +108,7 @@ public:
 	virtual void getBLEConnectionStatus(bool status) {};
 	virtual void getBLEDeviceWatcherStatus(bool status) {};
 	virtual void getString(std::wstring message) {}; //This method is used to pass strings from the mode screen to the active mode, it's up to each individual mode on if and how to implement this
+	virtual void getIMUHeadingOffset(glm::quat heading) {};
 
 	virtual uint32_t handleUIElementStateChange(int i) { return 0; };
 
