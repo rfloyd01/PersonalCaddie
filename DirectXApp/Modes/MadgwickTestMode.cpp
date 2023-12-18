@@ -184,15 +184,6 @@ void MadgwickTestMode::updateDisplayText()
 	m_uiManager.getElement<TextOverlay>(L"Sensor Info 2 Text")->updateColorLocations({0,  (unsigned int)sensor_info_message_one.length(),  (unsigned int)sensor_info_message_two.length(),  (unsigned int)sensor_info_message_three.length(),  (unsigned int)sensor_info_message_four.length()});
 }
 
-uint32_t MadgwickTestMode::handleUIElementStateChange(int i)
-{
-	if (i == 1)
-	{
-		return 1;
-	}
-	return 0;
-}
-
 void MadgwickTestMode::pc_ModeChange(PersonalCaddiePowerMode newMode)
 {
 	//As soon as we enter Sensor Idle Mode we jump straight into Sensor Active mode. Before that,

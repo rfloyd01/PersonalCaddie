@@ -91,13 +91,8 @@ public:
 
 	std::vector<MaterialType> const& getMaterialTypes() { return m_materialTypes; }; //modes with 3d rendering need materials generated from the Direct3D context
 
-	template <typename T>
-	void addUIElement(T const& element) { m_uiElements.push_back(std::make_shared<T>(element)); }
-
 	//Alert Methods
 	void createAlert(std::wstring message, UIColor color, winrt::Windows::Foundation::Size windowSize, long long duration = 2500); //default to 2.5 second alerts
-	//void createAlert(TextOverlay& alert);
-	//virtual TextOverlay removeAlerts(); //some modes need to maintain a specific order for elements and removing alerts can change this. This method is virtual so those modes can override this one.
 	std::vector<std::shared_ptr<ManagedUIElement>> removeAlerts();
 	void overwriteAlerts(std::vector<std::shared_ptr<ManagedUIElement>> const& alerts);
 	void checkAlerts();
@@ -109,8 +104,6 @@ public:
 	virtual void getBLEDeviceWatcherStatus(bool status) {};
 	virtual void getString(std::wstring message) {}; //This method is used to pass strings from the mode screen to the active mode, it's up to each individual mode on if and how to implement this
 	virtual void getIMUHeadingOffset(glm::quat heading) {};
-
-	virtual uint32_t handleUIElementStateChange(int i) { return 0; };
 
 	virtual void addData(std::vector<std::vector<std::vector<float> > > const& sensorData, float sensorODR, float timeStamp, int totalSamples) {} //A method that modes can overwrite when they need data from the Personal Caddie
 	virtual void addQuaternions(std::vector<glm::quat> const& quaternions, int quaternion_number, float time_stamp, float delta_t) {} //A method that modes can overwrite when they need data from the Personal Caddie

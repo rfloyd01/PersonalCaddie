@@ -48,6 +48,26 @@ void DropDownMenu::setSelectedOption(std::wstring option)
 	((FullScrollingTextBox*)getChildren()[2].get())->setLastSelectedText(option);
 }
 
+void DropDownMenu::clearAllOptions()
+{
+	//Removes all of the options currently stored in the drop down menu
+	((FullScrollingTextBox*)getChildren()[2].get())->clearText();
+	((FullScrollingTextBox*)getChildren()[2].get())->setLastSelectedText(L""); //since there are no options set an empty string as the currently selected option
+}
+
+void DropDownMenu::setNewOptions(std::wstring options, winrt::Windows::Foundation::Size windowSize, bool highlightable)
+{
+	//Overwrite the options currently in the drop down menu with the given options.
+	//The options string here should be a string delimited with \n characters between
+	//each option to be displayed.
+	clearAllOptions();
+	((FullScrollingTextBox*)getChildren()[2].get())->addText(options, windowSize, highlightable);
+
+	//Setting new options will force the Drop down menu to resize to fit the longest
+	//of the new options
+	m_state |= UIElementState::NeedTextPixels;
+}
+
 void DropDownMenu::repositionText()
 {
 	//When this method gets called we know the dimensions of all the text inside of the full scrolling

@@ -78,12 +78,3 @@ void UITestMode::update()
 		}
 	}
 }
-
-uint32_t UITestMode::handleUIElementStateChange(int i)
-{
-	if (i == 1)
-	{
-		return 1;
-	}
-	return 0;
-}

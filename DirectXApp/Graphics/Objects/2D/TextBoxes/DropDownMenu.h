@@ -23,8 +23,11 @@ public:
 	virtual uint32_t update(InputState* inputState) override;
 	virtual std::vector<UIText*> setTextDimension() override;
 
+	//Get and Set Options
 	void setSelectedOption(std::wstring option);
 	std::wstring getSelectedOption() { return m_currentlySelectedOption; }
+	void clearAllOptions();
+	void setNewOptions(std::wstring options, winrt::Windows::Foundation::Size windowSize, bool highlightable);
 
 protected:
 	virtual void repositionText() override;

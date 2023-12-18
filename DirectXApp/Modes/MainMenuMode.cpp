@@ -59,8 +59,3 @@ void MainMenuMode::initializeTextOverlay(winrt::Windows::Foundation::Size window
 		footnote_message, UIConstants::FootNoteTextPointSize, { UIColor::White }, { 0,  (unsigned int)footnote_message.length() }, UITextJustification::LowerRight);
 	m_uiManager.addElement<TextOverlay>(footnote, L"Footnote Text");
 }
-
-uint32_t MainMenuMode::handleUIElementStateChange(int i)
-{
-	return 0;
-}

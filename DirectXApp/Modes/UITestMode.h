@@ -12,8 +12,6 @@ public:
 
 	virtual void update() override;
 
-	virtual uint32_t handleUIElementStateChange(int i) override;
-
 private:
 	void initializeTextOverlay(winrt::Windows::Foundation::Size windowSize);
 

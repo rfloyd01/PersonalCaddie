@@ -17,8 +17,6 @@ public:
 	void getCurrentSettings(std::vector<uint8_t*> settings, std::vector<uint8_t> const& availableSensors, bool use_current = false);
 	uint8_t* getNewSettings() { return m_newSettings; }
 
-	//virtual TextOverlay removeAlerts() override;
-
 	bool dropDownsSet;
 
 private:

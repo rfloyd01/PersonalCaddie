@@ -502,24 +502,19 @@ void IMUSettingsMode::updateSetting(sensor_type_t sensor_type, sensor_settings_t
 
 			if (refresh)
 			{
-				//We need to reload the ODR drop down text boxes. To place them correctly we need to know the appropriate size for the new boxes
-				//so we just trigger all boxes to be resized/replaced
-
-				//Calling the handleUIElementStateChange() method will cause the m_newSettings array to be reset to it's default settings.
-				//Because of this we need to make a copy of it and reapply the correct settings after the method is called.
-				uint8_t settings_copy[SENSOR_SETTINGS_LENGTH];
-				for (int i = 0; i < SENSOR_SETTINGS_LENGTH; i++) settings_copy[i] = m_newSettings[i];
-				handleUIElementStateChange(m_accFirstDropDown - 3);
-				for (int i = 0; i < SENSOR_SETTINGS_LENGTH; i++) m_newSettings[i] = settings_copy[i]; //reapply original settings
+				//We need to reload the ODR drop down text boxes. Update the appropriate strings for each drop down box,
+				//set the TextResize flag for each box to make sure they get resized appropriately
+				m_dropDownText[ACC_SENSOR][ODR] = fxas_fxos_get_complete_settings_string(ACC_SENSOR, static_cast<sensor_settings_t>(combined_odr));
+				m_dropDownText[MAG_SENSOR][ODR] = fxas_fxos_get_complete_settings_string(MAG_SENSOR, static_cast<sensor_settings_t>(combined_odr));
+				accODRDropdown->setNewOptions(m_dropDownText[ACC_SENSOR][ODR], m_uiManager.getScreenSize(), true);
+				magODRDropdown->setNewOptions(m_dropDownText[MAG_SENSOR][ODR], m_uiManager.getScreenSize(), true);
 			}
-			else
-			{
-				//Update the odr and power drop down menu text as neceessary
-				accODRDropdown->setSelectedOption(fxas_fxos_get_settings_string(ACC_SENSOR, static_cast<sensor_settings_t>(combined_odr), m_newSettings[ACC_START + ODR]));
-				accPowerDropdown->setSelectedOption(fxas_fxos_get_settings_string(ACC_SENSOR, POWER, m_newSettings[ACC_START + POWER]));
-				magODRDropdown->setSelectedOption(fxas_fxos_get_settings_string(MAG_SENSOR, static_cast<sensor_settings_t>(combined_odr), m_newSettings[MAG_START + ODR]));
-				magPowerDropdown->setSelectedOption(fxas_fxos_get_settings_string(MAG_SENSOR, POWER, m_newSettings[MAG_START + POWER]));
-			}
+			
+			//Update the odr and power drop down menu text as neceessary
+			accODRDropdown->setSelectedOption(fxas_fxos_get_settings_string(ACC_SENSOR, static_cast<sensor_settings_t>(combined_odr), m_newSettings[ACC_START + ODR]));
+			accPowerDropdown->setSelectedOption(fxas_fxos_get_settings_string(ACC_SENSOR, POWER, m_newSettings[ACC_START + POWER]));
+			magODRDropdown->setSelectedOption(fxas_fxos_get_settings_string(MAG_SENSOR, static_cast<sensor_settings_t>(combined_odr), m_newSettings[MAG_START + ODR]));
+			magPowerDropdown->setSelectedOption(fxas_fxos_get_settings_string(MAG_SENSOR, POWER, m_newSettings[MAG_START + POWER]));
 		}
 	}
 	else if ((sensor_type == ACC_SENSOR && m_newSettings[ACC_START] == FXOS8700_ACC) || (sensor_type == MAG_SENSOR && m_newSettings[MAG_START] == FXOS8700_MAG))

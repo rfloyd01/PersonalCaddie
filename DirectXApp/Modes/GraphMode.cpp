@@ -153,11 +153,6 @@ void GraphMode::uiElementStateChangeHandler(std::shared_ptr<ManagedUIElement> el
 	}
 }
 
-uint32_t GraphMode::handleUIElementStateChange(int i)
-{
-	return m_state;
-}
-
 void GraphMode::addData(std::vector<std::vector<std::vector<float> > > const& sensorData, float sensorODR, float timeStamp, int totalSamples)
 {
 	//If we're currently recording data, then every time a new set of data is ready this method will

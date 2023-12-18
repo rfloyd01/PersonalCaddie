@@ -136,7 +136,7 @@ void FullScrollingTextBox::addText(std::wstring message, winrt::Windows::Foundat
 	}
 
 	//if (existingText && !m_dynamicSize) return;
-	m_state = UIElementState::NeedTextPixels; //Let's the renderer know that we currently need the pixel size of text
+	m_state |= UIElementState::NeedTextPixels; //Let's the renderer know that we currently need the pixel size of text
 }
 
 void FullScrollingTextBox::clearText()
