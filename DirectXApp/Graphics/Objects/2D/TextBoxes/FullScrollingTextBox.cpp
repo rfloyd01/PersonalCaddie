@@ -4,6 +4,16 @@
 #include "Graphics/Objects/2D/Buttons/ArrowButton.h"
 #include <cmath>
 
+/*
+Order of Child Elements:
+0: Main Text Box
+1: Up Scrolling Button
+2: Down Scrolling Button
+3: Scroll Progress Bar Background
+4: Scroll Progress Bar Foreground
+5+: Text Overlays with content
+*/
+
 FullScrollingTextBox::FullScrollingTextBox(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, std::wstring message, float fontSize,
 	bool highlightableText, bool dynamicSize, UITextJustification justification, UIColor textFillColor, bool isSquare, UIColor outlineColor, UIColor shadowColor)
 {
@@ -30,8 +40,6 @@ FullScrollingTextBox::FullScrollingTextBox(winrt::Windows::Foundation::Size wind
 	OutlinedBox progressBarBackground(windowSize, { location.x + (size.x + m_buttonSize) / (float)2.0 + shadowPixels / 2.0f, location.y + shadowPixels / 2.0f }, { m_buttonSize + shadowPixels, size.y - 2.0f * m_buttonSize - shadowPixels }, true, UIColor::Gray);
 	ShadowedBox progressBarForeground(windowSize, { location.x + (size.x + m_buttonSize) / (float)2.0 - shadowPixels, location.y }, { m_buttonSize - 2.0f / windowSize.Width, (size.y - 2.0f * m_buttonSize) / 2.0f }, true, UIColor::PaleGray); //y size and location will change
 
-	//The order of the child elements is important here. The text background must be first, then the text,
-	//and then finally the hiding box to go on top of it.
 	p_children.push_back(std::make_shared<ShadowedBox>(textBox));
 	p_children.push_back(std::make_shared<ArrowButton>(upButton));
 	p_children.push_back(std::make_shared<ArrowButton>(downButton));

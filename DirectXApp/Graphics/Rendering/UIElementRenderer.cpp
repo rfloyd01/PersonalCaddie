@@ -175,7 +175,10 @@ void UIElementRenderer::render(std::map<UIElementType, std::vector<std::shared_p
     //Drop down menus get rendered last, and from top to bottom of the screen. This insures that nothing 
     //covers up their scroll boxes when activated.
     auto drop_downs = managedUIElements.at(UIElementType::DROP_DOWN_MENU);
-    for (int i = 0; i < drop_downs.size(); i++) renderUIElement(drop_downs[i]->element);
+    for (int i = 0; i < drop_downs.size(); i++)
+    {
+        renderUIElement(drop_downs[i]->element);
+    }
 }
 
 void UIElementRenderer::renderUIElement(std::shared_ptr<UIElement> element)

@@ -24,7 +24,15 @@ UIElementManager::UIElementManager()
 		m_gridLocations.push_back(vec);
 	}
 
-	//Populate the 
+	//DEBUG: Uncomment the below lines to draw lines representing the grid on screen.
+	//This is helpful for confirming which elements can be interacted with by the mouse
+	/*for (int i = 0; i < GRID_WIDTH; i++)
+	{
+		Line vert(m_windowSize, { (float)i / (float)GRID_WIDTH, 0.0f }, { (float)i / (float)GRID_WIDTH, 1.0f }, UIColor::Red, 1.0f);
+		Line hor(m_windowSize, { 0.0f, (float)i / (float)GRID_WIDTH }, { 1.0f, (float)i / (float)GRID_WIDTH }, UIColor::Red, 1.0f);
+		addElement<Line>(vert, L"Vertical Line " + std::to_wstring(i));
+		addElement<Line>(hor, L"Horizontal Line " + std::to_wstring(i));
+	}*/
 }
 
 void UIElementManager::removeElementType(UIElementType type)
@@ -69,6 +77,19 @@ void UIElementManager::removeAllElements()
 	}
 }
 
+void UIElementManager::updateScreenSize(winrt::Windows::Foundation::Size newWindowSize)
+{ 
+	//This method automatically gets called when the screen changes sizes, it causes all UI elements
+	//on the screen to change proportionally with the new screen size.
+	m_windowSize = newWindowSize;
+
+	for (int i = 0; i < static_cast<int>(UIElementType::END); i++)
+	{
+		std::vector<std::shared_ptr<ManagedUIElement>>& elements = m_uiElements.at(static_cast<UIElementType>(i));
+		for (int j = 0; j < elements.size(); j++) elements[j]->element->resize(m_windowSize);
+	}
+}
+
 void UIElementManager::updateGridSquareElements(InputState* input)
 {
 	//If the mouse moves, clicks or scrolls we inspect all of the UIElements that are in the 
@@ -84,6 +105,9 @@ void UIElementManager::updateGridSquareElements(InputState* input)
 	else if (mouseGridSquare.second >= GRID_WIDTH) mouseGridSquare.second = GRID_WIDTH - 1;
 
 	/*std::wstring loc = L"Mouse Grid Location: {" + std::to_wstring(mouseGridSquare.first) + L", " + std::to_wstring(mouseGridSquare.second) + L"}\n";
+	OutputDebugString(&loc[0]);*/
+
+	/*std::wstring loc = L"Mouse Location: {" + std::to_wstring(input->mousePosition.x) + L", " + std::to_wstring(input->mousePosition.y) + L"}\n";
 	OutputDebugString(&loc[0]);*/
 
 	for (int i = 0; i < m_gridLocations[mouseGridSquare.first][mouseGridSquare.second].size(); i++)
@@ -160,7 +184,6 @@ void UIElementManager::checkForTextResize()
 			if (m_uiElements.at(m_textUpdateElements[type])[i]->element->getState() & UIElementState::NeedTextPixels)
 			{
 				m_updateText.push_back(m_uiElements.at(m_textUpdateElements[type])[i]->element);
-				
 			}
 		}
 	}
@@ -189,6 +212,7 @@ void UIElementManager::applyTextResizeUpdates()
 	{
 		m_updateText[i]->repositionText(); //see if any text needs to be repositioned after getting new dimensions
 		m_updateText[i]->resize(m_windowSize); //and then resize the ui element
+		//remove the 
 	}
 
 	//After all updates are made, clear out the m_updateText vector
@@ -207,6 +231,15 @@ void UIElementManager::populateGridLocations(std::shared_ptr<ManagedUIElement> m
 
 		std::pair<int, int> top_left = { GRID_WIDTH * (location.x - size.x / 2.0f), GRID_WIDTH * (location.y - size.y / 2.0f) };
 		std::pair<int, int> bottom_right = { GRID_WIDTH * (location.x + size.x / 2.0f), GRID_WIDTH * (location.y + size.y / 2.0f) };
+
+		if (managedElement->type == UIElementType::DROP_DOWN_MENU)
+		{
+			//Drop down menus feature an invisible scroll box which isn't normally included in the size calculation
+			//of the element. To make sure all parts of this scroll box can be interacted with we add the height of
+			//the invisible scroll box when placing grid pointers for the drop down menu. This only effects the
+			//top_left grid location
+			top_left = { GRID_WIDTH * (location.x - size.x / 2.0f), GRID_WIDTH * (location.y - size.y / 2.0f - managedElement->element->getChildren()[2]->getAbsoluteSize().y)};
+		}
 
 		//Ignore any squares that fall outside of the grid
 		for (int row = top_left.second; row <= bottom_right.second; row++)
@@ -247,7 +280,7 @@ void UIElementManager::refreshGrid()
 	//Iterate through all UI Elements and add new grid locations
 	for (int i = 0; i < static_cast<int>(UIElementType::END); i++)
 	{
-		auto elementVector = m_uiElements.at(static_cast<UIElementType>(i));
+		std::vector<std::shared_ptr<ManagedUIElement>>& elementVector = m_uiElements.at(static_cast<UIElementType>(i));
 		for (int j = 0; j < elementVector.size(); j++) populateGridLocations(elementVector[j]);
 	}
 }

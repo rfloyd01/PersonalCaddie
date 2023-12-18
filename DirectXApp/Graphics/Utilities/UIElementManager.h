@@ -5,7 +5,7 @@
 
 #include "Graphics/Objects/2D/UIElements.h"
 
-#define GRID_WIDTH 5
+#define GRID_WIDTH 10 //designates how many squares the screen is split into for update processing
 
 //This enum holds all the different types of high level UI elements
 enum class UIElementType
@@ -113,7 +113,7 @@ public:
 	std::vector<std::shared_ptr<ManagedUIElement> > & getActionElements() { return m_actionElements; }
 
 	//Methods for interactions of UIElements with the Mouse
-	void updateScreenSize(winrt::Windows::Foundation::Size newWindowSize) { m_windowSize = newWindowSize; } //TODO: This should resize all elements contained inside the manager
+	void updateScreenSize(winrt::Windows::Foundation::Size newWindowSize);
 	winrt::Windows::Foundation::Size getScreenSize() { return m_windowSize; }
 	void updateGridSquareElements(InputState* input);
 

@@ -17,8 +17,13 @@ uint32_t UITestMode::initializeMode(winrt::Windows::Foundation::Size windowSize,
 	//Create UI Text Elements on the page
 	initializeTextOverlay(windowSize);
 
-	TextButton accButton(windowSize, { 0.16, 0.85 }, { 0.14, 0.1 }, L"Accelerometer Calibration");
-	m_uiManager.addElement<TextButton>(accButton, L"ACC Button");
+	DropDownMenu acc_menu(windowSize, { 0.5, 0.47 }, { 0.15, 0.1 }, L"One\nTwo\nThree\nFour\nFive", 0.0225); //the locations will get set by a separate method
+	DropDownMenu gyr_menu(windowSize, { 0.5, 0.43 }, { 0.15, 0.1 }, L"LongerOne\nLongerTwo\nLongerThree\nLongerFour\nLongerFive", 0.0225); //the locations will get set by a separate method
+	DropDownMenu mag_menu(windowSize, { 0.85, 0.47 }, { 0.25, 0.15 }, L"One\nTwo\nThree\nFour\nFive", 0.0225); //the locations will get set by a separate method
+	
+	m_uiManager.addElement<DropDownMenu>(gyr_menu, L"Gyr Model Drop Down Menu");
+	m_uiManager.addElement<DropDownMenu>(acc_menu, L"Acc Model Drop Down Menu");
+	m_uiManager.addElement<DropDownMenu>(mag_menu, L"Mag Model Drop Down Menu");
 
 	//When this mode is initialzed we go into a state of CanTransfer and Active.
 	//Can Transfer allows us to use the esc. key to go back to the settings menu
