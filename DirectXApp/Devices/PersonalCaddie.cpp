@@ -758,6 +758,8 @@ void PersonalCaddie::changePowerMode(PersonalCaddiePowerMode mode)
     *                     mode to increase data throughput for smoother golf swing rendering.
     */
 
+    if (mode == current_power_mode) return; //no need to change into the same mode we're currently in
+
     winrt::Windows::Storage::Streams::DataWriter writer;
     writer.ByteOrder(winrt::Windows::Storage::Streams::ByteOrder::LittleEndian);
     writer.WriteByte(static_cast<uint8_t>(mode));
@@ -848,9 +850,6 @@ void PersonalCaddie::updateIMUSettings(uint8_t* newSettings)
                 if (current_settings[ACC_START + SENSOR_MODEL] != newSettings[ACC_START + SENSOR_MODEL]) p_imu->initializeNewSensor(ACC_SENSOR, newSettings);
                 if (current_settings[GYR_START + SENSOR_MODEL] != newSettings[GYR_START + SENSOR_MODEL]) p_imu->initializeNewSensor(GYR_SENSOR, newSettings);
                 if (current_settings[MAG_START + SENSOR_MODEL] != newSettings[MAG_START + SENSOR_MODEL]) p_imu->initializeNewSensor(MAG_SENSOR, newSettings);
-
-                //Put the Personal Caddie back into connected mode after making changes
-                changePowerMode(PersonalCaddiePowerMode::CONNECTED_MODE);
 
                 std::wstring message = L"IMU Settings successfully updated. ";
                 event_handler(PersonalCaddieEventType::IMU_ALERT, (void*)&message);

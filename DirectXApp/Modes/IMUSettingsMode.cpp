@@ -20,8 +20,14 @@ uint32_t IMUSettingsMode::initializeMode(winrt::Windows::Foundation::Size window
 	//Create UI Elements on the page
 	std::wstring buttonText = L"Update Settings";
 	TextButton updateButton(windowSize, { 0.5, 0.225 }, { 0.12, 0.1 }, buttonText);
+	Line line1(windowSize, { 0.33, 0.3 }, { 0.33, 0.92 }, UIColor::White, 2.0f);
+	Line line2(windowSize, { 0.67, 0.3 }, { 0.67, 0.92 }, UIColor::White, 2.0f);
 
 	m_uiManager.addElement<TextButton>(updateButton, L"Update Button");
+	m_uiManager.addElement<Line>(line1, L"Line 1"); //separates sensor options into columns
+	m_uiManager.addElement<Line>(line2, L"Line 2"); //separates sensor options into columns
+
+	m_uiManager.getElement<TextButton>(L"Update Button")->updateState(UIElementState::Disabled);
 
 	initializeTextOverlay(windowSize);
 
@@ -72,15 +78,6 @@ void IMUSettingsMode::initializeTextOverlay(winrt::Windows::Foundation::Size win
 		title_message, UIConstants::TitleTextPointSize, { UIColor::White }, { 0,  (unsigned int)title_message.length() }, UITextJustification::CenterCenter);
 	m_uiManager.addElement<TextOverlay>(title, L"Title Text");
 
-	//Body information
-	/*std::wstring body_message =
-		L"The IMU settings page allows us to change the settings on the individual sensors of the Personal Caddie. As examples, you could change the "
-		L"full scale range of of the Accelerometer from +/- 2g to +/- 8g, you could turn off the Gyroscope high pass filter, etc. Clicking the button "
-		L"above will populate drop down menus with the current settings. Change the settings as desired and click the button again to apply the changes.";
-	TextOverlay body(windowSize, { UIConstants::BodyTextLocationX, UIConstants::BodyTextLocationY }, { UIConstants::BodyTextSizeX, UIConstants::BodyTextSizeY },
-		body_message, 0.045, { UIColor::White }, { 0,  (unsigned int)title_message.length() }, UITextJustification::UpperLeft);
-	m_uiManager.addElement<TextOverlay>(body, L"Body Text");*/
-
 	//Footnote information
 	std::wstring footnote_message = L"Press Esc. to return to settings menu.";
 	TextOverlay footnote(windowSize, { UIConstants::FootNoteTextLocationX, UIConstants::FootNoteTextLocationY }, { UIConstants::FootNoteTextSizeX, UIConstants::FootNoteTextSizeY },
@@ -93,8 +90,8 @@ void IMUSettingsMode::getCurrentSettings(std::vector<uint8_t*> settings, std::ve
 	if (!use_current)
 	{
 		//The vector passed into this method holds three pointers. One each that
-	    //points to the settings in the accelerometer, gyroscope and magnetometer
-	    //classes. We copy these into the m_currentSettings array
+		//points to the settings in the accelerometer, gyroscope and magnetometer
+		//classes. We copy these into the m_currentSettings array
 		for (int i = 0; i < 3; i++)
 		{
 			//TODO: shouldn't be using the number 10 here, should be getting this
@@ -122,38 +119,10 @@ void IMUSettingsMode::getCurrentSettings(std::vector<uint8_t*> settings, std::ve
 			m_externalSensors.push_back(availableSensors[i]);
 		}
 
-		std::wstring acc_sensors = L"", gyr_sensors = L"", mag_sensors = L"";
-		for (int i = 0; i < m_internalSensors.size(); i++)
-		{
-			std::wstring acc_sensor = get_sensor_model_string_from_address(ACC_SENSOR, m_internalSensors[i]);
-			std::wstring gyr_sensor = get_sensor_model_string_from_address(GYR_SENSOR, m_internalSensors[i]);
-			std::wstring mag_sensor = get_sensor_model_string_from_address(MAG_SENSOR, m_internalSensors[i]);
-
-			if (acc_sensor != L"") acc_sensors += (acc_sensor + L"\n");
-			if (gyr_sensor != L"") gyr_sensors += (gyr_sensor + L"\n");
-			if (mag_sensor != L"") mag_sensors += (mag_sensor + L"\n");
-		}
-
-		for (int i = 0; i < m_externalSensors.size(); i++)
-		{
-			std::wstring acc_sensor = get_sensor_model_string_from_address(ACC_SENSOR, m_externalSensors[i]);
-			std::wstring gyr_sensor = get_sensor_model_string_from_address(GYR_SENSOR, m_externalSensors[i]);
-			std::wstring mag_sensor = get_sensor_model_string_from_address(MAG_SENSOR, m_externalSensors[i]);
-
-			if (acc_sensor != L"") acc_sensors += (acc_sensor + L"\n");
-			if (gyr_sensor != L"") gyr_sensors += (gyr_sensor + L"\n");
-			if (mag_sensor != L"") mag_sensors += (mag_sensor + L"\n");
-		}
-
-		//Remove any trailing new line characters from the sensor dropdown text
-		if (acc_sensors != L"") acc_sensors = acc_sensors.substr(0, acc_sensors.length() - 1);
-		if (gyr_sensors != L"") gyr_sensors = gyr_sensors.substr(0, gyr_sensors.length() - 1);
-		if (mag_sensors != L"") mag_sensors = mag_sensors.substr(0, mag_sensors.length() - 1);
-
-		m_dropDownText[ACC_SENSOR][SENSOR_MODEL] = acc_sensors;
-		m_dropDownText[GYR_SENSOR][SENSOR_MODEL] = gyr_sensors;
-		m_dropDownText[MAG_SENSOR][SENSOR_MODEL] = mag_sensors;
+		use_current = false; //this is needed in the instance that a new sensor is selected
 	}
+
+	getAvailableSensors();
 
 	//After getting the current settings we need to add some text, as well as
 	//all of the drop down menus on screen
@@ -192,17 +161,12 @@ void IMUSettingsMode::createDropDownMenus(winrt::Windows::Foundation::Size windo
 		TextOverlay mag_mod(windowSize, { 0.85, 0.42 }, { 0.33, 0.1 },
 			sub_title, 0.025, { UIColor::White }, { 0,  (unsigned int)sub_title.length() }, UITextJustification::UpperCenter);
 
-		Line line1(windowSize, { 0.33, 0.3 }, { 0.33, 0.92 }, UIColor::White, 2.0f);
-		Line line2(windowSize, { 0.67, 0.3 }, { 0.67, 0.92 }, UIColor::White, 2.0f);
-
 		m_uiManager.addElement<TextOverlay>(acc, L"Acc Setting Text");
 		m_uiManager.addElement<TextOverlay>(gyr, L"Gyr Setting Text");
 		m_uiManager.addElement<TextOverlay>(mag, L"Mag Setting Text");
 		m_uiManager.addElement<TextOverlay>(acc_mod, L"Acc Model Text");
 		m_uiManager.addElement<TextOverlay>(gyr_mod, L"Gyr Model Text");
 		m_uiManager.addElement<TextOverlay>(mag_mod, L"Mag Model Text");
-		m_uiManager.addElement<Line>(line1, L"Line 1");
-		m_uiManager.addElement<Line>(line2, L"Line 2");
 
 		//Then, add the drop down menus. The width of the drop down menus is
 		//dependent on the length of the text inside them, so final placements
@@ -235,6 +199,43 @@ void IMUSettingsMode::createDropDownMenus(winrt::Windows::Foundation::Size windo
 			m_uiManager.addElement<DropDownMenu>(menu, sensorType + L"Setting Drop Down Menu " + std::to_wstring(j));
 		}
 	}
+}
+
+void IMUSettingsMode::getAvailableSensors()
+{
+	//This method reads the values from the available sensors characteristic and populates the appropriate
+	//element of the m_dropDownText vector
+	std::wstring acc_sensors = L"", gyr_sensors = L"", mag_sensors = L"";
+	for (int i = 0; i < m_internalSensors.size(); i++)
+	{
+		std::wstring acc_sensor = get_sensor_model_string_from_address(ACC_SENSOR, m_internalSensors[i]);
+		std::wstring gyr_sensor = get_sensor_model_string_from_address(GYR_SENSOR, m_internalSensors[i]);
+		std::wstring mag_sensor = get_sensor_model_string_from_address(MAG_SENSOR, m_internalSensors[i]);
+
+		if (acc_sensor != L"") acc_sensors += (acc_sensor + L"\n");
+		if (gyr_sensor != L"") gyr_sensors += (gyr_sensor + L"\n");
+		if (mag_sensor != L"") mag_sensors += (mag_sensor + L"\n");
+	}
+
+	for (int i = 0; i < m_externalSensors.size(); i++)
+	{
+		std::wstring acc_sensor = get_sensor_model_string_from_address(ACC_SENSOR, m_externalSensors[i]);
+		std::wstring gyr_sensor = get_sensor_model_string_from_address(GYR_SENSOR, m_externalSensors[i]);
+		std::wstring mag_sensor = get_sensor_model_string_from_address(MAG_SENSOR, m_externalSensors[i]);
+
+		if (acc_sensor != L"") acc_sensors += (acc_sensor + L"\n");
+		if (gyr_sensor != L"") gyr_sensors += (gyr_sensor + L"\n");
+		if (mag_sensor != L"") mag_sensors += (mag_sensor + L"\n");
+	}
+
+	//Remove any trailing new line characters from the sensor dropdown text
+	if (acc_sensors != L"") acc_sensors = acc_sensors.substr(0, acc_sensors.length() - 1);
+	if (gyr_sensors != L"") gyr_sensors = gyr_sensors.substr(0, gyr_sensors.length() - 1);
+	if (mag_sensors != L"") mag_sensors = mag_sensors.substr(0, mag_sensors.length() - 1);
+
+	m_dropDownText[ACC_SENSOR][SENSOR_MODEL] = acc_sensors;
+	m_dropDownText[GYR_SENSOR][SENSOR_MODEL] = gyr_sensors;
+	m_dropDownText[MAG_SENSOR][SENSOR_MODEL] = mag_sensors;
 }
 
 void IMUSettingsMode::populateDropDownText()
@@ -297,28 +298,9 @@ void IMUSettingsMode::uiElementStateChangeHandler(std::shared_ptr<ManagedUIEleme
 {
 	if (element->name == L"Update Button")
 	{
-		//This is the get/set settings button
-		if (!(m_state & IMUSettingsState::DISPLAY_SETTINGS))
-		{
-			//this will put us into the active state, causing the
-			//mode screen class to give the current sensor settings.
-			m_state |= IMUSettingsState::DISPLAY_SETTINGS;
-
-			//Change the text of button and disable it. The button
-			//only becomes enabled if any settings have actually changed.
-			m_uiManager.getElement<TextButton>(L"Update Button")->updateText(L"Update Settings");
-			m_uiManager.getElement<TextButton>(L"Update Button")->updateState(UIElementState::Disabled);
-
-			//We also erase the body text so that we can actually
-			//display the option dropdowns.
-			m_uiManager.removeElement<TextOverlay>(L"Body Text");
-		}
-		else
-		{
-			//clicking the update settings button while it's active will cause
-			//the settings to be updated on the actual device.
-			m_state |= IMUSettingsState::UPDATE_SETTINGS;
-		}
+		//clicking the update settings button while it's active will cause
+		//the settings to be updated on the actual device.
+		m_mode_screen_handler(ModeAction::SensorSettings, (void*)m_newSettings);
 	}
 	else if (element->type == UIElementType::DROP_DOWN_MENU)
 	{
@@ -374,13 +356,12 @@ void IMUSettingsMode::uiElementStateChangeHandler(std::shared_ptr<ManagedUIEleme
 				//We've slected a different sensor from the available sensor drop down menus which means we need to load a
 				//new set of drop down menus. The easiest way to do this is to just remove all current drop downs and text
 				//overlays and just load everything from scratch using the current settings array.
-				m_uiManager.removeElementType(UIElementType::DROP_DOWN_MENU);
+				m_uiManager.removeElementType(UIElementType::DROP_DOWN_MENU); //TODO: Calling this causes a crash due to vector sub-script out of range
 				m_uiManager.removeElementType(UIElementType::TEXT_OVERLAY);
 
 				//By Removing all text overlays we've also removed the title and foot note so add those back. Calling the 
 				//intitialzeTextOverlay() method will also put the body text back which we don't want so remove that again
 				initializeTextOverlay(m_uiManager.getScreenSize());
-				m_uiManager.removeElement<TextOverlay>(L"Body Text");
 
 				m_dropDownText = { {}, {}, {} };
 				m_dropDownCategories = {};
@@ -394,119 +375,13 @@ void IMUSettingsMode::uiElementStateChangeHandler(std::shared_ptr<ManagedUIEleme
 				uint8_t sensor_starts[3] = { ACC_START, GYR_START, MAG_START };
 				get_sensor_default_settings(sensor, newSetting, &m_newSettings[sensor_starts[sensor]]);
 
-				dropDownsSet = false; //This won't get set to true until all drop downs are sized and placed
-				m_state |= IMUSettingsState::GET_SETTINGS; //signals the mode screen that we need to recreate drop downs
+				//Recreate and populate all drop down menus and their titles
+				dropDownsSet = false;
+				getAvailableSensors();
+				createDropDownMenus(m_uiManager.getScreenSize());
 			}
 		}
 	}
-}
-
-uint32_t IMUSettingsMode::handleUIElementStateChange(int i)
-{
-	//if (i == 0)
-	//{
-	//	//This is the get/set settings button
-	//	if (!(m_state & IMUSettingsState::DISPLAY_SETTINGS))
-	//	{
-	//		//this will put us into the active state, causing the
-	//		//mode screen class to give the current sensor settings.
-	//		m_state |= IMUSettingsState::DISPLAY_SETTINGS;
-
-	//		//Change the text of button and disable it. The button
-	//		//only becomes enabled if any settings have actually changed.
-	//		m_uiManager.getElement<TextButton>(L"Update Button")->updateText(L"Update Settings");
-	//		m_uiManager.getElement<TextButton>(L"Update Button")->updateState(UIElementState::Disabled);
-
-	//		//We also erase the body text so that we can actually
-	//		//display the option dropdowns.
-	//		m_uiManager.removeElement<TextOverlay>(L"Body Text");
-	//	}
-	//	else
-	//	{
-	//		//clicking the update settings button while it's active will cause
-	//		//the settings to be updated on the actual device.
-	//		m_state |= IMUSettingsState::UPDATE_SETTINGS;
-	//	}
-	//}
-	//else if (i >= m_accFirstDropDown - 3)
-	//{
-	//	//One of the drop down menus was clicked, see if an option was selected. If so, update the m_newSettings
-	//	//array and compare it to the m_currentSettings array. If the arrays are different we can enable to 
-	//	//update settings button at the top of the page. If they're the same, the button is disabled.
-	//	if (m_uiElements[i]->getChildren()[2]->getState() & UIElementState::Invisible)
-	//	{
-	//		//The drop down menu scroll box becomes invisible as soon as we select a new option
-	//		std::wstring selectedOption = ((DropDownMenu*)m_uiElements[i].get())->getSelectedOption();
-	//		selectedOption = selectedOption.substr(selectedOption.find(L"0x") + 2); //extract the hexadecimal at the end of the option
-	//		
-	//		//Update the new settings array
-	//		int sensor = 0;
-	//		if (i >= m_gyrFirstDropDown || i == m_accFirstDropDown - 2) sensor = 1;
-	//		if (i >= m_magFirstDropDown || i == m_accFirstDropDown - 1) sensor = 2;
-
-	//		uint8_t newSetting = convertStringToHex(selectedOption);
-
-	//		//Before applying the new setting we need to see if it's a compound setting that will potentially alter the
-	//		//values in other text boxes. In most cases we'll only change other options on the same sensor, however, there
-	//		//are instances where setting on other sensors will be affected as well. For example, if both the LSM9DS1 
-	//		//accelerometer and gyrocsope are used then their ODR and Power levels are tied together. We call a separate
-	//		//method to help us update all settings appropriately.
-	//		sensor_settings_t cat = SENSOR_MODEL;
-	//		if (i >= m_accFirstDropDown) cat = static_cast<sensor_settings_t>(m_dropDownCategories[i - m_accFirstDropDown]);
-	//		updateSetting(static_cast<sensor_type_t>(sensor), cat, newSetting);
-
-	//		bool different = false;
-
-	//		for (int j = 0; j < SENSOR_SETTINGS_LENGTH; j++)
-	//		{
-	//			if (m_currentSettings[j] != m_newSettings[j])
-	//			{
-	//				//the settings have now been changed, this means we enable the Update button
-	//				m_uiElements[0]->removeState(UIElementState::Disabled);
-	//				different = true;
-	//				break; //only need one byte to be different to enabled updating
-	//			}
-	//		}
-
-	//		if (!different)
-	//		{
-	//			//The settings haven't been altered from their original form, so disable the update button
-	//			m_uiElements[0]->setState(m_uiElements[0]->getState() | UIElementState::Disabled);
-	//		}
-
-	//		if (i < m_accFirstDropDown)
-	//		{
-	//			//If we've selected a different sensor it means we need to load a new set of drop down menus.
-	//			//The easiest way to do this is to just remove all current drop downs and load everything
-	//			//from scratch using the current settings array.
-
-	//			//First erase the labels for each settings drop down (these are located before the sensor options menus)
-	//			int stop = m_uiElements.size() - m_accFirstDropDown;
-
-	//			for (int j = m_uiElements.size() - 1; j >= m_accFirstDropDown; j--) m_uiElements[j] = nullptr;
-	//			m_uiElements.erase(m_uiElements.begin() + m_accFirstDropDown, m_uiElements.end());
-
-	//			for (int j = m_accFirstDropDown - 4; j > (m_accFirstDropDown - 4 - stop); j--) m_uiElements[j] = nullptr;
-	//			m_uiElements.erase(m_uiElements.begin() + (m_accFirstDropDown - 3 - stop), m_uiElements.begin() + (m_accFirstDropDown - 3));
-
-	//			m_dropDownText = { {}, {}, {} };
-	//			m_dropDownCategories = {};
-	//			for (int i = 0; i < 3; i++)
-	//			{
-	//				for (int j = SENSOR_MODEL; j <= EXTRA_2; j++) m_dropDownText[i].push_back(L"");
-	//			}
-
-	//			//After removing the current drop down menus, update the m_newSettings array with the default values
-	//			//of the newly selected sensor
-	//			uint8_t sensor_starts[3] = { ACC_START, GYR_START, MAG_START };
-	//			get_sensor_default_settings(sensor, newSetting, &m_newSettings[sensor_starts[sensor]]);
-
-	//			dropDownsSet = false; //This won't get set to true until all drop downs are sized and placed
-	//			m_state |= IMUSettingsState::GET_SETTINGS; //signals the mode screen that we need to recreate drop downs
-	//		}
-	//	}
-	//}
-	return m_state;
 }
 
 void IMUSettingsMode::updateSetting(sensor_type_t sensor_type, sensor_settings_t setting_type, uint8_t setting)
@@ -712,8 +587,8 @@ uint8_t IMUSettingsMode::convertStringToHex(std::wstring hexString)
 
 void IMUSettingsMode::update()
 {
-	//We use this method to help position all of the drop down menus. We don't know the width of the 
-	//menus until after they've been created. Once this happens we placed them based on their width
+	//In IMU Settings mode we use the update() method to ensure that drop down menus have the 
+	//appropriate text and are in the correct locations on screen.
 	if (!dropDownsSet)
 	{
 		//Before attempting to move anything, make sure that all the text boxes have been resized.
@@ -755,6 +630,13 @@ void IMUSettingsMode::update()
 				if (dropDown->getSelectedOption() == L"") m_uiManager.removeElement<DropDownMenu>(dropdown_name + std::to_wstring(type)); //remove the drop down if its empty
 				else
 				{
+					//TODO: Update the state of the Dropdown (and its scroll box) to include the NeedTextPixels flag.
+					//We need to do this because of some legacy code which needed a full iteration of the render loop to
+					//go by before we could force a resize to happen. I'll need to change the resize method of the UIElement
+					//class at some point to get rid of this feature.
+					dropDown->updateState(UIElementState::NeedTextPixels); //test, see if this helps invisibility issue
+					dropDown->getChildren()[2]->updateState(UIElementState::NeedTextPixels);
+
 					//Set the margin width equal to the width of the button.
 					marginWidth = dropDown->getChildren()[1]->getAbsoluteSize().x * 1.0f;
 
@@ -805,8 +687,8 @@ void IMUSettingsMode::update()
 						dropDown->setAbsoluteLocation({ (1.0f / 6.0f + location) - marginWidth - dropDown->getAbsoluteSize().x / 2.0f, 0.1f * (row + 3.0f) + 0.23f });
 
 						//after setting the location for each drop down it can be resized
-						firstDropDown->resize(m_uiManager.getScreenSize()); //since only the location has changed, not the size, this is ok
-						dropDown->resize(m_uiManager.getScreenSize()); //since only the location has changed, not the size, this is ok
+						//firstDropDown->resize(m_uiManager.getScreenSize()); //since only the location has changed, not the size, this is ok
+						//dropDown->resize(m_uiManager.getScreenSize()); //since only the location has changed, not the size, this is ok
 
 						//We also place text overlays above each box letting the user know what the options represent
 						TextOverlay one(dropDown->getCurrentWindowSize(), { dropDown->getAbsoluteLocation().x, dropDown->getAbsoluteLocation().y - dropDown->getAbsoluteSize().y }, { 0.25f, dropDown->getAbsoluteSize().y * 2.0f }, getSettingString(type), 0.025,
@@ -856,15 +738,6 @@ void IMUSettingsMode::update()
 		dropDownsSet = true;
 		m_uiManager.refreshGrid(); //Once all dropdowns are in the correct location, have the UIElement Manager refresh their new locations in the screen grid (needed to click on elements)
 	}
-	else if (m_state & IMUSettingsState::UPDATE_SETTINGS)
-	{
-		//if we reach the update method and the update_settings flag is set in the current mode state it means that
-		//we've already reached out to the Personal Caddie to update the settings on the physical chip. This is an 
-		//asynchronous action and most likely won't be done by the time this update method is called. What we do here
-		//though is remove the update_settings flag from the current state so that the next interaction with a UI element
-		//won't cause another update.
-		m_state ^= IMUSettingsState::UPDATE_SETTINGS;
-	}
 }
 
 std::wstring IMUSettingsMode::getSettingString(int setting)
@@ -883,17 +756,6 @@ std::wstring IMUSettingsMode::getSettingString(int setting)
 	default: return L"";
 	}
 }
-
-//TextOverlay IMUSettingsMode::removeAlerts()
-//{
-//	//If an alert is removed from in front of the drop down boxes then we need to updated the starting locations
-//	//for each of the sensors. If not though then nothing needs to be changed
-//	TextOverlay alert({ 0, 0 }, { 0, 0 }, { 0, 0 }, L"", 0, { UIColor::Black }, { 0, 0 }, UITextJustification::CenterCenter);
-//	
-//	//TODO: Need to revamp method for passing alerts between different modes
-//
-//	return alert;
-//}
 
 void IMUSettingsMode::handlePersonalCaddieConnectionEvent(bool connectionStatus)
 {

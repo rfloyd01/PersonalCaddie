@@ -51,9 +51,10 @@ void UIElementManager::removeElementType(UIElementType type)
 			//elements from a vector forces all other elements to shift, however, if
 			//the grid is small enough then there should never be more than a handful of 
 			//pointers in each vector so this should be alright.
-			std::pair<int, int> grid_location = { it->get()->grid_locations[i].first, it->get()->grid_locations[i].second };
-			auto grid_it = findElementByName(m_gridLocations[it->get()->grid_locations[i].first][it->get()->grid_locations[i].second], it->get()->name);
-			m_gridLocations[it->get()->grid_locations[i].first][it->get()->grid_locations[i].second].erase(grid_it);
+			std::pair<int, int> grid_location = it->get()->grid_locations[i];
+			//auto grid_it = findElementByName(m_gridLocations[it->get()->grid_locations[i].first][it->get()->grid_locations[i].second], it->get()->name);
+			auto grid_it = std::find(m_gridLocations[grid_location.first][grid_location.second].begin(), m_gridLocations[grid_location.first][grid_location.second].end(), *it);
+			if (grid_it != m_gridLocations[grid_location.first][grid_location.second].end()) m_gridLocations[grid_location.first][grid_location.second].erase(grid_it);
 		}
 	}
 	
@@ -225,6 +226,10 @@ void UIElementManager::populateGridLocations(std::shared_ptr<ManagedUIElement> m
 	//the element in each appropriate vector of the m_gridLocations data structure.
 	if (managedElement->type != UIElementType::ALERT) //Since we can't interact with alerts they're excluded from being placed inside the grid
 	{
+		//Remove any existing grid locations if the grid array for the managed element isn't empty. This situation
+		//arises if we move an existing element after creating it.
+		if (managedElement->grid_locations.size() > 0) managedElement->grid_locations.clear();
+
 		//We don't add alerts to the grid as they can't be interacted with
 		auto size = managedElement->element->getAbsoluteSize();
 		auto location = managedElement->element->getAbsoluteLocation();

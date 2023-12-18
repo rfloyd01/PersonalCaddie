@@ -789,6 +789,7 @@ void ModeScreen::ModeHandler(ModeAction action, void* eventArgs)
 		//will be used to overwrite the current ones.
 		uint8_t* settings = (uint8_t*)eventArgs;
 		if (settings == nullptr) ((IMUSettingsMode*)m_modes[static_cast<int>(m_currentMode)].get())->getCurrentSettings(m_personalCaddie->getIMUSettings(), m_personalCaddie->getAvailableSensors());
+		else m_personalCaddie->updateIMUSettings(settings);
 		break;
 	}
 	case MadgwickUpdateFilter:

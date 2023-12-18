@@ -3,13 +3,6 @@
 #include "Mode.h"
 #include "../Firmware/MEMs_Drivers/sensor_settings.h"
 
-enum IMUSettingsState
-{
-	DISPLAY_SETTINGS = 1, //overwrite the active mode state
-	UPDATE_SETTINGS = 2,
-	GET_SETTINGS = 4
-};
-
 class IMUSettingsMode : public Mode
 {
 public:
@@ -20,8 +13,6 @@ public:
 
 	virtual void update() override;
 	virtual void handlePersonalCaddieConnectionEvent(bool connectionStatus) override;
-
-	virtual uint32_t handleUIElementStateChange(int i) override;
 
 	void getCurrentSettings(std::vector<uint8_t*> settings, std::vector<uint8_t> const& availableSensors, bool use_current = false);
 	uint8_t* getNewSettings() { return m_newSettings; }
@@ -36,6 +27,7 @@ private:
 
 	void uiElementStateChangeHandler(std::shared_ptr<ManagedUIElement> element);
 
+	void getAvailableSensors();
 	void populateDropDownText();
 
 	void updateSetting(sensor_type_t sensor_type, sensor_settings_t setting_type, uint8_t setting);
