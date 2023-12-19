@@ -28,6 +28,8 @@ public:
 	virtual void uninitializeMode() override;
 
 	virtual void update() override;
+	virtual void handleKeyPress(winrt::Windows::System::VirtualKey pressedKey) override;
+
 	virtual void handlePersonalCaddieConnectionEvent(bool connectionStatus) override;
 
 	std::wstring getCurrentlySelectedDevice() { return m_currentlySelectedDeviceAddress; }

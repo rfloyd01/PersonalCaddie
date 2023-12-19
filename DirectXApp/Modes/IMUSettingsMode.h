@@ -12,6 +12,8 @@ public:
 	virtual void uninitializeMode() override;
 
 	virtual void update() override;
+	virtual void handleKeyPress(winrt::Windows::System::VirtualKey pressedKey) override;
+
 	virtual void handlePersonalCaddieConnectionEvent(bool connectionStatus) override;
 
 	void getCurrentSettings(std::vector<uint8_t*> settings, std::vector<uint8_t> const& availableSensors, bool use_current = false);

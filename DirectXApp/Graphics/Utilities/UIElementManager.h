@@ -167,7 +167,6 @@ private:
 	//Data Structures
 	std::map<UIElementType, std::vector<std::shared_ptr<ManagedUIElement> > > m_uiElements;
 	std::vector<std::vector<std::vector<std::shared_ptr<ManagedUIElement> > > > m_gridLocations; //splits the screen into a grid and keeps track of which elements are in which sector, useful for mouse hover detection
-	//std::vector<std::shared_ptr<UIElement> > m_renderElements; //A vector of all UI Elements to be rendered on screen
 	std::vector<std::shared_ptr<ManagedUIElement> > m_actionElements; //Any UI Elements that have been interacted with and require the current mode to carry out some action will be added to this vector
 	std::vector<std::shared_ptr<UIElement>> m_updateText; //An array of elements that currently require text dimension info from the Renderer class
 

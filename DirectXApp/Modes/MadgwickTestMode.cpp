@@ -20,8 +20,7 @@ uint32_t MadgwickTestMode::initializeMode(winrt::Windows::Foundation::Size windo
 
 	m_needsCamera = true; //alerts the mode screen that 3d rendering will take place in this mode
 
-	float sensorHeight = 0.5f, sensorLength = 0.3f, sensorWidth = 0.052f;
-
+	float sensorHeight = 0.5f, sensorLength = 0.3f, sensorWidth = 0.052f; //TODO: Utilize these dimension variables to create the sensor instead of all the numbers seen below
 	std::shared_ptr<Face> sensorTop = std::make_shared<Face>(DirectX::XMFLOAT3(-0.15f, 0.026f, -0.25f), DirectX::XMFLOAT3(0.15f, 0.026f, -0.25f), DirectX::XMFLOAT3(-0.15f, 0.026f, 0.25f));
 	std::shared_ptr<Face> sensorLeft = std::make_shared<Face>(DirectX::XMFLOAT3(-0.15f, 0.0f, -0.25f), DirectX::XMFLOAT3(-0.15f, -0.052f, -0.25f), DirectX::XMFLOAT3(-0.15f, 0.0f, 0.25f));
 	std::shared_ptr<Face> sensorRight = std::make_shared<Face>(DirectX::XMFLOAT3(0.15f, 0.0f, -0.25f), DirectX::XMFLOAT3(0.15f, -0.052f, -0.25f), DirectX::XMFLOAT3(0.15f, 0.0f, 0.25f));
@@ -46,6 +45,10 @@ uint32_t MadgwickTestMode::initializeMode(winrt::Windows::Foundation::Size windo
 	m_materialTypes.push_back(MaterialType::SENSOR_SHORT_SIDE);
 	m_materialTypes.push_back(MaterialType::SENSOR_SHORT_SIDE);
 	m_materialTypes.push_back(MaterialType::SENSOR_BOTTOM);
+
+	//After creating the necessary volume elements and material types, map each volume element 
+	//to its given material through the master renderer class (accessed via the ModeScreenHandler)
+	m_mode_screen_handler(ModeAction::RendererGetMaterial, nullptr);
 
 	m_currentRotation = 0.0f;
 	m_currentDegree = PI / 2.0f;
@@ -330,6 +333,49 @@ void MadgwickTestMode::update()
 	updateDisplayText();
 }
 
+void MadgwickTestMode::handleKeyPress(winrt::Windows::System::VirtualKey pressedKey)
+{
+	//There are few different keys we can process here. Like in the other modes, pressing the escape
+	//key will go back to the previous menu. Pressing the space key will update the heading offset for
+	//the Personal Caddie, pressing enter will toggle a live data stream, pressing the number keys will
+	//alter the data seen on the stream, and pressing the up arrow will switch between different implementations
+	//of the Madgwick filter.
+	switch (pressedKey)
+	{
+	case winrt::Windows::System::VirtualKey::Escape:
+	{
+		ModeType newMode = ModeType::DEVELOPER_TOOLS;
+		m_mode_screen_handler(ModeAction::ChangeMode, (void*)&newMode);
+		break;
+	}
+	case winrt::Windows::System::VirtualKey::Number1:
+	case winrt::Windows::System::VirtualKey::Number2:
+	case winrt::Windows::System::VirtualKey::Number3:
+	case winrt::Windows::System::VirtualKey::Number4:
+	case winrt::Windows::System::VirtualKey::Number5:
+	case winrt::Windows::System::VirtualKey::Number6:
+	{
+		switchDisplayDataType(static_cast<int>(pressedKey) - static_cast<int>(winrt::Windows::System::VirtualKey::Number0));
+		break;
+	}
+	case winrt::Windows::System::VirtualKey::Enter:
+	{
+		toggleDisplayData();
+		break;
+	}
+	case winrt::Windows::System::VirtualKey::Space:
+	{
+		setCurrentHeadingOffset();
+		break;
+	}
+	case winrt::Windows::System::VirtualKey::Up:
+	{
+		toggleFilter();
+		break;
+	}
+	}
+}
+
 void MadgwickTestMode::toggleDisplayData()
 { 
 	m_show_live_data = !m_show_live_data;
@@ -463,10 +509,3 @@ void MadgwickTestMode::convergenceCheck()
 		m_converged = true; //prevents this convergenceCheck() from being called again
 	}
 }
-
-//void MadgwickTestMode::betaUpdate()
-//{
-//	//The Madgwick filter has converged and the beta value of the filter has successfully been reset.
-//	//We remove the BETA_UPDATE flag from the mode state
-//	if (m_state & MadgwickModeState::BETA_UPDATE) m_state ^= MadgwickModeState::BETA_UPDATE;
-//}

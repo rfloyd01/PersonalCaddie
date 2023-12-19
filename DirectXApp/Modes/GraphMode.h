@@ -11,6 +11,8 @@ public:
 	virtual uint32_t initializeMode(winrt::Windows::Foundation::Size windowSize, uint32_t initialState = 0) override;
 	virtual void uninitializeMode() override;
 
+	virtual void handleKeyPress(winrt::Windows::System::VirtualKey pressedKey) override;
+
 	virtual void addData(std::vector<std::vector<std::vector<float> > > const& sensorData, float sensorODR, float timeStamp, int totalSamples) override;
 	virtual void pc_ModeChange(PersonalCaddiePowerMode newMode) override;
 

@@ -211,8 +211,8 @@ void CalibrationMode::uiElementStateChangeHandler(std::shared_ptr<ManagedUIEleme
 
 		m_uiManager.getElement<TextButton>(L"Continue Button")->removeState(UIElementState::Invisible); //make the continue button visible
 
-		//Set the sub-title and body text based on the calibration selected
-		//std::wstring subtitle_text, body_text;
+		//Change the footenote text
+		m_uiManager.getElement<TextOverlay>(L"Footnote Text")->updateText(L"Press Esc. to quit calibration");
 
 		if (elementName == L"Acc Button") m_currentSensor = ACC_SENSOR;
 		else if (elementName == L"Gyr Button") m_currentSensor = GYR_SENSOR;
@@ -299,18 +299,6 @@ void CalibrationMode::advanceToNextStage()
 
 void CalibrationMode::update()
 {
-	//DEPRECATED BLOCKL: The below updates should now be handled by the uiUpdate() method of the parent mode class
-	//First process any changes that clicks or key presses had on the UI elements
-	//if (m_uiManager.getActionElements().size() > 0)
-	//{
-	//	//iterate backwards so we can pop each action from the back when complete
-	//	for (int i = m_uiManager.getActionElements().size() - 1; i >= 0; i--)
-	//	{
-	//		uiElementStateChangeHandler(m_uiManager.getActionElements()[i]);
-	//		m_uiManager.getActionElements().pop_back();
-	//	}
-	//}
-
 	//If we're currently recording data, check to see if the timer has expired. If not,
 	//then simply display the amount of time that the timer has left on screen.
 	if (m_currentlyRecording)
@@ -346,6 +334,30 @@ void CalibrationMode::update()
 	//If the image of the sensor is currently being rendered then translate and rotate
 	//it accordingly.
 	if (m_needsCamera) for (int i = 0; i < m_volumeElements.size(); i++) ((Face*)m_volumeElements[i].get())->translateAndRotateFace({ 0.0f, -0.25f, 1.0f }, m_renderQuaternion);
+}
+
+void CalibrationMode::handleKeyPress(winrt::Windows::System::VirtualKey pressedKey)
+{
+	//The only key that does anything in this mode is the escape key. If it's pressed while a 
+	//test is currently ongoing then it will bring us back to the main splash page for this mode
+	//and put the Personal Caddie into connected mode. If we're already on this main splash page then
+	//we'll be sent back to the settings menu
+	
+	if (pressedKey == winrt::Windows::System::VirtualKey::Escape)
+	{
+		if (m_currentSensor == -1)
+		{
+			ModeType newMode = ModeType::SETTINGS_MENU;
+			m_mode_screen_handler(ModeAction::ChangeMode, (void*)&newMode);
+		}
+		else
+		{
+			PersonalCaddiePowerMode powerMode = PersonalCaddiePowerMode::CONNECTED_MODE;
+			m_mode_screen_handler(ModeAction::PersonalCaddieChangeMode, (void*)&powerMode);//request the Personal Caddie to be placed into active mode to start recording data
+			initializeCalibrationVariables(); //reset all calibration variables back to their initial states
+			loadModeMainPage();
+		}
+	}
 }
 
 void CalibrationMode::addData(std::vector<std::vector<std::vector<float> > > const& sensorData, float sensorODR, float timeStamp, int totalSamples)
@@ -1883,6 +1895,7 @@ void CalibrationMode::loadModeMainPage()
 		L" and magnetometer on the Personal Caddie to get more accurate data. We can also swap data between axes or invert axis data if the Personal Caddie is in a non-standard orientation."
 		L" The test type button can be used to toggle between a data calibration or axis calibration for each sensor. The data type button can be used to carry out a standard calibration, or, to use already calibrated data to confirm the strength of the current calibration numbers.");
 	m_uiManager.getElement<TextOverlay>(L"Subtitle Text")->updateState(UIElementState::Invisible); //make the sub-title invisible
+	m_uiManager.getElement<TextOverlay>(L"Footnote Text")->updateText(L"Press Esc. to return to settings menu."); //reset the footnote message
 	
 	//Make all graphs invisible and remove all date from them
 	m_uiManager.getElement<Graph>(L"Acc Graph")->updateState(UIElementState::Invisible); //make the continue button invisible

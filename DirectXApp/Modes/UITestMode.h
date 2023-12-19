@@ -11,6 +11,7 @@ public:
 	virtual void uninitializeMode() override;
 
 	virtual void update() override;
+	virtual void handleKeyPress(winrt::Windows::System::VirtualKey pressedKey) override;
 
 private:
 	void initializeTextOverlay(winrt::Windows::Foundation::Size windowSize);

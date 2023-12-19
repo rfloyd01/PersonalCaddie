@@ -735,6 +735,18 @@ void IMUSettingsMode::update()
 	}
 }
 
+void IMUSettingsMode::handleKeyPress(winrt::Windows::System::VirtualKey pressedKey)
+{
+	//The only key we can press in this mode is the escape key. All this key does is exit the 
+	//mode and go back to the settings menu. Leaving the mode will automatically shut off the
+	//device watcher if it's actively running.
+	if (pressedKey == winrt::Windows::System::VirtualKey::Escape)
+	{
+		ModeType newMode = ModeType::SETTINGS_MENU;
+		m_mode_screen_handler(ModeAction::ChangeMode, (void*)&newMode);
+	}
+}
+
 std::wstring IMUSettingsMode::getSettingString(int setting)
 {
 	switch (setting)

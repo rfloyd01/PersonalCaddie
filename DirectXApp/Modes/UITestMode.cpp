@@ -78,3 +78,14 @@ void UITestMode::update()
 		}
 	}
 }
+
+void UITestMode::handleKeyPress(winrt::Windows::System::VirtualKey pressedKey)
+{
+	//The only key we can press in this mode is the escape key. All this key does is exit the 
+	//mode and go back to the development menu.
+	if (pressedKey == winrt::Windows::System::VirtualKey::Escape)
+	{
+		ModeType newMode = ModeType::DEVELOPER_TOOLS;
+		m_mode_screen_handler(ModeAction::ChangeMode, (void*)&newMode);
+	}
+}

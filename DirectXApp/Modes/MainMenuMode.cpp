@@ -26,6 +26,44 @@ void MainMenuMode::uninitializeMode()
 	m_uiManager.removeAllElements();
 }
 
+void MainMenuMode::handleKeyPress(winrt::Windows::System::VirtualKey pressedKey)
+{
+	//The only thing we can do in main menu mode is navigate to a different mode. Simply 
+	//figure out what the new mode is from the keypress and navigate there.
+
+	ModeType newMode = ModeType::MAIN_MENU;
+	switch (pressedKey)
+	{
+	case winrt::Windows::System::VirtualKey::Escape:
+	{
+		//TODO: Pressing the escape key from the main mode should quite out of 
+		//the program. I should implement this at some point in the future
+		break;
+	}
+	case winrt::Windows::System::VirtualKey::Number1:
+	case winrt::Windows::System::VirtualKey::Number2:
+	case winrt::Windows::System::VirtualKey::Number3:
+	{
+		//These modes haven't been implemented yet so for now just display
+		//an alert letting the user know.
+		createAlert(L"This mode hasn't been implemented yet.", UIColor::Red, m_uiManager.getScreenSize());
+		break;
+	}
+	case winrt::Windows::System::VirtualKey::Number4:
+	{
+		newMode = ModeType::SETTINGS_MENU;
+		break;
+	}
+	case winrt::Windows::System::VirtualKey::Number5:
+	{
+		newMode = ModeType::DEVELOPER_TOOLS;
+		break;
+	}
+	}
+
+	if (newMode != ModeType::MAIN_MENU) m_mode_screen_handler(ModeAction::ChangeMode, (void*)&newMode);
+}
+
 void MainMenuMode::initializeTextOverlay(winrt::Windows::Foundation::Size windowSize)
 {
 	//Title information

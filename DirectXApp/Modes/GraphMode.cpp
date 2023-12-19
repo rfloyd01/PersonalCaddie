@@ -44,6 +44,10 @@ void GraphMode::uninitializeMode()
 	//The only thing to do when leaving the main menu mode is to clear
 	//out all text in the text map and color map
 	m_uiManager.removeAllElements();
+
+	//Put the sensor back into connected mode before exiting
+	auto mode = PersonalCaddiePowerMode::CONNECTED_MODE;
+	m_mode_screen_handler(ModeAction::PersonalCaddieChangeMode, (void*)&mode);//request the Personal Caddie to be placed into active mode to start recording data
 }
 
 void GraphMode::initializeTextOverlay(winrt::Windows::Foundation::Size windowSize)
@@ -59,6 +63,17 @@ void GraphMode::initializeTextOverlay(winrt::Windows::Foundation::Size windowSiz
 	TextOverlay footnote(windowSize, { UIConstants::FootNoteTextLocationX, UIConstants::FootNoteTextLocationY }, { UIConstants::FootNoteTextSizeX, UIConstants::FootNoteTextSizeY },
 		footnote_message, UIConstants::FootNoteTextPointSize, { UIColor::White }, { 0,  (unsigned int)footnote_message.length() }, UITextJustification::LowerRight);
 	m_uiManager.addElement<TextOverlay>(footnote, L"Footnote Text");
+}
+
+void GraphMode::handleKeyPress(winrt::Windows::System::VirtualKey pressedKey)
+{
+	//The only key we can press in this mode is the escape key. All this key does is exit the 
+	//mode and go back to the development menu.
+	if (pressedKey == winrt::Windows::System::VirtualKey::Escape)
+	{
+		ModeType newMode = ModeType::DEVELOPER_TOOLS;
+		m_mode_screen_handler(ModeAction::ChangeMode, (void*)&newMode);
+	}
 }
 
 void GraphMode::uiElementStateChangeHandler(std::shared_ptr<ManagedUIElement> element)
