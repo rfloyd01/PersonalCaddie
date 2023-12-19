@@ -13,7 +13,7 @@
 
 #include "Graphics/Rendering/MasterRenderer.h"
 
-//#include "Math/SensorFusion/FusionMath.h" //was debugging with this, can remove in future
+#include <functional>
 
 ModeScreen::ModeScreen() :
 	m_currentMode(ModeType::MAIN_MENU),
@@ -33,6 +33,10 @@ ModeScreen::ModeScreen() :
 	m_modes[static_cast<int>(ModeType::IMU_SETTINGS)] = std::make_shared<IMUSettingsMode>();
 	m_modes[static_cast<int>(ModeType::MADGWICK)] = std::make_shared<MadgwickTestMode>();
 	m_modes[static_cast<int>(ModeType::CALIBRATION)] = std::make_shared<CalibrationMode>();
+
+	//After creating the modes, bind the mode handler method to the mode class so that all
+	//different mode types can use it
+	Mode::setHandlerMethod(std::bind(&ModeScreen::ModeHandler, this, std::placeholders::_1, std::placeholders::_2));
 
 	//Set default times for various timers (in milliseconds)
 	alert_timer_duration = 2500;
@@ -61,290 +65,50 @@ void ModeScreen::setPersonalCaddie(_In_ std::shared_ptr<PersonalCaddie> const& p
 
 void ModeScreen::update()
 {
-	//TODO: the first thing to update is any new data from the Personal Caddie
-
 	//check for any input form the mouse/keyboard that needs processing by the current mode
 	auto inputUpdate = m_inputProcessor->update();
-	if (inputUpdate->currentPressedKey != KeyboardKeys::DeadKey)
-	{
-		processKeyboardInput(inputUpdate->currentPressedKey);
-		m_inputProcessor->setKeyboardState(KeyboardState::KeyProcessed); //let the input processor now to deactivate this key until it's released
-	}
+	
+	//Handle Keyboard Input
+	processKeyboardInput(inputUpdate);
 
+	//Handle Mouse Input
 	processMouseInput(inputUpdate);
 
 	//after processing input, see if there are any event handlers that were triggered
 	processEvents();
 
-	//finally, check to see if there are any timers that are going on or expired
-	processTimers();
-
-	//Call any necessary functions based on the current mode state
-	//TODO: Make this a separate method when refactoring in the future
-	//TODO: Make the pickMaterial method return a new mode state
-	if (m_modeState & ModeState::NeedMaterial)
-	{
-		auto volumeElements = m_modes[static_cast<int>(m_currentMode)]->getVolumeElements();
-		auto materialTypes = m_modes[static_cast<int>(m_currentMode)]->getMaterialTypes();
-		for (int i = 0; i < volumeElements.size(); i++)
-		{
-			m_renderer->setMaterialAndMesh(volumeElements[i], materialTypes[i]);
-		}
-		m_modeState ^= ModeState::NeedMaterial; //TODO: Not a safe call as materials may not actually be loaded when this get's called the first time
-	}
-
-	//After all input, events and timers have been handled we check to see if there's anything
-	//the current mode needs from the mode state class (i.e. putting the Personal Caddie into sensor active
-	//mode). When that check is complete we then defer to the current mode
-	//to update its own state if necessary. This only occurs when in the Active ModeState
-	if (m_modeState & ModeState::Enter_Active)
-	{
-		enterActiveState();
-		m_modeState ^= ModeState::Enter_Active;
-	}
-	else if (m_modeState & ModeState::Leave_Active)
-	{
-		leaveActiveState();
-		m_modeState ^= ModeState::Leave_Active;
-	}
-	else if (m_modeState & ModeState::Active)
-	{
-		stateUpdate();
-	}
-
-	if (m_modeState & ModeState::Active) m_modes[static_cast<int>(m_currentMode)]->update();
+	//Have the current state make any necessary updates based on the 
+	//input and events that have just been processed
+	getCurrentMode()->uiUpdate(); //Updates based on interaction with UI Elements on screen
+	getCurrentMode()->update();  //Updates based on internal state of the mode
 }
 
-void ModeScreen::processKeyboardInput(winrt::Windows::System::VirtualKey pressedKey)
+void ModeScreen::processKeyboardInput(InputState* inputState)
 {
-	//Depending on what the current mode is and the current ModeState the same key may be 
-	//processed differently. We need to look at a combination of the current mode, ModeState
-	//and pressedKey to figure out what action to take
+	//Any key presses that are common between modes (such as the escape key being used to exit the  
+	//current mode) are processed right here in the mode state class. If the key press isn't processed
+	//here then we defer to the current mode to do it.
 
-	//TODO: I can already tell that this method will be a rat's nest of if statements. Should
-	//I try and split this into multiple methods?
-
-	switch (pressedKey)
-	{
-	case winrt::Windows::System::VirtualKey::Escape:
-		if (m_modeState & ModeState::CanTransfer)
-		{
-			//If we're on the Main Menu screen then pressing escape will quite the application.
-			//Otherwise, if we're in a different mode we just go back to the Main Menu
-			if (m_currentMode == ModeType::MAIN_MENU)
-			{
-				OutputDebugString(L"Quitting the program.\n");
-				//TODO: disconnect from the Personal Caddie if connected and release
-				//any resources
-			}
-			else if (m_currentMode == ModeType::SETTINGS_MENU || m_currentMode == ModeType::DEVELOPER_TOOLS)
-			{
-				changeCurrentMode(ModeType::MAIN_MENU);
-			}
-			else if (m_currentMode == ModeType::DEVICE_DISCOVERY || m_currentMode == ModeType::IMU_SETTINGS || m_currentMode == ModeType::CALIBRATION)
-			{
-				changeCurrentMode(ModeType::SETTINGS_MENU);
-			}
-			else if (m_currentMode == ModeType::UI_TEST_MODE || m_currentMode == ModeType::GRAPH_MODE || m_currentMode == ModeType::MADGWICK)
-			{
-				changeCurrentMode(ModeType::DEVELOPER_TOOLS);
-			}
-		}
-		else if (m_modeState & ModeState::Active)
-		{
-			if (m_currentMode == ModeType::DEVICE_DISCOVERY)
-			{
-				//For now pressing esc. will just change the mode back to CanTransfer
-				m_modeState = ModeState::CanTransfer;
-			}
-		}
-		break;
-	case winrt::Windows::System::VirtualKey::Number1:
-		if (m_modeState & ModeState::CanTransfer)
-		{
-			if (m_currentMode == ModeType::MAIN_MENU)
-			{
-				//This should take us to the free swing menu but this hasn't been implemented yet
-				//so display an alert for now
-				createAlert(L"This mode hasn't been implemented yet.", UIColor::Red);
-			}
-			else if (m_currentMode == ModeType::SETTINGS_MENU)
-			{
-				changeCurrentMode(ModeType::DEVICE_DISCOVERY);
-			}
-			else if (m_currentMode == ModeType::DEVELOPER_TOOLS)
-			{
-				changeCurrentMode(ModeType::UI_TEST_MODE);
-			}
-			else if (m_currentMode == ModeType::MADGWICK)
-			{
-				//Update the data type to display on screen
-				((MadgwickTestMode*)m_modes[static_cast<int>(m_currentMode)].get())->switchDisplayDataType(1);
-			}
-		}
-
-		break;
-	case winrt::Windows::System::VirtualKey::Number2:
-		if (m_modeState & ModeState::CanTransfer)
-		{
-			if (m_currentMode == ModeType::DEVELOPER_TOOLS)
-			{
-				if (!m_personalCaddie->ble_device_connected) createAlert(L"Must be connected to a Personal Caddie to access this mode", UIColor::Red);
-				else changeCurrentMode(ModeType::GRAPH_MODE);
-			}
-			else if (m_currentMode == ModeType::SETTINGS_MENU)
-			{
-				//TODO: After completing design work on IMU settings page,
-				//make it so you must be connected before going there
-				//if (!m_personalCaddie->ble_device_connected) createAlert(L"Must be connected to a Personal Caddie to access this mode", UIColor::Red);
-				//else changeCurrentMode(ModeType::GRAPH_MODE);
-				changeCurrentMode(ModeType::IMU_SETTINGS);
-			}
-			else if (m_currentMode == ModeType::MADGWICK)
-			{
-				//Update the data type to display on screen
-				((MadgwickTestMode*)m_modes[static_cast<int>(m_currentMode)].get())->switchDisplayDataType(2);
-			}
-		}
-
-		break;
-	case winrt::Windows::System::VirtualKey::Number3:
-		if (m_modeState & ModeState::CanTransfer)
-		{
-			if (m_currentMode == ModeType::DEVELOPER_TOOLS)
-			{
-				//If we're on the Main Menu screen then pressing the 5 key will take us to the
-				//sensor settings page
-				changeCurrentMode(ModeType::MADGWICK);
-			}
-			else if (m_currentMode == ModeType::SETTINGS_MENU)
-			{
-				//If we're on the Main Menu screen then pressing the 5 key will take us to the
-				//sensor settings page
-				changeCurrentMode(ModeType::CALIBRATION);
-			}
-			else if (m_currentMode == ModeType::MADGWICK)
-			{
-				//Update the data type to display on screen
-				((MadgwickTestMode*)m_modes[static_cast<int>(m_currentMode)].get())->switchDisplayDataType(3);
-			}
-		}
-		break;
-	case winrt::Windows::System::VirtualKey::Number4:
-		if (m_modeState & ModeState::CanTransfer)
-		{
-			if (m_currentMode == ModeType::MAIN_MENU)
-			{
-				//If we're on the Main Menu screen then pressing the 5 key will take us to the
-				//sensor settings page
-				changeCurrentMode(ModeType::SETTINGS_MENU);
-			}
-			else if (m_currentMode == ModeType::MADGWICK)
-			{
-				//Update the data type to display on screen
-				((MadgwickTestMode*)m_modes[static_cast<int>(m_currentMode)].get())->switchDisplayDataType(4);
-			}
-		}
-		break;
-	case winrt::Windows::System::VirtualKey::Number5:
-		if (m_modeState & ModeState::CanTransfer)
-		{
-			if (m_currentMode == ModeType::MAIN_MENU)
-			{
-				//If we're on the Main Menu screen then pressing the 5 key will take us to the
-				//sensor settings page
-				changeCurrentMode(ModeType::DEVELOPER_TOOLS);
-			}
-			else if (m_currentMode == ModeType::MADGWICK)
-			{
-				//Update the data type to display on screen
-				((MadgwickTestMode*)m_modes[static_cast<int>(m_currentMode)].get())->switchDisplayDataType(5);
-			}
-		}
-		break;
-	case winrt::Windows::System::VirtualKey::Number6:
-		if (m_currentMode == ModeType::MADGWICK)
-		{
-			//Update the data type to display on screen
-			((MadgwickTestMode*)m_modes[static_cast<int>(m_currentMode)].get())->switchDisplayDataType(6);
-		}
-		break;
-	case winrt::Windows::System::VirtualKey::Enter:
-		if (m_currentMode == ModeType::MADGWICK)
-		{
-			//Pressing the enter key toggles whether or not we can see a live feed of data
-			//coming from the sensor
-			((MadgwickTestMode*)m_modes[static_cast<int>(m_currentMode)].get())->toggleDisplayData();
-		}
-		break;
-	case winrt::Windows::System::VirtualKey::Space:
-	{
-		if (m_currentMode == ModeType::MADGWICK)
-		{
-			//Pressing the space key will reset the heading offset rotation quaternion for the Personal Caddie
-			glm::quat heading_offset = ((MadgwickTestMode*)m_modes[static_cast<int>(m_currentMode)].get())->getCurrentHeadingOffset();
-			((MadgwickTestMode*)m_modes[static_cast<int>(m_currentMode)].get())->setHeadingOffset(heading_offset); //set the heading offset quaternion in Madgwick test mode
-			m_personalCaddie->setHeadingOffset(heading_offset);
-		}
-		break;
-	}
-	case winrt::Windows::System::VirtualKey::Up:
-	{
-		if (m_currentMode == ModeType::MADGWICK)
-		{
-			//Pressing the up key will swap the current sensor fusion filter
-			((MadgwickTestMode*)m_modes[static_cast<int>(m_currentMode)].get())->toggleFilter(); //set the heading offset quaternion in Madgwick test mode
-		}
-		break;
-	}
-	}
+	if (inputState->currentPressedKey == KeyboardKeys::DeadKey) return; //no button was pressed so there's nothing to process
+	getCurrentMode()->handleKeyPress(inputState->currentPressedKey);
+	m_inputProcessor->setKeyboardState(KeyboardState::KeyProcessed); //let the input processor know to deactivate this key until it's released
 }
 
 void ModeScreen::processMouseInput(InputState* inputState)
 {
-	//need to poll all of the 2D elements in the current mode to see if the mouse is
-	//over any of them
-	auto uiElements = m_modes[static_cast<int>(m_currentMode)]->getUIElements();
-	for (int i = 0; i < uiElements.size(); i++)
+	//If the mouse hasn't moved, been clicked, or the scroll wheel
+	//hasn't rotated then there's nothing to process here.
+	if (!inputState->mouseClick && inputState->scrollWheelDirection == 0 && ((inputState->mousePosition.x == m_previousMousePosition.x) && (inputState->mousePosition.y == m_previousMousePosition.y)))
 	{
-		uint32_t uiElementState = uiElements[i]->update(inputState);
-
-		if (uiElementState & UIElementState::NeedTextPixels)
-		{
-			getTextRenderPixels(uiElements[i]->setTextDimension()); //get the necessary pixels
-			uiElements[i]->repositionText(); //see if any text needs to be repositioned after getting new dimensions
-			uiElements[i]->resize(m_renderer->getCurrentScreenSize()); //and then resize the ui element
-		}
-		
-		if ((uiElementState & UIElementState::Clicked) && inputState->mouseClick)
-		{
-			//The current UI Element has been clicked, see if clicking the button has
-			//any effect outside of the UI Element (like clicking the device watcher
-			//button in device discovery mode).
-			uint32_t new_state = m_modes[static_cast<int>(m_currentMode)]->handleUIElementStateChange(i);
-
-			//start a short timer that will change the color of the button from PRESSED to NOT_PRESSED
-			button_pressed = true;
-			button_pressed_timer = std::chrono::steady_clock::now();
-
-			//TODO: This is too specific for the calibration mode, I really need to revamp mode states
-			if (new_state & CalibrationModeState::ODR_ERROR) createAlert(L"There's an ODR discrepancy, go to settings to fix it.\n", UIColor::Red);
-
-			//See if the button press forced us into or out of active mode
-			if (m_modeState & ModeState::Active)
-			{
-				if (!(new_state & ModeState::Active)) m_modeState |= ModeState::Leave_Active; //leaveActiveState();
-				//else m_modeState |= ModeState::State_Update; //stateUpdate();
-			}
-			else if (!(m_modeState & ModeState::Active))
-			{
-				if (new_state & ModeState::Active) m_modeState |= ModeState::Enter_Active; //enterActiveState();
-				//else m_modeState |= ModeState::State_Update; //stateUpdate();
-			}
-
-			break;
-		}
+		return;
 	}
+
+	//If the mouse HAS moved, clicked or scrolled then the UIElementManager of the currently
+	//active mode will check all of the UIElements that are in the same section of the screen 
+	//(the screen is partitioned into a grid) as the mouse currently is to see if this mouse 
+	//input changes any of their states.
+	m_modes[static_cast<int>(m_currentMode)]->getUIElementManager().updateGridSquareElements(inputState);
+	m_previousMousePosition = inputState->mousePosition; //update the mouse position variable
 
 	//reset input states if necessary
 	if (inputState->mouseClick) m_inputProcessor->setMouseState(MouseState::ButtonProcessed); //let the input processor know that the click has been handled
@@ -353,63 +117,13 @@ void ModeScreen::processMouseInput(InputState* inputState)
 
 void ModeScreen::processEvents()
 {
-	//There are various event handlers throught the application. Any handler that needs to trickle
-	//information to the current mode will do so in this method.
-	switch (personal_caddy_event)
-	{
-	case PersonalCaddieEventType::PC_ALERT:
-	case PersonalCaddieEventType::BLE_ALERT:
-	case PersonalCaddieEventType::IMU_ALERT:
-		//An alert was passed through, this means the text vector of the current mode has been 
-		//altered. We need to pass this updated text to the master renderer
-
-		alert_timer = std::chrono::steady_clock::now(); //set/reset the alert timer
-		alert_active = true;
-		personal_caddy_event = PersonalCaddieEventType::NONE;
-		break;
-	}
-
-	//Other event types can be added down here once they're created
-}
-
-void ModeScreen::processTimers()
-{
-	if (alert_active)
-	{
-		//we have an active alert, see if the alert timer has expired yet and if so delete
-		//all active alerts
-		auto time_elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - alert_timer).count();
-		if (time_elapsed >= alert_timer_duration)
-		{
-			//the timer has gone off so turn the timer off so remove all active alerts
-			alert_active = false;
-			m_modes[static_cast<int>(m_currentMode)]->removeAlerts();
-		}
-	}
-
-	if (button_pressed)
-	{
-		//a button has been pressed recently, see if the button press timer has expired yet and if so change the color
-		//of all buttons in the current mode to be PRESSED
-		auto time_elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - button_pressed_timer).count();
-		if (time_elapsed >= button_pressed_duration)
-		{
-			//the timer has gone off so turn the timer off
-			button_pressed = false;
-
-			//then change the color of all pressed buttons
-			auto uiElements = m_modes[static_cast<int>(m_currentMode)]->getUIElements();
-			for (int i = 0; i < uiElements.size(); i++)
-			{
-				if (uiElements[i]->getState() & UIElementState::Clicked)
-				{
-					//The ui button class overrides the ui element setState() method so case to a UI button
-					//before setting the state to idle
-					uiElements[i]->removeState(UIElementState::Clicked);
-				}
-			}
-		}
-	}
+	//There are times when handler methods asynchronously receive information that we'd like to display
+	//in screen. With DirectX, we're only allowed to access the main rendering device from the main 
+	//thread, so attempting to render from an asynchronous handler method can cause some very confusing
+	//crashes. What we do instead is have these handler methods set flags in the ModeScreen class, which 
+	//then get processed in this method. This method is only called from the main rendering loop so this 
+	//is a safe way to handle asynchronous rendering of things such as alerts.
+	m_modes[static_cast<int>(m_currentMode)]->checkAlerts();
 }
 
 void ModeScreen::changeCurrentMode(ModeType mt)
@@ -420,16 +134,9 @@ void ModeScreen::changeCurrentMode(ModeType mt)
 
 	//First, get any active alerts before deleting the text and color map of the 
 	//current mode
-	auto currentAlerts = m_modes[static_cast<int>(m_currentMode)]->removeAlerts();// .getText();
-
-	//Check to see if the current mode is in the active state, if so then take it out
-	//of that state. Then uninitialize the mode.
-	if (m_modeState & ModeState::Active) leaveActiveState();
+	auto currentAlerts = m_modes[static_cast<int>(m_currentMode)]->removeAlerts();
 
 	//If we're in sensor active mode, we need to first enter sensor idle mode, and then connected mode
-	if (m_modeState & ModeState::PersonalCaddieSensorIdleMode) m_personalCaddie->changePowerMode(PersonalCaddiePowerMode::CONNECTED_MODE);
-	else if (m_modeState & ModeState::PersonalCaddieSensorActiveMode) m_personalCaddie->changePowerMode(PersonalCaddiePowerMode::SENSOR_IDLE_MODE);
-
 	m_modeState = 0;
 	m_modes[static_cast<int>(m_currentMode)]->uninitializeMode();
 
@@ -437,31 +144,12 @@ void ModeScreen::changeCurrentMode(ModeType mt)
 	m_currentMode = mt;
 	uint32_t startingModeState = 0;
 
-	//Some modes can be initialized with starting states, check to see if the new
-	//mode applies
-	switch (mt)
-	{
-	case ModeType::DEVICE_DISCOVERY:
-	{
-		//The device discovery mode state depends on whether or not we're currently
-		//connected to a BLE device
-		if (m_personalCaddie->ble_device_connected) startingModeState |= DeviceDiscoveryState::CONNECTED;
-	}
-	case ModeType::IMU_SETTINGS:
-	{
-		//When going to the IMU settings mode, we need to pass in a reference
-		//to the current sensor settings. This will allow the mode to populate
-		//all of the drop down menus.
-	}
-	}
-
+	//Initialize the new mode
 	m_modeState = m_modes[static_cast<int>(m_currentMode)]->initializeMode(m_renderer->getCurrentScreenSize(), startingModeState);
-	if (m_modeState & ModeState::PersonalCaddieSensorIdleMode) m_personalCaddie->changePowerMode(PersonalCaddiePowerMode::SENSOR_IDLE_MODE);
-	else if (m_modeState & ModeState::PersonalCaddieSensorActiveMode) m_personalCaddie->changePowerMode(PersonalCaddiePowerMode::SENSOR_ACTIVE_MODE);
 	
 	//After initializing, add any alerts that were copied over to the text and
 	//color maps and then create text and color resources in the renderer
-	if (currentAlerts.getText()->message != L"") m_modes[static_cast<int>(m_currentMode)]->createAlert(currentAlerts);
+	m_modes[static_cast<int>(m_currentMode)]->overwriteAlerts(currentAlerts);
 }
 
 void ModeScreen::getTextRenderPixels(std::vector<UIText*> const& text)
@@ -470,16 +158,15 @@ void ModeScreen::getTextRenderPixels(std::vector<UIText*> const& text)
 	for (int i = 0; i < text.size(); i++) m_renderer->setTextLayoutPixels(text[i]);
 }
 
-std::vector<std::shared_ptr<UIElement> > const& ModeScreen::getCurrentModeUIElements()
+std::map<UIElementType, std::vector<std::shared_ptr<ManagedUIElement> > > const& ModeScreen::getCurrentModeUIElementMap()
 {
-	//returns a reference to all UI elements to be rendered on screen
-	return m_modes[static_cast<int>(m_currentMode)]->getUIElements();
+	return getCurrentMode()->getUIElementManager().getElementsMap();
 }
 
 void ModeScreen::resizeCurrentModeUIElements(winrt::Windows::Foundation::Size windowSize)
 {
-	auto uiElements = getCurrentModeUIElements();
-	for (int i = 0; i < uiElements.size(); i++) uiElements[i]->resize(windowSize);
+	///Update the m_screenSize variable of the current modes UIElementManager
+	m_modes[static_cast<int>(m_currentMode)]->getUIElementManager().updateScreenSize(windowSize);
 }
 
 std::vector<std::shared_ptr<VolumeElement> > const& ModeScreen::getCurrentModeVolumeElements()
@@ -497,10 +184,6 @@ const UIColor ModeScreen::getBackgroundColor()
 void ModeScreen::createAlert(std::wstring message, UIColor color)
 {
 	m_modes[static_cast<int>(m_currentMode)]->createAlert(message, color, m_renderer->getCurrentScreenSize());
-
-	//after creating the alert, set the alert timer
-	alert_active = true;
-	alert_timer = std::chrono::steady_clock::now();
 }
 
 void ModeScreen::PersonalCaddieHandler(PersonalCaddieEventType pcEvent, void* eventArgs)
@@ -535,41 +218,23 @@ void ModeScreen::PersonalCaddieHandler(PersonalCaddieEventType pcEvent, void* ev
 	}
 	case PersonalCaddieEventType::PC_ALERT:
 	{
+		//TODO: Instead of sending a message of text, send an instance of the PeronsalCaddiePowerMode
+		//enum which contains the new mode. Craft an appropriate message depending on the mode obtained.
 		std::wstring alertText = *((std::wstring*)eventArgs); //cast the eventArgs into a wide string
 		createAlert(alertText, UIColor::Yellow);
 
 		if (alertText == L"The Personal Caddie has been placed into Sensor Idle Mode")
 		{
-			if (!(m_modeState & (ModeState::PersonalCaddieSensorIdleMode | ModeState::PersonalCaddieSensorActiveMode)))
-			{
-				//If we're being put into sensor idle mode, and neither the idle mode or active mode flags are
-				//active, it means we're trying to get from active mode to connected mode
-				m_personalCaddie->changePowerMode(PersonalCaddiePowerMode::CONNECTED_MODE);
-			}
-			else if (m_currentMode == ModeType::CALIBRATION)
-			{
-				((CalibrationMode*)m_modes[static_cast<int>(m_currentMode)].get())->stopDataCapture();
-				m_modeState ^= ModeState::Active; //re-enter the active state to resume updates
-			}
-			else if (m_currentMode == ModeType::MADGWICK)
-			{
-				//In Madwick testing mode we go straight into sensor idle mode upon entering
-				m_modeState ^= (ModeState::PersonalCaddieSensorIdleMode | ModeState::PersonalCaddieSensorActiveMode);
-				((MadgwickTestMode*)m_modes[static_cast<int>(m_currentMode)].get())->setHeadingOffset(m_personalCaddie->getHeadingOffset()); //set the heading offset quaternion
-				m_personalCaddie->setMadgwickBeta(2.5f); //increase Madwick filter beta value for faster convergence
-				m_personalCaddie->enableDataNotifications();
-			}
+			m_modes[static_cast<int>(m_currentMode)]->pc_ModeChange(PersonalCaddiePowerMode::SENSOR_IDLE_MODE);
 		}
 		else if (alertText == L"The Personal Caddie has been placed into Sensor Active Mode")
 		{
-			if (m_currentMode == ModeType::CALIBRATION)
-			{
-				((CalibrationMode*)m_modes[static_cast<int>(m_currentMode)].get())->startDataCapture();
-				m_modeState ^= ModeState::Active; //re-enter the active state to resume updates
-			}
+			m_modes[static_cast<int>(m_currentMode)]->pc_ModeChange(PersonalCaddiePowerMode::SENSOR_ACTIVE_MODE);
 		}
 		else if (alertText == L"The Personal Caddie has been placed into Connected Mode")
 		{
+			m_modes[static_cast<int>(m_currentMode)]->pc_ModeChange(PersonalCaddiePowerMode::CONNECTED_MODE);
+
 			//When entering connected mode, we make sure that data notifications are turned off
 			m_personalCaddie->disableDataNotifications();
 		}
@@ -584,7 +249,6 @@ void ModeScreen::PersonalCaddieHandler(PersonalCaddieEventType pcEvent, void* ev
 		{
 			if (m_currentMode == ModeType::CALIBRATION)
 			{
-				((CalibrationMode*)m_modes[static_cast<int>(m_currentMode)].get())->updateComplete();
 				m_modeState ^= ModeState::Active; //completing the update causes us to leave active mode
 			}
 		}
@@ -600,13 +264,7 @@ void ModeScreen::PersonalCaddieHandler(PersonalCaddieEventType pcEvent, void* ev
 			devices += L", Address: " + std::to_wstring(it->device_address.first) + L"\n";
 		}
 
-		//Update the text in the device discovery text box
-		if (m_currentMode == ModeType::DEVICE_DISCOVERY)
-		{
-			auto textBox = (FullScrollingTextBox*)(getCurrentModeUIElements()[0].get());
-			textBox->clearText(); //clear the text each time to prevent adding duplicates
-			textBox->addText(devices, m_renderer->getCurrentScreenSize(), true); //this new text will get resized in the main update loop
-		}
+		getCurrentMode()->getString(devices); //pass the list of devices to the current mode
 		break;
 	}
 	case PersonalCaddieEventType::NOTIFICATIONS_TOGGLE:
@@ -621,14 +279,18 @@ void ModeScreen::PersonalCaddieHandler(PersonalCaddieEventType pcEvent, void* ev
 		//sensor active mode in this event.
 
 		//Enabling notifications have the ability to a
-		if (*((std::wstring*)eventArgs) == L"On")
-		{
-			if (m_modeState & ModeState::PersonalCaddieSensorIdleMode) m_personalCaddie->changePowerMode(PersonalCaddiePowerMode::SENSOR_IDLE_MODE);
-			else if (m_modeState & ModeState::PersonalCaddieSensorActiveMode) m_personalCaddie->changePowerMode(PersonalCaddiePowerMode::SENSOR_ACTIVE_MODE);
-		}
-		
 		std::wstring alertText = L"Data Notifications have been turned " + *((std::wstring*)eventArgs) + L"\n";
 		createAlert(alertText, UIColor::Blue);
+
+		if (*((std::wstring*)eventArgs) == L"On")
+		{
+			//TODO: Due to a timing bug in the firmware we need to wait for notifications to be turned on before
+			//entering sensor idle mode, and we must enter sensor idle mode before sensor active mode. This means 
+			//that any time notifications are enabled we should default to changing the power mode to sensor idle
+			m_personalCaddie->changePowerMode(PersonalCaddiePowerMode::SENSOR_IDLE_MODE);
+		}
+		else m_modes[static_cast<int>(m_currentMode)]->ble_NotificationsChange(0);
+		
 		break;
 	}
 	case PersonalCaddieEventType::DATA_READY:
@@ -661,190 +323,201 @@ void ModeScreen::PersonalCaddieHandler(PersonalCaddieEventType pcEvent, void* ev
 
 }
 
-void ModeScreen::enterActiveState()
+void ModeScreen::ModeHandler(ModeAction action, void* eventArgs)
 {
-	m_modeState ^= (ModeState::Active | ModeState::CanTransfer); //toggle the active and can transfer states
-
-	switch (m_currentMode)
+	//Since the individual mode classes don't have direct access to the Personal Caddie class, BLE class, etc.,
+	//this handler method is used to forward on actions that the current mode needs to the Personal 
+	//Caddie and other classes. As an example, when Discovery mode is active,
+	//we need to turn on the BLE class's device watcher to start scanning for Personal Caddie devices.
+	//When the scan button is clicked in the mode it forwards the request to this handler method, which 
+	//then asks the BLE class to turn on the device watcher. The decision to deny direct access between
+	//Personal Caddie and mode classes was deliberate. The mode screen class can almost be thought of as
+	//like ther service layer in a three layerd software architecture.
+	switch (action)
 	{
-	case ModeType::DEVICE_DISCOVERY:
+	case ChangeMode:
 	{
-		//Going into active mode while in device discovery means that we need to start the BLEAdvertisement watcher of 
-		//the Personal Caddie. The device watcher will only alert us when a new device is found. If it has been turned
-		//on previously and already found all devices in the area, then we won't actually get any updates. Because of this
-		//we grab the current list and send it to the device discovery page before turning on the watcher.
-		auto foundDevices = m_personalCaddie->getScannedDevices();
-		std::wstring devices;
-		for (auto it = foundDevices->begin(); it != foundDevices->end(); it++)
-		{
-			devices += L"Name: " + it->device_name;
-			devices += L", Address: " + std::to_wstring(it->device_address.first) + L"\n";
-		}
-		auto textBox = (FullScrollingTextBox*)(getCurrentModeUIElements()[0].get());
-		textBox->clearText(); //clear the text each time to prevent adding duplicates
-		textBox->addText(devices, m_renderer->getCurrentScreenSize(), true); //this new text will get resized in the main update loop
-
-		m_personalCaddie->startBLEAdvertisementWatcher();
+		//Pressing certain keys on the keyboard will cause us to change to a new mode. Since the 
+		//individual modes aren't aware of the other modes existence, the task of switching between
+		//them can only be carried out by the Mode Screen class. An instance of the ModeType enum is 
+		//wrapped inside of the eventArgs, which alerts this method where we want to navigate to.
+		ModeType newMode = *((ModeType*)eventArgs);
+		changeCurrentMode(newMode);
 		break;
 	}
-	case ModeType::GRAPH_MODE:
+	case PersonalCaddieChangeMode:
 	{
-		//When we first enter graph mode the personal caddie is automatically put into the sensor idle
-		//power mode. Entering the active state switches the personal caddie power mode to sensor active
-		//and also enables data notifications.
-		m_modeState ^= (ModeState::PersonalCaddieSensorActiveMode | ModeState::PersonalCaddieSensorIdleMode);
-		m_personalCaddie->enableDataNotifications();
-		break;
-	}
-	case ModeType::IMU_SETTINGS:
-	{
-		//When we enter the active state on the IMU Settings page, we make a request to the
-		//Personal Caddie for the current IMU sensor settings. These are used to populate
-		//the text for individual drop down menus
-
-		((IMUSettingsMode*)m_modes[static_cast<int>(m_currentMode)].get())->getCurrentSettings(m_renderer->getCurrentScreenSize(), m_personalCaddie->getIMUSettings(), m_personalCaddie->getAvailableSensors());
-		m_modeState |= ModeState::CanTransfer; //We still need the ability to leave the page after going active
-		break;
-	}
-	case ModeType::CALIBRATION:
-	{
-		//Entering the active state puts the sensors into idle mode, as well as enables data notifications
-		m_modeState |= ModeState::PersonalCaddieSensorIdleMode;
-		m_personalCaddie->enableDataNotifications();
-
-		if (m_modes[static_cast<int>(m_currentMode)]->getModeState() & CalibrationModeState::SET_AXES_NUMBERS)
-		{
-			//Before doing an axis calibration we must set the current axes to their default settings. It's easier to do this by
-			//updating the existing variables in the sensor classes so data isn't manipulated as it comes in
-			m_personalCaddie->updateSensorAxisOrientations({ 0, 1, 2, 1, 1, 1, 0, 1, 2, 1, 1, 1, 0, 1, 2, 1, 1, 1 });
-		}
-		break;
-	}
-	//case ModeType::MADGWICK:
-	//{
-	//	//When entering Madgwick testing mode, we put the sensor directly into active mode to start taking readings. This of course
-	//	//requires entering sensor idle mode first.
-	//	m_modeState |= ModeState::PersonalCaddieSensorIdleMode;
-	//	m_personalCaddie->enableDataNotifications();
-	//	break;
-	//}
-	}
-}
-
-void ModeScreen::stateUpdate()
-{
-	switch (m_currentMode)
-	{
-	case ModeType::DEVICE_DISCOVERY:
-	{
-		//The connect/disconnect button was clicked. Attempt to connect
-		//to the specified device, or disconnect from the current one.
-		if (m_modes[static_cast<int>(m_currentMode)]->getModeState() & DeviceDiscoveryState::DISCONNECT)
-		{
-			//disconnect from the current device
-			m_personalCaddie->disconnectFromDevice();
-		}
-		else if (m_modes[static_cast<int>(m_currentMode)]->getModeState() & DeviceDiscoveryState::ATTEMPT_CONNECT)
-		{
-			//attempt to connect to the device currently selected
-			wchar_t* endString;
-			uint64_t deviceAddress = std::wcstoull(&((DeviceDiscoveryMode*)m_modes[static_cast<int>(m_currentMode)].get())->getCurrentlySelectedDevice()[0], &endString, 10);
-			m_personalCaddie->connectToDevice(deviceAddress);
-		}
-		break;
-	}
-	case ModeType::IMU_SETTINGS:
-	{
-		if (m_modes[static_cast<int>(m_currentMode)]->getModeState() & IMUSettingsState::UPDATE_SETTINGS)
-		{
-			//New settings have been applied, send the new settings array to the personal caddie. Before
-			//doing this, update elements 0 and 31 of the array so that they reflect the current settings
-			//(as these aren't changed in the IMU settings menu).
-			m_personalCaddie->updateIMUSettings(((IMUSettingsMode*)m_modes[static_cast<int>(m_currentMode)].get())->getNewSettings());
-		}
-		else if (m_modes[static_cast<int>(m_currentMode)]->getModeState() & IMUSettingsState::GET_SETTINGS)
-		{
-			//A new sensor has been selected so we need to refresh the drop down menus. Just call the getCurrentSettings
-			((IMUSettingsMode*)m_modes[static_cast<int>(m_currentMode)].get())->getCurrentSettings(m_renderer->getCurrentScreenSize(), m_personalCaddie->getIMUSettings(), m_personalCaddie->getAvailableSensors(), true);
-		}
-		break;
-	}
-	case ModeType::CALIBRATION:
-	{
-		if (m_modes[static_cast<int>(m_currentMode)]->getModeState() & CalibrationModeState::READY_TO_RECORD)
-		{
-			//If the ready_to_recordflag is active it means we need to put the 
-			//Personal Caddie into sensor active mode and start recording data.
-			m_personalCaddie->changePowerMode(PersonalCaddiePowerMode::SENSOR_ACTIVE_MODE);
-			m_modeState ^= ModeState::Active; //temporarily leave the active state to make sure we don't change the power mode multiple times
-		}
-		else if (m_modes[static_cast<int>(m_currentMode)]->getModeState() & CalibrationModeState::STOP_RECORD)
-		{
-			//When we've recorded all the data we need we can put the Personal Caddie back into sensor idle mode
-			m_personalCaddie->changePowerMode(PersonalCaddiePowerMode::SENSOR_IDLE_MODE);
-			m_modeState ^= ModeState::Active; //temporarily leave the active state to make sure we don't change the power mode multiple times
-		}
-		else if (m_modes[static_cast<int>(m_currentMode)]->getModeState() & CalibrationModeState::UPDATE_CAL_NUMBERS)
-		{
-			//We've carried out a successful calibration so we need to update the appropriate calibration text file
-			sensor_type_t current_sensor;
-			if (m_modes[static_cast<int>(m_currentMode)]->getModeState() & CalibrationModeState::ACCELEROMETER) current_sensor = ACC_SENSOR;
-			else if (m_modes[static_cast<int>(m_currentMode)]->getModeState() & CalibrationModeState::GYROSCOPE) current_sensor = GYR_SENSOR;
-			else if (m_modes[static_cast<int>(m_currentMode)]->getModeState() & CalibrationModeState::MAGNETOMETER) current_sensor = MAG_SENSOR;
-			m_personalCaddie->updateSensorCalibrationNumbers(current_sensor, ((CalibrationMode*)m_modes[static_cast<int>(m_currentMode)].get())->getCalibrationResults());
-		}
-		else if (m_modes[static_cast<int>(m_currentMode)]->getModeState() & CalibrationModeState::UPDATE_AXES_NUMBERS)
-		{
-			//We've carried out a successful axis calibration so we need to update the appropriate axis calibration text files
-			m_personalCaddie->updateSensorAxisOrientations(((CalibrationMode*)m_modes[static_cast<int>(m_currentMode)].get())->getNewAxesOrientations());
-		}
+		//We want to change the power mode of the personal caddie. The event args
+		//in this case will be an instance of the PersonalCaddiePowerMode enum. Other
+		//handler methods will handle getting data to the mode if and when necessary.
 		
+		//TODO: There's a bug in the firmware that messes up the timing between enabling
+		//characteristic notifications and starting to read data. To prevent this, we need to
+		//make sure that notifications are enabled BEFORE the sensor is put into sensor idle
+		//mode. For now, hardcode it so that when entering idle mode from connected mode we
+		//wait for notifications to be enabled first, and when entering connected mode from 
+		//idle mode we disbale notifications AFTER.
+		PersonalCaddiePowerMode currentMode = m_personalCaddie->getCurrentPowerMode();
+		PersonalCaddiePowerMode newMode = *((PersonalCaddiePowerMode*)eventArgs);
+
+		if (newMode == PersonalCaddiePowerMode::SENSOR_IDLE_MODE && currentMode == PersonalCaddiePowerMode::CONNECTED_MODE) m_personalCaddie->enableDataNotifications();
+		else m_personalCaddie->changePowerMode(newMode);
 		break;
 	}
-	case ModeType::MADGWICK:
+	case RendererGetTextSize:
 	{
-		if (m_modes[static_cast<int>(m_currentMode)]->getModeState() & MadgwickModeState::BETA_UPDATE)
+		//Some UIElements are sized so that they can perfectly fit their text inside of themselves,
+		//the DropDownMenu is a good example of this. It isn't possible to know just how large the text
+		//will be (in pixels) though until it actually gets rendered. This leads to a strange race scenario
+		//where we need to create a UIElement with dimensions, and yet, can't know what those dimensions are
+		//until after it's already been rendered. To help out with this, we can send a vector containing any
+		//text that we need sized directly to the renderer. This will synchronously create the text while
+		//the UIElement is being created, allowing us to take the dimensions that get placed in the UIText
+		//objects and extracting them to the UIElement. --Warning-- this method can only be called from 
+		//the main render loop or it can lead to unexpected errors.
+		std::vector<UIText*> const& text = *((std::vector<UIText*>*)eventArgs);
+		getTextRenderPixels(text);
+		break;
+	}
+	case RendererGetMaterial:
+	{
+		//All 3D materials to be rendered are controlled by the MasterRenderer class. When a particular mode
+		//has something to be rendered on screen we need to grab the necessary materials from the renderer
+		//and give them to the current mode. Since this is all done with references, and the ModeScreen class
+		//can directly access the volume elements and material vectors of the current mode the eventArgs doesn't
+		//actually contain anything here.
+		std::vector<std::shared_ptr<VolumeElement> > const& volumeElements = m_modes[static_cast<int>(m_currentMode)]->getVolumeElements();
+		std::vector<MaterialType> const& materialTypes = m_modes[static_cast<int>(m_currentMode)]->getMaterialTypes();
+		for (int i = 0; i < volumeElements.size(); i++)
 		{
-			//The filter has converged so we change the beta value back to its standard value
-			m_personalCaddie->setMadgwickBeta(0.041f);
-			((MadgwickTestMode*)m_modes[static_cast<int>(m_currentMode)].get())->betaUpdate(); //let the Madwick test mode that the filter has successfully been updated
+			m_renderer->setMaterialAndMesh(volumeElements[i], materialTypes[i]);
 		}
 		break;
 	}
+	case BLEConnection:
+	{
+		//There are a few actions we can take regarding the BLE class. We can see the current connection status
+		//(or we connected to a device or not), we can attempt to connect to a device, and we can disconnect from 
+		//the currently connected device. Wrapped inside of the eventArgs is an instance of the BLEState enum class
+		//as well as a 64-bit integer. This integer represents the address of a device that we potentially want to
+		//connect to.
+		std::pair<BLEState, uint64_t> state = *((std::pair<BLEState, uint64_t>*)eventArgs);
+		switch (state.first)
+		{
+		case BLEState::Connected:
+		default:
+			//In this case we're simply curious to see if we're currently connected to a BLEDevice
+			getCurrentMode()->getBLEConnectionStatus(m_personalCaddie->bleConnectionStatus());
+			break;
+		case BLEState::Disconnect:
+			//Disconnect from the current device
+			m_personalCaddie->disconnectFromDevice();
+			break;
+			//
+		case BLEState::Reconnect:
+			m_personalCaddie->connectToDevice(state.second);
+			break;
+		}
+		break;
 	}
-}
+	case BLEDeviceWatcher:
+	{
+		//For the BLE Device Watcher we can more or less take the same actions as for the BLE Connection. That is,
+		//we can confirm if it's currently running, we can turn it on, or we can turn it off. The device watcher status
+		//is wrapped inside of the same BLEState enum class as above.
+		BLEState state = *((BLEState*)eventArgs);
+		switch (state)
+		{		
+		case BLEState::DeviceWatcherStatus:
+		default:
+			//In this case we're simply curious to see if the device watcher is already on
+			getCurrentMode()->getBLEDeviceWatcherStatus(m_personalCaddie->bleDeviceWatcherStatus());
+			break;
+		case BLEState::DisableDeviceWatcher:
+			//Turn off the device watcher
+			m_personalCaddie->stopBLEAdvertisementWatcher();
+			break;
+		case BLEState::EnableDeviceWatcher:
+			//Turn on the device watcher
+			m_personalCaddie->startBLEAdvertisementWatcher();
+			break;
+		}
+		break;
+	}
+	case BLENotifications:
+	{
+		//We pass in a value of 1 to enable notifications and a value of 0 to disable them.
+		//Cast the evenArgs to an integer to see what we need to do here.
+		if (*((int*)eventArgs)) m_personalCaddie->enableDataNotifications();
+		else m_personalCaddie->disableDataNotifications();
 
-void ModeScreen::leaveActiveState()
-{
-	m_modeState ^= (ModeState::Active | ModeState::CanTransfer); //turn off the active state
-
-	switch (m_currentMode)
-	{
-	case ModeType::DEVICE_DISCOVERY:
-	{
-		//Leaving active mode while in device discovery means that we need to stop the BLEAdvertisement watcher of 
-		//the Personal Caddie
-		m_personalCaddie->stopBLEAdvertisementWatcher();
 		break;
 	}
-	case ModeType::GRAPH_MODE:
+	case SensorCalibration:
 	{
-		//Leaving the active state while in graph mode causes the personal caddie to enter the sensor idle 
-		//power mode and turns off data notifications. We must leave sensor active mode before disabling
-		//data notifications to prevent errors.
-		m_modeState ^= (ModeState::PersonalCaddieSensorActiveMode | ModeState::PersonalCaddieSensorIdleMode); //swap the sensor idle and active states
-		m_personalCaddie->changePowerMode(PersonalCaddiePowerMode::SENSOR_IDLE_MODE);
-		m_personalCaddie->disableDataNotifications();
+		//There are four main actions we can take here. We can get the current sensor calibration, set the current sensor calibration,
+		//get the IMU axis calibration or set the IMU axis calibration. Since there are 3 different sensors that make up the IMU then
+		//in reality there are 8 different things we can do here. One of these 8 options is wrapped inside the eventArgs. If we just
+		//want to get an existing cal all we need is the action, however, if we want to update an existing cal then we need the new
+		//numbers. These are also wrapped inside of the event args. A struct called CalibrationRequest is used to wrap all of this info
+		//together.
+		auto cal_info = *((CalibrationRequest*)eventArgs);
+		switch (cal_info.action)
+		{
+		case SensorCalibrationAction::GET_SENSOR_CAL:
+			getCurrentMode()->getSensorCalibrationNumbers(cal_info.sensor, m_personalCaddie->getSensorCalibrationNumbers(cal_info.sensor));
+			break;
+		case SensorCalibrationAction::SET_SENSOR_CAL:
+			m_personalCaddie->updateSensorCalibrationNumbers(cal_info.sensor, cal_info.cal_numbers);
+			break;
+		case SensorCalibrationAction::GET_SENSOR_AXIS_CAL:
+			getCurrentMode()->getSensorAxisCalibrationNumbers(cal_info.sensor, m_personalCaddie->getSensorAxisCalibrationNumbers(cal_info.sensor));
+			break;
+		case SensorCalibrationAction::SET_SENSOR_AXIS_CAL:
+			m_personalCaddie->updateSensorAxisOrientations(cal_info.sensor, cal_info.axis_numbers);
+			break;
+		}
 		break;
 	}
-	case ModeType::CALIBRATION:
+	case SensorSettings:
 	{
-		//Entering the active state puts the sensors into idle mode, as well as enables data notifications
-		m_modeState ^= ModeState::PersonalCaddieSensorIdleMode; //swap the sensor idle and active states
-		m_personalCaddie->changePowerMode(PersonalCaddiePowerMode::CONNECTED_MODE);
-		m_personalCaddie->disableDataNotifications();
+		//For the sensor settings there are two actions we can take. Either we get the current settings, or, we update the 
+		//settings. The eventArgs in this case will be a pointer to an uint8_t type. If the pointer is null it means we want
+		//to simply get the current settings. If the pointer isn't null though, it's pointing to an array with new settings that
+		//will be used to overwrite the current ones.
+		uint8_t* settings = (uint8_t*)eventArgs;
+		if (settings == nullptr) ((IMUSettingsMode*)m_modes[static_cast<int>(m_currentMode)].get())->getCurrentSettings(m_personalCaddie->getIMUSettings(), m_personalCaddie->getAvailableSensors());
+		else m_personalCaddie->updateIMUSettings(settings);
 		break;
 	}
+	case IMUHeading:
+	{
+		//Gets or sets the heading offset quaternion from the IMU class. The Madgwick filter uses magnetic north as the reference direction for 
+		//Earth's magnetic field, so if the computer monitor isn't aligned perfectly North-South, then anything being rendered on screen
+		//will be offset. Rotating all images being rendered on screen by this offset will effectively change the direction of magnetic
+		//North to line up with the computer monitor so all images will match their real world counter parts. If a nullptr is passed in as the
+		//eventArgs it means we simply want to get the current heading. If we want to set a new heading offset then a qlm::Quat stucture is
+		//passed in.
+		
+		if (eventArgs == nullptr) getCurrentMode()->getIMUHeadingOffset(m_personalCaddie->getHeadingOffset());
+		else
+		{
+			glm::quat heading = *((glm::quat*)eventArgs);
+			m_personalCaddie->setHeadingOffset(heading);
+		}
+		break;
+	}
+	case MadgwickUpdateFilter:
+	{
+		//We can alter the beta value for the Madgwick filter to allow for a quicker convergence of the current rotation quaternion.
+		//The higher the beta value is, the more heavily biased the filter is towards the accelerometer and magnetometer readings as opposed
+		//to the gyroscope. Once the orientation of the image on screen has converged on its real world orientation, we can then lower the 
+		//beta value of the filter back to its standard value so the readings once again are more heavily weighted towards the gyro.
+		float beta_value = *((float*)eventArgs);
+		m_personalCaddie->setMadgwickBeta(beta_value);
+		break;
+	}
+	default: return;
 	}
 }
 

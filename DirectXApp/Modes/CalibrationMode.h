@@ -3,20 +3,20 @@
 #include "Mode.h"
 #include "Math/ellipse_math.h"
 
-enum CalibrationModeState
+enum class SensorCalibrationAction
 {
-	WAITING = 1,
-	ACCELEROMETER = 2,
-	GYROSCOPE = 4,
-	MAGNETOMETER = 8,
-	READY_TO_RECORD = 16,
-	RECORDING_DATA = 32,
-	STOP_RECORD = 64,
-	UPDATE_CAL_NUMBERS = 128,
-	ODR_ERROR = 256,
-	AXES = 512,
-	UPDATE_AXES_NUMBERS = 1024,
-	SET_AXES_NUMBERS = 2048
+	GET_SENSOR_CAL,
+	SET_SENSOR_CAL,
+	GET_SENSOR_AXIS_CAL,
+	SET_SENSOR_AXIS_CAL
+};
+
+struct CalibrationRequest
+{
+	SensorCalibrationAction action;
+	sensor_type_t sensor;
+	std::pair<float*, float**> cal_numbers;
+	std::pair<int*, int*> axis_numbers;
 };
 
 class CalibrationMode : public Mode
@@ -28,39 +28,52 @@ public:
 	virtual void uninitializeMode() override;
 
 	virtual void update() override;
+	virtual void handleKeyPress(winrt::Windows::System::VirtualKey pressedKey) override;
+
 	virtual void handlePersonalCaddieConnectionEvent(bool connectionStatus) override;
 
 	std::wstring getCurrentlySelectedDevice() { return m_currentlySelectedDeviceAddress; }
 
-	virtual uint32_t handleUIElementStateChange(int i) override;
-
 	//Methods called from the Mode Screen class
-	void startDataCapture();
-	void stopDataCapture();
-	void updateComplete();
 	virtual void addData(std::vector<std::vector<std::vector<float> > > const& sensorData, float sensorODR, float timeStamp, int totalSamples) override;
+	virtual void getSensorAxisCalibrationNumbers(sensor_type_t sensor, std::pair<const int*, const int*> cal_numbers) override;
 
 	std::pair<float*, float**> getCalibrationResults();
 	std::vector<int> getNewAxesOrientations();
+
+	virtual void pc_ModeChange(PersonalCaddiePowerMode newMode) override;
+	virtual void ble_NotificationsChange(int state) override;
 
 private:
 	void initializeTextOverlay(winrt::Windows::Foundation::Size windowSize);
 	void initializeCalibrationVariables();
 
+	//Handler Methods
+	virtual void uiElementStateChangeHandler(std::shared_ptr<ManagedUIElement> element) override;
+
 	//Methods for maneuvering through the calibrations
-	void axisCalibration();
 	void accelerometerCalibration();
+	void accelerometerAxisCalibration();
 	void gyroscopeCalibration();
+	void gyroscopeAxisCalibration();
 	void magnetometerCalibration();
+	void magnetometerAxisCalibration();
 
 	void calculateCalNumbers();
 
 	void initializeModel();
+	void loadModeMainPage();
 
 	void advanceToNextStage();
+
+	//Methods for recording data
 	void prepareRecording();
+	void record();
+	void stopRecording();
+	
 	void displayGraph();
 
+	void accAverageData();
 	void accAxisCalculate(int axis);
 	void gyrAxisCalculate(int axis);
 	void magAxisCalculate(int axis);
@@ -76,8 +89,11 @@ private:
 
 	std::wstring m_currentlySelectedDeviceAddress = L"";
 	int m_currentStage; //keeps track of the current stage of the calibration
+	int m_currentSensor; //keeps track of which sensor is currently being calibrated
 	bool m_stageSet; //a variable used to make sure we don't keep reloading resources when we're on the same calibration stage
 	bool m_useCalibratedData; //use calibrated data to benchmark current calibration numbers
+	bool m_axisCalibration; //If this is set to true then we calibrate a sensor's axes instead of it's data
+	bool m_currentlyRecording; //This bool will be true when we're actively reading data from one of the sensors
 
 	int raw_acceleration = 3, raw_rotation = 4, raw_magnetic = 5; //these variables match the DataType enumclass. Trying to use that enumclass here causes a circular reference
 
@@ -120,18 +136,19 @@ private:
 	float mag_gain_z[3] = { 0 };
 	float* mag_gain[3] = { mag_gain_x, mag_gain_y, mag_gain_z };
 
+	int *m_axis_swap, *m_axis_polarity; //variables used to point to the axis calibration data of the sensor currently being calibrated
 	int acc_axis_swap[3] = { 0 };
 	int acc_axis_polarity[3] = { 0 };
-	int existing_acc_axis_swap[3] = { 0 };
-	int existing_acc_axis_polarity[3] = { 0 };
+	int test_acc_axis_swap[3] = { 0 };
+	int test_acc_axis_polarity[3] = { 0 };
 
 	int gyr_axis_swap[3] = { 0 };
 	int gyr_axis_polarity[3] = { 0 };
-	int existing_gyr_axis_swap[3] = { 0 };
-	int existing_gyr_axis_polarity[3] = { 0 };
+	int test_gyr_axis_swap[3] = { 0 };
+	int test_gyr_axis_polarity[3] = { 0 };
 
 	int mag_axis_swap[3] = { -1, -1, -1 };
 	int mag_axis_polarity[3] = { 1, 1, 1 };
-	int existing_mag_axis_swap[3] = { -1, -1, -1 };
-	int existing_mag_axis_polarity[3] = { 1, 1, 1 };
+	int test_mag_axis_swap[3] = { -1, -1, -1 };
+	int test_mag_axis_polarity[3] = { 1, 1, 1 };
 };

@@ -25,8 +25,11 @@ enum class BLEState
 	DeviceNotFound,
 	Connected,
 	NewAdvertisement,
-	Disconnected,
-	Reconnect
+	Disconnect,
+	Reconnect,
+	DeviceWatcherStatus,
+	EnableDeviceWatcher,
+	DisableDeviceWatcher
 };
 
 class BLE
@@ -42,6 +45,7 @@ public:
 	void addScannedDevice(DeviceInfoDisplay device);
 
 	bool isConnected();
+	bool isDeviceWatcherOn();
 	bool bleDeviceInitialized();
 
 	volatile bool ble_device_created = false;

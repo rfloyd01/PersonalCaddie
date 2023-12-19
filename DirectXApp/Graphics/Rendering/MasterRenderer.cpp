@@ -319,7 +319,8 @@ void MasterRenderer::Render()
     d2dContext->SetTransform(m_deviceResources->GetOrientationTransform2D());
 
     //Render any UI elements or text on screen text
-    m_uiElementRenderer.render(m_mode->getCurrentModeUIElements());
+    //m_uiElementRenderer.render(m_mode->getCurrentModeUIElements());
+    m_uiElementRenderer.render(m_mode->getCurrentModeUIElementMap());
 
     // We ignore D2DERR_RECREATE_TARGET here. This error indicates that the device
     // is lost. It will be handled during the next call to Present.

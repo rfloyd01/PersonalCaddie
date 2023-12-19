@@ -73,7 +73,6 @@ void IMU::initializeNewSensor(uint8_t sensor_type, uint8_t* sensor_settings)
 
     getODRFromSensors();
     getConversionRateFromSensors();
-    //TODO: Need to get calibration info
 }
 
 float* IMU::getSensorODRs() { return this->IMU_sample_frequencies; }
@@ -122,9 +121,9 @@ std::pair<const float*, const float**> IMU::getAccelerometerCalibrationNumbers()
 std::pair<const float*, const float**> IMU::getGyroscopeCalibrationNumbers() { return this->p_gyr->getCalibrationNumbers(); }
 std::pair<const float*, const float**> IMU::getMagnetometerCalibrationNumbers() { return this->p_mag->getCalibrationNumbers(); }
 
-std::vector<int> IMU::getAccelerometerAxisOrientations() { return this->p_acc->getAxisOrientations(); }
-std::vector<int> IMU::getGyroscopeAxisOrientations() { return this->p_gyr->getAxisOrientations(); }
-std::vector<int> IMU::getMagnetometerAxisOrientations() { return this->p_mag->getAxisOrientations(); }
+std::pair<const int*, const int*> IMU::getAccelerometerAxisOrientations() { return this->p_acc->getAxisOrientations(); }
+std::pair<const int*, const int*> IMU::getGyroscopeAxisOrientations() { return this->p_gyr->getAxisOrientations(); }
+std::pair<const int*, const int*> IMU::getMagnetometerAxisOrientations() { return this->p_mag->getAxisOrientations(); }
 
 void IMU::setCalibrationNumbers(sensor_type_t sensor, std::pair<float*, float**> cal_numbers)
 {
@@ -133,20 +132,11 @@ void IMU::setCalibrationNumbers(sensor_type_t sensor, std::pair<float*, float**>
     else if (sensor == MAG_SENSOR) p_mag->setCalibrationNumbers(cal_numbers.first, cal_numbers.second);
 }
 
-void IMU::setAxesOrientations(std::vector<int> axis_orientations)
+void IMU::setAxesOrientations(sensor_type_t sensor, std::pair<int*, int*> axis_orientations)
 {
-    //The axis_orientations vector passed in as a parameter should contain 18 elements. The elements are
-    //separated like so:
-    //[0 - 5] = acc axes info
-    //[6 - 11] = gyr axes info
-    //[12 - 17] = mag axes info
-    std::vector<int> acc_info(axis_orientations.begin(), axis_orientations.begin() + 6);
-    std::vector<int> gyr_info(axis_orientations.begin() + 6, axis_orientations.begin() + 12);
-    std::vector<int> mag_info(axis_orientations.begin() + 12, axis_orientations.begin() + 18);
-
-    p_acc->setAxesOrientations(acc_info);
-    p_gyr->setAxesOrientations(gyr_info);
-    p_mag->setAxesOrientations(mag_info);
+    if (sensor == ACC_SENSOR) p_acc->setAxesOrientations(axis_orientations.first, axis_orientations.second);
+    else if (sensor == GYR_SENSOR) p_gyr->setAxesOrientations(axis_orientations.first, axis_orientations.second);
+    else if (sensor == MAG_SENSOR) p_mag->setAxesOrientations(axis_orientations.first, axis_orientations.second);
 }
 
 //Get Functions

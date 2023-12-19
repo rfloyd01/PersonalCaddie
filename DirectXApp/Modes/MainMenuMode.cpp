@@ -9,6 +9,10 @@ MainMenuMode::MainMenuMode()
 
 uint32_t MainMenuMode::initializeMode(winrt::Windows::Foundation::Size windowSize, uint32_t initialState)
 {
+	//Take the current screen size and pass it to the UIElementManager, this is so that the manager knows
+	//how large to make each element.
+	m_uiManager.updateScreenSize(windowSize);
+
 	initializeTextOverlay(windowSize);
 
 	//When this mode is initialzed we go into a state of CanTransfer
@@ -19,8 +23,45 @@ void MainMenuMode::uninitializeMode()
 {
 	//The only thing to do when leaving the main menu mode is to clear
 	//out all text in the text map and color map
-	for (int i = 0; i < m_uiElements.size(); i++) m_uiElements[i] = nullptr;
-	m_uiElements.clear();
+	m_uiManager.removeAllElements();
+}
+
+void MainMenuMode::handleKeyPress(winrt::Windows::System::VirtualKey pressedKey)
+{
+	//The only thing we can do in main menu mode is navigate to a different mode. Simply 
+	//figure out what the new mode is from the keypress and navigate there.
+
+	ModeType newMode = ModeType::MAIN_MENU;
+	switch (pressedKey)
+	{
+	case winrt::Windows::System::VirtualKey::Escape:
+	{
+		//TODO: Pressing the escape key from the main mode should quite out of 
+		//the program. I should implement this at some point in the future
+		break;
+	}
+	case winrt::Windows::System::VirtualKey::Number1:
+	case winrt::Windows::System::VirtualKey::Number2:
+	case winrt::Windows::System::VirtualKey::Number3:
+	{
+		//These modes haven't been implemented yet so for now just display
+		//an alert letting the user know.
+		createAlert(L"This mode hasn't been implemented yet.", UIColor::Red, m_uiManager.getScreenSize());
+		break;
+	}
+	case winrt::Windows::System::VirtualKey::Number4:
+	{
+		newMode = ModeType::SETTINGS_MENU;
+		break;
+	}
+	case winrt::Windows::System::VirtualKey::Number5:
+	{
+		newMode = ModeType::DEVELOPER_TOOLS;
+		break;
+	}
+	}
+
+	if (newMode != ModeType::MAIN_MENU) m_mode_screen_handler(ModeAction::ChangeMode, (void*)&newMode);
 }
 
 void MainMenuMode::initializeTextOverlay(winrt::Windows::Foundation::Size windowSize)
@@ -29,13 +70,13 @@ void MainMenuMode::initializeTextOverlay(winrt::Windows::Foundation::Size window
 	std::wstring title_message = L"Personal Caddie v1.0";
 	TextOverlay title(windowSize, { UIConstants::TitleTextLocationX, UIConstants::TitleTextLocationY }, { UIConstants::TitleTextSizeX, UIConstants::TitleTextSizeY },
 		title_message, UIConstants::TitleTextPointSize, { UIColor::White }, { 0,  (unsigned int)title_message.length() }, UITextJustification::CenterCenter);
-	m_uiElements.push_back(std::make_shared<TextOverlay>(title));
+	m_uiManager.addElement<TextOverlay>(title, L"Title Text");
 
 	//Sub-Title information
 	std::wstring subtitle_message = L"(Press one of the keys listed below to select a mode)";
 	TextOverlay subtitle(windowSize, { UIConstants::SubTitleTextLocationX, UIConstants::SubTitleTextLocationY }, { UIConstants::SubTitleTextSizeX, UIConstants::SubTitleTextSizeY },
 		subtitle_message, UIConstants::SubTitleTextPointSize, { UIColor::White }, { 0,  (unsigned int)subtitle_message.length() }, UITextJustification::CenterCenter);
-	m_uiElements.push_back(std::make_shared<TextOverlay>(subtitle));
+	m_uiManager.addElement<TextOverlay>(subtitle, L"Subtitle Text");
 
 	//Body information
 	std::wstring body_message_1 = L"1. Free Swing Mode \n";
@@ -48,16 +89,11 @@ void MainMenuMode::initializeTextOverlay(winrt::Windows::Foundation::Size window
 		{ UIColor::FreeSwingMode, UIColor::SwingAnalysisMode, UIColor::TrainingMode, UIColor::CalibrationMode, UIColor::PaleGray },
 		{ 0,  (unsigned int)body_message_1.length(),  (unsigned int)body_message_2.length(),  (unsigned int)body_message_3.length(), (unsigned int)body_message_4.length(), (unsigned int)body_message_5.length() },
 		UITextJustification::UpperLeft);
-	m_uiElements.push_back(std::make_shared<TextOverlay>(body));
+	m_uiManager.addElement<TextOverlay>(body, L"Body Text");
 
 	//Footnote information
 	std::wstring footnote_message = L"Press Esc. to exit the program.";
 	TextOverlay footnote(windowSize, { UIConstants::FootNoteTextLocationX, UIConstants::FootNoteTextLocationY }, { UIConstants::FootNoteTextSizeX, UIConstants::FootNoteTextSizeY },
 		footnote_message, UIConstants::FootNoteTextPointSize, { UIColor::White }, { 0,  (unsigned int)footnote_message.length() }, UITextJustification::LowerRight);
-	m_uiElements.push_back(std::make_shared<TextOverlay>(footnote));
-}
-
-uint32_t MainMenuMode::handleUIElementStateChange(int i)
-{
-	return 0;
+	m_uiManager.addElement<TextOverlay>(footnote, L"Footnote Text");
 }

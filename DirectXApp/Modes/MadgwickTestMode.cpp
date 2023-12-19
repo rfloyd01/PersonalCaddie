@@ -11,13 +11,16 @@ MadgwickTestMode::MadgwickTestMode()
 
 uint32_t MadgwickTestMode::initializeMode(winrt::Windows::Foundation::Size windowSize, uint32_t initialState)
 {
+	//Take the current screen size and pass it to the UIElementManager, this is so that the manager knows
+	//how large to make each element.
+	m_uiManager.updateScreenSize(windowSize);
+
 	//Create UI Elements on the page
 	initializeTextOverlay(windowSize);
 
 	m_needsCamera = true; //alerts the mode screen that 3d rendering will take place in this mode
 
-	float sensorHeight = 0.5f, sensorLength = 0.3f, sensorWidth = 0.052f;
-
+	float sensorHeight = 0.5f, sensorLength = 0.3f, sensorWidth = 0.052f; //TODO: Utilize these dimension variables to create the sensor instead of all the numbers seen below
 	std::shared_ptr<Face> sensorTop = std::make_shared<Face>(DirectX::XMFLOAT3(-0.15f, 0.026f, -0.25f), DirectX::XMFLOAT3(0.15f, 0.026f, -0.25f), DirectX::XMFLOAT3(-0.15f, 0.026f, 0.25f));
 	std::shared_ptr<Face> sensorLeft = std::make_shared<Face>(DirectX::XMFLOAT3(-0.15f, 0.0f, -0.25f), DirectX::XMFLOAT3(-0.15f, -0.052f, -0.25f), DirectX::XMFLOAT3(-0.15f, 0.0f, 0.25f));
 	std::shared_ptr<Face> sensorRight = std::make_shared<Face>(DirectX::XMFLOAT3(0.15f, 0.0f, -0.25f), DirectX::XMFLOAT3(0.15f, -0.052f, -0.25f), DirectX::XMFLOAT3(0.15f, 0.0f, 0.25f));
@@ -42,6 +45,10 @@ uint32_t MadgwickTestMode::initializeMode(winrt::Windows::Foundation::Size windo
 	m_materialTypes.push_back(MaterialType::SENSOR_SHORT_SIDE);
 	m_materialTypes.push_back(MaterialType::SENSOR_SHORT_SIDE);
 	m_materialTypes.push_back(MaterialType::SENSOR_BOTTOM);
+
+	//After creating the necessary volume elements and material types, map each volume element 
+	//to its given material through the master renderer class (accessed via the ModeScreenHandler)
+	m_mode_screen_handler(ModeAction::RendererGetMaterial, nullptr);
 
 	m_currentRotation = 0.0f;
 	m_currentDegree = PI / 2.0f;
@@ -94,21 +101,29 @@ uint32_t MadgwickTestMode::initializeMode(winrt::Windows::Foundation::Size windo
 	FusionAhrsSetSettings(&m_ahrs, &settings);
 	m_useNewFilter = false;
 
+	//We spend the entirety of our time in this mode with the Personal Caddie in Sensor Active
+	//Mode. To get there we need to first put the Sensor into Idle mode
+	auto mode = PersonalCaddiePowerMode::SENSOR_IDLE_MODE;
+	m_mode_screen_handler(ModeAction::PersonalCaddieChangeMode, (void*)&mode);
+
 	//The NeedMaterial modeState lets the mode screen know that it needs to pass
 	//a list of materials to this mode that it can use to initialize 3d objects
-	return (ModeState::CanTransfer | ModeState::NeedMaterial | ModeState::Active | ModeState::PersonalCaddieSensorIdleMode);
+	return (ModeState::CanTransfer | ModeState::NeedMaterial | ModeState::Active);
 }
 
 void MadgwickTestMode::uninitializeMode()
 {
 	//The only thing to do when leaving the main menu mode is to clear
 	//out all text in the text map and color map
-	
-	for (int i = 0; i < m_uiElements.size(); i++) m_uiElements[i] = nullptr;
-	m_uiElements.clear();
+	m_uiManager.removeAllElements();
 
 	for (int i = 0; i < m_volumeElements.size(); i++) m_volumeElements[i] = nullptr;
 	m_volumeElements.clear();
+
+	//Put the Personal Caddie back into Connected Mode when leaving this page. This can be 
+	//done without going into Sensor Idle Mode first.
+	auto mode = PersonalCaddiePowerMode::CONNECTED_MODE;
+	m_mode_screen_handler(ModeAction::PersonalCaddieChangeMode, (void*)&mode);
 }
 
 void MadgwickTestMode::initializeTextOverlay(winrt::Windows::Foundation::Size windowSize)
@@ -117,13 +132,13 @@ void MadgwickTestMode::initializeTextOverlay(winrt::Windows::Foundation::Size wi
 	std::wstring title_message = L"Madgwick Filter Testing";
 	TextOverlay title(windowSize, { UIConstants::TitleTextLocationX, UIConstants::TitleTextLocationY }, { UIConstants::TitleTextSizeX, UIConstants::TitleTextSizeY },
 		title_message, UIConstants::TitleTextPointSize, { UIColor::White }, { 0,  (unsigned int)title_message.length() }, UITextJustification::CenterCenter);
-	m_uiElements.push_back(std::make_shared<TextOverlay>(title));
+	m_uiManager.addElement<TextOverlay>(title, L"Title Text");
 
 	//Footnote information
 	std::wstring footnote_message = L"Press Esc. to return to settings menu";
 	TextOverlay footnote(windowSize, { UIConstants::FootNoteTextLocationX, UIConstants::FootNoteTextLocationY }, { UIConstants::FootNoteTextSizeX, UIConstants::FootNoteTextSizeY },
 		footnote_message, UIConstants::FootNoteTextPointSize, { UIColor::White }, { 0,  (unsigned int)footnote_message.length() }, UITextJustification::LowerRight);
-	m_uiElements.push_back(std::make_shared<TextOverlay>(footnote));
+	m_uiManager.addElement<TextOverlay>(footnote, L"Footnote Text");
 
 	//Sensor data display information
 	std::wstring sensor_info_message_one = L"\n";
@@ -133,7 +148,7 @@ void MadgwickTestMode::initializeTextOverlay(winrt::Windows::Foundation::Size wi
 	TextOverlay sensor_info(windowSize, { UIConstants::SensorInfoTextLocationX, UIConstants::SensorInfoTextLocationY }, { UIConstants::SensorInfoTextSizeX, UIConstants::SensorInfoTextSizeY },
 		sensor_info_message_one + sensor_info_message_two + sensor_info_message_three + sensor_info_message_four, UIConstants::SensorInfoTextPointSize * 0.8f, { UIColor::White, UIColor::Red, UIColor::Blue, UIColor::Green },
 		{ 0,  (unsigned int)sensor_info_message_one.length(),  (unsigned int)sensor_info_message_two.length(),  (unsigned int)sensor_info_message_three.length(),  (unsigned int)sensor_info_message_four.length() }, UITextJustification::LowerLeft);
-	m_uiElements.push_back(std::make_shared<TextOverlay>(sensor_info));
+	m_uiManager.addElement<TextOverlay>(sensor_info, L"Sensor Info 1 Text");
 
 	sensor_info_message_one = L"\n";
 	sensor_info_message_two = L"\n";
@@ -142,13 +157,13 @@ void MadgwickTestMode::initializeTextOverlay(winrt::Windows::Foundation::Size wi
 	TextOverlay sensor_info_two(windowSize, { UIConstants::SensorInfoTextLocationX, UIConstants::SensorInfoTextLocationY }, { UIConstants::SensorInfoTextSizeX, UIConstants::SensorInfoTextSizeY },
 		sensor_info_message_one + sensor_info_message_two + sensor_info_message_three + sensor_info_message_four, UIConstants::SensorInfoTextPointSize * 0.8f, { UIColor::White, UIColor::Red, UIColor::Blue, UIColor::Green },
 		{ 0,  (unsigned int)sensor_info_message_one.length(),  (unsigned int)sensor_info_message_two.length(),  (unsigned int)sensor_info_message_three.length(),  (unsigned int)sensor_info_message_four.length() }, UITextJustification::LowerRight);
-	m_uiElements.push_back(std::make_shared<TextOverlay>(sensor_info_two));
+	m_uiManager.addElement<TextOverlay>(sensor_info_two, L"Sensor Info 2 Text");
 
 	//View data message
 	std::wstring view_data_message = L"Press Enter to see live Data from Sensor\nPress Space to Center the Sensor\nPress ^ Arrow to Swap Filter";
 	TextOverlay view_data(windowSize, { UIConstants::FootNoteTextLocationX - 0.33f, UIConstants::FootNoteTextLocationY }, { UIConstants::FootNoteTextSizeX, UIConstants::FootNoteTextSizeY },
 		view_data_message, UIConstants::FootNoteTextPointSize, { UIColor::White }, { 0,  (unsigned int)view_data_message.length() }, UITextJustification::LowerCenter);
-	m_uiElements.push_back(std::make_shared<TextOverlay>(view_data));
+	m_uiManager.addElement<TextOverlay>(view_data, L"View Data Text");
 }
 
 void MadgwickTestMode::updateDisplayText()
@@ -161,24 +176,37 @@ void MadgwickTestMode::updateDisplayText()
 	std::wstring sensor_info_message_two = std::to_wstring(m_display_data[0][m_currentQuaternion]) + m_display_data_units + L"\n";
 	std::wstring sensor_info_message_three = std::to_wstring(m_display_data[1][m_currentQuaternion]) + m_display_data_units + L"\n";
 	std::wstring sensor_info_message_four = std::to_wstring(m_display_data[2][m_currentQuaternion]) + m_display_data_units + L"\n";
-	((TextOverlay*)m_uiElements[2].get())->updateText(sensor_info_message_one + sensor_info_message_two + sensor_info_message_three + sensor_info_message_four);
-	((TextOverlay*)m_uiElements[2].get())->updateColorLocations({ 0,  (unsigned int)sensor_info_message_one.length(),  (unsigned int)sensor_info_message_two.length(),  (unsigned int)sensor_info_message_three.length(),  (unsigned int)sensor_info_message_four.length() });
+	m_uiManager.getElement<TextOverlay>(L"Sensor Info 1 Text")->updateText(sensor_info_message_one + sensor_info_message_two + sensor_info_message_three + sensor_info_message_four);
+	m_uiManager.getElement<TextOverlay>(L"Sensor Info 1 Text")->updateColorLocations({ 0,  (unsigned int)sensor_info_message_one.length(),  (unsigned int)sensor_info_message_two.length(),  (unsigned int)sensor_info_message_three.length(),  (unsigned int)sensor_info_message_four.length() });
 
 	sensor_info_message_one = L"\nDirectX Frame\n";
 	sensor_info_message_two = std::to_wstring(m_display_data[computer_axis_from_sensor_axis[0]][m_currentQuaternion]) + m_display_data_units + L"\n";
 	sensor_info_message_three = std::to_wstring(m_display_data[computer_axis_from_sensor_axis[1]][m_currentQuaternion]) + m_display_data_units + L"\n";
 	sensor_info_message_four = std::to_wstring(m_display_data[computer_axis_from_sensor_axis[2]][m_currentQuaternion]) + m_display_data_units + L"\n";
-	((TextOverlay*)m_uiElements[3].get())->updateText(sensor_info_message_one + sensor_info_message_two + sensor_info_message_three + sensor_info_message_four);
-	((TextOverlay*)m_uiElements[3].get())->updateColorLocations({0,  (unsigned int)sensor_info_message_one.length(),  (unsigned int)sensor_info_message_two.length(),  (unsigned int)sensor_info_message_three.length(),  (unsigned int)sensor_info_message_four.length()});
+	m_uiManager.getElement<TextOverlay>(L"Sensor Info 2 Text")->updateText(sensor_info_message_one + sensor_info_message_two + sensor_info_message_three + sensor_info_message_four);
+	m_uiManager.getElement<TextOverlay>(L"Sensor Info 2 Text")->updateColorLocations({0,  (unsigned int)sensor_info_message_one.length(),  (unsigned int)sensor_info_message_two.length(),  (unsigned int)sensor_info_message_three.length(),  (unsigned int)sensor_info_message_four.length()});
 }
 
-uint32_t MadgwickTestMode::handleUIElementStateChange(int i)
+void MadgwickTestMode::pc_ModeChange(PersonalCaddiePowerMode newMode)
 {
-	if (i == 1)
+	//As soon as we enter Sensor Idle Mode we jump straight into Sensor Active mode. Before that,
+	//however, we also get the current Heading for the sensor which is located in the Personal Caddie
+	//class and temporarily update the beta value of the Madgewick filter. The heading allows the sensor
+	//to line up with the orientation of the computer screen while the beta value allows the sensor to 
+	//quickly converge to the correct location.
+	if (newMode == PersonalCaddiePowerMode::SENSOR_IDLE_MODE)
 	{
-		return 1;
+		//Get the current Heading Offset
+		m_mode_screen_handler(ModeAction::IMUHeading, nullptr);
+
+		//Temporarily increase Madgwick beta gain to 2.5
+		float initial_beta_value = 2.5f;
+		m_mode_screen_handler(ModeAction::MadgwickUpdateFilter, (void*)&initial_beta_value);
+
+		//Put the Sensor into Active mode to start taking readings
+		auto mode = PersonalCaddiePowerMode::SENSOR_ACTIVE_MODE;
+		m_mode_screen_handler(ModeAction::PersonalCaddieChangeMode, (void*)&mode);
 	}
-	return 0;
 }
 
 void MadgwickTestMode::addQuaternions(std::vector<glm::quat> const& quaternions, int quaternion_number, float time_stamp, float delta_t)
@@ -305,6 +333,49 @@ void MadgwickTestMode::update()
 	updateDisplayText();
 }
 
+void MadgwickTestMode::handleKeyPress(winrt::Windows::System::VirtualKey pressedKey)
+{
+	//There are few different keys we can process here. Like in the other modes, pressing the escape
+	//key will go back to the previous menu. Pressing the space key will update the heading offset for
+	//the Personal Caddie, pressing enter will toggle a live data stream, pressing the number keys will
+	//alter the data seen on the stream, and pressing the up arrow will switch between different implementations
+	//of the Madgwick filter.
+	switch (pressedKey)
+	{
+	case winrt::Windows::System::VirtualKey::Escape:
+	{
+		ModeType newMode = ModeType::DEVELOPER_TOOLS;
+		m_mode_screen_handler(ModeAction::ChangeMode, (void*)&newMode);
+		break;
+	}
+	case winrt::Windows::System::VirtualKey::Number1:
+	case winrt::Windows::System::VirtualKey::Number2:
+	case winrt::Windows::System::VirtualKey::Number3:
+	case winrt::Windows::System::VirtualKey::Number4:
+	case winrt::Windows::System::VirtualKey::Number5:
+	case winrt::Windows::System::VirtualKey::Number6:
+	{
+		switchDisplayDataType(static_cast<int>(pressedKey) - static_cast<int>(winrt::Windows::System::VirtualKey::Number0));
+		break;
+	}
+	case winrt::Windows::System::VirtualKey::Enter:
+	{
+		toggleDisplayData();
+		break;
+	}
+	case winrt::Windows::System::VirtualKey::Space:
+	{
+		setCurrentHeadingOffset();
+		break;
+	}
+	case winrt::Windows::System::VirtualKey::Up:
+	{
+		toggleFilter();
+		break;
+	}
+	}
+}
+
 void MadgwickTestMode::toggleDisplayData()
 { 
 	m_show_live_data = !m_show_live_data;
@@ -321,15 +392,15 @@ void MadgwickTestMode::toggleDisplayData()
 		std::wstring sensor_info_message_four = L"";
 
 
-		((TextOverlay*)m_uiElements[2].get())->updateText(sensor_info_message_one + sensor_info_message_two + sensor_info_message_three + sensor_info_message_four);
-		((TextOverlay*)m_uiElements[2].get())->updateColorLocations({ 0,  (unsigned int)sensor_info_message_one.length(), (unsigned int)sensor_info_message_two.length(), (unsigned int)sensor_info_message_three.length(), (unsigned int)sensor_info_message_four.length() });
+		m_uiManager.getElement<TextOverlay>(L"Sensor Info 1 Text")->updateText(sensor_info_message_one + sensor_info_message_two + sensor_info_message_three + sensor_info_message_four);
+		m_uiManager.getElement<TextOverlay>(L"Sensor Info 1 Text")->updateColorLocations({ 0,  (unsigned int)sensor_info_message_one.length(), (unsigned int)sensor_info_message_two.length(), (unsigned int)sensor_info_message_three.length(), (unsigned int)sensor_info_message_four.length() });
 
-		((TextOverlay*)m_uiElements[3].get())->updateText(sensor_info_message_one + sensor_info_message_two + sensor_info_message_three + sensor_info_message_four);
-		((TextOverlay*)m_uiElements[3].get())->updateColorLocations({ 0,  (unsigned int)sensor_info_message_one.length(), (unsigned int)sensor_info_message_two.length(), (unsigned int)sensor_info_message_three.length(), (unsigned int)sensor_info_message_four.length() });
+		m_uiManager.getElement<TextOverlay>(L"Sensor Info 2 Text")->updateText(sensor_info_message_one + sensor_info_message_two + sensor_info_message_three + sensor_info_message_four);
+		m_uiManager.getElement<TextOverlay>(L"Sensor Info 2 Text")->updateColorLocations({ 0,  (unsigned int)sensor_info_message_one.length(), (unsigned int)sensor_info_message_two.length(), (unsigned int)sensor_info_message_three.length(), (unsigned int)sensor_info_message_four.length() });
 	}
 
-	((TextOverlay*)m_uiElements[4].get())->updateText(data_display_message);
-	((TextOverlay*)m_uiElements[4].get())->updateColorLocations({ 0,  (unsigned int)data_display_message.length() });
+	m_uiManager.getElement<TextOverlay>(L"View Data Text")->updateText(data_display_message);
+	m_uiManager.getElement<TextOverlay>(L"View Data Text")->updateColorLocations({ 0,  (unsigned int)data_display_message.length() });
 }
 
 void MadgwickTestMode::switchDisplayDataType(int n)
@@ -365,7 +436,15 @@ void MadgwickTestMode::switchDisplayDataType(int n)
 	m_display_data_index = n - 1;
 }
 
-glm::quat MadgwickTestMode::getCurrentHeadingOffset()
+void MadgwickTestMode::getIMUHeadingOffset(glm::quat heading)
+{
+	//This method gets the heading offset saved in the IMU class and updates
+	//the local heading offset variable with it. This variable is used to make
+	//sure the rendered image aligns with the computer monitor
+	m_headingOffset = heading;
+}
+
+void MadgwickTestMode::setCurrentHeadingOffset()
 {
 	//The Madgwick filter uses due North as a reference for the magnetic field, so if the computer monitor
 	//isn't aligned with this direction then the sensor will appear to have an improper heading while being
@@ -390,7 +469,8 @@ glm::quat MadgwickTestMode::getCurrentHeadingOffset()
 
 	//return the proper rotation quaternion about the y-axis as opposed to the z-axis
 	//as it gets applied after the Madgwick filter (so +y is up instead of +z)
-	return { cos(angle / 2.0f), 0.0f, 0.0f, sin(angle / 2.0f)};
+	m_headingOffset = { cos(angle / 2.0f), 0.0f, 0.0f, sin(angle / 2.0f)};
+	m_mode_screen_handler(ModeAction::IMUHeading, (void*)&m_headingOffset);
 }
 
 void MadgwickTestMode::convergenceCheck()
@@ -420,18 +500,12 @@ void MadgwickTestMode::convergenceCheck()
 		if (y_error > error_threshold || y_error < -error_threshold) return;
 		if (z_error > error_threshold || z_error < -error_threshold) return;
 
-		//If all error check pass we reset the beta value of the filter by updating the current mode state
-		m_state |= MadgwickModeState::BETA_UPDATE;
+		//If all error check pass we reset the beta value of the filter to once again bias the gyro readings
+		float initial_beta_value = 0.041f;
+		m_mode_screen_handler(ModeAction::MadgwickUpdateFilter, (void*)&initial_beta_value);;
 
 		//And do a little clean up
 		m_convergenceQuaternions.clear();
 		m_converged = true; //prevents this convergenceCheck() from being called again
 	}
-}
-
-void MadgwickTestMode::betaUpdate()
-{
-	//The Madgwick filter has converged and the beta value of the filter has successfully been reset.
-	//We remove the BETA_UPDATE flag from the mode state
-	if (m_state & MadgwickModeState::BETA_UPDATE) m_state ^= MadgwickModeState::BETA_UPDATE;
 }

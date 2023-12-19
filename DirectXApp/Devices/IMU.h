@@ -68,16 +68,18 @@ public:
 	float getConversionRate(sensor_type_t sensor);
 
 	//Calibration Methods
+	//TODO: Is there a reason that the 6 get methods directly below this can't be 
+	//condensed into two methods?
 	std::pair<const float*, const float**> getAccelerometerCalibrationNumbers();
 	std::pair<const float*, const float**> getGyroscopeCalibrationNumbers();
 	std::pair<const float*, const float**> getMagnetometerCalibrationNumbers();
 
-	std::vector<int> getAccelerometerAxisOrientations();
-	std::vector<int> getGyroscopeAxisOrientations();
-	std::vector<int> getMagnetometerAxisOrientations();
+	std::pair<const int*, const int*> getAccelerometerAxisOrientations();
+	std::pair<const int*, const int*> getGyroscopeAxisOrientations();
+	std::pair<const int*, const int*> getMagnetometerAxisOrientations();
 
 	void setCalibrationNumbers(sensor_type_t sensor, std::pair<float*, float**> cal_numbers);
-	void setAxesOrientations(std::vector<int> axis_orientations);
+	void setAxesOrientations(sensor_type_t sensor, std::pair<int*, int*> axis_orientations);
 
 	//Setting Altering Functions
 	void updateSensorSettings(uint8_t* imu_settings);

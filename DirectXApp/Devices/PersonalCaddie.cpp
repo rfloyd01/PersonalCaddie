@@ -181,7 +181,13 @@ void PersonalCaddie::BLEDeviceHandler(BLEState state)
         std::wstring message = L"Found a Personal Caddie device, attempting to connect...\n";
         event_handler(PersonalCaddieEventType::BLE_ALERT, (void*)&message);
 
+        //TODO: This line causes the program to crash if I recently ran the program and closed it without
+        //disconnecting from the Personal Caddie first. I think it may have something to do with the PC not
+        //properly getting rid of the resources, so the next time I start the program the old resources are 
+        //maybe still in memory but outdated, so I'm able to access them even though I shouldn't be? This 
+        //crash is definitely annoying and I should address it.
         m_services = this->p_ble->getBLEDevice()->GetGattServicesAsync(BluetoothCacheMode::Uncached).get().Services();
+
         //m_services = this->p_ble->getBLEDevice()->GetGattServicesAsync().get().Services();
         if (m_services.Size() == 0)
         {
@@ -255,8 +261,8 @@ void PersonalCaddie::BLEDeviceHandler(BLEState state)
         }
 
         //After confirming the device is here and reading the gatt table, make sure that all data notifications
-        //are currently off (as this setting can persist between connections)
-        disableDataNotifications();
+        //are enabled. Notifications should be enabled for the duration of the connection.
+        disableDataNotifications(); //TODO: Not getting data when enabling off the bat, why is this the case?
 
         //Check to see if this device is currently paired with the computer. If it isn't, pair it for quicker
         //connection times in the future. Also, update the address of the last connect device in the file inside
@@ -268,7 +274,6 @@ void PersonalCaddie::BLEDeviceHandler(BLEState state)
         //Read the sensor settings characteristic to get some basic information about the sensors attached to
         //the Personal Caddie
         uint8_t sensor_settings_array[SENSOR_SETTINGS_LENGTH] = { 0 };
-
         try
         {
             auto sensor_settings_buffer = m_settings_characteristic.ReadValueAsync(Bluetooth::BluetoothCacheMode::Uncached).get().Value(); //use unchached to read value from the device
@@ -302,7 +307,7 @@ void PersonalCaddie::BLEDeviceHandler(BLEState state)
 
         break;
     }
-    case BLEState::Disconnected:
+    case BLEState::Disconnect:
     {
         //The connection to the Personal Caddie has been lost, either purposely or by accident. We need
         //to alert the ModeScreen class about this disconnection so it can disable/enable certain features.
@@ -438,9 +443,9 @@ void PersonalCaddie::compositeDataCharacteristicEventHandler(Bluetooth::GenericA
     std::pair<const float*, const float**> gyr_calibration_data = this->p_imu->getGyroscopeCalibrationNumbers();
     std::pair<const float*, const float**> mag_calibration_data = this->p_imu->getMagnetometerCalibrationNumbers();
 
-    std::vector<int> acc_axis_orientation_data = this->p_imu->getAccelerometerAxisOrientations();
-    std::vector<int> gyr_axis_orientation_data = this->p_imu->getGyroscopeAxisOrientations();
-    std::vector<int> mag_axis_orientation_data = this->p_imu->getMagnetometerAxisOrientations();
+    std::pair<const int*, const int*> acc_axis_orientation_data = this->p_imu->getAccelerometerAxisOrientations();
+    std::pair<const int*, const int*> gyr_axis_orientation_data = this->p_imu->getGyroscopeAxisOrientations();
+    std::pair<const int*, const int*> mag_axis_orientation_data = this->p_imu->getMagnetometerAxisOrientations();
 
     //Then read the physical data from the notification PDU
     auto read_buffer = Windows::Storage::Streams::DataReader::FromBuffer(args.CharacteristicValue());
@@ -467,24 +472,24 @@ void PersonalCaddie::compositeDataCharacteristicEventHandler(Bluetooth::GenericA
         for (int axis = X; axis <= Z; axis++)
         {
             int16_t axis_reading = read_buffer.ReadInt16();
-            int actual_axis = acc_axis_orientation_data[axis];
-            this->sensor_data[static_cast<int>(DataType::RAW_ACCELERATION)][actual_axis][i] = axis_reading * this->p_imu->getConversionRate(ACC_SENSOR) * acc_axis_orientation_data[axis + 3]; //Apply appropriate conversion from LSB to the current unit
+            //int actual_axis = acc_axis_orientation_data.first[axis];
+            this->sensor_data[static_cast<int>(DataType::RAW_ACCELERATION)][acc_axis_orientation_data.first[axis]][i] = axis_reading * this->p_imu->getConversionRate(ACC_SENSOR) * acc_axis_orientation_data.second[axis]; //Apply appropriate conversion from LSB to the current unit
         }
 
         //Read gyr data second
         for (int axis = X; axis <= Z; axis++)
         {
             int16_t axis_reading = read_buffer.ReadInt16();
-            int actual_axis = gyr_axis_orientation_data[axis];
-            this->sensor_data[static_cast<int>(DataType::RAW_ROTATION)][actual_axis][i] = axis_reading * this->p_imu->getConversionRate(GYR_SENSOR) * gyr_axis_orientation_data[axis + 3]; //Apply appropriate conversion from LSB to the current unit
+            //int actual_axis = gyr_axis_orientation_data.first[axis];
+            this->sensor_data[static_cast<int>(DataType::RAW_ROTATION)][gyr_axis_orientation_data.first[axis]][i] = axis_reading * this->p_imu->getConversionRate(GYR_SENSOR) * gyr_axis_orientation_data.second[axis]; //Apply appropriate conversion from LSB to the current unit
         }
 
         //Read mag data third
         for (int axis = X; axis <= Z; axis++)
         {
             int16_t axis_reading = read_buffer.ReadInt16();
-            int actual_axis = mag_axis_orientation_data[axis];
-            this->sensor_data[static_cast<int>(DataType::RAW_MAGNETIC)][actual_axis][i] = axis_reading * this->p_imu->getConversionRate(MAG_SENSOR) * mag_axis_orientation_data[axis + 3]; //Apply appropriate conversion from LSB to the current unit
+            //int actual_axis = mag_axis_orientation_data.first[axis];
+            this->sensor_data[static_cast<int>(DataType::RAW_MAGNETIC)][mag_axis_orientation_data.first[axis]][i] = axis_reading * this->p_imu->getConversionRate(MAG_SENSOR) * mag_axis_orientation_data.second[axis]; //Apply appropriate conversion from LSB to the current unit
         }
     }
 
@@ -527,6 +532,14 @@ std::pair<const float*, const float**> PersonalCaddie::getSensorCalibrationNumbe
     else return { nullptr, nullptr };
 }
 
+std::pair<const int*, const int*> PersonalCaddie::getSensorAxisCalibrationNumbers(sensor_type_t sensor)
+{
+    if (sensor == ACC_SENSOR) return this->p_imu->getAccelerometerAxisOrientations();
+    else if (sensor == GYR_SENSOR) return this->p_imu->getGyroscopeAxisOrientations();
+    else if (sensor == MAG_SENSOR) return this->p_imu->getMagnetometerAxisOrientations();
+    else return { nullptr, nullptr };
+}
+
 void PersonalCaddie::updateSensorCalibrationNumbers(sensor_type_t sensor, std::pair<float*, float**> cal_numbers)
 {
     this->p_imu->setCalibrationNumbers(sensor, cal_numbers);
@@ -534,9 +547,9 @@ void PersonalCaddie::updateSensorCalibrationNumbers(sensor_type_t sensor, std::p
     event_handler(PersonalCaddieEventType::IMU_ALERT, (void*)&message);
 }
 
-void PersonalCaddie::updateSensorAxisOrientations(std::vector<int> axis_orientations)
+void PersonalCaddie::updateSensorAxisOrientations(sensor_type_t sensor, std::pair<int*, int*> cal_numbers)
 {
-    this->p_imu->setAxesOrientations(axis_orientations);
+    this->p_imu->setAxesOrientations(sensor, cal_numbers);
     std::wstring message = L"Updated Axis Orientation Info";
     event_handler(PersonalCaddieEventType::IMU_ALERT, (void*)&message);
 }
@@ -554,6 +567,17 @@ void PersonalCaddie::startDataTransfer()
     case PersonalCaddiePowerMode::CONNECTED_MODE:
         break;
     }
+}
+
+bool PersonalCaddie::bleConnectionStatus()
+{ 
+    //Check to see if we're in an active BLE connection or not
+    return p_ble->isConnected();
+}
+
+bool PersonalCaddie::bleDeviceWatcherStatus()
+{
+    return p_ble->isDeviceWatcherOn();
 }
 
 void PersonalCaddie::enableDataNotifications()
@@ -615,6 +639,14 @@ void PersonalCaddie::enableDataNotifications()
                                     });
                             });
                     });
+            }
+            else
+            {
+                //Notifications were already enabled, but we should still let the mode screen class know as it may be
+                //waiting for confirmation.
+                std::wstring message = L"On";
+                event_handler(PersonalCaddieEventType::NOTIFICATIONS_TOGGLE, (void*)&message);
+                return;
             }
         });
 }
@@ -726,6 +758,8 @@ void PersonalCaddie::changePowerMode(PersonalCaddiePowerMode mode)
     *                     mode to increase data throughput for smoother golf swing rendering.
     */
 
+    if (mode == current_power_mode) return; //no need to change into the same mode we're currently in
+
     winrt::Windows::Storage::Streams::DataWriter writer;
     writer.ByteOrder(winrt::Windows::Storage::Streams::ByteOrder::LittleEndian);
     writer.WriteByte(static_cast<uint8_t>(mode));
@@ -816,9 +850,6 @@ void PersonalCaddie::updateIMUSettings(uint8_t* newSettings)
                 if (current_settings[ACC_START + SENSOR_MODEL] != newSettings[ACC_START + SENSOR_MODEL]) p_imu->initializeNewSensor(ACC_SENSOR, newSettings);
                 if (current_settings[GYR_START + SENSOR_MODEL] != newSettings[GYR_START + SENSOR_MODEL]) p_imu->initializeNewSensor(GYR_SENSOR, newSettings);
                 if (current_settings[MAG_START + SENSOR_MODEL] != newSettings[MAG_START + SENSOR_MODEL]) p_imu->initializeNewSensor(MAG_SENSOR, newSettings);
-
-                //Put the Personal Caddie back into connected mode after making changes
-                changePowerMode(PersonalCaddiePowerMode::CONNECTED_MODE);
 
                 std::wstring message = L"IMU Settings successfully updated. ";
                 event_handler(PersonalCaddieEventType::IMU_ALERT, (void*)&message);

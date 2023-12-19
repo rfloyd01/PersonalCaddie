@@ -50,7 +50,17 @@ struct UIText
 
 	}
 
-	UIText() { textType = UITextType::END; }; //this tells other parts of the program that this UIText hasn't been initialized yet
+	UIText()
+	{
+		//Default initialization, these values should get overwritten before actually
+		//using the struct
+		message = L"";
+		fontSize = 0.0f;
+		startLocation = { 0.0f, 0.0f };
+		renderArea = { 0.0f, 0.0f };
+		textType = UITextType::END; //this tells other parts of the program that this UIText hasn't been initialized yet
+		justification = UITextJustification::UpperLeft;
+	}; 
 
 	std::wstring message;
 	DirectX::XMFLOAT2 startLocation; //the top left corner of the rendering box for the text (the size of the render box is calculated elsewhere)

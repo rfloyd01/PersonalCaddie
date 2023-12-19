@@ -25,7 +25,8 @@ enum UIElementState
 	Hovered = 16,
 	NeedTextPixels = 32,
 	Selected = 64,
-	Disabled = 128
+	Disabled = 128,
+	Dummy = 256
 };
 
 //used to make sure all parts of the UI element are rendered
@@ -34,7 +35,13 @@ enum UIElementState
 class UIElement
 {
 public:
-	UIElement() { } //empty default initializer
+	UIElement()
+	{
+		m_size = { 0.0f, 0.0f };
+		m_location = { 0.0f, 0.0f };
+		m_fontSize = 0.0f;
+		m_state = Dummy;
+	}
 	~UIElement()
 	{
 		//Deleting a UI Element should also delete any children that it has.
@@ -48,9 +55,11 @@ public:
 
 	winrt::Windows::Foundation::Size getCurrentWindowSize();
 
-	//Getters and Setters
+	//Methods for modifying the state of the UI Element
 	uint32_t getState() { return m_state; }
+	void updateState(UIElementState state) { m_state |= state; } //add the given state to the overall state
 	virtual void setState(uint32_t state);
+	virtual void updateState(uint32_t state);
 	virtual void removeState(uint32_t state);
 
 	void setFontSize(float size) { m_fontSize = size; }
@@ -69,8 +78,10 @@ public:
 	virtual std::vector<UIText*> setTextDimension() { return {}; }; //empty getTextDimension method can be overriden by ITextDimension element users
 	virtual void repositionText() {}; //empty repositionText method can be overriden by ITextDimension element users
 
-	bool isAlert() { return m_isAlert; }
-	void setAlert() { m_isAlert = true; }
+	bool isAlert() { return m_isAlert; } //deprecated
+	void setAlert() { m_isAlert = true; } //deprecated
+
+	void getAllTextNeedingDimensions(std::vector<UIText*>* text);
 
 protected:
 	int pixelCompare(float pixelOne, float pixelTwo);

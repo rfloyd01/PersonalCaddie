@@ -154,17 +154,43 @@ void UIElementRenderer::setTextLayoutPixels(UIText* text)
 void UIElementRenderer::render(std::vector<std::shared_ptr<UIElement> > const& uiElements)
 {
     //Renders all UI Elements in the given vector
-    for (int i = 0; i < uiElements.size(); i++)
-    {
-        if (uiElements[i]->getState() & UIElementState::Invisible) continue; //invisible elements don't get rendered
+    for (int i = 0; i < uiElements.size(); i++) renderUIElement(uiElements[i]);
+}
 
-        //First, recursively, render all children elements first
-        auto children = uiElements[i]->getChildren();
-        if (children.size() > 0) render(children);
-    
-        if (uiElements[i]->getShape()->m_shapeType != UIShapeType::END) renderShape(uiElements[i]->getShape());
-        if (uiElements[i]->getText()->textType != UITextType::END) renderText(uiElements[i]->getText());
+void UIElementRenderer::render(std::map<UIElementType, std::vector<std::shared_ptr<ManagedUIElement> > > const& managedUIElements)
+{
+    //This render method takes a reference to the UIElementManager classes ui element map. This gives us a little
+    //bit more ease/flexibility than just rendering from a single vector. With this method we have the ability to render
+    //UIElements in order of their element type, instead of the order in which they are placed on a page. Certain elements
+    //(like drop down boxes) should be rendered after other elements so that their children elements will be displayed
+    //on the top level of the screen, ensuring that we can use the scroll box child without any issue.
+    for (int i = 0; i < static_cast<int>(UIElementType::END); i++)
+    {
+        if (static_cast<UIElementType>(i) == UIElementType::DROP_DOWN_MENU) continue;
+
+        auto elements = managedUIElements.at(static_cast<UIElementType>(i));
+        for (int j = 0; j < elements.size(); j++) renderUIElement(elements[j]->element);
     }
+
+    //Drop down menus get rendered last, and from top to bottom of the screen. This insures that nothing 
+    //covers up their scroll boxes when activated.
+    auto drop_downs = managedUIElements.at(UIElementType::DROP_DOWN_MENU);
+    for (int i = 0; i < drop_downs.size(); i++)
+    {
+        renderUIElement(drop_downs[i]->element);
+    }
+}
+
+void UIElementRenderer::renderUIElement(std::shared_ptr<UIElement> element)
+{
+    if (element->getState() & UIElementState::Invisible) return; //invisible elements don't get rendered
+
+    //First, recursively, render all children elements first
+    auto children = element->getChildren();
+    if (children.size() > 0) render(children);
+
+    if (element->getShape()->m_shapeType != UIShapeType::END) renderShape(element->getShape());
+    if (element->getText()->textType != UITextType::END) renderText(element->getText());
 }
 
 void UIElementRenderer::renderShape(const UIShape* shape)

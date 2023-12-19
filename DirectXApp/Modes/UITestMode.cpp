@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "UITestMode.h"
 
+
 UITestMode::UITestMode()
 {
 	//set a very light gray background color for the mode
@@ -9,24 +10,26 @@ UITestMode::UITestMode()
 
 uint32_t UITestMode::initializeMode(winrt::Windows::Foundation::Size windowSize, uint32_t initialState)
 {
-	//Create UI Elements on the page
+	//Take the current screen size and pass it to the UIElementManager, this is so that the manager knows
+	//how large to make each element.
+	m_uiManager.updateScreenSize(windowSize);
+
+	//Create UI Text Elements on the page
 	initializeTextOverlay(windowSize);
 
-	//CURRENT TEST: Create an options box
-	std::wstring shorterText = L"At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum deleniti atque corrupti quos dolores et quas molestias excepturi sint occaecati cupiditate non provident";
-	std::wstring longerText = L"At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum deleniti atque corrupti quos dolores et quas molestias excepturi sint occaecati cupiditate non provident, similique sunt in culpa qui officia deserunt mollitia animi, id est laborum et dolorum fuga. Et harum quidem rerum facilis est et expedita distinctio. Nam libero tempore, cum soluta nobis est eligendi optio cumque nihil impedit quo minus id quod maxime placeat facere possimus, omnis voluptas assumenda est, omnis dolor repellendus. Temporibus autem quibusdam et aut officiis debitis aut rerum necessitatibus saepe eveniet ut et voluptates repudiandae sint et molestiae non recusandae. Itaque earum rerum hic tenetur a sapiente delectus, ut aut reiciendis voluptatibus maiores alias consequatur aut perferendis doloribus asperiores repellat.";
-	std::wstring options = L"Option 1\nOption 2\nOption Three is Long\nOption 4\nOption 5\nOption 4b.\nOption 6\nOption 4\nOption 5\nOption 4b.\nOption 6";
-
-	FullScrollingTextBox scroll(windowSize, { 0.25, 0.5 }, { 0.5, 0.25 }, options, 0.025, true, true);
-	DropDownMenu drop(windowSize, { 0.75, 0.5 }, { 0.2, 0.1 }, options, 0.025, 5, false);
-
-	m_uiElements.push_back(std::make_shared<FullScrollingTextBox>(scroll));
-	m_uiElements.push_back(std::make_shared<DropDownMenu>(drop));
+	DropDownMenu acc_menu(windowSize, { 0.5, 0.47 }, { 0.15, 0.1 }, L"One\nTwo\nThree\nFour\nFive", 0.0225); //the locations will get set by a separate method
+	DropDownMenu gyr_menu(windowSize, { 0.5, 0.43 }, { 0.15, 0.1 }, L"LongerOne\nLongerTwo\nLongerThree\nLongerFour\nLongerFive", 0.0225); //the locations will get set by a separate method
+	DropDownMenu mag_menu(windowSize, { 0.85, 0.47 }, { 0.25, 0.15 }, L"One\nTwo\nThree\nFour\nFive", 0.0225); //the locations will get set by a separate method
+	
+	m_uiManager.addElement<DropDownMenu>(gyr_menu, L"Gyr Model Drop Down Menu");
+	m_uiManager.addElement<DropDownMenu>(acc_menu, L"Acc Model Drop Down Menu");
+	m_uiManager.addElement<DropDownMenu>(mag_menu, L"Mag Model Drop Down Menu");
 
 	//When this mode is initialzed we go into a state of CanTransfer and Active.
 	//Can Transfer allows us to use the esc. key to go back to the settings menu
 	//while active diverts state control to this mode
-	return (ModeState::CanTransfer | ModeState::NeedTextUpdate);
+	//return (ModeState::CanTransfer | ModeState::NeedTextUpdate);
+	return ModeState::CanTransfer;
 }
 
 void UITestMode::uninitializeMode()
@@ -34,8 +37,10 @@ void UITestMode::uninitializeMode()
 	//The only thing to do when leaving the main menu mode is to clear
 	//out all text in the text map and color map
 	
-	for (int i = 0; i < m_uiElements.size(); i++) m_uiElements[i] = nullptr;
-	m_uiElements.clear();
+	//for (int i = 0; i < m_uiElements.size(); i++) m_uiElements[i] = nullptr;
+	//m_uiElements.clear();
+
+	m_uiManager.removeAllElements();
 }
 
 void UITestMode::initializeTextOverlay(winrt::Windows::Foundation::Size windowSize)
@@ -45,26 +50,42 @@ void UITestMode::initializeTextOverlay(winrt::Windows::Foundation::Size windowSi
 	HighlightableTextOverlay title(windowSize, { UIConstants::TitleTextLocationX, UIConstants::TitleTextLocationY }, { UIConstants::TitleTextSizeX, UIConstants::TitleTextSizeY },
 		title_message, UIConstants::TitleTextPointSize, { UIColor::White }, { 0,  (unsigned int)title_message.length() }, UITextJustification::CenterCenter);
 	title.updateSecondaryColor(UIColor::Red);
-	m_uiElements.push_back(std::make_shared<HighlightableTextOverlay>(title));
+	m_uiManager.addElement<HighlightableTextOverlay>(title, L"Title");
 
 	//Sub-Title information
 	std::wstring subtitle_message = L"A place to develop custom UI Elements (hover over the title to see some stuff in action!)";
 	TextOverlay subtitle(windowSize, { UIConstants::SubTitleTextLocationX, UIConstants::SubTitleTextLocationY }, { UIConstants::SubTitleTextSizeX, UIConstants::SubTitleTextSizeY },
 		subtitle_message, UIConstants::SubTitleTextPointSize, { UIColor::White }, { 0,  (unsigned int)subtitle_message.length() }, UITextJustification::CenterCenter);
-	m_uiElements.push_back(std::make_shared<TextOverlay>(subtitle));
+	m_uiManager.addElement<TextOverlay>(subtitle, L"Sub-Title");
 
 	//Footnote information
 	std::wstring footnote_message = L"Press Esc. to return to settings menu";
 	TextOverlay footnote(windowSize, { UIConstants::FootNoteTextLocationX, UIConstants::FootNoteTextLocationY }, { UIConstants::FootNoteTextSizeX, UIConstants::FootNoteTextSizeY },
 		footnote_message, UIConstants::FootNoteTextPointSize, { UIColor::White }, { 0,  (unsigned int)footnote_message.length() }, UITextJustification::LowerRight);
-	m_uiElements.push_back(std::make_shared<TextOverlay>(footnote));
+	m_uiManager.addElement<TextOverlay>(footnote, L"Footnote");
 }
 
-uint32_t UITestMode::handleUIElementStateChange(int i)
+void UITestMode::update()
 {
-	if (i == 1)
+	//Check the action array of the UIElement Manager to see if anything needs addressing
+	if (m_uiManager.getActionElements().size() > 0)
 	{
-		return 1;
+		//iterate backwards so we can pop each action from the back when complete
+		for (int i = m_uiManager.getActionElements().size() - 1; i >= 0; i--)
+		{
+			auto action = m_uiManager.getActionElements()[i];
+			m_uiManager.getActionElements().pop_back(); //TODO: For now just remove elements, need to implement actions in the future though
+		}
 	}
-	return 0;
+}
+
+void UITestMode::handleKeyPress(winrt::Windows::System::VirtualKey pressedKey)
+{
+	//The only key we can press in this mode is the escape key. All this key does is exit the 
+	//mode and go back to the development menu.
+	if (pressedKey == winrt::Windows::System::VirtualKey::Escape)
+	{
+		ModeType newMode = ModeType::DEVELOPER_TOOLS;
+		m_mode_screen_handler(ModeAction::ChangeMode, (void*)&newMode);
+	}
 }

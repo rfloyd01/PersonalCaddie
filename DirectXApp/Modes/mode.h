@@ -1,12 +1,15 @@
 #pragma once
 
 #include "Graphics/Objects/2D/UIElements.h"
+#include "Graphics/Utilities/UIElementManager.h"
 #include "Graphics/Objects/3D/Elements/VolumeElement.h"
 #include "Graphics/Rendering/Material.h"
 #include "Input/InputProcessor.h"
 #include "Math/glm.h"
+#include "Devices/PersonalCaddie.h" //needed for PersonalCaddiePowerMode enum
 
 #include <string>
+#include <functional>
 
 
 //Classes, structs and enums that are helpful for this class
@@ -45,48 +48,86 @@ enum ModeState
 	Leave_Active = 512
 };
 
+//Sometimes there are certain actions that we need to take inside the given mode, however, the mode doesn't have
+//the power to actually take the action. For example, in calibration mode we need to turn on the Personal Caddie
+//so that it starts taking data measurements, but this can only be done from the Mode Screen class. This enum
+//holds different actions that the active mode can ask the mode screen class to take on its behalf.
+enum ModeAction
+{
+	PersonalCaddieChangeMode,
+	RendererGetTextSize,
+	RendererGetMaterial,
+	MadgwickUpdateFilter,
+	SensorSettings,
+	SensorCalibration,
+	BLEDeviceWatcher,
+	BLEConnection,
+	BLENotifications,
+	IMUHeading,
+	ChangeMode
+};
+
 //Class definition
 class Mode
 {
 public:
 	//PUBLIC FUNCTIONS
+
+	//Initialization Methods
 	virtual uint32_t initializeMode(winrt::Windows::Foundation::Size windowSize, uint32_t initialState = 0) = 0;
 	virtual void uninitializeMode() = 0;
 
+	//Updating and Input Methods
+	void uiUpdate();
 	virtual void update() {}; //not a pure virtual method as not all modes require this method
-
-	virtual void handlePersonalCaddieConnectionEvent(bool connectionStatus) {}; //Some modes need the ability to enable or disable features if the Personal Caddie gets disconnected
-
-	const UIColor getBackgroundColor();
-
-	std::vector<std::shared_ptr<UIElement> > const& getUIElements() { return m_uiElements; }
-	std::vector<std::shared_ptr<VolumeElement> > const& getVolumeElements() { return m_volumeElements; }
-
 	uint32_t getModeState() { return m_state; }
+	virtual void handleKeyPress(winrt::Windows::System::VirtualKey pressedKey) {}; //a method for handling mode specific keyboard commands
 
+	//Rendering Methods and variables
+	const UIColor getBackgroundColor();
+	UIElementManager & getUIElementManager() { return m_uiManager; }
+	std::vector<std::shared_ptr<VolumeElement> > const& getVolumeElements() { return m_volumeElements; }
 	std::vector<MaterialType> const& getMaterialTypes() { return m_materialTypes; }; //modes with 3d rendering need materials generated from the Direct3D context
+	bool m_needsCamera = false; //Modes that require 3D rendering will set this variable to true to let the ModeScreen know that its camera is needed
 
-	template <typename T>
-	void addUIElement(T const& element) { m_uiElements.push_back(std::make_shared<T>(element)); }
-
-	//Alert Methods
-	void createAlert(std::wstring message, UIColor color, winrt::Windows::Foundation::Size windowSize);
-	void createAlert(TextOverlay& alert);
-	virtual TextOverlay removeAlerts(); //some modes need to maintain a specific order for elements and removing alerts can change this. This method is virtual so those modes can override this one.
-
-	virtual uint32_t handleUIElementStateChange(int i) = 0;
-
+	//Data Gathering Methods
 	virtual void addData(std::vector<std::vector<std::vector<float> > > const& sensorData, float sensorODR, float timeStamp, int totalSamples) {} //A method that modes can overwrite when they need data from the Personal Caddie
 	virtual void addQuaternions(std::vector<glm::quat> const& quaternions, int quaternion_number, float time_stamp, float delta_t) {} //A method that modes can overwrite when they need data from the Personal Caddie
 
-	bool m_needsCamera = false; //Modes that require 3D rendering will set this variable to true to let the ModeScreen know that its camera is needed
+	//Alert Methods
+	void createAlert(std::wstring message, UIColor color, winrt::Windows::Foundation::Size windowSize, long long duration = 2500); //default to 2.5 second alerts
+	std::vector<std::shared_ptr<ManagedUIElement>> removeAlerts();
+	void overwriteAlerts(std::vector<std::shared_ptr<ManagedUIElement>> const& alerts);
+	void checkAlerts();
+
+	//Methods that interact with the Mode Screen handler
+	virtual void getSensorCalibrationNumbers(sensor_type_t sensor, std::pair<const float*, const float**> cal_numbers) {};
+	virtual void getSensorAxisCalibrationNumbers(sensor_type_t sensor, std::pair<const int*, const int*> cal_numbers) {};
+	virtual void getBLEConnectionStatus(bool status) {};
+	virtual void getBLEDeviceWatcherStatus(bool status) {};
+	virtual void getString(std::wstring message) {}; //This method is used to pass strings from the mode screen to the active mode, it's up to each individual mode on if and how to implement this
+	virtual void getIMUHeadingOffset(glm::quat heading) {};
+
+	//Methods for handling Personal Caddie, BLE and Sensor Events
+	virtual void pc_ModeChange(PersonalCaddiePowerMode newMode) {};
+	virtual void ble_NotificationsChange(int state) {};
+	static void setHandlerMethod(std::function<void(ModeAction, void*)> func) { m_mode_screen_handler = func; } //static method for setting the function pointer in the mode state class
+	virtual void handlePersonalCaddieConnectionEvent(bool connectionStatus) {}; //Some modes need the ability to enable or disable features if the Personal Caddie gets disconnected
 
 protected:
+	//Private variables
 	UIColor m_backgroundColor; //represents the background color when this mode is being rendered
-
-	std::vector<std::shared_ptr<UIElement> >  m_uiElements; //2d objects like Drop downs, combo boxes, buttons and text
-	std::vector<std::shared_ptr<VolumeElement> >  m_volumeElements; //3d objects to be rendered on screen (not all modes feature 3D objects)
-	std::vector<MaterialType> m_materialTypes; //A vector of material types to be applied to 3d rendered objects
-
 	uint32_t m_state; //the state of the current mode
+
+	//Rendering Variables
+	std::vector<std::shared_ptr<VolumeElement> > m_volumeElements; //3d objects to be rendered on screen (not all modes feature 3D objects)
+	std::vector<MaterialType> m_materialTypes; //A vector of material types to be applied to 3d rendered objects
+	UIElementManager m_uiManager; //a class that stores and manages 2D UI Elements in the mode (such as buttons, drop down menus, etc.)
+
+	//Handler Methods
+	virtual void uiElementStateChangeHandler(std::shared_ptr<ManagedUIElement> element) {}; //a method where each mode can implement how to handle button clicks and things of that nature
+
+	//static function pointer to Mode Screen class goes here. The handler method is the same for all
+	//modes which is why the function pointer is static
+	static std::function<void(ModeAction, void*)> m_mode_screen_handler; //pointer to an event handler in the Personal Caddie class
 };

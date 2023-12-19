@@ -220,7 +220,7 @@ int UIElement::pixelCompare(float pixelOne, float pixelTwo)
 void UIElement::removeState(uint32_t state)
 {
 	//removes the given state from UI Elements and any children that have the state as well
-	m_state ^= state;
+	m_state &= ~state;
 
 	for (int i = 0; i < p_children.size(); i++)
 	{
@@ -235,4 +235,13 @@ void UIElement::setState(uint32_t state)
 	//setting a button into the disabled state will change its text color)
 	//so this is a virtual method that can be overriden.
 	m_state = state;
+}
+
+void UIElement::updateState(uint32_t state)
+{
+	//Unlike the setState method which changes the entire state, this method
+	//updates the current state with the given flags without overwritting
+	//anything. Also like the setState method, we leave this is a virtual
+	//method in the case any children need a slightly different implementation
+	m_state |= state;
 }

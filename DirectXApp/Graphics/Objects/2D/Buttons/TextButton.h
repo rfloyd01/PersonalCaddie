@@ -24,32 +24,57 @@ public:
 		resize(windowSize); //Force a resize so the text is created properly
 	}
 
+	TextButton() {}; //use the Button default constructor
+
 	virtual void setState(uint32_t state) override
 	{
-		m_state = state;
-
 		if (state & UIElementState::Disabled)
 		{
 			//turn the button text gray when it's disabled
 			m_text.colors[0] = UIColor::Gray;
 		}
+
+		//Call the parent method to actually update the state
+		UIElement::setState(state);
+	}
+
+	virtual void updateState(uint32_t state) override
+	{
+		if (state & UIElementState::Disabled)
+		{
+			//turn the button text gray when it's disabled
+			m_text.colors[0] = UIColor::Gray;
+		}
+
+		//Call the parent method to actually update the state
+		UIElement::setState(state);
 	}
 
 	void removeState(uint32_t state)
 	{
-		Button::removeState(state);
-
 		//When enabling a button we change its text color to black
 		if (state & UIElementState::Disabled)
 		{
-			m_state ^= UIElementState::Disabled;
+			//m_state ^= UIElementState::Disabled;
 			m_text.colors[0] = UIColor::Black;
 		}
+
+		//Call the parent method to actually update the state
+		UIElement::removeState(state);
 	}
 
 	std::wstring getText()
 	{
 		//returns the text inside the button
 		return m_text.message;
+	}
+
+	void updateText(std::wstring newText)
+	{
+		//changes the text inside the button
+		m_text.message = newText;
+
+		//Also update the color position vector to match the new length.
+		m_text.colorLocations.back() = newText.length();
 	}
 };

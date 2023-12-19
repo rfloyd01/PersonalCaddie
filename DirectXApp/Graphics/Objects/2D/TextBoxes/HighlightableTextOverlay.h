@@ -12,6 +12,8 @@ public:
 	HighlightableTextOverlay(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, std::wstring message,
 		float fontSize, std::vector<UIColor> colors, std::vector<unsigned long long> colorLocations, UITextJustification justification);
 
+	HighlightableTextOverlay() {} //empty default constructor
+
 	virtual void removeState(uint32_t state) override;
 	void updateSecondaryColor(UIColor color) { m_secondaryColor = color; }
 
