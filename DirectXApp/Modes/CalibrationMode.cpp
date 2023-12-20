@@ -1871,6 +1871,10 @@ void CalibrationMode::initializeModel()
 	m_materialTypes.push_back(MaterialType::SENSOR_SHORT_SIDE);
 	m_materialTypes.push_back(MaterialType::SENSOR_SHORT_SIDE);
 	m_materialTypes.push_back(MaterialType::SENSOR_BOTTOM);
+
+	//After creating the necessary volume elements and material types, map each volume element 
+	//to its given material through the master renderer class (accessed via the ModeScreenHandler)
+	m_mode_screen_handler(ModeAction::RendererGetMaterial, nullptr);
 }
 
 void CalibrationMode::loadModeMainPage()

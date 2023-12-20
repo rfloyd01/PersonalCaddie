@@ -63,10 +63,10 @@
   <Watches active="0" update="Never"/>
  </Watch4>
  <Files>
-  <SessionOpenFile windowGroup="DockEditLeft" x="12" y="982" useTextEdit="1" openedFrom="" useBinaryEdit="0" left="0" path="main.c" selected="1" top="991" codecName="Default"/>
-  <SessionOpenFile windowGroup="DockEditLeft" x="51" y="254" useTextEdit="1" openedFrom="" useBinaryEdit="0" left="0" path="bmi270_drv.c" selected="0" top="230" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="1308" useTextEdit="1" openedFrom="" useBinaryEdit="0" left="0" path="main.c" selected="1" top="1285" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="254" useTextEdit="1" openedFrom="" useBinaryEdit="0" left="0" path="bmi270_drv.c" selected="0" top="230" codecName="Default"/>
   <SessionOpenFile windowGroup="DockEditLeft" x="0" y="1006" useTextEdit="1" openedFrom="D:/Coding/PersonalCaddie/Firmware/nRF52840_Drivers/bmi270_drv.c" useBinaryEdit="0" left="0" path="../MEMs_Drivers/Bosch/bmi2_defs.h" selected="0" top="982" codecName="Default"/>
   <SessionOpenFile windowGroup="DockEditLeft" x="0" y="22" useTextEdit="1" openedFrom="" useBinaryEdit="0" left="0" path="nRF_Implementations/pc_twi.c" selected="0" top="0" codecName="Default"/>
  </Files>
- <ARMCrossStudioWindow activeProject="personal_caddie" fileDialogDefaultFilter="*.c;*.cpp;*.cxx;*.cc;*.h;*.hpp;*.hxx" autoConnectTarget="J-Link" buildConfiguration="Debug" sessionSettings="" debugSearchFileMap="" fileDialogInitialDirectory="D:/Coding/PersonalCaddie/Firmware/MEMs_Drivers/Bosch" debugSearchPath="" autoConnectCapabilities="3199"/>
+ <ARMCrossStudioWindow activeProject="personal_caddie" fileDialogDefaultFilter="*.c;*.cpp;*.cxx;*.cc;*.h;*.hpp;*.hxx" autoConnectTarget="J-Link" buildConfiguration="Debug" sessionSettings="" debugSearchFileMap="" fileDialogInitialDirectory="D:/Coding/PersonalCaddie/Firmware/MEMs_Drivers/Bosch" debugSearchPath="" autoConnectCapabilities="3711"/>
 </session>

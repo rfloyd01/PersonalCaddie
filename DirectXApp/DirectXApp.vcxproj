@@ -80,27 +80,35 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
     <IncludePath>$(USERPROFILE)\Documents\Coding\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Users\Bobby\Documents\Coding\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
     <IncludePath>$(USERPROFILE)\Documents\Coding\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Users\Bobby\Documents\Coding\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
     <IncludePath>$(USERPROFILE)\Documents\Coding\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Users\Bobby\Documents\Coding\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
     <IncludePath>$(USERPROFILE)\Documents\Coding\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Users\Bobby\Documents\Coding\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <IncludePath>$(USERPROFILE)\Documents\Coding\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Users\Bobby\Documents\Coding\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <IncludePath>$(USERPROFILE)\Documents\Coding\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Users\Bobby\Documents\Coding\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <IncludePath>$(USERPROFILE)\Documents\Coding\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Users\Bobby\Documents\Coding\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IncludePath>$(USERPROFILE)\Documents\Coding\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Users\Bobby\Documents\Coding\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
@@ -119,6 +127,18 @@
     <ClCompile>
       <PreprocessorDefinitions>_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
+    <Link>
+      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">assimp-vc142-mtd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+    <Link>
+      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">assimp-vc142-mtd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+    <Link>
+      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">assimp-vc142-mtd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+    <Link>
+      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">assimp-vc142-mtd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)'=='Release'">
     <ClCompile>
@@ -127,6 +147,10 @@
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">assimp-vc142-mtd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">assimp-vc142-mtd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">assimp-vc142-mtd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Release|x64'">assimp-vc142-mtd.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -172,6 +196,7 @@
     <ClInclude Include="Graphics\Objects\3D\Elements\VolumeElement.h" />
     <ClInclude Include="Graphics\Objects\3D\Meshes\FaceMesh.h" />
     <ClInclude Include="Graphics\Objects\3D\Meshes\MeshObject.h" />
+    <ClInclude Include="Graphics\Objects\3D\model.h" />
     <ClInclude Include="Graphics\Rendering\ConstantBuffers.h" />
     <ClInclude Include="Graphics\Rendering\MasterRenderer.h" />
     <ClInclude Include="Graphics\Rendering\Material.h" />
@@ -273,6 +298,7 @@
     <ClCompile Include="Graphics\Objects\3D\Elements\VolumeElement.cpp" />
     <ClCompile Include="Graphics\Objects\3D\Meshes\FaceMesh.cpp" />
     <ClCompile Include="Graphics\Objects\3D\Meshes\MeshObject.cpp" />
+    <ClCompile Include="Graphics\Objects\3D\model.cpp" />
     <ClCompile Include="Graphics\Rendering\MasterRenderer.cpp" />
     <ClCompile Include="Graphics\Rendering\Material.cpp" />
     <ClCompile Include="Graphics\Rendering\UIElementRenderer.cpp" />
@@ -305,6 +331,16 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <None Include="assimp-vc142-mtd.dll">
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">true</DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">true</DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">true</DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">true</DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
+    </None>
     <None Include="Graphics\Shaders\ConstantBuffers.hlsli" />
     <None Include="packages.config" />
     <None Include="PropertySheet.props" />

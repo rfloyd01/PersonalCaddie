@@ -11,7 +11,6 @@
 #include <string>
 #include <functional>
 
-
 //Classes, structs and enums that are helpful for this class
 enum class ModeType
 {
