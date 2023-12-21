@@ -1,6 +1,8 @@
 #include "pch.h"
 #include "UITestMode.h"
 
+#include "Graphics/Objects/3D/Elements/model.h"
+
 
 UITestMode::UITestMode()
 {
@@ -24,6 +26,10 @@ uint32_t UITestMode::initializeMode(winrt::Windows::Foundation::Size windowSize,
 	m_uiManager.addElement<DropDownMenu>(gyr_menu, L"Gyr Model Drop Down Menu");
 	m_uiManager.addElement<DropDownMenu>(acc_menu, L"Acc Model Drop Down Menu");
 	m_uiManager.addElement<DropDownMenu>(mag_menu, L"Mag Model Drop Down Menu");
+
+	Model model;
+	model.loadModel("Assets/Models/golf_club.obj");
+	//model.loadModel("D:/Coding/PersonalCaddie/DirectXApp/Assets/Models/golf_club.obj");
 
 	//When this mode is initialzed we go into a state of CanTransfer and Active.
 	//Can Transfer allows us to use the esc. key to go back to the settings menu

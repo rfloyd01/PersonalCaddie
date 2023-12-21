@@ -10,6 +10,8 @@
 //#include <Graphics/stb_image.h>
 #include <Math/glm.h>
 
+#include "VolumeElement.h"
+
 //global definitions
 #define number_of_model_types 5;
 
@@ -33,8 +35,16 @@ enum class ModelType
     LINE_OBJECTS = 4 //may need to render things such as straight lines or circles for training purposes
 };
 
+/*
+The model class allows us to redner things that are much more complicated than the basic shapes of the
+other volume element classes. Unlike those classes (such as the sphere and face) which have preset meshes,
+the meshes of the model class are imported from actual models that were rendered in 3D using software such
+as Blender, 3DSMax, etc. To help load the models correctly a library called ASSIMP is used to set both 
+the meshes and materials.
+*/
+
 //Class definition
-class Model
+class Model : public VolumeElement
 {
 public:
     //PUBLIC FUNCTIONS

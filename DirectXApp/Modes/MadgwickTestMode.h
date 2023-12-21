@@ -4,7 +4,6 @@
 
 #include "Math/SensorFusion/FusionAhrs.h"
 #include "Math/SensorFusion/FusionOffset.h"
-#include "Graphics/Objects/3D/model.h"
 
 class MadgwickTestMode : public Mode
 {
@@ -50,9 +49,6 @@ private:
 
 	bool m_converged;
 	std::vector<glm::quat> m_convergenceQuaternions;
-
-	//Model Testing
-	std::vector<Model> m_models;
 
 	//Variables for Displaying Live data from sensor
 	bool m_show_live_data;

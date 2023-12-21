@@ -193,10 +193,11 @@
     <ClInclude Include="Graphics\Objects\3D\Animate.h" />
     <ClInclude Include="Graphics\Objects\3D\Camera.h" />
     <ClInclude Include="Graphics\Objects\3D\Elements\Face.h" />
+    <ClInclude Include="Graphics\Objects\3D\Elements\model.h" />
     <ClInclude Include="Graphics\Objects\3D\Elements\VolumeElement.h" />
     <ClInclude Include="Graphics\Objects\3D\Meshes\FaceMesh.h" />
     <ClInclude Include="Graphics\Objects\3D\Meshes\MeshObject.h" />
-    <ClInclude Include="Graphics\Objects\3D\model.h" />
+    <ClInclude Include="Graphics\Objects\3D\Meshes\ModelMesh.h" />
     <ClInclude Include="Graphics\Rendering\ConstantBuffers.h" />
     <ClInclude Include="Graphics\Rendering\MasterRenderer.h" />
     <ClInclude Include="Graphics\Rendering\Material.h" />
@@ -295,10 +296,11 @@
     <ClCompile Include="Graphics\Objects\3D\Animate.cpp" />
     <ClCompile Include="Graphics\Objects\3D\Camera.cpp" />
     <ClCompile Include="Graphics\Objects\3D\Elements\Face.cpp" />
+    <ClCompile Include="Graphics\Objects\3D\Elements\model.cpp" />
     <ClCompile Include="Graphics\Objects\3D\Elements\VolumeElement.cpp" />
     <ClCompile Include="Graphics\Objects\3D\Meshes\FaceMesh.cpp" />
     <ClCompile Include="Graphics\Objects\3D\Meshes\MeshObject.cpp" />
-    <ClCompile Include="Graphics\Objects\3D\model.cpp" />
+    <ClCompile Include="Graphics\Objects\3D\Meshes\ModelMesh.cpp" />
     <ClCompile Include="Graphics\Rendering\MasterRenderer.cpp" />
     <ClCompile Include="Graphics\Rendering\Material.cpp" />
     <ClCompile Include="Graphics\Rendering\UIElementRenderer.cpp" />
@@ -331,6 +333,17 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <Media Include="Assets\Models\golf_club.mtl">
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</DeploymentContent>
+      <FileType>Document</FileType>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">true</DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">true</DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">true</DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">true</DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
+    </Media>
     <None Include="assimp-vc142-mtd.dll">
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</DeploymentContent>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</DeploymentContent>
@@ -389,6 +402,19 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
     </FxCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Media Include="Assets\Models\golf_club.obj">
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</DeploymentContent>
+      <FileType>Document</FileType>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">true</DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">true</DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">true</DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">true</DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
+    </Media>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -164,8 +164,11 @@
     <ClCompile Include="Graphics\Utilities\UIElementManager.cpp">
       <Filter>Graphics\Utilities</Filter>
     </ClCompile>
-    <ClCompile Include="Graphics\Objects\3D\model.cpp">
-      <Filter>Graphics\Objects\3D</Filter>
+    <ClCompile Include="Graphics\Objects\3D\Elements\model.cpp">
+      <Filter>Graphics\Objects\3D\Elements</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\Objects\3D\Meshes\ModelMesh.cpp">
+      <Filter>Graphics\Objects\3D\Meshes</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -397,8 +400,11 @@
     <ClInclude Include="Graphics\Objects\2D\TextBoxes\Alert.h">
       <Filter>Graphics\Objects\2D\TextBoxes</Filter>
     </ClInclude>
-    <ClInclude Include="Graphics\Objects\3D\model.h">
-      <Filter>Graphics\Objects\3D</Filter>
+    <ClInclude Include="Graphics\Objects\3D\Elements\model.h">
+      <Filter>Graphics\Objects\3D\Elements</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Objects\3D\Meshes\ModelMesh.h">
+      <Filter>Graphics\Objects\3D\Meshes</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -521,6 +527,9 @@
     <Filter Include="Math\SensorFusion">
       <UniqueIdentifier>{ce0ced81-1a99-4487-8dd7-aec0672e9044}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Assets\Models">
+      <UniqueIdentifier>{3e51b76e-6dca-4045-8507-73b546bdee52}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="PropertySheet.props" />
@@ -546,5 +555,13 @@
     <FxCompile Include="Graphics\Shaders\VertexShaderFlat.hlsl">
       <Filter>Graphics\Shaders</Filter>
     </FxCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Media Include="Assets\Models\golf_club.obj">
+      <Filter>Assets\Models</Filter>
+    </Media>
+    <Media Include="Assets\Models\golf_club.mtl">
+      <Filter>Assets\Models</Filter>
+    </Media>
   </ItemGroup>
 </Project>

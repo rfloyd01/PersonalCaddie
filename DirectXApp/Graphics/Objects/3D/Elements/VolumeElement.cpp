@@ -3,15 +3,16 @@
 
 using namespace DirectX;
 
-VolumeElement::VolumeElement() :
-    m_normalMaterial(nullptr),
-    m_hitMaterial(nullptr)
+VolumeElement::VolumeElement() //:
+    //m_materials(nullptr)
 {
     m_active = true;
     m_target = false;
     m_targetId = 0;
     m_hit = false;
     m_ground = true;
+
+    m_materials = {};
 
     m_position = XMFLOAT3(0.0f, 0.0f, 0.0f);
     m_velocity = XMFLOAT3(0.0f, 0.0f, 0.0f);
@@ -30,7 +31,7 @@ void VolumeElement::Render(
     _In_ ID3D11Buffer* primitiveConstantBuffer
 )
 {
-    if (!m_active || (m_mesh == nullptr) || (m_normalMaterial == nullptr))
+    if (!m_active || (m_meshes.size() == 0) || (m_materials.size() == 0) || (m_meshes.size() != m_materials.size()))
     {
         return;
     }
@@ -42,15 +43,11 @@ void VolumeElement::Render(
         XMMatrixTranspose(getModelMatrix())
     );
 
-    if (m_hit && m_hitMaterial != nullptr)
+    for (int i = 0; i < m_meshes.size(); i++)
     {
-        m_hitMaterial->RenderSetup(context, &constantBuffer);
-    }
-    else
-    {
-        m_normalMaterial->RenderSetup(context, &constantBuffer);
-    }
-    context->UpdateSubresource(primitiveConstantBuffer, 0, nullptr, &constantBuffer, 0, 0);
+        m_materials[i]->RenderSetup(context, &constantBuffer);
+        context->UpdateSubresource(primitiveConstantBuffer, 0, nullptr, &constantBuffer, 0, 0);
 
-    m_mesh->Render(context);
+        m_meshes[i]->Render(context);
+    }
 }

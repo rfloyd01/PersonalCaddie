@@ -116,6 +116,7 @@ IAsyncAction MasterRenderer::CreateModeResourcesAsync()
     tasks.push_back(loader.LoadTextureAsync(L"Assets\\Sensor_Bottom.dds", nullptr, m_sensorBottomTexture.put()));
     tasks.push_back(loader.LoadTextureAsync(L"Assets\\Sensor_Long_Side.dds", nullptr, m_sensorLongSideTexture.put()));
     tasks.push_back(loader.LoadTextureAsync(L"Assets\\Sensor_Short_Side.dds", nullptr, m_sensorShortSideTexture.put()));
+    //TODO: Add textures for different models
 
     // Simulate loading additional resources by introducing a delay.
     tasks.push_back([]() -> IAsyncAction { co_await winrt::resume_after(2s); }());
@@ -239,8 +240,10 @@ void MasterRenderer::setMaterialAndMesh(std::shared_ptr<VolumeElement> element, 
 
     if (auto face = dynamic_cast<Face*>(element.get()))
     {
-        element->setMesh(std::make_shared<FaceMesh>(d3dDevice));
-        element->setMaterial(std::make_shared<Material>(
+        //Faces only have a single material and mesh so no need to add
+        //them in a loop, just make a vector each with a single element
+        element->setMeshes({ std::make_shared<FaceMesh>(d3dDevice) });
+        element->setMaterials({ std::make_shared<Material>(
             XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f),
             XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f),
             XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f),
@@ -248,7 +251,7 @@ void MasterRenderer::setMaterialAndMesh(std::shared_ptr<VolumeElement> element, 
             textureResourceView,
             m_vertexShader.get(),
             m_pixelShader.get()
-        ));
+        ) });
     }
 }
 
