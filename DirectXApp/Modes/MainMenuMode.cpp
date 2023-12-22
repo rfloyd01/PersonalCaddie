@@ -41,6 +41,10 @@ void MainMenuMode::handleKeyPress(winrt::Windows::System::VirtualKey pressedKey)
 		break;
 	}
 	case winrt::Windows::System::VirtualKey::Number1:
+	{
+		newMode = ModeType::FREE;
+		break;
+	}
 	case winrt::Windows::System::VirtualKey::Number2:
 	case winrt::Windows::System::VirtualKey::Number3:
 	{

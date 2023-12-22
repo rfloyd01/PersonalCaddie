@@ -170,6 +170,9 @@
     <ClCompile Include="Graphics\Objects\3D\Elements\Model.cpp">
       <Filter>Graphics\Objects\3D\Elements</Filter>
     </ClCompile>
+    <ClCompile Include="Modes\FreeSwingMode.cpp">
+      <Filter>Modes</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -406,6 +409,9 @@
     <ClInclude Include="Graphics\Objects\3D\Elements\Model.h">
       <Filter>Graphics\Objects\3D\Elements</Filter>
     </ClInclude>
+    <ClInclude Include="Modes\FreeSwingMode.h">
+      <Filter>Modes</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Assets\Wide310x150Logo.scale-200.png">
@@ -533,9 +539,6 @@
     <Filter Include="Assets\Models">
       <UniqueIdentifier>{3e51b76e-6dca-4045-8507-73b546bdee52}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Assets\Models\Backpack">
-      <UniqueIdentifier>{095ad39f-7dfe-4006-8a9b-389d9947dfdc}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="PropertySheet.props" />
@@ -565,30 +568,6 @@
   <ItemGroup>
     <Media Include="Assets\Models\golf_club.gltf">
       <Filter>Assets\Models</Filter>
-    </Media>
-    <Media Include="Assets\Models\Backpack\ao.jpg">
-      <Filter>Assets\Models\Backpack</Filter>
-    </Media>
-    <Media Include="Assets\Models\Backpack\backpack.mtl">
-      <Filter>Assets\Models\Backpack</Filter>
-    </Media>
-    <Media Include="Assets\Models\Backpack\backpack.obj">
-      <Filter>Assets\Models\Backpack</Filter>
-    </Media>
-    <Media Include="Assets\Models\Backpack\diffuse.jpg">
-      <Filter>Assets\Models\Backpack</Filter>
-    </Media>
-    <Media Include="Assets\Models\Backpack\normal.png">
-      <Filter>Assets\Models\Backpack</Filter>
-    </Media>
-    <Media Include="Assets\Models\Backpack\roughness.jpg">
-      <Filter>Assets\Models\Backpack</Filter>
-    </Media>
-    <Media Include="Assets\Models\Backpack\source_attribution.txt">
-      <Filter>Assets\Models\Backpack</Filter>
-    </Media>
-    <Media Include="Assets\Models\Backpack\specular.jpg">
-      <Filter>Assets\Models\Backpack</Filter>
     </Media>
   </ItemGroup>
 </Project>

@@ -10,6 +10,7 @@
 #include "IMUSettingsMode.h"
 #include "MadgwickTestMode.h"
 #include "CalibrationMode.h"
+#include "FreeSwingMode.h"
 
 #include "Graphics/Rendering/MasterRenderer.h"
 
@@ -26,6 +27,7 @@ ModeScreen::ModeScreen() :
 
 	m_modes[static_cast<int>(ModeType::MAIN_MENU)] = std::make_shared<MainMenuMode>();
 	m_modes[static_cast<int>(ModeType::SETTINGS_MENU)] = std::make_shared<SettingsMenuMode>();
+	m_modes[static_cast<int>(ModeType::FREE)] = std::make_shared<FreeSwingMode>();
 	m_modes[static_cast<int>(ModeType::DEVICE_DISCOVERY)] = std::make_shared<DeviceDiscoveryMode>();
 	m_modes[static_cast<int>(ModeType::DEVELOPER_TOOLS)] = std::make_shared<DevelopmentMenuMode>();
 	m_modes[static_cast<int>(ModeType::UI_TEST_MODE)] = std::make_shared<UITestMode>();
@@ -297,12 +299,14 @@ void ModeScreen::PersonalCaddieHandler(PersonalCaddieEventType pcEvent, void* ev
 	{
 		//The imu on the personal caddie has finished taking readings and has sent the data over.
 		//Send the data to the current mode if it needs it.
+
+		//TODO: Remove the mode specific logic, it should be the same regardless of the mode
 		
 		if (m_currentMode == ModeType::GRAPH_MODE || m_currentMode == ModeType::CALIBRATION)
 		{
 			m_modes[static_cast<int>(m_currentMode)]->addData(m_personalCaddie->getSensorData(), m_personalCaddie->getMaxODR(), m_personalCaddie->getDataTimeStamp(), m_personalCaddie->getNumberOfSamples());
 		}
-		else if (m_currentMode == ModeType::MADGWICK)
+		else if (m_currentMode == ModeType::MADGWICK || m_currentMode == ModeType::FREE)
 		{
 			m_modes[static_cast<int>(m_currentMode)]->addQuaternions(m_personalCaddie->getQuaternions(), m_personalCaddie->getNumberOfSamples(), m_personalCaddie->getCurrentTime(), 1.0f / m_personalCaddie->getMaxODR());
 			m_modes[static_cast<int>(m_currentMode)]->addData(m_personalCaddie->getSensorData(), m_personalCaddie->getMaxODR(), m_personalCaddie->getDataTimeStamp(), m_personalCaddie->getNumberOfSamples());

@@ -27,19 +27,6 @@ uint32_t UITestMode::initializeMode(winrt::Windows::Foundation::Size windowSize,
 	m_uiManager.addElement<DropDownMenu>(acc_menu, L"Acc Model Drop Down Menu");
 	m_uiManager.addElement<DropDownMenu>(mag_menu, L"Mag Model Drop Down Menu");
 
-	//Create a Model volume element
-	m_volumeElements.push_back(std::make_shared<Model>());
-	((Model*)m_volumeElements[0].get())->loadModel("Assets/Models/golf_club.gltf");
-
-	//Set a test material
-	m_materialTypes.push_back(MaterialType::SENSOR_TOP);
-
-	//Set the mesh and materials for the model
-	m_mode_screen_handler(ModeAction::RendererGetMaterial, nullptr);
-
-	//ALlow 3d rendering
-	m_needsCamera = true;
-
 	//When this mode is initialzed we go into a state of CanTransfer and Active.
 	//Can Transfer allows us to use the esc. key to go back to the settings menu
 	//while active diverts state control to this mode
