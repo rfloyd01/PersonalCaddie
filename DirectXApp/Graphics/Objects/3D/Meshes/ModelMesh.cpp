@@ -1,51 +1,95 @@
 #include "pch.h"
 #include "ModelMesh.h"
-#include "Graphics/Rendering/ConstantBuffers.h"
 
 using namespace DirectX;
 
-ModelMesh::ModelMesh(_In_ winrt::com_ptr<ID3D11Device3> const& device)
+ModelMesh::ModelMesh(_In_ winrt::com_ptr<ID3D11Device3> const& device, std::vector<PNTVertex> const& vertices, std::vector<uint16_t> const& indices)
 {
+    //copied from the Sphere Mesh class of the simple game example
     D3D11_BUFFER_DESC bd = { 0 };
     D3D11_SUBRESOURCE_DATA initData = { 0 };
 
-    PNTVertex target_vertices[] =
-    {
-        /*{XMFLOAT3(0.0f, 0.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT2(1.0f, 1.0f)},
-        {XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT2(0.0f, 1.0f)},
-        {XMFLOAT3(1.0f, 1.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT2(0.0f, 0.0f)},
-        {XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT2(1.0f, 0.0f)}*/
-        {XMFLOAT3(-0.5f, -0.5f, 0.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT2(1.0f, 1.0f)},
-        {XMFLOAT3(0.5f, -0.5f, 0.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT2(0.0f, 1.0f)},
-        {XMFLOAT3(0.5f, 0.5f, 0.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT2(0.0f, 0.0f)},
-        {XMFLOAT3(-0.5f, 0.5f, 0.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT2(1.0f, 0.0f)}
-    };
-    WORD target_indices[] =
-    {
-        0, 1, 2,
-        0, 2, 3,
-        0, 2, 1,
-        0, 3, 2
-    };
+    //uint16_t segments = 10;
+    //uint16_t slices = segments / 2;
+    //uint16_t numVertices = (slices + 1) * (segments + 1) + 1;
+    //uint16_t numIndices = slices * segments * 3 * 2;
 
-    m_vertexCount = 4;
-    m_indexCount = 12;
+    //std::vector<PNTVertex> point(numVertices);
+    //std::vector<uint16_t> index(numIndices);
+
+    //// To make the texture look right on the top and bottom of the sphere
+    //// each slice will have 'segments + 1' vertices. The top and bottom
+    //// vertices will all be coincident, but have different U texture cooordinates.
+    //uint16_t p = 0;
+    //for (uint16_t a = 0; a <= slices; a++)
+    //{
+    //    float angle1 = static_cast<float>(a) / static_cast<float>(slices) * XM_PI;
+    //    float z = cos(angle1);
+    //    float r = sin(angle1);
+    //    for (uint16_t b = 0; b <= segments; b++)
+    //    {
+    //        float angle2 = static_cast<float>(b) / static_cast<float>(segments) * XM_2PI;
+    //        point[p].position = XMFLOAT3(r * cos(angle2), r * sin(angle2), z);
+    //        point[p].normal = point[p].position;
+    //        point[p].textureCoordinate = XMFLOAT2((1.0f - z) / 2.0f, static_cast<float>(b) / static_cast<float>(segments));
+    //        p++;
+    //    }
+    //}
+    //m_vertexCount = p;
+
+    //p = 0;
+    //for (uint16_t a = 0; a < slices; a++)
+    //{
+    //    uint16_t p1 = a * (segments + 1);
+    //    uint16_t p2 = (a + 1) * (segments + 1);
+
+    //    // Generate two triangles for each segment around the slice.
+    //    for (uint16_t b = 0; b < segments; b++)
+    //    {
+    //        if (a < (slices - 1))
+    //        {
+    //            // For all but the bottom slice add the triangle with one
+    //            // vertex in the a slice and two vertices in the a + 1 slice.
+    //            // Skip it for the bottom slice since the triangle would be
+    //            // degenerate as all the vertices in the bottom slice are coincident.
+    //            index[p] = b + p1;
+    //            index[p + 1] = b + p2;
+    //            index[p + 2] = b + p2 + 1;
+    //            p = p + 3;
+    //        }
+    //        if (a > 0)
+    //        {
+    //            // For all but the top slice add the triangle with two
+    //            // vertices in the a slice and one vertex in the a + 1 slice.
+    //            // Skip it for the top slice since the triangle would be
+    //            // degenerate as all the vertices in the top slice are coincident.
+    //            index[p] = b + p1;
+    //            index[p + 1] = b + p2 + 1;
+    //            index[p + 2] = b + p1 + 1;
+    //            p = p + 3;
+    //        }
+    //    }
+    //}
+    //m_indexCount = p;
+
+    m_vertexCount = vertices.size();
+    m_indexCount = indices.size();
 
     bd.Usage = D3D11_USAGE_DEFAULT;
     bd.ByteWidth = sizeof(PNTVertex) * m_vertexCount;
     bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
     bd.CPUAccessFlags = 0;
-    initData.pSysMem = target_vertices;
+    initData.pSysMem = vertices.data();
     winrt::check_hresult(
         device->CreateBuffer(&bd, &initData, m_vertexBuffer.put())
-        );
+    );
 
     bd.Usage = D3D11_USAGE_DEFAULT;
-    bd.ByteWidth = sizeof(WORD) * m_indexCount;
+    bd.ByteWidth = sizeof(uint16_t) * m_indexCount;
     bd.BindFlags = D3D11_BIND_INDEX_BUFFER;
     bd.CPUAccessFlags = 0;
-    initData.pSysMem = target_indices;
+    initData.pSysMem = indices.data();
     winrt::check_hresult(
         device->CreateBuffer(&bd, &initData, m_indexBuffer.put())
-        );
+    );
 }

@@ -5,21 +5,29 @@
 #include <codecvt>
 #include <string>
 
-#include "model.h"
+#include "Model.h"
 #include <Math/quaternion_functions.h>
+
+using namespace DirectX;
 
 //PUBLIC FUNCTIONS
 //Constructors
 Model::Model()
 {
     //nothing happens with default initializer
+
+    /*XMStoreFloat4x4(
+        &m_modelMatrix,
+        DirectX::XMMatrixTranslation(0.0f, 0.0f, 1.0f)
+    );*/
 }
 
 //Setup Functions
 void Model::loadModel(std::string path)
 {
     Assimp::Importer import;
-    const aiScene* scene = import.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
+    const aiScene* scene = import.ReadFile(path, aiProcess_Triangulate | aiProcess_JoinIdenticalVertices |
+        aiProcess_ConvertToLeftHanded | aiProcess_PreTransformVertices); 
 
     if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
     {
@@ -31,7 +39,7 @@ void Model::loadModel(std::string path)
     }
     directory = path.substr(0, path.find_last_of('/'));
 
-    //processNode(scene->mRootNode, scene);
+    processNode(scene->mRootNode, scene);
 
     //after all nodes are processed calculate the hit box for the model
     //setBoundingBox();
@@ -40,10 +48,10 @@ void Model::loadModel(std::string path)
 //{
 //    model_scale = s;
 //}
-//void Model::setLocation(glm::vec3 l)
-//{
-//    model_location = l;
-//}
+void Model::setPosition(DirectX::XMFLOAT3 position)
+{
+    m_position = position;
+}
 //void Model::setRotation(glm::quat r)
 //{
 //    model_rotation = r;
@@ -78,101 +86,142 @@ void Model::loadModel(std::string path)
 //
 //PRIVATE FUNCTIONS
 //Data Processing Functions
-//void Model::processNode(aiNode* node, const aiScene* scene)
-//{
-//    // process all the node's meshes (if any)
-//    for (unsigned int i = 0; i < node->mNumMeshes; i++)
-//    {
-//        aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
-//        meshes.push_back(processMesh(mesh, scene));
-//    }
-//
-//    // then do the same for each of its children
-//    for (unsigned int i = 0; i < node->mNumChildren; i++)
-//    {
-//        processNode(node->mChildren[i], scene);
-//    }
-//}
-//Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene)
-//{
-//    std::vector<Vertex> vertices;
-//    std::vector<unsigned int> indices;
-//    std::vector<Texture> textures;
-//
-//    for (unsigned int i = 0; i < mesh->mNumVertices; i++)
-//    {
-//        Vertex vertex;
-//        // process vertex positions, normals and texture coordinates
-//        glm::vec3 vector;
-//        vector.x = mesh->mVertices[i].x;
-//        vector.y = mesh->mVertices[i].y;
-//        vector.z = mesh->mVertices[i].z;
-//        vertex.Position = vector;
-//
-//        vector.x = mesh->mNormals[i].x;
-//        vector.y = mesh->mNormals[i].y;
-//        vector.z = mesh->mNormals[i].z;
-//        vertex.Normal = vector;
-//
-//        if (mesh->mTextureCoords[0]) // does the mesh contain texture coordinates?
-//        {
-//            glm::vec2 vec;
-//            vec.x = mesh->mTextureCoords[0][i].x;
-//            vec.y = mesh->mTextureCoords[0][i].y;
-//            vertex.TexCoords = vec;
-//        }
-//        else vertex.TexCoords = glm::vec2(0.0f, 0.0f);
-//        vertices.push_back(vertex);
-//    }
-//    // process indices
-//    for (unsigned int i = 0; i < mesh->mNumFaces; i++)
-//    {
-//        aiFace face = mesh->mFaces[i];
-//        for (unsigned int j = 0; j < face.mNumIndices; j++)
-//            indices.push_back(face.mIndices[j]);
-//    }
-//
-//    // process material
-//    if (mesh->mMaterialIndex >= 0)
-//    {
-//        aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
-//        std::vector<Texture> diffuseMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse");
-//        textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
-//        std::vector<Texture> specularMaps = loadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular");
-//        textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
-//    }
-//
-//    return Mesh(vertices, indices, textures);
-//}
-//std::vector<Texture> Model::loadMaterialTextures(aiMaterial* mat, aiTextureType type, std::string typeName)
-//{
-//    std::vector<Texture> textures;
-//    for (unsigned int i = 0; i < mat->GetTextureCount(type); i++)
-//    {
-//        aiString str;
-//        mat->GetTexture(type, i, &str);
-//        bool skip = false;
-//        for (unsigned int j = 0; j < textures_loaded.size(); j++)
-//        {
-//            if (std::strcmp(textures_loaded[j].path.data(), str.C_Str()) == 0)
-//            {
-//                textures.push_back(textures_loaded[j]);
-//                skip = true;
-//                break;
-//            }
-//        }
-//        if (!skip)
-//        {   // if texture hasn't been loaded already, load it
-//            Texture texture;
-//            texture.id = TextureFromFile(str.C_Str(), directory);
-//            texture.type = typeName;
-//            texture.path = str.C_Str();
-//            textures.push_back(texture);
-//            textures_loaded.push_back(texture); // add to loaded textures
-//        }
-//    }
-//    return textures;
-//}
+void Model::processNode(aiNode* node, const aiScene* scene)
+{
+    // process all the node's meshes (if any)
+    for (unsigned int i = 0; i < node->mNumMeshes; i++)
+    {
+        aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
+        processMeshVectors(mesh, scene);
+        //addMesh(std::make_shared<MeshObject>(processMesh(mesh, scene)));
+        //m_meshes.push_back(processMesh(mesh, scene));
+    }
+
+    // then do the same for each of its children
+    for (unsigned int i = 0; i < node->mNumChildren; i++)
+    {
+        processNode(node->mChildren[i], scene);
+    }
+}
+
+void Model::processMeshVectors(aiMesh* mesh, const aiScene* scene)
+{
+    std::vector<PNTVertex> vertices;
+    std::vector<uint16_t> indices;
+    std::vector<DirectX::XMFLOAT4> colors;
+    //std::vector<Texture> textures;
+
+    //NOTE:
+    //ASSIMP makes multiple copies of each vertex so that choosing the indices to make
+    //each triangle is easier. Normally (in my experience) you only have one of each 
+    //vertex and set the indices so that multiple vertices get rendered each time. As an
+    //example if we wanted to render a square with vertices A, B, C, and D at [0, 0], [0, 1],
+    //[1, 0] and [1, 1] respectively then we'd set up the indices vector like so (A, B, C, B, C, D)
+    //which would in turn render two triangles to make the square. It seems that what ASSIMP 
+    //does though is create the vertices A, B, C, D, E, F as [0, 0], [0, 1], [1, 0], [0, 1], [1, 0], [1, 1]
+    //respectively and sets the index vector simply as (A, B, C, D, E, F). Because of this
+    //the number of vertices is equal to the number of indices.
+
+
+    for (unsigned int i = 0; i < mesh->mNumVertices; i++)
+    {
+        PNTVertex vertex;
+        // process vertex positions, normals and texture coordinates
+        DirectX::XMFLOAT3 vector;
+        vector.x = mesh->mVertices[i].x;
+        vector.y = mesh->mVertices[i].y;
+        vector.z = mesh->mVertices[i].z;
+        vertex.position = vector;
+
+        vector.x = mesh->mNormals[i].x;
+        vector.y = mesh->mNormals[i].y;
+        vector.z = mesh->mNormals[i].z;
+        vertex.normal = vector;
+
+        if (mesh->mTextureCoords[0]) // does the mesh contain texture coordinates?
+        {
+            DirectX::XMFLOAT2 vec;
+            vec.x = mesh->mTextureCoords[0][i].x;
+            vec.y = mesh->mTextureCoords[0][i].y;
+            vertex.textureCoordinate = vec;
+        }
+        else vertex.textureCoordinate = { 0.0f, 0.0f };
+        vertices.push_back(vertex);
+    }
+    // process indices
+    for (unsigned int i = 0; i < mesh->mNumFaces; i++)
+    {
+        aiFace face = mesh->mFaces[i];
+        for (unsigned int j = 0; j < face.mNumIndices; j++)
+            indices.push_back(face.mIndices[j]);
+    }
+
+    // process material
+    if (mesh->mMaterialIndex >= 0)
+    {
+        aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
+        aiColor3D ambientColor(0.0f, 0.0f, 0.0f);
+        aiColor3D diffuseColor(0.0f, 0.0f, 0.0f);
+        aiColor3D specularColor(0.0f, 0.0f, 0.0f);
+
+        material->Get(AI_MATKEY_COLOR_AMBIENT, ambientColor);
+        material->Get(AI_MATKEY_COLOR_DIFFUSE, diffuseColor);
+        material->Get(AI_MATKEY_COLOR_SPECULAR, specularColor);
+        colors.push_back(DirectX::XMFLOAT4(ambientColor.r, ambientColor.g, ambientColor.b, 1.0f));
+        colors.push_back(DirectX::XMFLOAT4(diffuseColor.r, diffuseColor.g, diffuseColor.b, 1.0f));
+        colors.push_back(DirectX::XMFLOAT4(specularColor.r, specularColor.g, specularColor.b, 1.0f));
+
+        //loadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse");
+        //loadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular");
+    }
+
+    m_vertices.push_back(vertices);
+    m_indices.push_back(indices);
+    m_colors.push_back(colors);
+
+    //For now just use default textures for each mesh until I figure out how
+    //to read the .jpg files stored in the material object
+    m_textures.push_back(MaterialType::DEFAULT);
+}
+
+void Model::translateAndRotateFace(DirectX::XMFLOAT3 location, DirectX::XMVECTOR quat)
+{
+    //Order of operations is scale, rotate then translate
+    XMStoreFloat4x4(
+        &m_modelMatrix,
+        XMMatrixScaling(1.0f, 1.0f, 1.0f) *
+        XMMatrixRotationQuaternion(quat) *
+        XMMatrixTranslation(location.x, location.y, location.z)
+    );
+}
+
+void Model::loadMaterialTextures(aiMaterial* mat, aiTextureType type, std::string typeName)
+{
+    //for (unsigned int i = 0; i < mat->GetTextureCount(type); i++)
+    //{
+    //    aiString str;
+    //    mat->GetTexture(type, i, &str);
+    //    bool skip = false;
+    //    for (unsigned int j = 0; j < m_textures.size(); j++)
+    //    {
+    //        //Make sure we don't load the same texture multiple times
+    //        if (std::strcmp(m_textures[j].path.data(), str.C_Str()) == 0)
+    //        {
+    //            skip = true;
+    //            break;
+    //        }
+    //    }
+    //    if (!skip)
+    //    {   // if texture hasn't been loaded already, load it
+    //        Texture texture;
+    //        //texture.id = TextureFromFile(str.C_Str(), directory);
+    //        texture.type = typeName;
+    //        texture.path = str.C_Str();
+    //        m_textures.push_back(texture);
+    //    }
+    //}
+}
+
 //unsigned int Model::TextureFromFile(const char* path, const std::string& directory)
 //{
 //    std::string filename = std::string(path);
@@ -212,7 +261,7 @@ void Model::loadModel(std::string path)
 //
 //    return textureID;
 //}
-//
+
 ////Collision Detection Functions
 //void Model::setBoundingBox()
 //{

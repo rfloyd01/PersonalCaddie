@@ -3,6 +3,8 @@
 
 #include "Graphics/Objects/3D/Meshes/FaceMesh.h"
 #include "Graphics/Objects/3D/Elements/Face.h"
+#include "Graphics/Objects/3D/Meshes/ModelMesh.h"
+#include "Graphics/Objects/3D/Elements/Model.h"
 #include "Graphics/Utilities/BasicLoader.h"
 
 using namespace DirectX;
@@ -100,6 +102,7 @@ IAsyncAction MasterRenderer::CreateModeResourcesAsync()
     tasks.push_back(loader.LoadShaderAsync(L"PixelShaderFlat.cso", m_pixelShaderFlat.put()));
 
     // Make sure the previous versions if any of the textures are released.
+    m_defaultTexture = nullptr;
     m_sphereTexture = nullptr;
     m_cylinderTexture = nullptr;
     m_ceilingTexture = nullptr;
@@ -107,6 +110,7 @@ IAsyncAction MasterRenderer::CreateModeResourcesAsync()
     m_wallsTexture = nullptr;
 
     // Load Game specific textures.
+    tasks.push_back(loader.LoadTextureAsync(L"Assets\\default.dds", nullptr, m_defaultTexture.put()));
     tasks.push_back(loader.LoadTextureAsync(L"Assets\\seafloor.dds", nullptr, m_sphereTexture.put()));
     tasks.push_back(loader.LoadTextureAsync(L"Assets\\metal_texture.dds", nullptr, m_cylinderTexture.put()));
     tasks.push_back(loader.LoadTextureAsync(L"Assets\\cellceiling.dds", nullptr, m_ceilingTexture.put()));
@@ -213,6 +217,18 @@ void MasterRenderer::setTextLayoutPixels(UIText* text)
     m_uiElementRenderer.setTextLayoutPixels(text);
 }
 
+ID3D11ShaderResourceView* MasterRenderer::getTexture(MaterialType mt)
+{
+    switch (mt)
+    {
+    case MaterialType::SENSOR_TOP: return m_sensorTopTexture.get();
+    case MaterialType::SENSOR_BOTTOM: return m_sensorBottomTexture.get();
+    case MaterialType::SENSOR_LONG_SIDE: return m_sensorLongSideTexture.get();
+    case MaterialType::SENSOR_SHORT_SIDE: return m_sensorShortSideTexture.get();
+    default: return m_defaultTexture.get();
+    }
+}
+
 void MasterRenderer::setMaterialAndMesh(std::shared_ptr<VolumeElement> element, MaterialType mt)
 {
     //TODO: Need to load the material type based on the input value
@@ -221,7 +237,7 @@ void MasterRenderer::setMaterialAndMesh(std::shared_ptr<VolumeElement> element, 
     //material based on the input material type
     auto d3dDevice = m_deviceResources->GetD3DDevice();
 
-    ID3D11ShaderResourceView* textureResourceView;
+    /*ID3D11ShaderResourceView* textureResourceView;
     switch (mt)
     {
     case MaterialType::SENSOR_TOP:
@@ -236,7 +252,10 @@ void MasterRenderer::setMaterialAndMesh(std::shared_ptr<VolumeElement> element, 
     case MaterialType::SENSOR_SHORT_SIDE:
         textureResourceView = m_sensorShortSideTexture.get();
         break;
-    }
+    default:
+        textureResourceView = m_defaultTexture.get();
+        break;
+    }*/
 
     if (auto face = dynamic_cast<Face*>(element.get()))
     {
@@ -248,10 +267,36 @@ void MasterRenderer::setMaterialAndMesh(std::shared_ptr<VolumeElement> element, 
             XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f),
             XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f),
             50.0f,
-            textureResourceView,
+            getTexture(mt),
             m_vertexShader.get(),
             m_pixelShader.get()
         ) });
+    }
+    else if (auto model = dynamic_cast<Model*>(element.get()))
+    {
+        //Models can have multiple meshes so we need to add them in a loop
+        for (int i = 0; i < model->getVertices().size(); i++)
+        {
+            model->addMesh(std::make_shared<ModelMesh>(d3dDevice, model->getVertices()[i], model->getIndices()[i]));
+            model->addMaterial(std::make_shared<Material>(
+                model->getColors()[i][0],
+                model->getColors()[i][1],
+                model->getColors()[i][2],
+                50.0f,
+                getTexture(model->getTextures()[i]),
+                m_vertexShader.get(),
+                m_pixelShader.get()
+            ));
+        }
+
+        //Now that the mesh objects are created we can safely delete the vertex
+        //and index vectors of the model class
+        model->clearVertices();
+        model->clearIndices();
+        model->clearColors();
+        model->clearTextures();
+
+        //TODO add material handling when ready
     }
 }
 

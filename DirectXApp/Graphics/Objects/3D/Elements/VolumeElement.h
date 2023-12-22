@@ -23,8 +23,10 @@ public:
     std::shared_ptr<Animate> AnimatePosition();
 
     void setMeshes(_In_ std::vector<std::shared_ptr<MeshObject>> const& meshes);
+    void addMesh(_In_ std::shared_ptr<MeshObject> const& mesh);
 
     void setMaterials(_In_ std::vector<std::shared_ptr<Material>> const& materials);
+    void addMaterial(_In_ std::shared_ptr<Material> const& material);
     std::vector<std::shared_ptr<Material>> const& getMaterials();
 
     void setPosition(DirectX::XMFLOAT3 position);
@@ -125,6 +127,11 @@ __forceinline void VolumeElement::setMaterials(_In_ std::vector<std::shared_ptr<
     m_materials = materials;
 }
 
+__forceinline void VolumeElement::addMaterial(_In_ std::shared_ptr<Material> const& material)
+{
+    m_materials.push_back(material);
+}
+
 __forceinline std::vector<std::shared_ptr<Material>> const& VolumeElement::getMaterials()
 {
     return m_materials;
@@ -133,6 +140,11 @@ __forceinline std::vector<std::shared_ptr<Material>> const& VolumeElement::getMa
 __forceinline void VolumeElement::setMeshes(_In_ std::vector<std::shared_ptr<MeshObject>> const& meshes)
 {
     m_meshes = meshes;
+}
+
+__forceinline void VolumeElement::addMesh(_In_ std::shared_ptr<MeshObject> const& mesh)
+{
+    m_meshes.push_back(mesh);
 }
 
 __forceinline DirectX::XMMATRIX VolumeElement::getModelMatrix()

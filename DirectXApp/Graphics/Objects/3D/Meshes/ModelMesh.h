@@ -9,9 +9,10 @@
 // side.
 
 #include "MeshObject.h"
+#include "Graphics/Rendering/ConstantBuffers.h"
 
 class ModelMesh : public MeshObject
 {
 public:
-    ModelMesh(_In_ winrt::com_ptr<ID3D11Device3> const& device);
+    ModelMesh(_In_ winrt::com_ptr<ID3D11Device3> const& device, std::vector<PNTVertex> const& vertices, std::vector<uint16_t> const& indices);
 };

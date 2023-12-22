@@ -5,6 +5,7 @@
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
+#include <Graphics/Objects/3D/Meshes/ModelMesh.h>
 //#include <Graphics/mesh.h>
 //#include <Graphics/shader.h>
 //#include <Graphics/stb_image.h>
@@ -35,6 +36,13 @@ enum class ModelType
     LINE_OBJECTS = 4 //may need to render things such as straight lines or circles for training purposes
 };
 
+struct Texture
+{
+    unsigned int id;
+    std::string type;
+    std::string path;
+};
+
 /*
 The model class allows us to redner things that are much more complicated than the basic shapes of the
 other volume element classes. Unlike those classes (such as the sphere and face) which have preset meshes,
@@ -57,8 +65,16 @@ public:
 
     //Setup Functions
     void loadModel(std::string path);
+    std::vector<std::vector<PNTVertex>> const& getVertices() { return m_vertices; }
+    std::vector <std::vector<uint16_t>> const& getIndices() { return m_indices; }
+    std::vector<std::vector<DirectX::XMFLOAT4>> const& getColors() { return m_colors; }
+    std::vector<MaterialType> const& getTextures() { return m_textures; }
+    void clearVertices() { m_vertices = {}; }
+    void clearIndices() { m_indices = {}; }
+    void clearColors() { m_colors = {}; }
+    void clearTextures() { m_textures = {}; }
     //void setScale(glm::vec3 s);
-    //void setLocation(glm::vec3 l);
+    void setPosition(DirectX::XMFLOAT3 position);
     //void setRotation(glm::quat r);
 
     ////Rendering Functions
@@ -66,6 +82,7 @@ public:
     //glm::vec3 getLocation();
     //glm::quat getRotation();
     //void Draw(Shader& shader);
+    void translateAndRotateFace(DirectX::XMFLOAT3 location, DirectX::XMVECTOR quat);
 
     ////Get Functions
     //std::vector<glm::vec3> getBoundingBox();
@@ -73,10 +90,19 @@ public:
 private:
     //PRIVATE FUNCTIONS
     //Data Processing Functions
-    //void processNode(aiNode* node, const aiScene* scene);
-    //Mesh processMesh(aiMesh* mesh, const aiScene* scene);
-    //std::vector<Texture> loadMaterialTextures(aiMaterial* mat, aiTextureType type, std::string typeName);
+    void processNode(aiNode* node, const aiScene* scene);
+    void processMeshVectors(aiMesh* mesh, const aiScene* scene);
+    void loadMaterialTextures(aiMaterial* mat, aiTextureType type, std::string typeName);
     //unsigned int TextureFromFile(const char* path, const std::string& directory);
+
+    //Mesh Variables: These are populated when the model is first loaded and then deleted after
+    //the underlying mesh is created. The mesh isn't created at the same time as the Model since
+    //it needs access to the DirectX device which requires the main thread and models can be loaded
+    //asynchronously
+    std::vector<std::vector<PNTVertex>> m_vertices;
+    std::vector<std::vector<uint16_t>> m_indices;
+    std::vector<std::vector<DirectX::XMFLOAT4>> m_colors; //each vector holds 3 XMFLOAT4 types, one each for ambient, diffuse and specular color (in that specific order)
+    std::vector<MaterialType> m_textures;
 
     ////Collision Detection Functions
     //void setBoundingBox();

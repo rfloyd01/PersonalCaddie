@@ -17,7 +17,8 @@ enum class MaterialType
     SENSOR_TOP,
     SENSOR_BOTTOM,
     SENSOR_LONG_SIDE,
-    SENSOR_SHORT_SIDE
+    SENSOR_SHORT_SIDE,
+    DEFAULT
 };
 
 class Material

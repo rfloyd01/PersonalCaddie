@@ -57,6 +57,8 @@ public:
 
 
 private:
+    ID3D11ShaderResourceView* getTexture(MaterialType mt);
+
     // Cached pointer to device resources.
     std::shared_ptr<DX::DeviceResources>        m_deviceResources;
 
@@ -70,6 +72,7 @@ private:
     D2D_RECT_F                                  m_gameInfoOverlayRect;
     D2D_SIZE_F                                  m_gameInfoOverlaySize;
 
+    winrt::com_ptr<ID3D11ShaderResourceView>    m_defaultTexture;
     winrt::com_ptr<ID3D11ShaderResourceView>    m_sphereTexture;
     winrt::com_ptr<ID3D11ShaderResourceView>    m_cylinderTexture;
     winrt::com_ptr<ID3D11ShaderResourceView>    m_ceilingTexture;

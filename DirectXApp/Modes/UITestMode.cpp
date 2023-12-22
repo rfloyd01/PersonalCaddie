@@ -2,7 +2,7 @@
 #include "UITestMode.h"
 
 #include "Graphics/Objects/3D/Elements/model.h"
-
+#include "Math/quaternion_functions.h"
 
 UITestMode::UITestMode()
 {
@@ -27,9 +27,18 @@ uint32_t UITestMode::initializeMode(winrt::Windows::Foundation::Size windowSize,
 	m_uiManager.addElement<DropDownMenu>(acc_menu, L"Acc Model Drop Down Menu");
 	m_uiManager.addElement<DropDownMenu>(mag_menu, L"Mag Model Drop Down Menu");
 
-	Model model;
-	model.loadModel("Assets/Models/golf_club.obj");
-	//model.loadModel("D:/Coding/PersonalCaddie/DirectXApp/Assets/Models/golf_club.obj");
+	//Create a Model volume element
+	m_volumeElements.push_back(std::make_shared<Model>());
+	((Model*)m_volumeElements[0].get())->loadModel("Assets/Models/golf_club.gltf");
+
+	//Set a test material
+	m_materialTypes.push_back(MaterialType::SENSOR_TOP);
+
+	//Set the mesh and materials for the model
+	m_mode_screen_handler(ModeAction::RendererGetMaterial, nullptr);
+
+	//ALlow 3d rendering
+	m_needsCamera = true;
 
 	//When this mode is initialzed we go into a state of CanTransfer and Active.
 	//Can Transfer allows us to use the esc. key to go back to the settings menu
@@ -47,6 +56,7 @@ void UITestMode::uninitializeMode()
 	//m_uiElements.clear();
 
 	m_uiManager.removeAllElements();
+	m_volumeElements.clear();
 }
 
 void UITestMode::initializeTextOverlay(winrt::Windows::Foundation::Size windowSize)
@@ -82,6 +92,18 @@ void UITestMode::update()
 			auto action = m_uiManager.getActionElements()[i];
 			m_uiManager.getActionElements().pop_back(); //TODO: For now just remove elements, need to implement actions in the future though
 		}
+	}
+
+	if (m_needsCamera)
+	{
+		//Rotate the club model on screen. The goal is to rotate 360 degrees over the span of 5 seconds. Since the refresh rate
+		//of the monitor is 1/60 s then we need to rotate 360 deg / 5s ==  60s * x deg --> x =  1.2 deg / frame to achieve this
+		
+		m_angle += 1.2f * PI / 180.0f;
+		glm::quat first_rotation = { 0.707f, 0.707f, 0.0f, 0.0f };
+		glm::quat second_rotation = { cos(m_angle / 2.0f), 0.0f, 0.0f, sin(m_angle / 2.0f) };
+		auto q = QuaternionMultiply(second_rotation, first_rotation); //reverse order for rotations
+		((Model*)m_volumeElements[0].get())->translateAndRotateFace({ 0.0f, -0.25f, 1.0f }, { q.x, q.y, q.z, q.w});
 	}
 }
 

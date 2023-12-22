@@ -193,7 +193,7 @@
     <ClInclude Include="Graphics\Objects\3D\Animate.h" />
     <ClInclude Include="Graphics\Objects\3D\Camera.h" />
     <ClInclude Include="Graphics\Objects\3D\Elements\Face.h" />
-    <ClInclude Include="Graphics\Objects\3D\Elements\model.h" />
+    <ClInclude Include="Graphics\Objects\3D\Elements\Model.h" />
     <ClInclude Include="Graphics\Objects\3D\Elements\VolumeElement.h" />
     <ClInclude Include="Graphics\Objects\3D\Meshes\FaceMesh.h" />
     <ClInclude Include="Graphics\Objects\3D\Meshes\MeshObject.h" />
@@ -246,8 +246,14 @@
     <Image Include="Assets\cellceiling.dds" />
     <Image Include="Assets\cellfloor.dds" />
     <Image Include="Assets\cellwall.dds" />
+    <Image Include="Assets\default.dds" />
     <Image Include="Assets\LockScreenLogo.scale-200.png" />
     <Image Include="Assets\metal_texture.dds" />
+    <Media Include="Assets\Models\Backpack\ao.jpg" />
+    <Media Include="Assets\Models\Backpack\diffuse.jpg" />
+    <Media Include="Assets\Models\Backpack\normal.png" />
+    <Media Include="Assets\Models\Backpack\roughness.jpg" />
+    <Media Include="Assets\Models\Backpack\specular.jpg" />
     <Image Include="Assets\seafloor.dds" />
     <Image Include="Assets\Sensor_Bottom.dds" />
     <Image Include="Assets\Sensor_Long_Side.dds" />
@@ -296,7 +302,7 @@
     <ClCompile Include="Graphics\Objects\3D\Animate.cpp" />
     <ClCompile Include="Graphics\Objects\3D\Camera.cpp" />
     <ClCompile Include="Graphics\Objects\3D\Elements\Face.cpp" />
-    <ClCompile Include="Graphics\Objects\3D\Elements\model.cpp" />
+    <ClCompile Include="Graphics\Objects\3D\Elements\Model.cpp" />
     <ClCompile Include="Graphics\Objects\3D\Elements\VolumeElement.cpp" />
     <ClCompile Include="Graphics\Objects\3D\Meshes\FaceMesh.cpp" />
     <ClCompile Include="Graphics\Objects\3D\Meshes\MeshObject.cpp" />
@@ -333,7 +339,18 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <Media Include="Assets\Models\golf_club.mtl">
+    <Media Include="Assets\Models\golf_club.gltf">
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</DeploymentContent>
+      <FileType>Document</FileType>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">true</DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">true</DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">true</DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">true</DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
+    </Media>
+    <Media Include="Assets\Models\Backpack\backpack.mtl">
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</DeploymentContent>
       <FileType>Document</FileType>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</DeploymentContent>
@@ -357,6 +374,7 @@
     <None Include="Graphics\Shaders\ConstantBuffers.hlsli" />
     <None Include="packages.config" />
     <None Include="PropertySheet.props" />
+    <Media Include="Assets\Models\Backpack\source_attribution.txt" />
     <Text Include="readme.txt">
       <DeploymentContent>false</DeploymentContent>
     </Text>
@@ -404,7 +422,7 @@
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
-    <Media Include="Assets\Models\golf_club.obj">
+    <Media Include="Assets\Models\Backpack\backpack.obj">
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</DeploymentContent>
       <FileType>Document</FileType>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</DeploymentContent>

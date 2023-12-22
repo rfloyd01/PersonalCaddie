@@ -265,7 +265,7 @@ void Face::translateAndRotateFace(DirectX::XMFLOAT3 location, DirectX::XMVECTOR 
 
 void Face::translateAndRotateFace(DirectX::XMFLOAT3 location, DirectX::XMVECTOR quat)
 {
-    //Add new translation and rotatino on top of existing ones
+    //Add new translation and rotation on top of existing ones
     XMStoreFloat4x4(
         &m_modelMatrix,
         XMMatrixScaling(m_width, m_height, 1.0f) *
