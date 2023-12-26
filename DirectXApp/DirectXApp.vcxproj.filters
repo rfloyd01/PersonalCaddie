@@ -546,7 +546,7 @@
     <None Include="Graphics\Shaders\ConstantBuffers.hlsli">
       <Filter>Graphics\Shaders</Filter>
     </None>
-    <None Include="assimp-vc142-mt.dll" />
+    <None Include="assimp-vc143-mtd.dll" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="readme.txt" />

@@ -2,11 +2,11 @@
 #include "Graph.h"
 #include "Graphics/Objects/2D/BasicElements/TextOverlay.h"
 
-Graph::Graph(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, bool line,  UIColor fillColor, UIColor outlineColor)
+Graph::Graph(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, bool line,  UIColor fillColor, UIColor outlineColor, bool isSquare)
 {
 	//Simply create the background of the graph. Normally the background for the graph is white, although it
 	//can be changed.
-	OutlinedBox graphBackground(windowSize, location, size, false, fillColor, outlineColor);
+	OutlinedBox graphBackground(windowSize, location, size, isSquare, fillColor, outlineColor);
 	p_children.push_back(std::make_shared<OutlinedBox>(graphBackground));
 
 	//Set the screen size dependent information for the TextBox
@@ -22,6 +22,7 @@ Graph::Graph(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 loca
 	m_maximalDataPoint = { 100, 100 };
 
 	m_lineGraph = line;
+	//m_isSquare = isSquare;
 }
 
 void Graph::setAxisMaxAndMins(DirectX::XMFLOAT2 axis_minimums, DirectX::XMFLOAT2 axis_maximums)
@@ -61,7 +62,7 @@ void Graph::addDataSet(std::vector<DirectX::XMFLOAT2> const& dataPoints, UIColor
 	//Take an initial scan through all of the points to calculate the minimum values of x and y,
 	//these will be used to calculate the aboslute minima and maxima. It's important to note that
 	//the window coordinates in the Y-direction are the opposite of what a Cartesian graph would be
-	//(positive Y goes downwards) so we need to flip y-axis values byt not x-axis values.
+	//(positive Y goes downwards) so we need to flip y-axis values but not x-axis values.
 	DirectX::XMFLOAT2 difference = { m_maximalDataPoint.x - m_minimalDataPoint.x, m_maximalDataPoint.y - m_minimalDataPoint.y };
 	DirectX::XMFLOAT2 absoluteDifference = { m_maximalAbsolutePoint.x - m_minimalAbsolutePoint.x, m_maximalAbsolutePoint.y - m_minimalAbsolutePoint.y };
 	DirectX::XMFLOAT2 previousPoint = { absoluteDifference.x * ((dataPoints[0].x - m_minimalDataPoint.x) / difference.x) + m_minimalAbsolutePoint.x, -1 * (absoluteDifference.y * ((dataPoints[0].y - m_minimalDataPoint.y) / difference.y) - m_maximalAbsolutePoint.y) }, currentPoint = { 0, 0 };
@@ -80,7 +81,15 @@ void Graph::addDataSet(std::vector<DirectX::XMFLOAT2> const& dataPoints, UIColor
 	{
 		for (int i = 0; i < dataPoints.size(); i++)
 		{
+			//This creates small circles instead of lines to create the graph.
 			currentPoint = { absoluteDifference.x * ((dataPoints[i].x - m_minimalDataPoint.x) / difference.x) + m_minimalAbsolutePoint.x, -1 * (absoluteDifference.y * ((dataPoints[i].y - m_minimalDataPoint.y) / difference.y) - m_maximalAbsolutePoint.y) };
+			
+			//if (m_isSquare)
+			//{
+			//	//TODO: When a graph is a square the absolute location of the current point should change
+			//	//to reflect this.
+			//}
+			
 			Ellipse ell(currentWindowSize, currentPoint, { 0.0033f * m_size.y, 0.0033f * m_size.y }, true, lineColor);
 			p_children.push_back(std::make_shared<Ellipse>(ell));
 			previousPoint = currentPoint;

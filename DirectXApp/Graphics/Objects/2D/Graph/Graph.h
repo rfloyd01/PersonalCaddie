@@ -14,7 +14,7 @@
 class Graph : public UIElement
 {
 public:
-	Graph(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, bool line = true, UIColor fillColor = UIColor::White, UIColor outlineColor = UIColor::Black);
+	Graph(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, bool line = true, UIColor fillColor = UIColor::White, UIColor outlineColor = UIColor::Black, bool isSquare = false);
 
 	Graph() {} //empty default constructor
 
@@ -31,6 +31,7 @@ protected:
 	DirectX::XMFLOAT2 m_minimalAbsolutePoint, m_maximalAbsolutePoint; //these variables hold the absolute locations for the x and y min/maxes in the graph
 	DirectX::XMFLOAT2 m_minimalDataPoint, m_maximalDataPoint; //these variables hold the actual data locations for the x and y min/maxes in the graph
 	bool m_lineGraph; //true if lines should be drawn between successive data points, otherwise the graph will just be a scatterplot
+	//bool m_isSquare; //Makes the graph a square UI Element, forcing the width and height to scale the same when screen size changes
 
 	DirectX::XMFLOAT2 convertUnitsToAbsolute(DirectX::XMFLOAT2 coordinates);
 };

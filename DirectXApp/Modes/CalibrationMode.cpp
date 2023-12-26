@@ -45,9 +45,9 @@ uint32_t CalibrationMode::initializeMode(winrt::Windows::Foundation::Size window
 
 	//Create a few graph ui elements, they will stay invisible until after individual calibrations are complete
 	Graph accGraph(windowSize, { 0.7, 0.65 }, { 0.5, 0.5 });
-	Graph magGraph1(windowSize, { 0.55, 0.8 }, { 0.25, 0.25 }, false);
-	Graph magGraph2(windowSize, { 0.85, 0.5 }, { 0.25, 0.25 }, false);
-	Graph magGraph3(windowSize, { 0.85, 0.8 }, { 0.25, 0.25 }, false);
+	Graph magGraph1(windowSize, { 0.55, 0.8 }, { 0.25, 0.25 }, false, UIColor::White, UIColor::Black, true);
+	Graph magGraph2(windowSize, { 0.85, 0.5 }, { 0.25, 0.25 }, false, UIColor::White, UIColor::Black, true);
+	Graph magGraph3(windowSize, { 0.85, 0.8 }, { 0.25, 0.25 }, false, UIColor::White, UIColor::Black, true);
 	accGraph.setState(accGraph.getState() | UIElementState::Invisible);
 	magGraph1.setState(magGraph1.getState() | UIElementState::Invisible);
 	magGraph2.setState(magGraph2.getState() | UIElementState::Invisible);
@@ -1218,7 +1218,6 @@ void CalibrationMode::magnetometerCalibration()
 			m_uiManager.getElement<TextOverlay>(L"Subtitle Text")->updateText(L"Magnetometer: Data Calibration");
 			m_uiManager.getElement<TextOverlay>(L"Subtitle Text")->removeState(UIElementState::Invisible);
 
-			data_timer_duration = 5000; //the acceleromter needs 5 seconds of data at each stage
 			m_stageSet = true;
 		}
 
@@ -1229,7 +1228,7 @@ void CalibrationMode::magnetometerCalibration()
 		if (!m_stageSet)
 		{
 			m_uiManager.getElement<TextOverlay>(L"Body Text")->updateText(L"Take the sensor in your hand and rotate it along all three axes in figure-8 patterns for 20 seconds. Imaging the sensor is inside a sphere and you're trying to make the front of the sensor point at as many locations in the sphere as possible. Press the continue button when ready.");
-			data_timer_duration = 20000; //the acceleromter needs 5 seconds of data at each stage
+			data_timer_duration = 20000; //the magnetometer collects 20 seconds worth of data
 			m_stageSet = true;
 		}
 
@@ -2009,11 +2008,13 @@ void CalibrationMode::displayGraph()
 			yzc.push_back({ my[i], mz[i] });
 		}
 
-		m_uiManager.getElement<Graph>(L"Mag1 Graph")->setAxisMaxAndMins({ -125.0f,  -125.0f }, { 125.0f, 125.0f });
+		m_uiManager.getElement<Graph>(L"Mag1 Graph")->setAxisMaxAndMins({ -30.0f,  -30.0f }, { 30.0f, 30.0f });
 		m_uiManager.getElement<Graph>(L"Mag1 Graph")->addDataSet(xy, UIColor::Red);
 		m_uiManager.getElement<Graph>(L"Mag1 Graph")->addDataSet(xyc, UIColor::Green);
 		m_uiManager.getElement<Graph>(L"Mag1 Graph")->addAxisLine(0, 0);
 		m_uiManager.getElement<Graph>(L"Mag1 Graph")->addAxisLine(1, 0);
+		m_uiManager.getElement<Graph>(L"Mag1 Graph")->addAxisLine(0, -50);
+		m_uiManager.getElement<Graph>(L"Mag1 Graph")->addAxisLine(1, -50);
 		
 		m_uiManager.getElement<Graph>(L"Mag2 Graph")->setAxisMaxAndMins({ -125.0f,  -125.0f }, { 125.0f, 125.0f });
 		m_uiManager.getElement<Graph>(L"Mag2 Graph")->addDataSet(xz, UIColor::Blue);
