@@ -156,13 +156,13 @@ void GraphMode::uiElementStateChangeHandler(std::shared_ptr<ManagedUIElement> el
 				m_uiManager.getElement<Graph>(L"Graph")->addAxisLine(m_uiManager.getScreenSize(), X, lowerLineLocation);
 
 				std::wstring axisText = std::to_wstring(centerLineLocation);
-				m_uiManager.getElement<Graph>(L"Graph")->addAxisLabel(axisText, centerLineLocation);
+				m_uiManager.getElement<Graph>(L"Graph")->addAxisLabel(m_uiManager.getScreenSize(), axisText, X, centerLineLocation);
 
 				axisText = std::to_wstring(upperLineLocation);
-				m_uiManager.getElement<Graph>(L"Graph")->addAxisLabel(axisText, upperLineLocation);
+				m_uiManager.getElement<Graph>(L"Graph")->addAxisLabel(m_uiManager.getScreenSize(), axisText, X, upperLineLocation);
 
 				axisText = std::to_wstring(lowerLineLocation);
-				m_uiManager.getElement<Graph>(L"Graph")->addAxisLabel(axisText, lowerLineLocation);
+				m_uiManager.getElement<Graph>(L"Graph")->addAxisLabel(m_uiManager.getScreenSize(), axisText, X, lowerLineLocation);
 			}
 		}
 	}

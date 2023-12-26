@@ -25,7 +25,7 @@ public:
 	void removeAllLines();
 
 	void addAxisLine(winrt::Windows::Foundation::Size windowSize, int axis, float location);
-	void addAxisLabel(std::wstring label, float location);
+	void addAxisLabel(winrt::Windows::Foundation::Size windowSize, std::wstring label, int axis, float location);
 
 protected:
 	DirectX::XMFLOAT2 m_minimalAbsolutePoint, m_maximalAbsolutePoint; //these variables hold the absolute locations for the x and y min/maxes in the graph

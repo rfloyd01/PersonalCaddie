@@ -1244,7 +1244,7 @@ void CalibrationMode::magnetometerCalibration()
 		if (!m_stageSet)
 		{
 			calculateCalNumbers();
-			std::wstring completionText = L"Data collection is complete. The three graphs repsent the calibrated data (green) and uncalibrated data (red) as seen from the XY, XZ and YZ planes.\n\n\n"
+			std::wstring completionText = L"Data collection is complete. The three graphs repsent the calibrated data (green) and uncalibrated data (red) as seen from the XY, XZ and YZ planes. If the calibration was successful then the absolute value of the minimum and maximum values for each axis should be just about the same.\n\n\n"
 				L"Offset = [" + std::to_wstring(mag_off[0]) + L", " + std::to_wstring(mag_off[1]) + L", " + std::to_wstring(mag_off[2]) + L"]\n\n"
 				L"              [" + std::to_wstring(mag_gain[0][0]) + L", " + std::to_wstring(mag_gain[0][1]) + L", " + std::to_wstring(mag_gain[0][2]) + L"]\n"
 				L"Gains  =  [" + std::to_wstring(mag_gain[1][0]) + L", " + std::to_wstring(mag_gain[1][1]) + L", " + std::to_wstring(mag_gain[1][2]) + L"]\n"
@@ -1944,13 +1944,13 @@ void CalibrationMode::displayGraph()
 		m_uiManager.getElement<Graph>(L"Acc Graph")->addAxisLine(screenSize, 0, lowerLineLocation);
 
 		std::wstring axisText = std::to_wstring(centerLineLocation);
-		m_uiManager.getElement<Graph>(L"Acc Graph")->addAxisLabel(axisText, centerLineLocation);
+		m_uiManager.getElement<Graph>(L"Acc Graph")->addAxisLabel(screenSize, axisText, 0, centerLineLocation);
 
 		axisText = std::to_wstring(upperLineLocation);
-		m_uiManager.getElement<Graph>(L"Acc Graph")->addAxisLabel(axisText, upperLineLocation);
+		m_uiManager.getElement<Graph>(L"Acc Graph")->addAxisLabel(screenSize, axisText, 0, upperLineLocation);
 
 		axisText = std::to_wstring(lowerLineLocation);
-		m_uiManager.getElement<Graph>(L"Acc Graph")->addAxisLabel(axisText, lowerLineLocation);
+		m_uiManager.getElement<Graph>(L"Acc Graph")->addAxisLabel(screenSize, axisText, 0, lowerLineLocation);
 
 		m_uiManager.getElement<Graph>(L"Acc Graph")->removeState(UIElementState::Invisible); //lastly, make the graph visible
 	}
@@ -1975,13 +1975,13 @@ void CalibrationMode::displayGraph()
 		m_uiManager.getElement<Graph>(L"Acc Graph")->addAxisLine(screenSize, 0, lowerLineLocation);
 
 		std::wstring axisText = std::to_wstring(centerLineLocation);
-		m_uiManager.getElement<Graph>(L"Acc Graph")->addAxisLabel(axisText, centerLineLocation);
+		m_uiManager.getElement<Graph>(L"Acc Graph")->addAxisLabel(screenSize, axisText, 0, centerLineLocation);
 
 		axisText = std::to_wstring(upperLineLocation);
-		m_uiManager.getElement<Graph>(L"Acc Graph")->addAxisLabel(axisText, upperLineLocation);
+		m_uiManager.getElement<Graph>(L"Acc Graph")->addAxisLabel(screenSize, axisText, 0, upperLineLocation);
 
 		axisText = std::to_wstring(lowerLineLocation);
-		m_uiManager.getElement<Graph>(L"Acc Graph")->addAxisLabel(axisText, lowerLineLocation);
+		m_uiManager.getElement<Graph>(L"Acc Graph")->addAxisLabel(screenSize, axisText, 0, lowerLineLocation);
 
 		m_uiManager.getElement<Graph>(L"Acc Graph")->removeState(UIElementState::Invisible); //lastly, make the graph visible
 	}
@@ -1991,6 +1991,8 @@ void CalibrationMode::displayGraph()
 		//XZ pland and the YZ plane. We need to create new vectors with the appropriate information.
 		std::vector<DirectX::XMFLOAT2> xy, xz, yz, xyc, xzc, yzc;
 		float maximal_value = 0; //used for setting scales of the three graphs
+		float min_calibrated_values[3] = { 0, 0, 0 }; //used for creating axis lines to confirm all axes mins are about equal
+		float max_calibrated_values[3] = { 0, 0, 0 }; //used for creating axis lines to confirm all axes maxes are about equal
 
 		for (int i = 0; i < m_graphDataX.size(); i++)
 		{
@@ -2020,6 +2022,15 @@ void CalibrationMode::displayGraph()
 			xyc.push_back({ mx[i], my[i] });
 			xzc.push_back({ mx[i], mz[i] });
 			yzc.push_back({ my[i], mz[i] });
+
+			if (mx[i] > max_calibrated_values[0]) max_calibrated_values[0] = mx[i];
+			else if (mx[i] < min_calibrated_values[0]) min_calibrated_values[0] = mx[i];
+
+			if (my[i] > max_calibrated_values[1]) max_calibrated_values[1] = my[i];
+			else if (my[i] < min_calibrated_values[1]) min_calibrated_values[1] = my[i];
+
+			if (mz[i] > max_calibrated_values[2]) max_calibrated_values[2] = mz[i];
+			else if (mz[i] < min_calibrated_values[2]) min_calibrated_values[2] = mz[i];
 		}
 
 		m_uiManager.getElement<Graph>(L"Mag1 Graph")->setAxisMaxAndMins({ -maximal_value,  -maximal_value }, { maximal_value, maximal_value });
@@ -2027,20 +2038,33 @@ void CalibrationMode::displayGraph()
 		m_uiManager.getElement<Graph>(L"Mag1 Graph")->addDataSet(screenSize, xyc, UIColor::Green);
 		m_uiManager.getElement<Graph>(L"Mag1 Graph")->addAxisLine(screenSize, 0, 0);
 		m_uiManager.getElement<Graph>(L"Mag1 Graph")->addAxisLine(screenSize, 1, 0);
+		m_uiManager.getElement<Graph>(L"Mag1 Graph")->addAxisLine(screenSize, 1, min_calibrated_values[0]); //vertical line corresponding to min calibrated X value
+		m_uiManager.getElement<Graph>(L"Mag1 Graph")->addAxisLine(screenSize, 1, max_calibrated_values[0]); //vertical line corresponding to max calibrated X value
+		m_uiManager.getElement<Graph>(L"Mag1 Graph")->addAxisLabel(screenSize, L"Min X = " + std::to_wstring(min_calibrated_values[0]), 1, min_calibrated_values[0]);
+		m_uiManager.getElement<Graph>(L"Mag1 Graph")->addAxisLabel(screenSize, L"Max X = " + std::to_wstring(max_calibrated_values[0]), 1, max_calibrated_values[0]);
+		m_uiManager.getElement<Graph>(L"Mag1 Graph")->resize(screenSize); //resize the graph to get the labels in the correct locations
 		
 		m_uiManager.getElement<Graph>(L"Mag2 Graph")->setAxisMaxAndMins({ -maximal_value,  -maximal_value }, { maximal_value, maximal_value });
 		m_uiManager.getElement<Graph>(L"Mag2 Graph")->addDataSet(screenSize, xz, UIColor::Blue);
 		m_uiManager.getElement<Graph>(L"Mag2 Graph")->addDataSet(screenSize, xzc, UIColor::Green);
 		m_uiManager.getElement<Graph>(L"Mag2 Graph")->addAxisLine(screenSize, 0, 0);
 		m_uiManager.getElement<Graph>(L"Mag2 Graph")->addAxisLine(screenSize, 1, 0);
+		m_uiManager.getElement<Graph>(L"Mag2 Graph")->addAxisLine(screenSize, 0, min_calibrated_values[2]); //horizontal line corresponding to min calibrated Z value
+		m_uiManager.getElement<Graph>(L"Mag2 Graph")->addAxisLine(screenSize, 0, max_calibrated_values[2]); //horizontal line corresponding to max calibrated Z value
+		m_uiManager.getElement<Graph>(L"Mag2 Graph")->addAxisLabel(screenSize, L"Min Z = " + std::to_wstring(min_calibrated_values[2]), 0, min_calibrated_values[2]);
+		m_uiManager.getElement<Graph>(L"Mag2 Graph")->addAxisLabel(screenSize, L"Max Z = " + std::to_wstring(max_calibrated_values[2]), 0, max_calibrated_values[2]);
+		m_uiManager.getElement<Graph>(L"Mag2 Graph")->resize(screenSize); //resize the graph to get the labels in the correct locations
 
 		m_uiManager.getElement<Graph>(L"Mag3 Graph")->setAxisMaxAndMins({ -maximal_value,  -maximal_value }, { maximal_value, maximal_value });
 		m_uiManager.getElement<Graph>(L"Mag3 Graph")->addDataSet(screenSize, yz, UIColor::Yellow);
 		m_uiManager.getElement<Graph>(L"Mag3 Graph")->addDataSet(screenSize, yzc, UIColor::Green);
 		m_uiManager.getElement<Graph>(L"Mag3 Graph")->addAxisLine(screenSize, 0, 0);
 		m_uiManager.getElement<Graph>(L"Mag3 Graph")->addAxisLine(screenSize, 1, 0);
-
-		//TODO: add axis lines
+		m_uiManager.getElement<Graph>(L"Mag3 Graph")->addAxisLine(screenSize, 1, min_calibrated_values[1]); //vertical line corresponding to min calibrated Y value
+		m_uiManager.getElement<Graph>(L"Mag3 Graph")->addAxisLine(screenSize, 1, max_calibrated_values[1]); //vertical line corresponding to max calibrated Y value
+		m_uiManager.getElement<Graph>(L"Mag3 Graph")->addAxisLabel(screenSize, L"Min Y = " + std::to_wstring(min_calibrated_values[1]), 1, min_calibrated_values[1]);
+		m_uiManager.getElement<Graph>(L"Mag3 Graph")->addAxisLabel(screenSize, L"Max Y = " + std::to_wstring(max_calibrated_values[1]), 1, max_calibrated_values[1]);
+		m_uiManager.getElement<Graph>(L"Mag3 Graph")->resize(screenSize); //resize the graph to get the labels in the correct locations
 
 		//lastly, make the graphs visible
 		m_uiManager.getElement<Graph>(L"Mag1 Graph")->removeState(UIElementState::Invisible);

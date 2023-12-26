@@ -168,14 +168,49 @@ void Graph::addAxisLine(winrt::Windows::Foundation::Size windowSize, int axis, f
 	}
 }
 
-void Graph::addAxisLabel(std::wstring label, float location)
+void Graph::addAxisLabel(winrt::Windows::Foundation::Size windowSize, std::wstring label, int axis, float location)
 {
-	//adds a label to the y-axis of the graph at the specified height. The height
+	//adds a label to the x or y-axis of the graph at the specified location. The location
 	//is specified in the same units as the data itself, so it must be converted into absolute
 	//coordinates.
-	float absoluteYLocation = convertUnitsToAbsolute({ 0, location }).y;
-	TextOverlay graphText(getCurrentWindowSize(), { m_location.x, absoluteYLocation}, { m_size.x, 0.035 }, label, 0.015, { UIColor::Black }, { 0, (unsigned int)label.length() }, UITextJustification::UpperLeft);
-	p_children.push_back(std::make_shared<TextOverlay>(graphText));
+	switch (axis)
+	{
+	case 0:
+	{
+		//This is an x-axis label so the location indicates the height that we want the label at
+		float absoluteYLocation = convertUnitsToAbsolute({ 0, location }).y;
+		TextOverlay graphText(getCurrentWindowSize(), { m_location.x, absoluteYLocation }, { m_size.x, 0.035 }, label, 0.015, { UIColor::Black }, { 0, (unsigned int)label.length() }, UITextJustification::UpperLeft);
+		p_children.push_back(std::make_shared<TextOverlay>(graphText));
+		break;
+	}
+	case 1:
+	{
+		//This is a y-axis label so the location indicates the width that we want the label at
+
+		//Like is done for other Graph methods, check if the graph is in a square configuration
+	    //before setting the axis label as the width calculation could become distorted
+		float squareGraphRatioCorrection = 1.0f, squareGraphDriftCorrection = 0.0f;
+		auto childBox = ((OutlinedBox*)p_children[0].get());
+		if (childBox->isSquare())
+		{
+			//Get the ratio of the screen width to it's height. Since most screens are in portrait mode
+			//instead of landscape this will almost always result and a ratio less than one, which will
+			//effectively squish the data points along the x-axis to fit into the graph.
+			squareGraphRatioCorrection = windowSize.Height / windowSize.Width;
+			squareGraphDriftCorrection = childBox->fixSquareBoxDrift(windowSize);
+		}
+
+		DirectX::XMFLOAT2 difference = { m_maximalDataPoint.x - m_minimalDataPoint.x, m_maximalDataPoint.y - m_minimalDataPoint.y };
+		DirectX::XMFLOAT2 absoluteDifference = { m_maximalAbsolutePoint.x - m_minimalAbsolutePoint.x, m_maximalAbsolutePoint.y - m_minimalAbsolutePoint.y };
+
+		float absoluteXLocation = squareGraphRatioCorrection * (absoluteDifference.x * ((location - m_minimalDataPoint.x) / difference.x)) + m_minimalAbsolutePoint.x + squareGraphDriftCorrection;
+
+		TextOverlay graphText(getCurrentWindowSize(), { absoluteXLocation, m_location.y + m_size.y / 2.0f }, { m_size.x, 0.035 }, label, 0.015, { UIColor::Black }, { 0, (unsigned int)label.length() }, UITextJustification::UpperCenter);
+		p_children.push_back(std::make_shared<TextOverlay>(graphText));
+		break;
+	}
+	}
+	
 }
 
 DirectX::XMFLOAT2 Graph::convertUnitsToAbsolute(DirectX::XMFLOAT2 coordinates)
