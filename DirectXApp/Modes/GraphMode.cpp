@@ -139,9 +139,9 @@ void GraphMode::uiElementStateChangeHandler(std::shared_ptr<ManagedUIElement> el
 				//set the min and max data values for the graph
 				m_uiManager.getElement<Graph>(L"Graph")->setAxisMaxAndMins({ m_graphDataX[0].x,  m_minimalPoint.y }, { m_graphDataX.back().x, m_maximalPoint.y });
 
-				m_uiManager.getElement<Graph>(L"Graph")->addDataSet(m_graphDataX, UIColor::Red);
-				m_uiManager.getElement<Graph>(L"Graph")->addDataSet(m_graphDataY, UIColor::Blue);
-				m_uiManager.getElement<Graph>(L"Graph")->addDataSet(m_graphDataZ, UIColor::Green);
+				m_uiManager.getElement<Graph>(L"Graph")->addDataSet(m_uiManager.getScreenSize(), m_graphDataX, UIColor::Red);
+				m_uiManager.getElement<Graph>(L"Graph")->addDataSet(m_uiManager.getScreenSize(), m_graphDataY, UIColor::Blue);
+				m_uiManager.getElement<Graph>(L"Graph")->addDataSet(m_uiManager.getScreenSize(), m_graphDataZ, UIColor::Green);
 
 				//add a few axis lines to the graph
 				float centerLineLocation = (m_minimalPoint.y + m_maximalPoint.y) / 2.0f; //The average of the highest and lowest data point
@@ -151,9 +151,9 @@ void GraphMode::uiElementStateChangeHandler(std::shared_ptr<ManagedUIElement> el
 				float totalRotation = 0.0f;
 				for (int i = 1; i < m_graphDataZ.size(); i++) totalRotation += testIntegrateData(m_graphDataZ[i].y, m_graphDataZ[i - 1].y, m_graphDataZ[i].x - m_graphDataZ[i - 1].x);
 
-				m_uiManager.getElement<Graph>(L"Graph")->addAxisLine(X, centerLineLocation);
-				m_uiManager.getElement<Graph>(L"Graph")->addAxisLine(X, upperLineLocation);
-				m_uiManager.getElement<Graph>(L"Graph")->addAxisLine(X, lowerLineLocation);
+				m_uiManager.getElement<Graph>(L"Graph")->addAxisLine(m_uiManager.getScreenSize(), X, centerLineLocation);
+				m_uiManager.getElement<Graph>(L"Graph")->addAxisLine(m_uiManager.getScreenSize(), X, upperLineLocation);
+				m_uiManager.getElement<Graph>(L"Graph")->addAxisLine(m_uiManager.getScreenSize(), X, lowerLineLocation);
 
 				std::wstring axisText = std::to_wstring(centerLineLocation);
 				m_uiManager.getElement<Graph>(L"Graph")->addAxisLabel(axisText, centerLineLocation);

@@ -22,7 +22,6 @@ Graph::Graph(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 loca
 	m_maximalDataPoint = { 100, 100 };
 
 	m_lineGraph = line;
-	//m_isSquare = isSquare;
 }
 
 void Graph::setAxisMaxAndMins(DirectX::XMFLOAT2 axis_minimums, DirectX::XMFLOAT2 axis_maximums)
@@ -48,16 +47,13 @@ void Graph::setAxisMaxAndMins(DirectX::XMFLOAT2 axis_minimums, DirectX::XMFLOAT2
 	m_maximalDataPoint = axis_maximums;
 }
 
-void Graph::addDataSet(std::vector<DirectX::XMFLOAT2> const& dataPoints, UIColor lineColor)
+void Graph::addDataSet(winrt::Windows::Foundation::Size windowSize, std::vector<DirectX::XMFLOAT2> const& dataPoints, UIColor lineColor)
 {
 	//Takes a full set of data and creates a line on the graph with it in the indicated color
 
 	//Make sure that there are at least two data points before attempting to 
 	//create any lines
 	if (dataPoints.size() < 2) return;
-
-	//Calculate the current size of the window
-	auto currentWindowSize = getCurrentWindowSize();
 
 	//Take an initial scan through all of the points to calculate the minimum values of x and y,
 	//these will be used to calculate the aboslute minima and maxima. It's important to note that
@@ -67,12 +63,25 @@ void Graph::addDataSet(std::vector<DirectX::XMFLOAT2> const& dataPoints, UIColor
 	DirectX::XMFLOAT2 absoluteDifference = { m_maximalAbsolutePoint.x - m_minimalAbsolutePoint.x, m_maximalAbsolutePoint.y - m_minimalAbsolutePoint.y };
 	DirectX::XMFLOAT2 previousPoint = { absoluteDifference.x * ((dataPoints[0].x - m_minimalDataPoint.x) / difference.x) + m_minimalAbsolutePoint.x, -1 * (absoluteDifference.y * ((dataPoints[0].y - m_minimalDataPoint.y) / difference.y) - m_maximalAbsolutePoint.y) }, currentPoint = { 0, 0 };
 	
+	//Check to see if the graph is a square graph, if so then all points need to be shifted accordingly
+	//to make sure that they actually fall inside of the box child element
+	float squareGraphRatioCorrection = 1.0f, squareGraphDriftCorrection = 0.0f;
+	auto childBox = ((OutlinedBox*)p_children[0].get());
+	if (childBox->isSquare())
+	{
+		//Get the ratio of the screen width to it's height. Since most screens are in portrait mode
+		//instead of landscape this will almost always result and a ratio less than one, which will
+		//effectively squish the data points along the x-axis to fit into the graph.
+		squareGraphRatioCorrection = windowSize.Height / windowSize.Width;
+		squareGraphDriftCorrection = childBox->fixSquareBoxDrift(windowSize);
+	}
+
 	if (m_lineGraph)
 	{
 		for (int i = 0; i < dataPoints.size(); i++)
 		{
-			currentPoint = { absoluteDifference.x * ((dataPoints[i].x - m_minimalDataPoint.x) / difference.x) + m_minimalAbsolutePoint.x, -1 * (absoluteDifference.y * ((dataPoints[i].y - m_minimalDataPoint.y) / difference.y) - m_maximalAbsolutePoint.y) };
-			Line line(currentWindowSize, currentPoint, previousPoint, lineColor);
+			currentPoint = { squareGraphRatioCorrection * (absoluteDifference.x * ((dataPoints[i].x - m_minimalDataPoint.x) / difference.x)) + m_minimalAbsolutePoint.x + squareGraphDriftCorrection, -1 * (absoluteDifference.y * ((dataPoints[i].y - m_minimalDataPoint.y) / difference.y) - m_maximalAbsolutePoint.y) };
+			Line line(windowSize, currentPoint, previousPoint, lineColor);
 			p_children.push_back(std::make_shared<Line>(line));
 			previousPoint = currentPoint;
 		}
@@ -82,15 +91,9 @@ void Graph::addDataSet(std::vector<DirectX::XMFLOAT2> const& dataPoints, UIColor
 		for (int i = 0; i < dataPoints.size(); i++)
 		{
 			//This creates small circles instead of lines to create the graph.
-			currentPoint = { absoluteDifference.x * ((dataPoints[i].x - m_minimalDataPoint.x) / difference.x) + m_minimalAbsolutePoint.x, -1 * (absoluteDifference.y * ((dataPoints[i].y - m_minimalDataPoint.y) / difference.y) - m_maximalAbsolutePoint.y) };
+			currentPoint = { squareGraphRatioCorrection * (absoluteDifference.x * ((dataPoints[i].x - m_minimalDataPoint.x) / difference.x)) + m_minimalAbsolutePoint.x + squareGraphDriftCorrection, -1 * (absoluteDifference.y * ((dataPoints[i].y - m_minimalDataPoint.y) / difference.y) - m_maximalAbsolutePoint.y) };
 			
-			//if (m_isSquare)
-			//{
-			//	//TODO: When a graph is a square the absolute location of the current point should change
-			//	//to reflect this.
-			//}
-			
-			Ellipse ell(currentWindowSize, currentPoint, { 0.0033f * m_size.y, 0.0033f * m_size.y }, true, lineColor);
+			Ellipse ell(windowSize, currentPoint, { 0.0033f * m_size.y, 0.0033f * m_size.y }, true, lineColor);
 			p_children.push_back(std::make_shared<Ellipse>(ell));
 			previousPoint = currentPoint;
 		}
@@ -100,7 +103,17 @@ void Graph::addDataSet(std::vector<DirectX::XMFLOAT2> const& dataPoints, UIColor
 
 void Graph::addLine(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 point1, DirectX::XMFLOAT2 point2)
 {
-	//Create a line from the given data points and add it to the cild array
+	//Create a line from the given data points and add it to the cild array. Before creating the line we need
+	//to first see if the graph has the square parameter and change the points accordingly.
+
+	//TODO: Need to add the square Graph ratio correction variable at some point
+	float squareGraphCorrection = 0.0f;
+	auto childBox = ((OutlinedBox*)p_children[0].get());
+	if (childBox->isSquare()) squareGraphCorrection = childBox->fixSquareBoxDrift(windowSize);
+
+	point1.x += squareGraphCorrection;
+	point2.x += squareGraphCorrection;
+
 	Line dataLine(windowSize, point1, point2);
 	p_children.push_back(std::make_shared<Line>(dataLine));
 }
@@ -112,31 +125,43 @@ void Graph::removeAllLines()
 	p_children.erase(p_children.begin() + 1, p_children.end());
 }
 
-void Graph::addAxisLine(int axis, float location)
+void Graph::addAxisLine(winrt::Windows::Foundation::Size windowSize, int axis, float location)
 {
 	//this method simply adds a straight black line going across the entire graph for the specified axis
 	//and specified location. If the location is outside of the current min/max of the graph then it won't
 	//actually be displayed. The location must be given in absolute coordinates.
-	auto currentWindowSize = getCurrentWindowSize();
-
 	DirectX::XMFLOAT2 difference = { m_maximalDataPoint.x - m_minimalDataPoint.x, m_maximalDataPoint.y - m_minimalDataPoint.y };
 	DirectX::XMFLOAT2 absoluteDifference = { m_maximalAbsolutePoint.x - m_minimalAbsolutePoint.x, m_maximalAbsolutePoint.y - m_minimalAbsolutePoint.y };
+
+    //Since thex-axis scale can get distorted if the graph is locked in as a square we need to compensate for
+	//this to make sure the line shows up in the correct location
+	float squareGraphRatioCorrection = 1.0f, squareGraphDriftCorrection = 0.0f;
+	auto childBox = ((OutlinedBox*)p_children[0].get());
+	if (childBox->isSquare())
+	{
+		//Get the ratio of the screen width to it's height. Since most screens are in portrait mode
+		//instead of landscape this will almost always result and a ratio less than one, which will
+		//effectively squish the data points along the x-axis to fit into the graph.
+		squareGraphRatioCorrection = windowSize.Height / windowSize.Width;
+		squareGraphDriftCorrection = childBox->fixSquareBoxDrift(windowSize);
+	}
 
 	switch (axis)
 	{
 	case 0:
 	{
-		//this is the x-axis, so we place a straight horizontal line at the specified y-value
+		//this is the x-axis, so we place a straight horizontal line at the specified y-value. 
 		location = -1 * (absoluteDifference.y * ((location - m_minimalDataPoint.y) / difference.y) - m_maximalAbsolutePoint.y);//convert the given location from data coordinates into absolute window coordinates (y-axis is flipped)
-		Line dataLine(currentWindowSize, {m_location.x - m_size.x / 2.0f, location}, { m_location.x + m_size.x / 2.0f, location }, UIColor::Black, 1.5f);
+		DirectX::XMFLOAT2 corrected_x_location = { m_minimalAbsolutePoint.x + squareGraphDriftCorrection, squareGraphRatioCorrection * absoluteDifference.x + m_minimalAbsolutePoint.x + squareGraphDriftCorrection };
+		Line dataLine(windowSize, { corrected_x_location.x, location}, { corrected_x_location.y, location }, UIColor::Black, 1.5f);
 		p_children.push_back(std::make_shared<Line>(dataLine));
 		break;
 	}
 	case 1:
 	{
-		//this is the y-axis, so we place a straight vertical line at the specified x-value
-		location = absoluteDifference.x * ((location - m_minimalDataPoint.x) / difference.x) + m_minimalAbsolutePoint.x; //convert the given location from data coordinates into absolute window coordinates.
-		Line dataLine(currentWindowSize, { location,  m_location.y - m_size.y / 2.0f }, { location,  m_location.y + m_size.y / 2.0f }, UIColor::Black, 1.5f);
+		//this is the y-axis, so we place a straight vertical line at the specified x-value.
+		location = squareGraphRatioCorrection * (absoluteDifference.x * ((location - m_minimalDataPoint.x) / difference.x)) + m_minimalAbsolutePoint.x + squareGraphDriftCorrection; //convert the given location from data coordinates into absolute window coordinates.
+		Line dataLine(windowSize, { location,  m_location.y - m_size.y / 2.0f }, { location,  m_location.y + m_size.y / 2.0f }, UIColor::Black, 1.5f);
 		p_children.push_back(std::make_shared<Line>(dataLine));
 		break;
 	}

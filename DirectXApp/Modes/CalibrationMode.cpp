@@ -1920,6 +1920,8 @@ void CalibrationMode::displayGraph()
 	//representation of the accumulated data to make sure that things look correct. This
 	//method get's called after all calibration data has been gathered.
 
+	auto screenSize = m_uiManager.getScreenSize();
+
 	if (m_axisCalibration)
 	{
 		//set the min and max data values for the graph, this value will change depending on which 
@@ -1933,13 +1935,13 @@ void CalibrationMode::displayGraph()
 		upperLineLocation = 50.0f;
 		lowerLineLocation = -50.0f;
 
-		m_uiManager.getElement<Graph>(L"Acc Graph")->addDataSet(m_graphDataX, UIColor::Red);
-		m_uiManager.getElement<Graph>(L"Acc Graph")->addDataSet(m_graphDataY, UIColor::Blue);
-		m_uiManager.getElement<Graph>(L"Acc Graph")->addDataSet(m_graphDataZ, UIColor::Green);
+		m_uiManager.getElement<Graph>(L"Acc Graph")->addDataSet(screenSize, m_graphDataX, UIColor::Red);
+		m_uiManager.getElement<Graph>(L"Acc Graph")->addDataSet(screenSize, m_graphDataY, UIColor::Blue);
+		m_uiManager.getElement<Graph>(L"Acc Graph")->addDataSet(screenSize, m_graphDataZ, UIColor::Green);
 
-		m_uiManager.getElement<Graph>(L"Acc Graph")->addAxisLine(0, centerLineLocation);
-		m_uiManager.getElement<Graph>(L"Acc Graph")->addAxisLine(0, upperLineLocation);
-		m_uiManager.getElement<Graph>(L"Acc Graph")->addAxisLine(0, lowerLineLocation);
+		m_uiManager.getElement<Graph>(L"Acc Graph")->addAxisLine(screenSize, 0, centerLineLocation);
+		m_uiManager.getElement<Graph>(L"Acc Graph")->addAxisLine(screenSize, 0, upperLineLocation);
+		m_uiManager.getElement<Graph>(L"Acc Graph")->addAxisLine(screenSize, 0, lowerLineLocation);
 
 		std::wstring axisText = std::to_wstring(centerLineLocation);
 		m_uiManager.getElement<Graph>(L"Acc Graph")->addAxisLabel(axisText, centerLineLocation);
@@ -1964,13 +1966,13 @@ void CalibrationMode::displayGraph()
 		upperLineLocation = GRAVITY; //95% of the highest data point
 		lowerLineLocation = -GRAVITY; //95% of the lowest data point
 
-		m_uiManager.getElement<Graph>(L"Acc Graph")->addDataSet(m_graphDataX, UIColor::Red);
-		m_uiManager.getElement<Graph>(L"Acc Graph")->addDataSet(m_graphDataY, UIColor::Blue);
-		m_uiManager.getElement<Graph>(L"Acc Graph")->addDataSet(m_graphDataZ, UIColor::Green);
+		m_uiManager.getElement<Graph>(L"Acc Graph")->addDataSet(screenSize, m_graphDataX, UIColor::Red);
+		m_uiManager.getElement<Graph>(L"Acc Graph")->addDataSet(screenSize, m_graphDataY, UIColor::Blue);
+		m_uiManager.getElement<Graph>(L"Acc Graph")->addDataSet(screenSize, m_graphDataZ, UIColor::Green);
 
-		m_uiManager.getElement<Graph>(L"Acc Graph")->addAxisLine(0, centerLineLocation);
-		m_uiManager.getElement<Graph>(L"Acc Graph")->addAxisLine(0, upperLineLocation);
-		m_uiManager.getElement<Graph>(L"Acc Graph")->addAxisLine(0, lowerLineLocation);
+		m_uiManager.getElement<Graph>(L"Acc Graph")->addAxisLine(screenSize, 0, centerLineLocation);
+		m_uiManager.getElement<Graph>(L"Acc Graph")->addAxisLine(screenSize, 0, upperLineLocation);
+		m_uiManager.getElement<Graph>(L"Acc Graph")->addAxisLine(screenSize, 0, lowerLineLocation);
 
 		std::wstring axisText = std::to_wstring(centerLineLocation);
 		m_uiManager.getElement<Graph>(L"Acc Graph")->addAxisLabel(axisText, centerLineLocation);
@@ -1988,13 +1990,25 @@ void CalibrationMode::displayGraph()
 		//The magnetometer calibration has three different graphs associated with it. On in the XY plane, the
 		//XZ pland and the YZ plane. We need to create new vectors with the appropriate information.
 		std::vector<DirectX::XMFLOAT2> xy, xz, yz, xyc, xzc, yzc;
+		float maximal_value = 0; //used for setting scales of the three graphs
 
 		for (int i = 0; i < m_graphDataX.size(); i++)
 		{
 			xy.push_back({ m_graphDataX[i].y, m_graphDataY[i].y });
 			xz.push_back({ m_graphDataX[i].y, m_graphDataZ[i].y });
 			yz.push_back({ m_graphDataY[i].y, m_graphDataZ[i].y });
+
+			if (m_graphDataX[i].y > maximal_value) maximal_value = m_graphDataX[i].y;
+			else if (m_graphDataX[i].y < -maximal_value) maximal_value = -m_graphDataX[i].y;
+
+			if (m_graphDataY[i].y > maximal_value) maximal_value = m_graphDataY[i].y;
+			else if (m_graphDataY[i].y < -maximal_value) maximal_value = -m_graphDataY[i].y;
+
+			if (m_graphDataZ[i].y > maximal_value) maximal_value = m_graphDataZ[i].y;
+			else if (m_graphDataZ[i].y < -maximal_value) maximal_value = -m_graphDataZ[i].y;
 		}
+
+		maximal_value *= 1.1f; //increase the scale beyond the max so all points will be contained in the graph
 
 		//We also add the calibrated values for a comparison
 		for (int i = 0; i < mx.size(); i++)
@@ -2008,25 +2022,23 @@ void CalibrationMode::displayGraph()
 			yzc.push_back({ my[i], mz[i] });
 		}
 
-		m_uiManager.getElement<Graph>(L"Mag1 Graph")->setAxisMaxAndMins({ -30.0f,  -30.0f }, { 30.0f, 30.0f });
-		m_uiManager.getElement<Graph>(L"Mag1 Graph")->addDataSet(xy, UIColor::Red);
-		m_uiManager.getElement<Graph>(L"Mag1 Graph")->addDataSet(xyc, UIColor::Green);
-		m_uiManager.getElement<Graph>(L"Mag1 Graph")->addAxisLine(0, 0);
-		m_uiManager.getElement<Graph>(L"Mag1 Graph")->addAxisLine(1, 0);
-		m_uiManager.getElement<Graph>(L"Mag1 Graph")->addAxisLine(0, -50);
-		m_uiManager.getElement<Graph>(L"Mag1 Graph")->addAxisLine(1, -50);
+		m_uiManager.getElement<Graph>(L"Mag1 Graph")->setAxisMaxAndMins({ -maximal_value,  -maximal_value }, { maximal_value, maximal_value });
+		m_uiManager.getElement<Graph>(L"Mag1 Graph")->addDataSet(screenSize, xy, UIColor::Red);
+		m_uiManager.getElement<Graph>(L"Mag1 Graph")->addDataSet(screenSize, xyc, UIColor::Green);
+		m_uiManager.getElement<Graph>(L"Mag1 Graph")->addAxisLine(screenSize, 0, 0);
+		m_uiManager.getElement<Graph>(L"Mag1 Graph")->addAxisLine(screenSize, 1, 0);
 		
-		m_uiManager.getElement<Graph>(L"Mag2 Graph")->setAxisMaxAndMins({ -125.0f,  -125.0f }, { 125.0f, 125.0f });
-		m_uiManager.getElement<Graph>(L"Mag2 Graph")->addDataSet(xz, UIColor::Blue);
-		m_uiManager.getElement<Graph>(L"Mag2 Graph")->addDataSet(xzc, UIColor::Green);
-		m_uiManager.getElement<Graph>(L"Mag2 Graph")->addAxisLine(0, 0);
-		m_uiManager.getElement<Graph>(L"Mag2 Graph")->addAxisLine(1, 0);
+		m_uiManager.getElement<Graph>(L"Mag2 Graph")->setAxisMaxAndMins({ -maximal_value,  -maximal_value }, { maximal_value, maximal_value });
+		m_uiManager.getElement<Graph>(L"Mag2 Graph")->addDataSet(screenSize, xz, UIColor::Blue);
+		m_uiManager.getElement<Graph>(L"Mag2 Graph")->addDataSet(screenSize, xzc, UIColor::Green);
+		m_uiManager.getElement<Graph>(L"Mag2 Graph")->addAxisLine(screenSize, 0, 0);
+		m_uiManager.getElement<Graph>(L"Mag2 Graph")->addAxisLine(screenSize, 1, 0);
 
-		m_uiManager.getElement<Graph>(L"Mag3 Graph")->setAxisMaxAndMins({ -125.0f,  -125.0f }, { 125.0f, 125.0f });
-		m_uiManager.getElement<Graph>(L"Mag3 Graph")->addDataSet(yz, UIColor::Yellow);
-		m_uiManager.getElement<Graph>(L"Mag3 Graph")->addDataSet(yzc, UIColor::Green);
-		m_uiManager.getElement<Graph>(L"Mag3 Graph")->addAxisLine(0, 0);
-		m_uiManager.getElement<Graph>(L"Mag3 Graph")->addAxisLine(1, 0);
+		m_uiManager.getElement<Graph>(L"Mag3 Graph")->setAxisMaxAndMins({ -maximal_value,  -maximal_value }, { maximal_value, maximal_value });
+		m_uiManager.getElement<Graph>(L"Mag3 Graph")->addDataSet(screenSize, yz, UIColor::Yellow);
+		m_uiManager.getElement<Graph>(L"Mag3 Graph")->addDataSet(screenSize, yzc, UIColor::Green);
+		m_uiManager.getElement<Graph>(L"Mag3 Graph")->addAxisLine(screenSize, 0, 0);
+		m_uiManager.getElement<Graph>(L"Mag3 Graph")->addAxisLine(screenSize, 1, 0);
 
 		//TODO: add axis lines
 

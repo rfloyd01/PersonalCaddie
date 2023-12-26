@@ -11,6 +11,8 @@ public:
 
 	void setBackgrounColor(UIColor color) { m_shape.m_color = color; }
 
+	bool isSquare() { return m_isSquare; }
+
 	float fixSquareBoxDrift(winrt::Windows::Foundation::Size const& currentWindowSize);
 
 protected:

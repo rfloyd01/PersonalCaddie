@@ -18,13 +18,13 @@ public:
 
 	Graph() {} //empty default constructor
 
-	void addDataSet(std::vector<DirectX::XMFLOAT2> const& dataPoints, UIColor lineColor);
+	void addDataSet(winrt::Windows::Foundation::Size windowSize, std::vector<DirectX::XMFLOAT2> const& dataPoints, UIColor lineColor);
 
 	void setAxisMaxAndMins(DirectX::XMFLOAT2 axis_minimums, DirectX::XMFLOAT2 axis_maximums);
 	void addLine(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 point1, DirectX::XMFLOAT2 point2);
 	void removeAllLines();
 
-	void addAxisLine(int axis, float location);
+	void addAxisLine(winrt::Windows::Foundation::Size windowSize, int axis, float location);
 	void addAxisLabel(std::wstring label, float location);
 
 protected:
