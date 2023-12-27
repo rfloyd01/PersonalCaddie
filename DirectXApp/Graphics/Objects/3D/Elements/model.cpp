@@ -14,12 +14,8 @@ using namespace DirectX;
 //Constructors
 Model::Model()
 {
-    //nothing happens with default initializer
-
-    /*XMStoreFloat4x4(
-        &m_modelMatrix,
-        DirectX::XMMatrixTranslation(0.0f, 0.0f, 1.0f)
-    );*/
+    //Set the scale to be 1x1x1
+    m_scale = { 1.0f, 1.0f, 1.0f };
 }
 
 //Setup Functions
@@ -189,7 +185,7 @@ void Model::translateAndRotateFace(DirectX::XMFLOAT3 location, DirectX::XMVECTOR
     //Order of operations is scale, rotate then translate
     XMStoreFloat4x4(
         &m_modelMatrix,
-        XMMatrixScaling(1.0f, 1.0f, 1.0f) *
+        XMMatrixScaling(m_scale.x, m_scale.y, m_scale.z) *
         XMMatrixRotationQuaternion(quat) *
         XMMatrixTranslation(location.x, location.y, location.z)
     );

@@ -33,6 +33,8 @@ private:
 	void initializeTextOverlay(winrt::Windows::Foundation::Size windowSize);
 	void updateDisplayText();
 
+	void loadModel();
+
 	void convergenceCheck();
 
 	float m_currentRotation;

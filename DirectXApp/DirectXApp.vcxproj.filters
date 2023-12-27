@@ -547,6 +547,9 @@
       <Filter>Graphics\Shaders</Filter>
     </None>
     <None Include="assimp-vc143-mtd.dll" />
+    <None Include="Assets\Models\personal_caddie.gltf">
+      <Filter>Assets\Models</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Text Include="readme.txt" />

@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "CalibrationMode.h"
-#include "Graphics/Objects/3D/Elements/Face.h"
+#include "Graphics/Objects/3D/Elements/Model.h"
 #include "Math/quaternion_functions.h"
 
 CalibrationMode::CalibrationMode()
@@ -127,6 +127,7 @@ void CalibrationMode::initializeCalibrationVariables()
 	data_time_stamps.clear();
 	m_currentSensor = -1; //default to a non-sensor number
 	m_currentlyRecording = false;
+	m_needsCamera = false; //nothing to render while not taking a test
 	
 	for (int i = 0; i < 3; i++)
 	{
@@ -333,7 +334,7 @@ void CalibrationMode::update()
 
 	//If the image of the sensor is currently being rendered then translate and rotate
 	//it accordingly.
-	if (m_needsCamera) for (int i = 0; i < m_volumeElements.size(); i++) ((Face*)m_volumeElements[i].get())->translateAndRotateFace({ 0.0f, -0.25f, 1.0f }, m_renderQuaternion);
+	if (m_needsCamera) ((Model*)m_volumeElements[0].get())->translateAndRotateFace({ 0.0f, -0.25f, 1.0f }, m_renderQuaternion);
 }
 
 void CalibrationMode::handleKeyPress(winrt::Windows::System::VirtualKey pressedKey)
@@ -354,7 +355,6 @@ void CalibrationMode::handleKeyPress(winrt::Windows::System::VirtualKey pressedK
 		{
 			PersonalCaddiePowerMode powerMode = PersonalCaddiePowerMode::CONNECTED_MODE;
 			m_mode_screen_handler(ModeAction::PersonalCaddieChangeMode, (void*)&powerMode);//request the Personal Caddie to be placed into active mode to start recording data
-			initializeCalibrationVariables(); //reset all calibration variables back to their initial states
 			loadModeMainPage();
 		}
 	}
@@ -1844,36 +1844,17 @@ void CalibrationMode::calculateCalNumbers()
 
 void CalibrationMode::initializeModel()
 {
-	//This method is used to initialize a model of the sensor that gets rendered on screen. This is to 
-	//aid the user with the proper orientation and rotations for each portion of the calibration
-	std::shared_ptr<Face> sensorTop = std::make_shared<Face>(DirectX::XMFLOAT3(-0.15f, 0.026f, -0.25f), DirectX::XMFLOAT3(0.15f, 0.026f, -0.25f), DirectX::XMFLOAT3(-0.15f, 0.026f, 0.25f));
-	std::shared_ptr<Face> sensorLeft = std::make_shared<Face>(DirectX::XMFLOAT3(-0.15f, 0.0f, -0.25f), DirectX::XMFLOAT3(-0.15f, -0.052f, -0.25f), DirectX::XMFLOAT3(-0.15f, 0.0f, 0.25f));
-	std::shared_ptr<Face> sensorRight = std::make_shared<Face>(DirectX::XMFLOAT3(0.15f, 0.0f, -0.25f), DirectX::XMFLOAT3(0.15f, -0.052f, -0.25f), DirectX::XMFLOAT3(0.15f, 0.0f, 0.25f));
-	std::shared_ptr<Face> sensorFront = std::make_shared<Face>(DirectX::XMFLOAT3(0.15f, -0.026f, 0.25f), DirectX::XMFLOAT3(-0.15f, -0.026f, 0.25f), DirectX::XMFLOAT3(0.15f, 0.026f, 0.25f));
-	std::shared_ptr<Face> sensorBack = std::make_shared<Face>(DirectX::XMFLOAT3(-0.15f, -0.026f, -0.25f), DirectX::XMFLOAT3(0.15f, -0.026f, -0.25f), DirectX::XMFLOAT3(-0.15f, 0.026f, -0.25f));
-	std::shared_ptr<Face> sensorBottom = std::make_shared<Face>(DirectX::XMFLOAT3(0.15f, -0.026, -0.25f), DirectX::XMFLOAT3(-0.15f, -0.026f, -0.25f), DirectX::XMFLOAT3(0.15f, -0.026f, 0.25f));
-	//note* - the left and right face don't seem to be in the right spot to me, but the sensor is rendered correctly so I'm leaving it
+	//Load the model of the Personal Caddie sensor
+	m_volumeElements.push_back(std::make_shared<Model>());
+	((Model*)m_volumeElements[0].get())->loadModel("Assets/Models/personal_caddie.gltf");
+	((Model*)m_volumeElements[0].get())->setScale({ 0.01f, 0.01f, 0.01f });
 
-	m_volumeElements.push_back(sensorTop);
-	m_volumeElements.push_back(sensorLeft);
-	m_volumeElements.push_back(sensorRight);
-	m_volumeElements.push_back(sensorFront);
-	m_volumeElements.push_back(sensorBack);
-	m_volumeElements.push_back(sensorBottom);
+	m_materialTypes.push_back(MaterialType::DEFAULT); //This actually doesn't matter for loading models, but is need to avoid a nullptr exception
 
-	//After creating the faces of the sensor, add the appropriate material types for each face.
-	//The index of each material type in the vector needs to match the index of the appropriate
-	//face in the m_volumeElements vector.
-	m_materialTypes.push_back(MaterialType::SENSOR_TOP);
-	m_materialTypes.push_back(MaterialType::SENSOR_LONG_SIDE);
-	m_materialTypes.push_back(MaterialType::SENSOR_LONG_SIDE);
-	m_materialTypes.push_back(MaterialType::SENSOR_SHORT_SIDE);
-	m_materialTypes.push_back(MaterialType::SENSOR_SHORT_SIDE);
-	m_materialTypes.push_back(MaterialType::SENSOR_BOTTOM);
-
-	//After creating the necessary volume elements and material types, map each volume element 
-	//to its given material through the master renderer class (accessed via the ModeScreenHandler)
+	//Set the mesh and materials for the model
 	m_mode_screen_handler(ModeAction::RendererGetMaterial, nullptr);
+
+	//The m_needsCamera variable gets set during different stages of the calibration
 }
 
 void CalibrationMode::loadModeMainPage()

@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "MadgwickTestMode.h"
-#include "Graphics/Objects/3D/Elements/Face.h"
+#include "Graphics/Objects/3D/Elements/Model.h"
 #include "Math/quaternion_functions.h"
 
 MadgwickTestMode::MadgwickTestMode()
@@ -18,37 +18,40 @@ uint32_t MadgwickTestMode::initializeMode(winrt::Windows::Foundation::Size windo
 	//Create UI Elements on the page
 	initializeTextOverlay(windowSize);
 
-	m_needsCamera = true; //alerts the mode screen that 3d rendering will take place in this mode
+	//Load the model of the Personal Caddie to render on screen
+	loadModel();
 
-	float sensorHeight = 0.5f, sensorLength = 0.3f, sensorWidth = 0.052f; //TODO: Utilize these dimension variables to create the sensor instead of all the numbers seen below
-	std::shared_ptr<Face> sensorTop = std::make_shared<Face>(DirectX::XMFLOAT3(-0.15f, 0.026f, -0.25f), DirectX::XMFLOAT3(0.15f, 0.026f, -0.25f), DirectX::XMFLOAT3(-0.15f, 0.026f, 0.25f));
-	std::shared_ptr<Face> sensorLeft = std::make_shared<Face>(DirectX::XMFLOAT3(-0.15f, 0.0f, -0.25f), DirectX::XMFLOAT3(-0.15f, -0.052f, -0.25f), DirectX::XMFLOAT3(-0.15f, 0.0f, 0.25f));
-	std::shared_ptr<Face> sensorRight = std::make_shared<Face>(DirectX::XMFLOAT3(0.15f, 0.0f, -0.25f), DirectX::XMFLOAT3(0.15f, -0.052f, -0.25f), DirectX::XMFLOAT3(0.15f, 0.0f, 0.25f));
-	std::shared_ptr<Face> sensorFront = std::make_shared<Face>(DirectX::XMFLOAT3(0.15f, -0.026f, 0.25f), DirectX::XMFLOAT3(-0.15f, -0.026f, 0.25f), DirectX::XMFLOAT3(0.15f, 0.026f,0.25f));
-	std::shared_ptr<Face> sensorBack = std::make_shared<Face>(DirectX::XMFLOAT3(-0.15f, -0.026f, -0.25f), DirectX::XMFLOAT3(0.15f, -0.026f, -0.25f), DirectX::XMFLOAT3(-0.15f, 0.026f, -0.25f));
-	std::shared_ptr<Face> sensorBottom = std::make_shared<Face>(DirectX::XMFLOAT3(0.15f, -0.026, -0.25f), DirectX::XMFLOAT3(-0.15f, -0.026f, -0.25f), DirectX::XMFLOAT3(0.15f, -0.026f, 0.25f));
-	//note* - the left and right face don't seem to be in the right spot to me, but the sensor is rendered correctly so I'm leaving it
+	//m_needsCamera = true; //alerts the mode screen that 3d rendering will take place in this mode
 
-	m_volumeElements.push_back(sensorTop);
-	m_volumeElements.push_back(sensorLeft);
-	m_volumeElements.push_back(sensorRight);
-	m_volumeElements.push_back(sensorFront);
-	m_volumeElements.push_back(sensorBack);
-	m_volumeElements.push_back(sensorBottom);
+	//float sensorHeight = 0.5f, sensorLength = 0.3f, sensorWidth = 0.052f; //TODO: Utilize these dimension variables to create the sensor instead of all the numbers seen below
+	//std::shared_ptr<Face> sensorTop = std::make_shared<Face>(DirectX::XMFLOAT3(-0.15f, 0.026f, -0.25f), DirectX::XMFLOAT3(0.15f, 0.026f, -0.25f), DirectX::XMFLOAT3(-0.15f, 0.026f, 0.25f));
+	//std::shared_ptr<Face> sensorLeft = std::make_shared<Face>(DirectX::XMFLOAT3(-0.15f, 0.0f, -0.25f), DirectX::XMFLOAT3(-0.15f, -0.052f, -0.25f), DirectX::XMFLOAT3(-0.15f, 0.0f, 0.25f));
+	//std::shared_ptr<Face> sensorRight = std::make_shared<Face>(DirectX::XMFLOAT3(0.15f, 0.0f, -0.25f), DirectX::XMFLOAT3(0.15f, -0.052f, -0.25f), DirectX::XMFLOAT3(0.15f, 0.0f, 0.25f));
+	//std::shared_ptr<Face> sensorFront = std::make_shared<Face>(DirectX::XMFLOAT3(0.15f, -0.026f, 0.25f), DirectX::XMFLOAT3(-0.15f, -0.026f, 0.25f), DirectX::XMFLOAT3(0.15f, 0.026f,0.25f));
+	//std::shared_ptr<Face> sensorBack = std::make_shared<Face>(DirectX::XMFLOAT3(-0.15f, -0.026f, -0.25f), DirectX::XMFLOAT3(0.15f, -0.026f, -0.25f), DirectX::XMFLOAT3(-0.15f, 0.026f, -0.25f));
+	//std::shared_ptr<Face> sensorBottom = std::make_shared<Face>(DirectX::XMFLOAT3(0.15f, -0.026, -0.25f), DirectX::XMFLOAT3(-0.15f, -0.026f, -0.25f), DirectX::XMFLOAT3(0.15f, -0.026f, 0.25f));
+	////note* - the left and right face don't seem to be in the right spot to me, but the sensor is rendered correctly so I'm leaving it
 
-	//After creating the faces of the sensor, add the appropriate material types for each face.
-	//The index of each material type in the vector needs to match the index of the appropriate
-	//face in the m_volumeElements vector.
-	m_materialTypes.push_back(MaterialType::SENSOR_TOP);
-	m_materialTypes.push_back(MaterialType::SENSOR_LONG_SIDE);
-	m_materialTypes.push_back(MaterialType::SENSOR_LONG_SIDE);
-	m_materialTypes.push_back(MaterialType::SENSOR_SHORT_SIDE);
-	m_materialTypes.push_back(MaterialType::SENSOR_SHORT_SIDE);
-	m_materialTypes.push_back(MaterialType::SENSOR_BOTTOM);
+	//m_volumeElements.push_back(sensorTop);
+	//m_volumeElements.push_back(sensorLeft);
+	//m_volumeElements.push_back(sensorRight);
+	//m_volumeElements.push_back(sensorFront);
+	//m_volumeElements.push_back(sensorBack);
+	//m_volumeElements.push_back(sensorBottom);
 
-	//After creating the necessary volume elements and material types, map each volume element 
-	//to its given material through the master renderer class (accessed via the ModeScreenHandler)
-	m_mode_screen_handler(ModeAction::RendererGetMaterial, nullptr);
+	////After creating the faces of the sensor, add the appropriate material types for each face.
+	////The index of each material type in the vector needs to match the index of the appropriate
+	////face in the m_volumeElements vector.
+	//m_materialTypes.push_back(MaterialType::SENSOR_TOP);
+	//m_materialTypes.push_back(MaterialType::SENSOR_LONG_SIDE);
+	//m_materialTypes.push_back(MaterialType::SENSOR_LONG_SIDE);
+	//m_materialTypes.push_back(MaterialType::SENSOR_SHORT_SIDE);
+	//m_materialTypes.push_back(MaterialType::SENSOR_SHORT_SIDE);
+	//m_materialTypes.push_back(MaterialType::SENSOR_BOTTOM);
+
+	////After creating the necessary volume elements and material types, map each volume element 
+	////to its given material through the master renderer class (accessed via the ModeScreenHandler)
+	//m_mode_screen_handler(ModeAction::RendererGetMaterial, nullptr);
 
 	m_currentRotation = 0.0f;
 	m_currentDegree = PI / 2.0f;
@@ -109,6 +112,21 @@ uint32_t MadgwickTestMode::initializeMode(winrt::Windows::Foundation::Size windo
 	//The NeedMaterial modeState lets the mode screen know that it needs to pass
 	//a list of materials to this mode that it can use to initialize 3d objects
 	return (ModeState::CanTransfer | ModeState::NeedMaterial | ModeState::Active);
+}
+
+void MadgwickTestMode::loadModel()
+{
+	//Load the model of the Personal Caddie sensor
+	m_volumeElements.push_back(std::make_shared<Model>());
+	((Model*)m_volumeElements[0].get())->loadModel("Assets/Models/personal_caddie.gltf");
+	((Model*)m_volumeElements[0].get())->setScale({ 0.01f, 0.01f, 0.01f });
+
+	m_materialTypes.push_back(MaterialType::DEFAULT); //This actually doesn't matter for loading models, but is need to avoid a nullptr exception
+
+	//Set the mesh and materials for the model
+	m_mode_screen_handler(ModeAction::RendererGetMaterial, nullptr);
+
+	m_needsCamera = true;
 }
 
 void MadgwickTestMode::uninitializeMode()
@@ -327,7 +345,7 @@ void MadgwickTestMode::update()
 	}
 
 	//Rotate each face according to the given quaternion
-	for (int i = 0; i < m_volumeElements.size(); i++) ((Face*)m_volumeElements[i].get())->translateAndRotateFace({ 0.0f, 0.0f, 1.0f }, m_renderQuaternion);
+	((Model*)m_volumeElements[0].get())->translateAndRotateFace({ 0.0f, 0.0f, 1.0f }, m_renderQuaternion);
 
 	//Update any sensor display text currently being rendered
 	updateDisplayText();

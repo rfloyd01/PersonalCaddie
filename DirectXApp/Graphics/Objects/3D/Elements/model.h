@@ -73,12 +73,13 @@ public:
     void clearIndices() { m_indices = {}; }
     void clearColors() { m_colors = {}; }
     void clearTextures() { m_textures = {}; }
-    //void setScale(glm::vec3 s);
-    void setPosition(DirectX::XMFLOAT3 position);
+    
     //void setRotation(glm::quat r);
 
-    ////Rendering Functions
-    //glm::vec3 getScale();
+    //Rendering Functions
+    void setScale(DirectX::XMFLOAT3 scale) { m_scale = scale; };
+    void setPosition(DirectX::XMFLOAT3 position);
+    DirectX::XMFLOAT3 getScale() { return m_scale; }
     //glm::vec3 getLocation();
     //glm::quat getRotation();
     //void Draw(Shader& shader);
@@ -103,6 +104,7 @@ private:
     std::vector<std::vector<uint16_t>> m_indices;
     std::vector<std::vector<DirectX::XMFLOAT4>> m_colors; //each vector holds 3 XMFLOAT4 types, one each for ambient, diffuse and specular color (in that specific order)
     std::vector<MaterialType> m_textures;
+    DirectX::XMFLOAT3 m_scale; //used to dynamically scale the model along the three principle axes
 
     ////Collision Detection Functions
     //void setBoundingBox();
