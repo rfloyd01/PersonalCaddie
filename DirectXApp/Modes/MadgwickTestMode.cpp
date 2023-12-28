@@ -391,6 +391,50 @@ void MadgwickTestMode::handleKeyPress(winrt::Windows::System::VirtualKey pressed
 		toggleFilter();
 		break;
 	}
+	case winrt::Windows::System::VirtualKey::Down:
+	{
+		//Calculate the current degrees about the global Z-axis that the sensor is rotated
+		//to see what the heading offset should be
+
+		//For now, simply print one of the current unmodified quaternions
+		/*std::wstring current_quat = L"[" + std::to_wstring(m_quaternions[0].w) + L", " + std::to_wstring(m_quaternions[0].x) + L", " + std::to_wstring(m_quaternions[0].y) + L", " + std::to_wstring(m_quaternions[0].z) + L"]\n";
+		OutputDebugString(&current_quat[0]);*/
+
+		glm::vec3 north = { 1, 0, 0 }, rotated_projected_vector = { 1, 0, 0 };
+		QuatRotate(m_quaternions[0], rotated_projected_vector);
+		rotated_projected_vector.z = 0;
+
+		//normalize the rotated and projected vector
+		float magnitude = sqrt(rotated_projected_vector.x * rotated_projected_vector.x + rotated_projected_vector.y * rotated_projected_vector.y);
+		rotated_projected_vector.x /= magnitude;
+		rotated_projected_vector.y /= magnitude;
+
+		//Calculate the angle between north and the vector that's been projected into the XY plane
+		//using the dot product equation
+		float offset_angle = acos(rotated_projected_vector.x) * 180.0f / PI;
+		if (rotated_projected_vector.y < 0) offset_angle *= -1; //we'll only get positive angles with the above equation so correct that here.
+		std::wstring angle_string = L"Current offset angle is " + std::to_wstring(offset_angle) + L" degrees.\n";
+		OutputDebugString(&angle_string[0]);
+
+		/*glm::quat test1 = { 0.897263, -0.085384, 0.374786, 0.209254 };
+		glm::quat test2 = { 0.884975, -0.098030, 0.313951, 0.324449 };
+		glm::quat test3 = { 0.273638, -0.858770, -0.055301, 0.425677 };*/
+
+		/*QuatRotate(test1, north);
+		std::wstring vectorString = L"Test 1: [" + std::to_wstring(north.x) + L", " + std::to_wstring(north.y) + L", " + std::to_wstring(north.z) + L"]\n";
+		OutputDebugString(&vectorString[0]);
+		north = { 1, 0, 0 };
+
+		QuatRotate(test2, north);
+		vectorString = L"Test 2: [" + std::to_wstring(north.x) + L", " + std::to_wstring(north.y) + L", " + std::to_wstring(north.z) + L"]\n";
+		OutputDebugString(&vectorString[0]);
+		north = { 1, 0, 0 };
+
+		QuatRotate(test3, north);
+		vectorString = L"Test 3: [" + std::to_wstring(north.x) + L", " + std::to_wstring(north.y) + L", " + std::to_wstring(north.z) + L"]\n";
+		OutputDebugString(&vectorString[0]);*/
+		break;
+	}
 	}
 }
 
@@ -471,23 +515,32 @@ void MadgwickTestMode::setCurrentHeadingOffset()
 	//to align with the computer monitor. All of the following calculations use the sensor coordinate frame
 	//(where +Z axis is up instead of +Y).
 
-	//We rotate a vector representing true North by the current rotation quaternion. We then project the resulting
-	//vector back into the XY plane, and rotate it back to due North. The rotation required to get back to due
-	//North is the value that we return.
+	//To calculate the heading offset start with a point vector pointing due north (straight along the +X-axis)
+	//by the current rotation quaternion. We then project the resulting rotated vector back into the XY plane
+	//by removing itz Z component. We then calculate the angle between true north and the newly projected vector
+	//using the dot product, which gives us the heading offset.
 
-	glm::quat trueNorth = { 0, 1, 0, 0 }; //Madgwick filter has North aligned with the +X axis
-	glm::quat currentHeading = QuaternionMultiply(m_quaternions[0], trueNorth); //use the first quaternion in the array
-	currentHeading = QuaternionMultiply(currentHeading, { m_quaternions[0].w, -m_quaternions[0].x, -m_quaternions[0].y, -m_quaternions[0].z}); //use the first quaternion in the array
+	//Rotate the north vector by one of the most current quaternions we have and project it into the 
+	//XY plane by removing the Z component of the resultant rotated vector.
+	glm::vec3 north = { 1, 0, 0 }, rotated_projected_vector = { 1, 0, 0 };
+	QuatRotate(m_quaternions[0], rotated_projected_vector);
+	rotated_projected_vector.z = 0;
 
-	//Project the current heading into the XY plane (using sensor coordinates, meaning Z is set to 0)
-	currentHeading.z = 0;
+	//normalize the rotated and projected vector for better use in the dot product equation
+	float magnitude = sqrt(rotated_projected_vector.x * rotated_projected_vector.x + rotated_projected_vector.y * rotated_projected_vector.y);
+	rotated_projected_vector.x /= magnitude;
+	rotated_projected_vector.y /= magnitude;
 
-	//Calculate the angle from the current heading to true North by calculating the cross product
-	float angle = asin(CrossProduct({ currentHeading.x, currentHeading.y, currentHeading.z }, {trueNorth.x, trueNorth.y, trueNorth.z})[2] / sqrt(currentHeading.x * currentHeading.x + currentHeading.y * currentHeading.y));
+	//Calculate the angle between north and the vector that's been projected into the XY plane
+	//using the dot product equation. Since the largest angle we can get is 180 degrees the acos()
+	//method will always give us a positive value. If the y value of the projected and rotated vector
+	//is negative then the heading offset angle should also be negative.
+	float offset_angle = acos(rotated_projected_vector.x); 
+	if (rotated_projected_vector.y < 0) offset_angle *= -1; //we'll only get positive angles with the above equation so correct for that here.
 
-	//return the proper rotation quaternion about the y-axis as opposed to the z-axis
-	//as it gets applied after the Madgwick filter (so +y is up instead of +z)
-	m_headingOffset = { cos(angle / 2.0f), 0.0f, 0.0f, sin(angle / 2.0f)};
+	//Since we need to rotate by the opposite amount of the heading offset to recenter the 
+	//image, reverse the polarity of the offset angle while creating the offset quaternion.
+	m_headingOffset = { cos(-offset_angle / 2.0f), 0.0f, 0.0f, sin(-offset_angle / 2.0f)};
 	m_mode_screen_handler(ModeAction::IMUHeading, (void*)&m_headingOffset);
 }
 
