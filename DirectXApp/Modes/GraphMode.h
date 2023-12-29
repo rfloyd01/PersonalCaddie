@@ -21,13 +21,15 @@ private:
 	void initializeTextOverlay(winrt::Windows::Foundation::Size windowSize);
 	DataType getCurrentlySelectedDataType(std::wstring dropDownSelection);
 	float testIntegrateData(float p1, float p2, float t);
+	void convergenceCheck();
 
 	//Handler Methods
 	virtual void uiElementStateChangeHandler(std::shared_ptr<ManagedUIElement> element) override;
 
 	std::chrono::steady_clock::time_point data_collection_start, data_receieved;
-	bool m_recording;
+	bool m_recording, m_converged = true;
 	DataType m_currentDataType;
+	std::vector<glm::quat> m_convergenceQuaternions;
 
 	std::vector<DirectX::XMFLOAT2> m_graphDataX, m_graphDataY, m_graphDataZ;
 	DirectX::XMFLOAT2 m_minimalPoint, m_maximalPoint; //used for scaling of the graph

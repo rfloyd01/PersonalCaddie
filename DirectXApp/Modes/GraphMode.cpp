@@ -115,7 +115,12 @@ void GraphMode::uiElementStateChangeHandler(std::shared_ptr<ManagedUIElement> el
 			//rotation quaternion from the Personal Caddie, which requires the Madgwick filter to converge first.
 			//If one of these data types is selected set the m_converge variable to false and manually change the 
 			//value of the Madgwick filter's beta value
-			//TODO: Do this
+			if (m_currentDataType == DataType::LINEAR_ACCELERATION)
+			{
+				float initial_beta_value = 2.5f;
+				m_mode_screen_handler(ModeAction::MadgwickUpdateFilter, (void*)&initial_beta_value);
+				m_converged = false; //this prevents data collection from starting until the Madgwick filter quaternions converge
+			}
 		}
 		else
 		{
@@ -191,6 +196,7 @@ void GraphMode::addData(std::vector<std::vector<std::vector<float> > > const& se
 	//If we're currently recording data, then every time a new set of data is ready this method will
 	//get called and add the selected data to the data set for each axis.
 	if (!m_recording) return; //only add data if we're actually recording
+	if (!m_converged) return; //if the current data type needs to Madgwick filter to converge first don't record data yet
 
 	DataType dt = m_currentDataType;
 	if (dt == DataType::LINEAR_ACCELERATION) dt = DataType::ACCELERATION; //linear acceleration builds off of normal acceleration
@@ -234,25 +240,35 @@ void GraphMode::addQuaternions(std::vector<glm::quat> const& quaternions, int qu
 	//to using them for rendering purposes.
 	if (m_currentDataType != DataType::LINEAR_ACCELERATION) return; //if we don't actually need linear acceleration data then don't do anything
 	
-	//Mark the location in the data vectors where we need to start remove the effects of gravity
-	int start = m_graphDataX.size() - quaternion_number;
-
-	//The addQuaternions() method gets called directly after the addData() method so there should always be 
-	//a fresh batch of acceleration data for us to manipulate
-	for (int i = 0; i < quaternion_number; i++)
+	if (!m_converged)
 	{
-		//calculate and then remove the acceleration due to gravity obtained from each 
-		//rotation quaternion
-		float gx = 2 * GRAVITY * (quaternions[i].x * quaternions[i].z - quaternions[i].w * quaternions[i].y);
-		float gy = 2 * GRAVITY * (quaternions[i].y * quaternions[i].z + quaternions[i].w * quaternions[i].x);
-		float gz = GRAVITY * (quaternions[i].w * quaternions[i].w - quaternions[i].x * quaternions[i].x - quaternions[i].y * quaternions[i].y + quaternions[i].z * quaternions[i].z);
+		//if the filter hasn't yet converged add the first quaternion from this set to the convergence array
+		//and call the conergenceCheck() method
+		for (int i = 0; i < quaternion_number; i++) m_convergenceQuaternions.push_back(quaternions[i]);
+		convergenceCheck();
+	}
+	else
+	{
+		//Mark the location in the data vectors where we need to start remove the effects of gravity
+		int start = m_graphDataX.size() - quaternion_number;
 
-		std::wstring tester = L"Total Acceleration Y: " + std::to_wstring(m_graphDataY[start + i].y) + L"\nGravitational Acceleration Y: " + std::to_wstring(gy) + L"\n\n";
-		OutputDebugString(&tester[0]);
+		//The addQuaternions() method gets called directly after the addData() method so there should always be 
+		//a fresh batch of acceleration data for us to manipulate
+		for (int i = 0; i < quaternion_number; i++)
+		{
+			//calculate and then remove the acceleration due to gravity obtained from each 
+			//rotation quaternion
+			float gx = 2 * GRAVITY * (quaternions[i].x * quaternions[i].z - quaternions[i].w * quaternions[i].y);
+			float gy = 2 * GRAVITY * (quaternions[i].y * quaternions[i].z + quaternions[i].w * quaternions[i].x);
+			float gz = GRAVITY * (quaternions[i].w * quaternions[i].w - quaternions[i].x * quaternions[i].x - quaternions[i].y * quaternions[i].y + quaternions[i].z * quaternions[i].z);
 
-		m_graphDataX[start + i].y -= gx;
-		m_graphDataY[start + i].y -= gy;
-		m_graphDataZ[start + i].y -= gz;
+			std::wstring tester = L"Total Acceleration Y: " + std::to_wstring(m_graphDataY[start + i].y) + L"\nGravitational Acceleration Y: " + std::to_wstring(gy) + L"\n\n";
+			OutputDebugString(&tester[0]);
+
+			m_graphDataX[start + i].y -= gx;
+			m_graphDataY[start + i].y -= gy;
+			m_graphDataZ[start + i].y -= gz;
+		}
 	}
 }
 
@@ -283,4 +299,42 @@ DataType GraphMode::getCurrentlySelectedDataType(std::wstring dropDownSelection)
 float GraphMode::testIntegrateData(float p1, float p2, float t)
 {
 	return t * ((p1 + p2) / 2);
+}
+
+void GraphMode::convergenceCheck()
+{
+	//We check to see if the filter has converged so that we can update the filter's beta value
+	//to something more useful. To check for convergence, we average the last 10 quaternions together
+	//and check the error between this and the current quaternion. If the error in the w, x, y and z
+	//fields are all below a certain threshold then the convergence check passes and we reset the
+	//beta value of the filter.
+	if (m_convergenceQuaternions.size() >= 10)
+	{
+		glm::quat averageQuaternion = { 0, 0, 0, 0 };
+		float error_threshold = 0.05f;
+
+		for (int i = m_convergenceQuaternions.size() - 10; i < m_convergenceQuaternions.size(); i++) averageQuaternion += m_convergenceQuaternions[i];
+		averageQuaternion /= 10;
+
+		float w_error = (averageQuaternion.w - m_convergenceQuaternions.back().w) / (averageQuaternion.w + m_convergenceQuaternions.back().w);
+		float x_error = (averageQuaternion.x - m_convergenceQuaternions.back().x) / (averageQuaternion.x + m_convergenceQuaternions.back().x);
+		float y_error = (averageQuaternion.y - m_convergenceQuaternions.back().y) / (averageQuaternion.y + m_convergenceQuaternions.back().y);
+		float z_error = (averageQuaternion.z - m_convergenceQuaternions.back().z) / (averageQuaternion.z + m_convergenceQuaternions.back().z);
+
+		if (w_error >= 1.0f) w_error = 1.0f / w_error;
+
+		if (w_error > error_threshold || w_error < -error_threshold) return;
+		if (x_error > error_threshold || x_error < -error_threshold) return;
+		if (y_error > error_threshold || y_error < -error_threshold) return;
+		if (z_error > error_threshold || z_error < -error_threshold) return;
+
+		//If all error check pass we reset the beta value of the filter to once again bias the gyro readings
+		float initial_beta_value = 0.041f;
+		m_mode_screen_handler(ModeAction::MadgwickUpdateFilter, (void*)&initial_beta_value);;
+
+		//And do a little clean up
+		createAlert(L"Convergence Complete", UIColor::DarkGray, m_uiManager.getScreenSize());
+		m_convergenceQuaternions.clear();
+		m_converged = true; //prevents this convergenceCheck() from being called again
+	}
 }
