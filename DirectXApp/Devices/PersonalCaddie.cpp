@@ -62,6 +62,7 @@ PersonalCaddie::PersonalCaddie(std::function<void(PersonalCaddieEventType, void*
     
     //Initialize all orientation quaternions to the starting position. The starting position is the opposite of how
     //much we would need to rotate the computer screen so that it's pointing due North
+    //TODO: This should be read from a text file and set that way
     m_heading_offset = { 0.906923115f,  0.0f, 0.0f, -0.421296209f }; //This was found experimentally, should consider saving in a text file
 
     for (int i = 0; i < MAX_SENSOR_SAMPLES; i++)
@@ -946,8 +947,8 @@ void PersonalCaddie::dataUpdate()
         //now calculate any interpreted data, such as position quaternion, euler angles, linear acceleration, etc.
 
         updateMadgwick(); //update orientation quaternion
-        updatePosition(); //use newly calculated orientation to get linear acceleration, and then integrate that to get velocity, and again for position
-        updateEulerAngles(); //use newly calculated orientation quaternion to get Euler Angles of sensor (used in training modes)
+        //updatePosition(); //use newly calculated orientation to get linear acceleration, and then integrate that to get velocity, and again for position
+        //updateEulerAngles(); //use newly calculated orientation quaternion to get Euler Angles of sensor (used in training modes)
 
         m_last_processed_data_time_stamp = m_first_data_time_stamp + 1.0f / this->p_imu->getMaxODR() * (number_of_samples - 1);
 
@@ -1071,104 +1072,104 @@ void PersonalCaddie::setMadgwickBeta(float b)
     original_beta = b;
 }
 
-void PersonalCaddie::updateLinearAcceleration()
-{
-    for (int i = 0; i < number_of_samples; i++)
-    {
-        std::vector<float> x_vector = { GRAVITY, 0, 0 };
-        std::vector<float> y_vector = { 0, GRAVITY, 0 };
-        std::vector<float> z_vector = { 0, 0, GRAVITY };
-
-        QuatRotate(orientation_quaternions[i], x_vector);
-        QuatRotate(orientation_quaternions[i], y_vector);
-        QuatRotate(orientation_quaternions[i], z_vector);
-
-        setDataPoint(DataType::LINEAR_ACCELERATION, X, i, getDataPoint(DataType::ACCELERATION, X, i) - x_vector[2]);
-        setDataPoint(DataType::LINEAR_ACCELERATION, Y, i, getDataPoint(DataType::ACCELERATION, Y, i) - y_vector[2]);
-        setDataPoint(DataType::LINEAR_ACCELERATION, Z, i, getDataPoint(DataType::ACCELERATION, Z, i) - z_vector[2]);
-
-        //Set threshold on Linear Acceleration to help with drift
-        //if (linear_acceleration[X][current_sample] < lin_acc_threshold && linear_acceleration[X][current_sample] > -lin_acc_threshold) linear_acceleration[X][current_sample] = 0;
-        //if (linear_acceleration[Y][current_sample] < lin_acc_threshold && linear_acceleration[Y][current_sample] > -lin_acc_threshold) linear_acceleration[Y][current_sample] = 0;
-        //if (linear_acceleration[Z][current_sample] < lin_acc_threshold && linear_acceleration[Z][current_sample] > -lin_acc_threshold) linear_acceleration[Z][current_sample] = 0;
-    }
-}
-void PersonalCaddie::updatePosition()
-{
-    //TODO: this method needs to be updated so that all number_of_samples velocity and position get updated at the same time and not just one at a time
-    updateLinearAcceleration();
-    if (acceleration_event)
-    {
-        //these variables build on themselves so need to utilize previous value
-        //because of the way sensor data is stored, may need to wrap around to end of vector to get previous value
-        int last_sample = current_sample - 1;
-        if (current_sample == 0) last_sample = number_of_samples - 1; //last data point would have been end of current vector
-
-        if (getDataPoint(DataType::LINEAR_ACCELERATION, X, current_sample) == 0 && (getDataPoint(DataType::LINEAR_ACCELERATION, Y, current_sample) == 0 && getDataPoint(DataType::LINEAR_ACCELERATION, Z, current_sample) == 0))
-        {
-            if (just_stopped)
-            {
-                if (time_stamp - end_timer > .01) //if there's been no acceleration for .1 seconds, set velocity to zero to eliminate drift
-                {
-                    setDataPoint(DataType::VELOCITY, X, current_sample, 0);
-                    setDataPoint(DataType::VELOCITY, Y, current_sample, 0);
-                    setDataPoint(DataType::VELOCITY, Z, current_sample, 0);
-                    acceleration_event = 0;
-                    just_stopped = 0;
-                }
-            }
-            else
-            {
-                just_stopped = 1;
-                end_timer = time_stamp;
-            }
-        }
-        else
-        {
-            if (just_stopped)
-            {
-                just_stopped = 0;
-            }
-        }
-
-        //velocity variable builds on itself so need to reference previous value
-        setDataPoint(DataType::VELOCITY, X, current_sample, getDataPoint(DataType::VELOCITY, X, last_sample) + integrate(getDataPoint(DataType::LINEAR_ACCELERATION, X, last_sample), getDataPoint(DataType::LINEAR_ACCELERATION, X, current_sample), 1.0 / sampleFreq));
-        setDataPoint(DataType::VELOCITY, Y, current_sample, getDataPoint(DataType::VELOCITY, Y, last_sample) + integrate(getDataPoint(DataType::LINEAR_ACCELERATION, Y, last_sample), getDataPoint(DataType::LINEAR_ACCELERATION, Y, current_sample), 1.0 / sampleFreq));
-        setDataPoint(DataType::VELOCITY, Z, current_sample, getDataPoint(DataType::VELOCITY, Z, last_sample) + integrate(getDataPoint(DataType::LINEAR_ACCELERATION, Z, last_sample), getDataPoint(DataType::LINEAR_ACCELERATION, Z, current_sample), 1.0 / sampleFreq));
-
-        //location variables also build on themselves so need to reference previous values
-        //(to flip direction of movement on screen minus signs can be added)
-        setDataPoint(DataType::LOCATION, X, current_sample, getDataPoint(DataType::LOCATION, X, last_sample) + movement_scale * integrate(getDataPoint(DataType::VELOCITY, X, last_sample), getDataPoint(DataType::VELOCITY, X, current_sample), 1.0 / sampleFreq));
-        setDataPoint(DataType::LOCATION, Y, current_sample, getDataPoint(DataType::LOCATION, Y, last_sample) + movement_scale * integrate(getDataPoint(DataType::VELOCITY, Y, last_sample), getDataPoint(DataType::VELOCITY, Y, current_sample), 1.0 / sampleFreq));
-        setDataPoint(DataType::LOCATION, Z, current_sample, getDataPoint(DataType::LOCATION, Z, last_sample) + movement_scale * integrate(getDataPoint(DataType::VELOCITY, Z, last_sample), getDataPoint(DataType::VELOCITY, Z, current_sample), 1.0 / sampleFreq));
-    }
-    else
-    {
-        float lin_x = getDataPoint(DataType::LINEAR_ACCELERATION, X, current_sample), lin_y = getDataPoint(DataType::LINEAR_ACCELERATION, Y, current_sample), lin_z = getDataPoint(DataType::LINEAR_ACCELERATION, Z, current_sample);
-        if (lin_x > lin_acc_threshold || lin_x < -lin_acc_threshold) acceleration_event = 1;
-        else if (lin_y > lin_acc_threshold || lin_y < -lin_acc_threshold) acceleration_event = 1;
-        else if (lin_z > lin_acc_threshold || lin_z < -lin_acc_threshold) acceleration_event = 1;
-
-        if (acceleration_event) position_timer = time_stamp;
-    }
-}
-void PersonalCaddie::updateEulerAngles()
-{
-    //TODO: currently calculating these angles every loop which really shouldn't be necessary, look into creating a bool variable that lets BLEDevice know if it should calculate angles
-
-    for (int i = 0; i < number_of_samples; i++)
-    {
-        //calculate pitch separately to avoid NaN results
-        float pitch = 2 * (orientation_quaternions[i].w * orientation_quaternions[i].y - orientation_quaternions[i].x * orientation_quaternions[i].z);
-        if (pitch > 1) setDataPoint(DataType::EULER_ANGLES, Y, i, 1.570795); //case for +90 degrees
-        else if (pitch < -1) setDataPoint(DataType::EULER_ANGLES, Y, i, -1.570795); //case for -90 degrees
-        else  setDataPoint(DataType::EULER_ANGLES, Y, i, asinf(pitch)); //all other cases
-
-        //no NaN issues for roll and yaw
-        setDataPoint(DataType::EULER_ANGLES, X, i, atan2f(2 * (orientation_quaternions[i].w * orientation_quaternions[i].x + orientation_quaternions[i].y * orientation_quaternions[i].z), 1 - 2 * (orientation_quaternions[i].x * orientation_quaternions[i].x + orientation_quaternions[i].y * orientation_quaternions[i].y)));
-        setDataPoint(DataType::EULER_ANGLES, Z, i, atan2f(2 * (orientation_quaternions[i].w * orientation_quaternions[i].z + orientation_quaternions[i].x * orientation_quaternions[i].y), 1 - 2 * (orientation_quaternions[i].y * orientation_quaternions[i].y + orientation_quaternions[i].z * orientation_quaternions[i].z)));
-    }
-}
+//void PersonalCaddie::updateLinearAcceleration()
+//{
+//    for (int i = 0; i < number_of_samples; i++)
+//    {
+//        std::vector<float> x_vector = { GRAVITY, 0, 0 };
+//        std::vector<float> y_vector = { 0, GRAVITY, 0 };
+//        std::vector<float> z_vector = { 0, 0, GRAVITY };
+//
+//        QuatRotate(orientation_quaternions[i], x_vector);
+//        QuatRotate(orientation_quaternions[i], y_vector);
+//        QuatRotate(orientation_quaternions[i], z_vector);
+//
+//        setDataPoint(DataType::LINEAR_ACCELERATION, X, i, getDataPoint(DataType::ACCELERATION, X, i) - x_vector[2]);
+//        setDataPoint(DataType::LINEAR_ACCELERATION, Y, i, getDataPoint(DataType::ACCELERATION, Y, i) - y_vector[2]);
+//        setDataPoint(DataType::LINEAR_ACCELERATION, Z, i, getDataPoint(DataType::ACCELERATION, Z, i) - z_vector[2]);
+//
+//        //Set threshold on Linear Acceleration to help with drift
+//        //if (linear_acceleration[X][current_sample] < lin_acc_threshold && linear_acceleration[X][current_sample] > -lin_acc_threshold) linear_acceleration[X][current_sample] = 0;
+//        //if (linear_acceleration[Y][current_sample] < lin_acc_threshold && linear_acceleration[Y][current_sample] > -lin_acc_threshold) linear_acceleration[Y][current_sample] = 0;
+//        //if (linear_acceleration[Z][current_sample] < lin_acc_threshold && linear_acceleration[Z][current_sample] > -lin_acc_threshold) linear_acceleration[Z][current_sample] = 0;
+//    }
+//}
+//void PersonalCaddie::updatePosition()
+//{
+//    //TODO: this method needs to be updated so that all number_of_samples velocity and position get updated at the same time and not just one at a time
+//    updateLinearAcceleration();
+//    if (acceleration_event)
+//    {
+//        //these variables build on themselves so need to utilize previous value
+//        //because of the way sensor data is stored, may need to wrap around to end of vector to get previous value
+//        int last_sample = current_sample - 1;
+//        if (current_sample == 0) last_sample = number_of_samples - 1; //last data point would have been end of current vector
+//
+//        if (getDataPoint(DataType::LINEAR_ACCELERATION, X, current_sample) == 0 && (getDataPoint(DataType::LINEAR_ACCELERATION, Y, current_sample) == 0 && getDataPoint(DataType::LINEAR_ACCELERATION, Z, current_sample) == 0))
+//        {
+//            if (just_stopped)
+//            {
+//                if (time_stamp - end_timer > .01) //if there's been no acceleration for .1 seconds, set velocity to zero to eliminate drift
+//                {
+//                    setDataPoint(DataType::VELOCITY, X, current_sample, 0);
+//                    setDataPoint(DataType::VELOCITY, Y, current_sample, 0);
+//                    setDataPoint(DataType::VELOCITY, Z, current_sample, 0);
+//                    acceleration_event = 0;
+//                    just_stopped = 0;
+//                }
+//            }
+//            else
+//            {
+//                just_stopped = 1;
+//                end_timer = time_stamp;
+//            }
+//        }
+//        else
+//        {
+//            if (just_stopped)
+//            {
+//                just_stopped = 0;
+//            }
+//        }
+//
+//        //velocity variable builds on itself so need to reference previous value
+//        setDataPoint(DataType::VELOCITY, X, current_sample, getDataPoint(DataType::VELOCITY, X, last_sample) + integrate(getDataPoint(DataType::LINEAR_ACCELERATION, X, last_sample), getDataPoint(DataType::LINEAR_ACCELERATION, X, current_sample), 1.0 / sampleFreq));
+//        setDataPoint(DataType::VELOCITY, Y, current_sample, getDataPoint(DataType::VELOCITY, Y, last_sample) + integrate(getDataPoint(DataType::LINEAR_ACCELERATION, Y, last_sample), getDataPoint(DataType::LINEAR_ACCELERATION, Y, current_sample), 1.0 / sampleFreq));
+//        setDataPoint(DataType::VELOCITY, Z, current_sample, getDataPoint(DataType::VELOCITY, Z, last_sample) + integrate(getDataPoint(DataType::LINEAR_ACCELERATION, Z, last_sample), getDataPoint(DataType::LINEAR_ACCELERATION, Z, current_sample), 1.0 / sampleFreq));
+//
+//        //location variables also build on themselves so need to reference previous values
+//        //(to flip direction of movement on screen minus signs can be added)
+//        setDataPoint(DataType::LOCATION, X, current_sample, getDataPoint(DataType::LOCATION, X, last_sample) + movement_scale * integrate(getDataPoint(DataType::VELOCITY, X, last_sample), getDataPoint(DataType::VELOCITY, X, current_sample), 1.0 / sampleFreq));
+//        setDataPoint(DataType::LOCATION, Y, current_sample, getDataPoint(DataType::LOCATION, Y, last_sample) + movement_scale * integrate(getDataPoint(DataType::VELOCITY, Y, last_sample), getDataPoint(DataType::VELOCITY, Y, current_sample), 1.0 / sampleFreq));
+//        setDataPoint(DataType::LOCATION, Z, current_sample, getDataPoint(DataType::LOCATION, Z, last_sample) + movement_scale * integrate(getDataPoint(DataType::VELOCITY, Z, last_sample), getDataPoint(DataType::VELOCITY, Z, current_sample), 1.0 / sampleFreq));
+//    }
+//    else
+//    {
+//        float lin_x = getDataPoint(DataType::LINEAR_ACCELERATION, X, current_sample), lin_y = getDataPoint(DataType::LINEAR_ACCELERATION, Y, current_sample), lin_z = getDataPoint(DataType::LINEAR_ACCELERATION, Z, current_sample);
+//        if (lin_x > lin_acc_threshold || lin_x < -lin_acc_threshold) acceleration_event = 1;
+//        else if (lin_y > lin_acc_threshold || lin_y < -lin_acc_threshold) acceleration_event = 1;
+//        else if (lin_z > lin_acc_threshold || lin_z < -lin_acc_threshold) acceleration_event = 1;
+//
+//        if (acceleration_event) position_timer = time_stamp;
+//    }
+//}
+//void PersonalCaddie::updateEulerAngles()
+//{
+//    //TODO: currently calculating these angles every loop which really shouldn't be necessary, look into creating a bool variable that lets BLEDevice know if it should calculate angles
+//
+//    for (int i = 0; i < number_of_samples; i++)
+//    {
+//        //calculate pitch separately to avoid NaN results
+//        float pitch = 2 * (orientation_quaternions[i].w * orientation_quaternions[i].y - orientation_quaternions[i].x * orientation_quaternions[i].z);
+//        if (pitch > 1) setDataPoint(DataType::EULER_ANGLES, Y, i, 1.570795); //case for +90 degrees
+//        else if (pitch < -1) setDataPoint(DataType::EULER_ANGLES, Y, i, -1.570795); //case for -90 degrees
+//        else  setDataPoint(DataType::EULER_ANGLES, Y, i, asinf(pitch)); //all other cases
+//
+//        //no NaN issues for roll and yaw
+//        setDataPoint(DataType::EULER_ANGLES, X, i, atan2f(2 * (orientation_quaternions[i].w * orientation_quaternions[i].x + orientation_quaternions[i].y * orientation_quaternions[i].z), 1 - 2 * (orientation_quaternions[i].x * orientation_quaternions[i].x + orientation_quaternions[i].y * orientation_quaternions[i].y)));
+//        setDataPoint(DataType::EULER_ANGLES, Z, i, atan2f(2 * (orientation_quaternions[i].w * orientation_quaternions[i].z + orientation_quaternions[i].x * orientation_quaternions[i].y), 1 - 2 * (orientation_quaternions[i].y * orientation_quaternions[i].y + orientation_quaternions[i].z * orientation_quaternions[i].z)));
+//    }
+//}
 
 float PersonalCaddie::integrate(float one, float two, float dt)
 {

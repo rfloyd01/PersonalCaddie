@@ -14,6 +14,7 @@ public:
 	virtual void handleKeyPress(winrt::Windows::System::VirtualKey pressedKey) override;
 
 	virtual void addData(std::vector<std::vector<std::vector<float> > > const& sensorData, float sensorODR, float timeStamp, int totalSamples) override;
+	virtual void addQuaternions(std::vector<glm::quat> const& quaternions, int quaternion_number, float time_stamp, float delta_t) override;
 	virtual void pc_ModeChange(PersonalCaddiePowerMode newMode) override;
 
 private:
@@ -26,6 +27,7 @@ private:
 
 	std::chrono::steady_clock::time_point data_collection_start, data_receieved;
 	bool m_recording;
+	DataType m_currentDataType;
 
 	std::vector<DirectX::XMFLOAT2> m_graphDataX, m_graphDataY, m_graphDataZ;
 	DirectX::XMFLOAT2 m_minimalPoint, m_maximalPoint; //used for scaling of the graph

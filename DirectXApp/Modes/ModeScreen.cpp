@@ -305,6 +305,7 @@ void ModeScreen::PersonalCaddieHandler(PersonalCaddieEventType pcEvent, void* ev
 		if (m_currentMode == ModeType::GRAPH_MODE || m_currentMode == ModeType::CALIBRATION)
 		{
 			m_modes[static_cast<int>(m_currentMode)]->addData(m_personalCaddie->getSensorData(), m_personalCaddie->getMaxODR(), m_personalCaddie->getDataTimeStamp(), m_personalCaddie->getNumberOfSamples());
+			m_modes[static_cast<int>(m_currentMode)]->addQuaternions(m_personalCaddie->getQuaternions(), m_personalCaddie->getNumberOfSamples(), m_personalCaddie->getCurrentTime(), 1.0f / m_personalCaddie->getMaxODR());
 		}
 		else if (m_currentMode == ModeType::MADGWICK || m_currentMode == ModeType::FREE)
 		{

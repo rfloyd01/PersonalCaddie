@@ -189,18 +189,20 @@ void MadgwickTestMode::updateDisplayText()
 	//This method is called to update the sensor data being displayed on screen
 	if (!m_show_live_data) return; //we currently don't want to display data
 	if ((m_display_data[0].size() == 0) || (m_display_data[1].size() == 0) || (m_display_data[2].size() == 0)) return; //currently we have no data to display, this can happen as old data is asynchronously overwritten
+	if (m_currentQuaternion < 0 || m_currentQuaternion >= m_display_data[0].size()) return; //this should avoid any array index out of bounds exceptions
+	int index = m_currentQuaternion; //m_currentQuaternion is volatile and can be changed from another thread. Create an index variable that won't change midway through this method
 
 	std::wstring sensor_info_message_one = m_display_data_type + L":\nSensor Frame\n";
-	std::wstring sensor_info_message_two = std::to_wstring(m_display_data[0][m_currentQuaternion]) + m_display_data_units + L"\n";
-	std::wstring sensor_info_message_three = std::to_wstring(m_display_data[1][m_currentQuaternion]) + m_display_data_units + L"\n";
-	std::wstring sensor_info_message_four = std::to_wstring(m_display_data[2][m_currentQuaternion]) + m_display_data_units + L"\n";
+	std::wstring sensor_info_message_two = std::to_wstring(m_display_data[0][index]) + m_display_data_units + L"\n";
+	std::wstring sensor_info_message_three = std::to_wstring(m_display_data[1][index]) + m_display_data_units + L"\n";
+	std::wstring sensor_info_message_four = std::to_wstring(m_display_data[2][index]) + m_display_data_units + L"\n";
 	m_uiManager.getElement<TextOverlay>(L"Sensor Info 1 Text")->updateText(sensor_info_message_one + sensor_info_message_two + sensor_info_message_three + sensor_info_message_four);
 	m_uiManager.getElement<TextOverlay>(L"Sensor Info 1 Text")->updateColorLocations({ 0,  (unsigned int)sensor_info_message_one.length(),  (unsigned int)sensor_info_message_two.length(),  (unsigned int)sensor_info_message_three.length(),  (unsigned int)sensor_info_message_four.length() });
 
 	sensor_info_message_one = L"\nDirectX Frame\n";
-	sensor_info_message_two = std::to_wstring(m_display_data[computer_axis_from_sensor_axis[0]][m_currentQuaternion]) + m_display_data_units + L"\n";
-	sensor_info_message_three = std::to_wstring(m_display_data[computer_axis_from_sensor_axis[1]][m_currentQuaternion]) + m_display_data_units + L"\n";
-	sensor_info_message_four = std::to_wstring(m_display_data[computer_axis_from_sensor_axis[2]][m_currentQuaternion]) + m_display_data_units + L"\n";
+	sensor_info_message_two = std::to_wstring(m_display_data[computer_axis_from_sensor_axis[0]][index]) + m_display_data_units + L"\n";
+	sensor_info_message_three = std::to_wstring(m_display_data[computer_axis_from_sensor_axis[1]][index]) + m_display_data_units + L"\n";
+	sensor_info_message_four = std::to_wstring(m_display_data[computer_axis_from_sensor_axis[2]][index]) + m_display_data_units + L"\n";
 	m_uiManager.getElement<TextOverlay>(L"Sensor Info 2 Text")->updateText(sensor_info_message_one + sensor_info_message_two + sensor_info_message_three + sensor_info_message_four);
 	m_uiManager.getElement<TextOverlay>(L"Sensor Info 2 Text")->updateColorLocations({0,  (unsigned int)sensor_info_message_one.length(),  (unsigned int)sensor_info_message_two.length(),  (unsigned int)sensor_info_message_three.length(),  (unsigned int)sensor_info_message_four.length()});
 }
@@ -273,11 +275,36 @@ void MadgwickTestMode::addData(std::vector<std::vector<std::vector<float> > > co
 		m_display_data[2].erase(m_display_data[2].begin() + totalSamples, m_display_data[2].end());
 	}
 
-	for (int i = 0; i < totalSamples; i++)
+	if (m_display_data_index < 6)
 	{
-		m_display_data[0][i] = sensorData[m_display_data_index][0][i];
-		m_display_data[1][i] = sensorData[m_display_data_index][1][i];
-		m_display_data[2][i] = sensorData[m_display_data_index][2][i];
+		//These data types are directly measured so there's nothing special to do here.
+		//Simply display the data stored in the sensorData vector
+		for (int i = 0; i < totalSamples; i++)
+		{
+			m_display_data[0][i] = sensorData[m_display_data_index][0][i];
+			m_display_data[1][i] = sensorData[m_display_data_index][1][i];
+			m_display_data[2][i] = sensorData[m_display_data_index][2][i];
+		}
+	}
+	else
+	{
+		if (static_cast<DataType>(m_display_data_index) == DataType::LINEAR_ACCELERATION)
+		{
+			//Linear acceleration derived from the current acceleration measurement and the 
+			//current rotation quaternion. The addQuaternions() method gets called before the 
+			//addData() method in this mode so we can grab whatever quaternion data we need.
+			for (int i = 0; i < totalSamples; i++)
+			{
+				glm::quat* q = &m_quaternions[i];
+				float gx = 2 * GRAVITY * (q->x * q->z - q->w * q->y);
+				float gy = 2 * GRAVITY * (q->y * q->z + q->w * q->x);
+				float gz = GRAVITY * (q->w * q->w - q->x * q->x - q->y * q->y + q->z * q->z);
+
+				m_display_data[0][i] = sensorData[static_cast<int>(DataType::ACCELERATION)][0][i] - gx;
+				m_display_data[1][i] = sensorData[static_cast<int>(DataType::ACCELERATION)][1][i] - gy;
+				m_display_data[2][i] = sensorData[static_cast<int>(DataType::ACCELERATION)][2][i] - gz;
+			}
+		}
 	}
 
 	//TESTING of new Madgwick Filter
@@ -372,6 +399,7 @@ void MadgwickTestMode::handleKeyPress(winrt::Windows::System::VirtualKey pressed
 	case winrt::Windows::System::VirtualKey::Number4:
 	case winrt::Windows::System::VirtualKey::Number5:
 	case winrt::Windows::System::VirtualKey::Number6:
+	case winrt::Windows::System::VirtualKey::Number7:
 	{
 		switchDisplayDataType(static_cast<int>(pressedKey) - static_cast<int>(winrt::Windows::System::VirtualKey::Number0));
 		break;
@@ -393,46 +421,34 @@ void MadgwickTestMode::handleKeyPress(winrt::Windows::System::VirtualKey pressed
 	}
 	case winrt::Windows::System::VirtualKey::Down:
 	{
-		//Calculate the current degrees about the global Z-axis that the sensor is rotated
-		//to see what the heading offset should be
+		//Test separating linear acceleration from gravitational acceleration
 
-		//For now, simply print one of the current unmodified quaternions
-		/*std::wstring current_quat = L"[" + std::to_wstring(m_quaternions[0].w) + L", " + std::to_wstring(m_quaternions[0].x) + L", " + std::to_wstring(m_quaternions[0].y) + L", " + std::to_wstring(m_quaternions[0].z) + L"]\n";
-		OutputDebugString(&current_quat[0]);*/
+		glm::vec3 x_axis = { 1, 0, 0 }, y_axis = { 0, 1, 0 }, z_axis = { 0, 0, 1 };
 
-		glm::vec3 north = { 1, 0, 0 }, rotated_projected_vector = { 1, 0, 0 };
-		QuatRotate(m_quaternions[0], rotated_projected_vector);
-		rotated_projected_vector.z = 0;
+		//Rotate each axis by the current quaternion
+		QuatRotate(m_quaternions[0], x_axis);
+		QuatRotate(m_quaternions[0], y_axis);
+		QuatRotate(m_quaternions[0], z_axis);
 
-		//normalize the rotated and projected vector
-		float magnitude = sqrt(rotated_projected_vector.x * rotated_projected_vector.x + rotated_projected_vector.y * rotated_projected_vector.y);
-		rotated_projected_vector.x /= magnitude;
-		rotated_projected_vector.y /= magnitude;
+		//Multiply the z component of each rotated vector to see how much gravity
+		//it should be feeling
+		float x_axis_gravity = GRAVITY * x_axis.z;
+		float y_axis_gravity = GRAVITY * y_axis.z;
+		float z_axis_gravity = GRAVITY * z_axis.z;
 
-		//Calculate the angle between north and the vector that's been projected into the XY plane
-		//using the dot product equation
-		float offset_angle = acos(rotated_projected_vector.x) * 180.0f / PI;
-		if (rotated_projected_vector.y < 0) offset_angle *= -1; //we'll only get positive angles with the above equation so correct that here.
-		std::wstring angle_string = L"Current offset angle is " + std::to_wstring(offset_angle) + L" degrees.\n";
-		OutputDebugString(&angle_string[0]);
+		//Compare the results of the above method to a much quicker method which needs ~90%
+		//fewer mathematical operations
+		glm::quat q = m_quaternions[0];
 
-		/*glm::quat test1 = { 0.897263, -0.085384, 0.374786, 0.209254 };
-		glm::quat test2 = { 0.884975, -0.098030, 0.313951, 0.324449 };
-		glm::quat test3 = { 0.273638, -0.858770, -0.055301, 0.425677 };*/
+		float Gx = 2 * GRAVITY * (q.x * q.z - q.w * q.y);
+		float Gy = 2 * GRAVITY * (q.y * q.z + q.w * q.x);
+		float Gz = GRAVITY * (q.w * q.w - q.x * q.x - q.y * q.y + q.z * q.z);
 
-		/*QuatRotate(test1, north);
-		std::wstring vectorString = L"Test 1: [" + std::to_wstring(north.x) + L", " + std::to_wstring(north.y) + L", " + std::to_wstring(north.z) + L"]\n";
-		OutputDebugString(&vectorString[0]);
-		north = { 1, 0, 0 };
+		std::wstring gravString = L"Gravity Components: [" + std::to_wstring(x_axis_gravity) + L", " + std::to_wstring(y_axis_gravity) + L", " + std::to_wstring(z_axis_gravity) + L"]\n";
+		std::wstring fastString = L"Fast Gravity Components: [" + std::to_wstring(Gx) + L", " + std::to_wstring(Gy) + L", " + std::to_wstring(Gz) + L"]\n\n";
 
-		QuatRotate(test2, north);
-		vectorString = L"Test 2: [" + std::to_wstring(north.x) + L", " + std::to_wstring(north.y) + L", " + std::to_wstring(north.z) + L"]\n";
-		OutputDebugString(&vectorString[0]);
-		north = { 1, 0, 0 };
-
-		QuatRotate(test3, north);
-		vectorString = L"Test 3: [" + std::to_wstring(north.x) + L", " + std::to_wstring(north.y) + L", " + std::to_wstring(north.z) + L"]\n";
-		OutputDebugString(&vectorString[0]);*/
+		OutputDebugString(&gravString[0]);
+		OutputDebugString(&fastString[0]);
 		break;
 	}
 	}
@@ -492,6 +508,10 @@ void MadgwickTestMode::switchDisplayDataType(int n)
 	case 6:
 		m_display_data_type = L"Magnetic Field (uncalibrated)";
 		m_display_data_units = L" Gauss";
+		break;
+	case 7:
+		m_display_data_type = L"Linear Acceleration";
+		m_display_data_units = L" m/s^2";
 		break;
 	}
 

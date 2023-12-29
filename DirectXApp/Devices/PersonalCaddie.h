@@ -165,11 +165,11 @@ private:
 
 	//    Methods and fields from original BluetoothLE Class     //
 	//Internal Updating Functions
-	void updateSensorData();
+	//void updateSensorData();
 	void updateMadgwick();
-	void updateLinearAcceleration();
-	void updatePosition();
-	void updateEulerAngles();
+	//void updateLinearAcceleration();
+	//void updatePosition();
+	//void updateEulerAngles();
 
 	void setDataPoint(DataType dt, Axis a, int sample_number, float data);
 

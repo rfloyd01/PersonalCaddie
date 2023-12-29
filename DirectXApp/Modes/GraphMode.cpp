@@ -16,7 +16,7 @@ uint32_t GraphMode::initializeMode(winrt::Windows::Foundation::Size windowSize, 
 	//Create a button that will generate a sin graph
 	TextButton recordButton(windowSize, { 0.1, 0.2 }, { 0.12, 0.1 }, L"Start Recording Data");
 
-	std::wstring options = L"Acceleration\nAngular Velocity\nMagnetic Field\nRaw Acceleration\nRaw Angular Velocity\nRaw Magnetic Field";
+	std::wstring options = L"Acceleration\nAngular Velocity\nMagnetic Field\nRaw Acceleration\nRaw Angular Velocity\nRaw Magnetic Field\nLinear Acceleration";
 	DropDownMenu dataSelection(windowSize, { 0.9, 0.2 }, { 0.2, 0.1 }, options, 0.025, 5, false);
 
 	Graph graph(windowSize, { 0.5, 0.65 }, { 0.9, 0.6 });
@@ -30,6 +30,7 @@ uint32_t GraphMode::initializeMode(winrt::Windows::Foundation::Size windowSize, 
 
 	m_state = 0;
 	m_recording = false;
+	m_currentDataType = DataType::ACCELERATION; //Default to graphing acceleration data
 
 	//For this mode we immediately put the Personal Caddie into Sensor Idle mode
 	auto mode = PersonalCaddiePowerMode::SENSOR_IDLE_MODE;
@@ -109,6 +110,12 @@ void GraphMode::uiElementStateChangeHandler(std::shared_ptr<ManagedUIElement> el
 			//Put the Personal Caddie into Sensor Active mode to start recording data
 			auto mode = PersonalCaddiePowerMode::SENSOR_ACTIVE_MODE;
 			m_mode_screen_handler(ModeAction::PersonalCaddieChangeMode, (void*)&mode);//request the Personal Caddie to be placed into active mode to start recording data
+
+			//Certain extrapolated data types (like linear acceleration) require using the current
+			//rotation quaternion from the Personal Caddie, which requires the Madgwick filter to converge first.
+			//If one of these data types is selected set the m_converge variable to false and manually change the 
+			//value of the Madgwick filter's beta value
+			//TODO: Do this
 		}
 		else
 		{
@@ -166,6 +173,17 @@ void GraphMode::uiElementStateChangeHandler(std::shared_ptr<ManagedUIElement> el
 			}
 		}
 	}
+	else if (element->name == L"Data Dropdown Menu")
+	{
+		//If we've selected a new data type from the drop down menu then we need to 
+		//update the data type variable for the mode.
+		if (element->element->getChildren()[2]->getState() & UIElementState::Invisible)
+		{
+			//A new option has been selected
+			std::wstring dataType = m_uiManager.getElement<DropDownMenu>(L"Data Dropdown Menu")->getSelectedOption();
+			m_currentDataType = getCurrentlySelectedDataType(dataType);
+		}
+	}
 }
 
 void GraphMode::addData(std::vector<std::vector<std::vector<float> > > const& sensorData, float sensorODR, float timeStamp, int totalSamples)
@@ -174,15 +192,14 @@ void GraphMode::addData(std::vector<std::vector<std::vector<float> > > const& se
 	//get called and add the selected data to the data set for each axis.
 	if (!m_recording) return; //only add data if we're actually recording
 
-	std::wstring dataType = m_uiManager.getElement<DropDownMenu>(L"Data Dropdown Menu")->getSelectedOption();
-	DataType selectedDataType = getCurrentlySelectedDataType(dataType);
-	//float time_increment = 1.0 / sensorODR, current_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - data_collection_start).count() / 1000000000.0f;
+	DataType dt = m_currentDataType;
+	if (dt == DataType::LINEAR_ACCELERATION) dt = DataType::ACCELERATION; //linear acceleration builds off of normal acceleration
 
 	for (int i = 0; i < totalSamples; i++)
 	{
-		float x_data = sensorData[static_cast<int>(selectedDataType)][X][i];
-		float y_data = sensorData[static_cast<int>(selectedDataType)][Y][i];
-		float z_data = sensorData[static_cast<int>(selectedDataType)][Z][i];
+		float x_data = sensorData[static_cast<int>(dt)][X][i];
+		float y_data = sensorData[static_cast<int>(dt)][Y][i];
+		float z_data = sensorData[static_cast<int>(dt)][Z][i];
 
 		//Uncomment below two lines to see feed of incoming data
 		/*std::wstring data = std::to_wstring(x_data) + L", " + std::to_wstring(y_data) + L", " + std::to_wstring(z_data) + L"\n";
@@ -211,6 +228,34 @@ void GraphMode::addData(std::vector<std::vector<std::vector<float> > > const& se
 	}
 }
 
+void GraphMode::addQuaternions(std::vector<glm::quat> const& quaternions, int quaternion_number, float time_stamp, float delta_t)
+{
+	//In graph mode we use rotation quaternions to extract linear acceleration from the sensor as opposed 
+	//to using them for rendering purposes.
+	if (m_currentDataType != DataType::LINEAR_ACCELERATION) return; //if we don't actually need linear acceleration data then don't do anything
+	
+	//Mark the location in the data vectors where we need to start remove the effects of gravity
+	int start = m_graphDataX.size() - quaternion_number;
+
+	//The addQuaternions() method gets called directly after the addData() method so there should always be 
+	//a fresh batch of acceleration data for us to manipulate
+	for (int i = 0; i < quaternion_number; i++)
+	{
+		//calculate and then remove the acceleration due to gravity obtained from each 
+		//rotation quaternion
+		float gx = 2 * GRAVITY * (quaternions[i].x * quaternions[i].z - quaternions[i].w * quaternions[i].y);
+		float gy = 2 * GRAVITY * (quaternions[i].y * quaternions[i].z + quaternions[i].w * quaternions[i].x);
+		float gz = GRAVITY * (quaternions[i].w * quaternions[i].w - quaternions[i].x * quaternions[i].x - quaternions[i].y * quaternions[i].y + quaternions[i].z * quaternions[i].z);
+
+		std::wstring tester = L"Total Acceleration Y: " + std::to_wstring(m_graphDataY[start + i].y) + L"\nGravitational Acceleration Y: " + std::to_wstring(gy) + L"\n\n";
+		OutputDebugString(&tester[0]);
+
+		m_graphDataX[start + i].y -= gx;
+		m_graphDataY[start + i].y -= gy;
+		m_graphDataZ[start + i].y -= gz;
+	}
+}
+
 void GraphMode::pc_ModeChange(PersonalCaddiePowerMode newMode)
 {
 	//We wait for the Personal Caddie to Physically be placed into active mode before
@@ -231,6 +276,7 @@ DataType GraphMode::getCurrentlySelectedDataType(std::wstring dropDownSelection)
 	else if (dropDownSelection == L"Raw Acceleration") return DataType::RAW_ACCELERATION;
 	else if (dropDownSelection == L"Raw Angular Velocity") return DataType::RAW_ROTATION;
 	else if (dropDownSelection == L"Raw Magnetic Field") return DataType::RAW_MAGNETIC;
+	else if (dropDownSelection == L"Linear Acceleration") return DataType::LINEAR_ACCELERATION;
 	else return DataType::ACCELERATION; //default to acceleration
 }
 
