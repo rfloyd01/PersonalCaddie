@@ -70,6 +70,10 @@ PersonalCaddie::PersonalCaddie(std::function<void(PersonalCaddieEventType, void*
         orientation_quaternions.push_back(m_heading_offset);
     }
 
+    //Calculated data types should be turned off to start
+    m_linearAcc = false;
+    m_velocity = false;
+    m_location = false;
 }
 
 void PersonalCaddie::automaticallyConnect()
@@ -947,6 +951,7 @@ void PersonalCaddie::dataUpdate()
         //now calculate any interpreted data, such as position quaternion, euler angles, linear acceleration, etc.
 
         updateMadgwick(); //update orientation quaternion
+        if (m_linearAcc) updateLinearAcceleration(); //calculate the linear acceleration if we need it
         //updatePosition(); //use newly calculated orientation to get linear acceleration, and then integrate that to get velocity, and again for position
         //updateEulerAngles(); //use newly calculated orientation quaternion to get Euler Angles of sensor (used in training modes)
 
@@ -1072,28 +1077,50 @@ void PersonalCaddie::setMadgwickBeta(float b)
     original_beta = b;
 }
 
-//void PersonalCaddie::updateLinearAcceleration()
-//{
-//    for (int i = 0; i < number_of_samples; i++)
-//    {
-//        std::vector<float> x_vector = { GRAVITY, 0, 0 };
-//        std::vector<float> y_vector = { 0, GRAVITY, 0 };
-//        std::vector<float> z_vector = { 0, 0, GRAVITY };
-//
-//        QuatRotate(orientation_quaternions[i], x_vector);
-//        QuatRotate(orientation_quaternions[i], y_vector);
-//        QuatRotate(orientation_quaternions[i], z_vector);
-//
-//        setDataPoint(DataType::LINEAR_ACCELERATION, X, i, getDataPoint(DataType::ACCELERATION, X, i) - x_vector[2]);
-//        setDataPoint(DataType::LINEAR_ACCELERATION, Y, i, getDataPoint(DataType::ACCELERATION, Y, i) - y_vector[2]);
-//        setDataPoint(DataType::LINEAR_ACCELERATION, Z, i, getDataPoint(DataType::ACCELERATION, Z, i) - z_vector[2]);
-//
-//        //Set threshold on Linear Acceleration to help with drift
-//        //if (linear_acceleration[X][current_sample] < lin_acc_threshold && linear_acceleration[X][current_sample] > -lin_acc_threshold) linear_acceleration[X][current_sample] = 0;
-//        //if (linear_acceleration[Y][current_sample] < lin_acc_threshold && linear_acceleration[Y][current_sample] > -lin_acc_threshold) linear_acceleration[Y][current_sample] = 0;
-//        //if (linear_acceleration[Z][current_sample] < lin_acc_threshold && linear_acceleration[Z][current_sample] > -lin_acc_threshold) linear_acceleration[Z][current_sample] = 0;
-//    }
-//}
+void PersonalCaddie::toggleCalculatedDataType(DataType dt)
+{
+    //Calculating some of the data fields can be computationally expensive. These
+    //data fields aren't always necessary, so we toggle them on and off as we need them.
+    switch (dt)
+    {
+    case DataType::LINEAR_ACCELERATION:
+        m_linearAcc = !m_linearAcc;
+        break;
+    case DataType::VELOCITY:
+        m_velocity = !m_velocity;
+        break;
+    case DataType::LOCATION:
+        m_location = !m_location;
+        break;
+    default:
+        break; //do nothing
+    }
+}
+
+void PersonalCaddie::updateLinearAcceleration()
+{
+    for (int i = 0; i < number_of_samples; i++)
+    {
+        //Calculate the acceleration due to gravity by looking at the 
+        //current orientation quaternion
+        glm::quat q = orientation_quaternions[i];
+        float Gx = 2 * GRAVITY * (q.x * q.z - q.w * q.y);
+        float Gy = 2 * GRAVITY * (q.y * q.z + q.w * q.x);
+        float Gz = GRAVITY * (q.w * q.w - q.x * q.x - q.y * q.y + q.z * q.z);
+
+        //Subtract the gravitational acceleration from the total acceleration
+        //to get the linear acceleration
+        setDataPoint(DataType::LINEAR_ACCELERATION, X, i, getDataPoint(DataType::ACCELERATION, X, i) - Gx);
+        setDataPoint(DataType::LINEAR_ACCELERATION, Y, i, getDataPoint(DataType::ACCELERATION, Y, i) - Gy);
+        setDataPoint(DataType::LINEAR_ACCELERATION, Z, i, getDataPoint(DataType::ACCELERATION, Z, i) - Gz);
+
+        //Set threshold on Linear Acceleration to help with drift
+        //if (linear_acceleration[X][current_sample] < lin_acc_threshold && linear_acceleration[X][current_sample] > -lin_acc_threshold) linear_acceleration[X][current_sample] = 0;
+        //if (linear_acceleration[Y][current_sample] < lin_acc_threshold && linear_acceleration[Y][current_sample] > -lin_acc_threshold) linear_acceleration[Y][current_sample] = 0;
+        //if (linear_acceleration[Z][current_sample] < lin_acc_threshold && linear_acceleration[Z][current_sample] > -lin_acc_threshold) linear_acceleration[Z][current_sample] = 0;
+    }
+}
+
 //void PersonalCaddie::updatePosition()
 //{
 //    //TODO: this method needs to be updated so that all number_of_samples velocity and position get updated at the same time and not just one at a time

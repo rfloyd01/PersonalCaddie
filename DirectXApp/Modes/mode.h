@@ -54,6 +54,7 @@ enum ModeState
 enum ModeAction
 {
 	PersonalCaddieChangeMode,
+	PersonalCaddieToggleCalculatedData,
 	RendererGetTextSize,
 	RendererGetMaterial,
 	MadgwickUpdateFilter,

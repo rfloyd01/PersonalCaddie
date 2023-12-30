@@ -96,6 +96,7 @@ public:
 	void dataUpdate(); //master update function
 	float getDataPoint(DataType dt, Axis a, int sample_number);
 	void setMadgwickBeta(float b);
+	void toggleCalculatedDataType(DataType dt);
 
 	//IMU and Sensor Methods
 	std::vector<uint8_t*> getIMUSettings() { return p_imu->getSensorSettings(); }
@@ -163,11 +164,12 @@ private:
 	Bluetooth::GenericAttributeProfile::GattCharacteristic m_medium_data_characteristic{ nullptr };
 	Bluetooth::GenericAttributeProfile::GattCharacteristic m_large_data_characteristic{ nullptr };
 
+	void updateMadgwick();
+	void updateLinearAcceleration();
+
 	//    Methods and fields from original BluetoothLE Class     //
 	//Internal Updating Functions
 	//void updateSensorData();
-	void updateMadgwick();
-	//void updateLinearAcceleration();
 	//void updatePosition();
 	//void updateEulerAngles();
 
@@ -178,7 +180,8 @@ private:
 	int number_of_samples = 10; //number of sensor samples stored in the BLE characteristic at a given time. Due to the time associated with reading BLE broadcasts, its more efficient to store multiple data points at a single time then try to read each individual point
 	int current_sample = 0; //when updating rotation quaternion with Madgwick filter, need to know which data point is currently being looked at
 
-	//glm::quat Quaternion = { 1, 0, 0, 0 }; //represents the current orientation of the sensor
+	//Boolean flags for calculated data types
+	bool m_linearAcc, m_velocity, m_location;
 
 	//the following compound vector holds raw data from the sensors as well as calculated data such as (calibrated acc, gyr and mag readings, linear acceleration,
 	//velocity, etc.). The outermost vector holds everything, the second vector represents a specific data type and the innermost vector represents a specific

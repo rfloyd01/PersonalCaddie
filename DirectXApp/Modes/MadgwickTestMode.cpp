@@ -61,6 +61,7 @@ uint32_t MadgwickTestMode::initializeMode(winrt::Windows::Foundation::Size windo
 	m_display_data_index = 0;
 	m_display_data_type = L"Acceleration";
 	m_display_data_units = L"m/s^2";
+	m_current_data_type = DataType::ACCELERATION;
 
 	m_quaternions.clear();
 	m_testQuaternions.clear();
@@ -137,6 +138,11 @@ void MadgwickTestMode::uninitializeMode()
 
 	for (int i = 0; i < m_volumeElements.size(); i++) m_volumeElements[i] = nullptr;
 	m_volumeElements.clear();
+
+	//If an extrapolated data type has currently been selected, turn off calculations in 
+	//the Personal Caddie now
+	if (m_current_data_type == DataType::LINEAR_ACCELERATION || m_current_data_type == DataType::VELOCITY || m_current_data_type == DataType::LOCATION)
+		m_mode_screen_handler(ModeAction::PersonalCaddieToggleCalculatedData, (void*)&m_current_data_type);
 
 	//Put the Personal Caddie back into Connected Mode when leaving this page. This can be 
 	//done without going into Sensor Idle Mode first.
@@ -275,36 +281,11 @@ void MadgwickTestMode::addData(std::vector<std::vector<std::vector<float> > > co
 		m_display_data[2].erase(m_display_data[2].begin() + totalSamples, m_display_data[2].end());
 	}
 
-	if (m_display_data_index < 6)
+	for (int i = 0; i < totalSamples; i++)
 	{
-		//These data types are directly measured so there's nothing special to do here.
-		//Simply display the data stored in the sensorData vector
-		for (int i = 0; i < totalSamples; i++)
-		{
-			m_display_data[0][i] = sensorData[m_display_data_index][0][i];
-			m_display_data[1][i] = sensorData[m_display_data_index][1][i];
-			m_display_data[2][i] = sensorData[m_display_data_index][2][i];
-		}
-	}
-	else
-	{
-		if (static_cast<DataType>(m_display_data_index) == DataType::LINEAR_ACCELERATION)
-		{
-			//Linear acceleration derived from the current acceleration measurement and the 
-			//current rotation quaternion. The addQuaternions() method gets called before the 
-			//addData() method in this mode so we can grab whatever quaternion data we need.
-			for (int i = 0; i < totalSamples; i++)
-			{
-				glm::quat* q = &m_quaternions[i];
-				float gx = 2 * GRAVITY * (q->x * q->z - q->w * q->y);
-				float gy = 2 * GRAVITY * (q->y * q->z + q->w * q->x);
-				float gz = GRAVITY * (q->w * q->w - q->x * q->x - q->y * q->y + q->z * q->z);
-
-				m_display_data[0][i] = sensorData[static_cast<int>(DataType::ACCELERATION)][0][i] - gx;
-				m_display_data[1][i] = sensorData[static_cast<int>(DataType::ACCELERATION)][1][i] - gy;
-				m_display_data[2][i] = sensorData[static_cast<int>(DataType::ACCELERATION)][2][i] - gz;
-			}
-		}
+		m_display_data[0][i] = sensorData[m_display_data_index][0][i];
+		m_display_data[1][i] = sensorData[m_display_data_index][1][i];
+		m_display_data[2][i] = sensorData[m_display_data_index][2][i];
 	}
 
 	//TESTING of new Madgwick Filter
@@ -419,38 +400,37 @@ void MadgwickTestMode::handleKeyPress(winrt::Windows::System::VirtualKey pressed
 		toggleFilter();
 		break;
 	}
-	case winrt::Windows::System::VirtualKey::Down:
-	{
-		//Test separating linear acceleration from gravitational acceleration
+	//case winrt::Windows::System::VirtualKey::Down:
+	//{
+	//	//Test separating linear acceleration from gravitational acceleration
+	//	glm::vec3 x_axis = { 1, 0, 0 }, y_axis = { 0, 1, 0 }, z_axis = { 0, 0, 1 };
 
-		glm::vec3 x_axis = { 1, 0, 0 }, y_axis = { 0, 1, 0 }, z_axis = { 0, 0, 1 };
+	//	//Rotate each axis by the current quaternion
+	//	QuatRotate(m_quaternions[0], x_axis);
+	//	QuatRotate(m_quaternions[0], y_axis);
+	//	QuatRotate(m_quaternions[0], z_axis);
 
-		//Rotate each axis by the current quaternion
-		QuatRotate(m_quaternions[0], x_axis);
-		QuatRotate(m_quaternions[0], y_axis);
-		QuatRotate(m_quaternions[0], z_axis);
+	//	//Multiply the z component of each rotated vector to see how much gravity
+	//	//it should be feeling
+	//	float x_axis_gravity = GRAVITY * x_axis.z;
+	//	float y_axis_gravity = GRAVITY * y_axis.z;
+	//	float z_axis_gravity = GRAVITY * z_axis.z;
 
-		//Multiply the z component of each rotated vector to see how much gravity
-		//it should be feeling
-		float x_axis_gravity = GRAVITY * x_axis.z;
-		float y_axis_gravity = GRAVITY * y_axis.z;
-		float z_axis_gravity = GRAVITY * z_axis.z;
+	//	//Compare the results of the above method to a much quicker method which needs ~90%
+	//	//fewer mathematical operations
+	//	glm::quat q = m_quaternions[0];
 
-		//Compare the results of the above method to a much quicker method which needs ~90%
-		//fewer mathematical operations
-		glm::quat q = m_quaternions[0];
+	//	float Gx = 2 * GRAVITY * (q.x * q.z - q.w * q.y);
+	//	float Gy = 2 * GRAVITY * (q.y * q.z + q.w * q.x);
+	//	float Gz = GRAVITY * (q.w * q.w - q.x * q.x - q.y * q.y + q.z * q.z);
 
-		float Gx = 2 * GRAVITY * (q.x * q.z - q.w * q.y);
-		float Gy = 2 * GRAVITY * (q.y * q.z + q.w * q.x);
-		float Gz = GRAVITY * (q.w * q.w - q.x * q.x - q.y * q.y + q.z * q.z);
+	//	std::wstring gravString = L"Gravity Components: [" + std::to_wstring(x_axis_gravity) + L", " + std::to_wstring(y_axis_gravity) + L", " + std::to_wstring(z_axis_gravity) + L"]\n";
+	//	std::wstring fastString = L"Fast Gravity Components: [" + std::to_wstring(Gx) + L", " + std::to_wstring(Gy) + L", " + std::to_wstring(Gz) + L"]\n\n";
 
-		std::wstring gravString = L"Gravity Components: [" + std::to_wstring(x_axis_gravity) + L", " + std::to_wstring(y_axis_gravity) + L", " + std::to_wstring(z_axis_gravity) + L"]\n";
-		std::wstring fastString = L"Fast Gravity Components: [" + std::to_wstring(Gx) + L", " + std::to_wstring(Gy) + L", " + std::to_wstring(Gz) + L"]\n\n";
-
-		OutputDebugString(&gravString[0]);
-		OutputDebugString(&fastString[0]);
-		break;
-	}
+	//	OutputDebugString(&gravString[0]);
+	//	OutputDebugString(&fastString[0]);
+	//	break;
+	//}
 	}
 }
 
@@ -483,6 +463,8 @@ void MadgwickTestMode::toggleDisplayData()
 
 void MadgwickTestMode::switchDisplayDataType(int n)
 {
+	DataType newDataType = static_cast<DataType>(n - 1);;
+
 	switch (n)
 	{
 	case 1:
@@ -515,6 +497,25 @@ void MadgwickTestMode::switchDisplayDataType(int n)
 		break;
 	}
 
+	//After updating the data type, either turn on or turn off
+	//any extrapolated data types as needed
+	if (n <= 6)
+	{
+		if (m_current_data_type == DataType::LINEAR_ACCELERATION || m_current_data_type == DataType::VELOCITY || m_current_data_type == DataType::LOCATION)
+			m_mode_screen_handler(ModeAction::PersonalCaddieToggleCalculatedData, (void*)&m_current_data_type);
+	}
+	else
+	{
+		//Check to make sure we haven't selected the data type that is currently being displayed
+		if (static_cast<int>(m_current_data_type) != (n - 1))
+		{
+			//Turn off the current data type and turn on the new one
+			m_mode_screen_handler(ModeAction::PersonalCaddieToggleCalculatedData, (void*)&m_current_data_type);
+			m_mode_screen_handler(ModeAction::PersonalCaddieToggleCalculatedData, (void*)&newDataType);
+		}
+	}
+
+	m_current_data_type = newDataType;
 	m_display_data_index = n - 1;
 }
 

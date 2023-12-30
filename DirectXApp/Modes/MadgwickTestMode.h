@@ -51,12 +51,14 @@ private:
 
 	bool m_converged;
 	std::vector<glm::quat> m_convergenceQuaternions;
+	bool m_linearAcc, m_velocity, m_location; //to match the variables in the Personal Caddie class
 
 	//Variables for Displaying Live data from sensor
 	bool m_show_live_data;
 	std::vector<float> m_display_data[3];
 	std::wstring m_display_data_type, m_display_data_units;
 	int m_display_data_index;
+	DataType m_current_data_type;
 
 	//Array used to swap real world coordinates to DirectX coordinates
 	int computer_axis_from_sensor_axis[3] = {1, 2, 0};

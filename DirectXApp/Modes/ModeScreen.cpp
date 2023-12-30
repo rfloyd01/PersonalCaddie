@@ -369,6 +369,18 @@ void ModeScreen::ModeHandler(ModeAction action, void* eventArgs)
 		else m_personalCaddie->changePowerMode(newMode);
 		break;
 	}
+	case PersonalCaddieToggleCalculatedData:
+	{
+		//Certain data types aren't recorded directly from the sensors, but instead are calculated
+		//using the data that is recorded. Things such as linear acceleration, velocity, position, 
+		//etc. Since these data types can be computationally expensive and aren't always necessary
+		//they aren't computed by default. We can tell the Personal Caddie which of these data types
+		//we want at any time here. In this case the EventArgs contains the DataType that we wish 
+		//to toggle on or off.
+		DataType dt = *((DataType*)eventArgs);
+		m_personalCaddie->toggleCalculatedDataType(dt);
+		break;
+	}
 	case RendererGetTextSize:
 	{
 		//Some UIElements are sized so that they can perfectly fit their text inside of themselves,

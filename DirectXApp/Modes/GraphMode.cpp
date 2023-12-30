@@ -113,10 +113,14 @@ void GraphMode::uiElementStateChangeHandler(std::shared_ptr<ManagedUIElement> el
 
 			//Certain extrapolated data types (like linear acceleration) require using the current
 			//rotation quaternion from the Personal Caddie, which requires the Madgwick filter to converge first.
-			//If one of these data types is selected set the m_converge variable to false and manually change the 
-			//value of the Madgwick filter's beta value
-			if (m_currentDataType == DataType::LINEAR_ACCELERATION)
+			//If one of these data types is selected set the m_converge variable to false, manually change the 
+			//value of the Madgwick filter's beta value, and alert the Personal Caddie to start calculating the 
+			//specific data type
+			if (static_cast<int>(m_currentDataType) > 5)
 			{
+				m_mode_screen_handler(ModeAction::PersonalCaddieToggleCalculatedData, (void*)&m_currentDataType); //Turn on calculations for the extrapolated data type
+				
+				//Temporarily increase the beta value for the Madgwick filter
 				float initial_beta_value = 2.5f;
 				m_mode_screen_handler(ModeAction::MadgwickUpdateFilter, (void*)&initial_beta_value);
 				m_converged = false; //this prevents data collection from starting until the Madgwick filter quaternions converge
@@ -133,6 +137,10 @@ void GraphMode::uiElementStateChangeHandler(std::shared_ptr<ManagedUIElement> el
 			//Put the Personal Caddie back into Sensor Idle mode
 			auto mode = PersonalCaddiePowerMode::SENSOR_IDLE_MODE;
 			m_mode_screen_handler(ModeAction::PersonalCaddieChangeMode, (void*)&mode);//request the Personal Caddie to be placed into active mode to start recording data
+
+			//If an extraploated data type was being recorded, tell the Personal Caddie to stop
+			//calculations on it
+			m_mode_screen_handler(ModeAction::PersonalCaddieToggleCalculatedData, (void*)&m_currentDataType);
 
 			if (m_graphDataX.size() >= 2)
 			{
@@ -159,9 +167,6 @@ void GraphMode::uiElementStateChangeHandler(std::shared_ptr<ManagedUIElement> el
 				float centerLineLocation = (m_minimalPoint.y + m_maximalPoint.y) / 2.0f; //The average of the highest and lowest data point
 				float upperLineLocation = m_maximalPoint.y - 0.05f * (m_maximalPoint.y - m_minimalPoint.y); //95% of the highest data point
 				float lowerLineLocation = m_minimalPoint.y + 0.05f * (m_maximalPoint.y - m_minimalPoint.y); //95% of the lowest data point
-
-				float totalRotation = 0.0f;
-				for (int i = 1; i < m_graphDataZ.size(); i++) totalRotation += testIntegrateData(m_graphDataZ[i].y, m_graphDataZ[i - 1].y, m_graphDataZ[i].x - m_graphDataZ[i - 1].x);
 
 				m_uiManager.getElement<Graph>(L"Graph")->addAxisLine(m_uiManager.getScreenSize(), X, centerLineLocation);
 				m_uiManager.getElement<Graph>(L"Graph")->addAxisLine(m_uiManager.getScreenSize(), X, upperLineLocation);
@@ -198,20 +203,21 @@ void GraphMode::addData(std::vector<std::vector<std::vector<float> > > const& se
 	if (!m_recording) return; //only add data if we're actually recording
 	if (!m_converged) return; //if the current data type needs to Madgwick filter to converge first don't record data yet
 
-	DataType dt = m_currentDataType;
-	if (dt == DataType::LINEAR_ACCELERATION) dt = DataType::ACCELERATION; //linear acceleration builds off of normal acceleration
+	//DataType dt = m_currentDataType;
+	//if (dt == DataType::LINEAR_ACCELERATION) dt = DataType::ACCELERATION; //linear acceleration builds off of normal acceleration
 
 	for (int i = 0; i < totalSamples; i++)
 	{
-		float x_data = sensorData[static_cast<int>(dt)][X][i];
-		float y_data = sensorData[static_cast<int>(dt)][Y][i];
-		float z_data = sensorData[static_cast<int>(dt)][Z][i];
+		float x_data = sensorData[static_cast<int>(m_currentDataType)][X][i];
+		float y_data = sensorData[static_cast<int>(m_currentDataType)][Y][i];
+		float z_data = sensorData[static_cast<int>(m_currentDataType)][Z][i];
 
 		//Uncomment below two lines to see feed of incoming data
 		/*std::wstring data = std::to_wstring(x_data) + L", " + std::to_wstring(y_data) + L", " + std::to_wstring(z_data) + L"\n";
 		OutputDebugString(&data[0]);*/
 
-		//overwrite the local maxima and minima if necessary
+		//overwrite the local maxima and minima if necessary. These are used for 
+		//creating reference lines on the graph
 		if (x_data > m_maximalPoint.y) m_maximalPoint.y = x_data;
 		else if (x_data < m_minimalPoint.y) m_minimalPoint.y = x_data;
 
@@ -221,25 +227,18 @@ void GraphMode::addData(std::vector<std::vector<std::vector<float> > > const& se
 		if (z_data > m_maximalPoint.y) m_maximalPoint.y = z_data;
 		else if (z_data < m_minimalPoint.y) m_minimalPoint.y = z_data;
 
-		//TODO: Every now and then one of these push_back calls leads to a crash,
-		//need to investigate why this is the case.
-		/*m_graphDataX.push_back({ m_graphDataX.back().x + time_increment, x_data });
-		m_graphDataY.push_back({ m_graphDataY.back().x + time_increment, y_data });
-		m_graphDataZ.push_back({ m_graphDataZ.back().x + time_increment, z_data });*/
 		m_graphDataX.push_back({ timeStamp + i / sensorODR, x_data });
 		m_graphDataY.push_back({ timeStamp + i / sensorODR, y_data });
 		m_graphDataZ.push_back({ timeStamp + i / sensorODR, z_data });
-
-		//current_time += time_increment;
 	}
 }
 
 void GraphMode::addQuaternions(std::vector<glm::quat> const& quaternions, int quaternion_number, float time_stamp, float delta_t)
 {
-	//In graph mode we use rotation quaternions to extract linear acceleration from the sensor as opposed 
-	//to using them for rendering purposes.
-	if (m_currentDataType != DataType::LINEAR_ACCELERATION) return; //if we don't actually need linear acceleration data then don't do anything
-	
+	//Certain data types require that the calculated rotation quaternion has correctly converge on 
+	//the sensor's real life orientation. Linear Acceleration for example is calculated by removing 
+	//the effects of gravity calculated by looking at the current orientation. For these data types 
+	//we wait for the convergence to happen before any data is recorded.
 	if (!m_converged)
 	{
 		//if the filter hasn't yet converged add the first quaternion from this set to the convergence array
@@ -247,29 +246,42 @@ void GraphMode::addQuaternions(std::vector<glm::quat> const& quaternions, int qu
 		for (int i = 0; i < quaternion_number; i++) m_convergenceQuaternions.push_back(quaternions[i]);
 		convergenceCheck();
 	}
-	else
-	{
-		//Mark the location in the data vectors where we need to start remove the effects of gravity
-		int start = m_graphDataX.size() - quaternion_number;
 
-		//The addQuaternions() method gets called directly after the addData() method so there should always be 
-		//a fresh batch of acceleration data for us to manipulate
-		for (int i = 0; i < quaternion_number; i++)
-		{
-			//calculate and then remove the acceleration due to gravity obtained from each 
-			//rotation quaternion
-			float gx = 2 * GRAVITY * (quaternions[i].x * quaternions[i].z - quaternions[i].w * quaternions[i].y);
-			float gy = 2 * GRAVITY * (quaternions[i].y * quaternions[i].z + quaternions[i].w * quaternions[i].x);
-			float gz = GRAVITY * (quaternions[i].w * quaternions[i].w - quaternions[i].x * quaternions[i].x - quaternions[i].y * quaternions[i].y + quaternions[i].z * quaternions[i].z);
+	//else
+	//{
+	//	//Mark the location in the data vectors where we need to start remove the effects of gravity
+	//	int start = m_graphDataX.size() - quaternion_number;
 
-			std::wstring tester = L"Total Acceleration Y: " + std::to_wstring(m_graphDataY[start + i].y) + L"\nGravitational Acceleration Y: " + std::to_wstring(gy) + L"\n\n";
-			OutputDebugString(&tester[0]);
+	//	//The addQuaternions() method gets called directly after the addData() method so there should always be 
+	//	//a fresh batch of acceleration data for us to manipulate
+	//	for (int i = 0; i < quaternion_number; i++)
+	//	{
+	//		//calculate and then remove the acceleration due to gravity obtained from each 
+	//		//rotation quaternion
+	//		float gx = 2 * GRAVITY * (quaternions[i].x * quaternions[i].z - quaternions[i].w * quaternions[i].y);
+	//		float gy = 2 * GRAVITY * (quaternions[i].y * quaternions[i].z + quaternions[i].w * quaternions[i].x);
+	//		float gz = GRAVITY * (quaternions[i].w * quaternions[i].w - quaternions[i].x * quaternions[i].x - quaternions[i].y * quaternions[i].y + quaternions[i].z * quaternions[i].z);
 
-			m_graphDataX[start + i].y -= gx;
-			m_graphDataY[start + i].y -= gy;
-			m_graphDataZ[start + i].y -= gz;
-		}
-	}
+	//		std::wstring tester = L"Total Acceleration Y: " + std::to_wstring(m_graphDataY[start + i].y) + L"\nGravitational Acceleration Y: " + std::to_wstring(gy) + L"\n\n";
+	//		OutputDebugString(&tester[0]);
+
+	//		//Update the minimum and maximum values for the graph accordingly so the graph 
+	//		//doesn't use the raw acceleration values
+	//		/*if (m_graphDataX[start + i].y == m_maximalPoint.y) m_maximalPoint.y -= gx;
+	//		else if (m_graphDataX[start + i].y == m_minimalPoint.y) m_minimalPoint.y -= gx;
+
+	//		if (m_graphDataY[start + i].y == m_maximalPoint.y) m_maximalPoint.y -= gy;
+	//		else if (m_graphDataY[start + i].y == m_minimalPoint.y) m_minimalPoint.y -= gy;
+
+	//		if (m_graphDataZ[start + i].y == m_maximalPoint.y) m_maximalPoint.y -= gz;
+	//		else if (m_graphDataZ[start + i].y == m_minimalPoint.y) m_minimalPoint.y -= gz;*/
+
+	//		//And then update the actual data points
+	//		m_graphDataX[start + i].y -= gx;
+	//		m_graphDataY[start + i].y -= gy;
+	//		m_graphDataZ[start + i].y -= gz;
+	//	}
+	//}
 }
 
 void GraphMode::pc_ModeChange(PersonalCaddiePowerMode newMode)
@@ -335,6 +347,6 @@ void GraphMode::convergenceCheck()
 		//And do a little clean up
 		createAlert(L"Convergence Complete", UIColor::DarkGray, m_uiManager.getScreenSize());
 		m_convergenceQuaternions.clear();
-		m_converged = true; //prevents this convergenceCheck() from being called again
+		m_converged = true; //prevents this convergenceCheck() from being called again and starts data capture
 	}
 }
