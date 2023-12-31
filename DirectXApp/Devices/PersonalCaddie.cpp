@@ -59,11 +59,6 @@ PersonalCaddie::PersonalCaddie(std::function<void(PersonalCaddieEventType, void*
 
         this->sensor_data.push_back(data_type);
     }
-    
-    //Initialize all orientation quaternions to the starting position. The starting position is the opposite of how
-    //much we would need to rotate the computer screen so that it's pointing due North
-    //TODO: This should be read from a text file and set that way
-    m_heading_offset = { 0.906923115f,  0.0f, 0.0f, -0.421296209f }; //This was found experimentally, should consider saving in a text file
 
     for (int i = 0; i < MAX_SENSOR_SAMPLES; i++)
     {
@@ -307,6 +302,9 @@ void PersonalCaddie::BLEDeviceHandler(BLEState state)
 
         sampleFreq = this->p_imu->getMaxODR(); //Set the sample frequency to be equal to the largest of the sensor ODRs
 
+        //Once the IMU has been initialized, load heading offset data for the Personal Caddie
+        getHeadingOffsetFromTextFile();
+
         message = L"Successfully connected to the Personal Caddie\n";
         event_handler(PersonalCaddieEventType::CONNECTION_EVENT, (void*)&message);
 
@@ -511,6 +509,125 @@ float PersonalCaddie::convertTicksToSeconds(uint32_t timer_ticks)
     return (float)timer_ticks / 16000000.0f;
 }
 
+void PersonalCaddie::getHeadingOffsetFromTextFile()
+{
+    //Finds the last heading offset quaternion that was saved in the text file. If the text file
+    //doesn't exist yet then a new one will be created.
+    winrt::Windows::Storage::StorageFolder localFolder = winrt::Windows::Storage::ApplicationData::Current().LocalCacheFolder();
+
+    //The folder exists, attempt to get the correct calibration file from it
+    auto getOffsetFile = localFolder.GetFileAsync(L"Heading_Offset.txt");
+    getOffsetFile.Completed([this](
+        winrt::Windows::Foundation::IAsyncOperation<winrt::Windows::Storage::StorageFile> const& sender,
+        winrt::Windows::Foundation::AsyncStatus const asyncStatus)
+        {
+            if (asyncStatus != winrt::Windows::Foundation::AsyncStatus::Error)
+            {
+                //write the new address to the file
+                auto getOffsetText = winrt::Windows::Storage::FileIO::ReadTextAsync(sender.get());
+                getOffsetText.Completed([this](
+                    winrt::Windows::Foundation::IAsyncOperation<winrt::hstring> const& sender,
+                    winrt::Windows::Foundation::AsyncStatus const asyncStatus)
+                    {
+                        if (asyncStatus != winrt::Windows::Foundation::AsyncStatus::Error)
+                        {
+                            //convert the text into something meaningful
+                            convertTextToHeadingOffset(sender.get());
+                        }
+                        else
+                        {
+                            OutputDebugString(L"An error occured when trying to read the Heading Offset file\n");
+                        }
+                    });
+            }
+            else
+            {
+                //The calibration file doesn't exist yet, create it now and fill it with default values
+                setHeadingOffsetInTextFile();
+            }
+        });
+}
+
+void PersonalCaddie::setHeadingOffsetInTextFile()
+{
+    //Takes the value currently stored in the m_heading_offset quaternion
+    //and persists it to a file in local storage.
+    winrt::Windows::Storage::StorageFolder localFolder = winrt::Windows::Storage::ApplicationData::Current().LocalCacheFolder();
+
+    //The folder exists, attempt to get the correct calibration file from it
+    auto getOffsetFile = localFolder.GetFileAsync(L"Heading_Offset.txt");
+    getOffsetFile.Completed([localFolder, this](
+        winrt::Windows::Foundation::IAsyncOperation<winrt::Windows::Storage::StorageFile> const& sender_two,
+        winrt::Windows::Foundation::AsyncStatus const asyncStatus)
+        {
+            if (asyncStatus != winrt::Windows::Foundation::AsyncStatus::Error)
+            {
+                //write the new address to the file
+                winrt::Windows::Storage::FileIO::WriteTextAsync(sender_two.get(), convertHeadingOffsetToText());
+            }
+            else
+            {
+                //The calibration file doesn't exist yet, create it now and fill it with default values
+                auto createFile = localFolder.CreateFileAsync(L"Heading_Offset.txt");
+                createFile.Completed([this](
+                    winrt::Windows::Foundation::IAsyncOperation<winrt::Windows::Storage::StorageFile> const& sender,
+                    winrt::Windows::Foundation::AsyncStatus const asyncStatus)
+                    {
+                        if (asyncStatus != winrt::Windows::Foundation::AsyncStatus::Error)
+                        {
+                            //The file was successfully created, recursively call the setCalibrationNumbers() method
+                            setHeadingOffsetInTextFile();
+                        }
+                        else
+                        {
+                            OutputDebugString(L"An error occured when trying to create the Heading Offset file\n");
+                        }
+                    });
+            }
+        });
+}
+
+std::wstring PersonalCaddie::convertHeadingOffsetToText()
+{
+    //This method simply takes a glm::quat structure and creates
+    //a string where the w, x, y and z components are separated by  
+    //spaces (i.e. {0, 1, 1, 0} turns into "0 1 1 0"
+    std::wstring headingText = L"";
+
+    headingText += (std::to_wstring(m_heading_offset.w) + L" ");
+    headingText += (std::to_wstring(m_heading_offset.x) + L" ");
+    headingText += (std::to_wstring(m_heading_offset.y) + L" ");
+    headingText += std::to_wstring(m_heading_offset.z);
+
+    return headingText;
+}
+void PersonalCaddie::convertTextToHeadingOffset(winrt::hstring calInfo)
+{
+    //This method takes a string of 4 space separated floats and puts them 
+    //into a glm::quat structure. The order of the floats is w, x, y and z.
+    std::wstring headingText = calInfo.c_str();
+    float* quatLocation = (float*)&m_heading_offset.w;
+    
+    int i = 0, j = 0;
+    for (int k = 0; k < 3; k++)
+    {
+        //The next number will be everything from i to the next space character.
+        //Extract the number and store it in the appropriate location of the 
+        //m_heading_offset quaternion
+        j = headingText.find(L' ', i);
+        float number = std::stof(headingText.substr(i, j - i));
+
+        if (k == 0) m_heading_offset.w = number;
+        else if (k == 1) m_heading_offset.x = number;
+        else if (k == 2) m_heading_offset.y = number;
+
+        i = j + 1; //increment to next number
+    }
+
+    //The last value will be everything from index i to the end of the string
+    m_heading_offset.z = std::stof(headingText.substr(i, headingText.length()));
+}
+
 void PersonalCaddie::updateRawDataWithCalibrationNumbers(DataType rdt, DataType dt, sensor_type_t sensor_type, const float* offset_cal, const float** gain_cal)
 {
     for (int i = 0; i < number_of_samples; i++)
@@ -557,6 +674,14 @@ void PersonalCaddie::updateSensorAxisOrientations(sensor_type_t sensor, std::pai
     this->p_imu->setAxesOrientations(sensor, cal_numbers);
     std::wstring message = L"Updated Axis Orientation Info";
     event_handler(PersonalCaddieEventType::IMU_ALERT, (void*)&message);
+}
+
+void PersonalCaddie::setHeadingOffset(glm::quat offset)
+{ 
+    //Update the m_heading_offset variable and then persist the
+    //change by writing it to the heading offset file
+    m_heading_offset = offset;
+    setHeadingOffsetInTextFile();
 }
 
 void PersonalCaddie::startDataTransfer()

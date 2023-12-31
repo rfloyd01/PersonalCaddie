@@ -1,5 +1,7 @@
 #include "pch.h"
 #include "GraphMode.h"
+#include "Graphics/Objects/3D/Elements/model.h"
+#include "Math/quaternion_functions.h"
 
 GraphMode::GraphMode()
 {
@@ -28,6 +30,20 @@ uint32_t GraphMode::initializeMode(winrt::Windows::Foundation::Size windowSize, 
 	//Initialize all overlay text
 	initializeTextOverlay(windowSize);
 
+	//Load the model of the Personal Caddie to render on screen
+	loadModel();
+
+	//Initialize 3D rendering data
+	m_quaternions.clear();
+	m_timeStamps.clear();
+	m_convergenceQuaternions.clear();
+	for (int i = 0; i < 39; i++)
+	{
+		m_quaternions.push_back({ 1.0f, 0.0f, 0.0f, 0.0f });
+		m_timeStamps.push_back(0.0f);
+	}
+	m_renderQuaternion = { m_quaternions[0].x, m_quaternions[0].y, m_quaternions[0].z, m_quaternions[0].w };
+
 	m_state = 0;
 	m_recording = false;
 	m_currentDataType = DataType::ACCELERATION; //Default to graphing acceleration data
@@ -40,11 +56,28 @@ uint32_t GraphMode::initializeMode(winrt::Windows::Foundation::Size windowSize, 
 	return ModeState::CanTransfer;
 }
 
+void GraphMode::loadModel()
+{
+	//Load the model of the Personal Caddie sensor
+	m_volumeElements.push_back(std::make_shared<Model>());
+	((Model*)m_volumeElements[0].get())->loadModel("Assets/Models/personal_caddie.gltf");
+	((Model*)m_volumeElements[0].get())->setScale({ 0.01f, 0.01f, 0.01f });
+
+	m_materialTypes.push_back(MaterialType::DEFAULT); //This actually doesn't matter for loading models, but is need to avoid a nullptr exception
+
+	//Set the mesh and materials for the model
+	m_mode_screen_handler(ModeAction::RendererGetMaterial, nullptr);
+}
+
 void GraphMode::uninitializeMode()
 {
 	//The only thing to do when leaving the main menu mode is to clear
 	//out all text in the text map and color map
 	m_uiManager.removeAllElements();
+
+	//Clear out all volume Elements
+	for (int i = 0; i < m_volumeElements.size(); i++) m_volumeElements[i] = nullptr;
+	m_volumeElements.clear();
 
 	//Put the sensor back into connected mode before exiting
 	auto mode = PersonalCaddiePowerMode::CONNECTED_MODE;
@@ -64,6 +97,51 @@ void GraphMode::initializeTextOverlay(winrt::Windows::Foundation::Size windowSiz
 	TextOverlay footnote(windowSize, { UIConstants::FootNoteTextLocationX, UIConstants::FootNoteTextLocationY }, { UIConstants::FootNoteTextSizeX, UIConstants::FootNoteTextSizeY },
 		footnote_message, UIConstants::FootNoteTextPointSize, { UIColor::White }, { 0,  (unsigned int)footnote_message.length() }, UITextJustification::LowerRight);
 	m_uiManager.addElement<TextOverlay>(footnote, L"Footnote Text");
+}
+
+//DEBUG: Render a model of the Personal Caddie to see if the rotation quaternions are 
+//converging properly while measuring linear acceleration
+void GraphMode::update()
+{
+	//Animate the current rotation quaternion obtained from the Personal Caddie. We need to look at the 
+	//time stamp to figure out which quaternion is correct. We do this since the ODR of the sensors won't always
+	//match up with the frame rate of the current screen.
+	if (m_needsCamera)
+	{
+		while (m_update_in_process) {}; //data is currently being updated asynchronously, wait for it to finish
+
+		float time_elapsed_since_data_start = (float)std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - data_start_timer).count() / 1000000000.0f;
+		float quat[3];
+		bool updated = false;
+
+		for (int i = (m_currentQuaternion + 1); i < m_quaternions.size(); i++)
+		{
+			if (time_elapsed_since_data_start >= (m_timeStamps[i] - m_timeStamps[0]))
+			{
+				//since the relative timer is greater than the time distance between the current quaternion
+				//and the data set start time, this quaternion can potentially be rendered.
+				m_currentQuaternion = i;
+				updated = true; //set flag to update render quaternion);
+			}
+			else break; //we haven't reached the current quaternion in time yet so break out of loop
+
+		}
+
+		if (updated)
+		{
+			//Rotate the current quaternion from the Madgwick filter by the heading offset to line up with the computer monitor.
+			glm::quat adjusted_q;
+			adjusted_q = QuaternionMultiply(m_headingOffset, m_quaternions[m_currentQuaternion]);
+
+			float Q_sensor[3] = { adjusted_q.x, adjusted_q.y, adjusted_q.z };
+			float Q_computer[3] = { Q_sensor[computer_axis_from_sensor_axis[0]], Q_sensor[computer_axis_from_sensor_axis[1]], Q_sensor[computer_axis_from_sensor_axis[2]] };
+
+			m_renderQuaternion = { Q_computer[0], Q_computer[1], Q_computer[2], adjusted_q.w };
+		}
+
+		//Rotate each face according to the given quaternion
+		((Model*)m_volumeElements[0].get())->translateAndRotateFace({ 0.0f, 0.95f, 2.0f }, m_renderQuaternion);
+	}
 }
 
 void GraphMode::handleKeyPress(winrt::Windows::System::VirtualKey pressedKey)
@@ -125,6 +203,10 @@ void GraphMode::uiElementStateChangeHandler(std::shared_ptr<ManagedUIElement> el
 				m_mode_screen_handler(ModeAction::MadgwickUpdateFilter, (void*)&initial_beta_value);
 				m_converged = false; //this prevents data collection from starting until the Madgwick filter quaternions converge
 			}
+
+			//DEBUG: If We're currently gathering linear acceleration data, render an image of the sensor with 
+			//quaternions from the Personal Caddie to confirm that convergence has happened
+			if (m_currentDataType == DataType::LINEAR_ACCELERATION) m_needsCamera = true;
 		}
 		else
 		{
@@ -181,6 +263,9 @@ void GraphMode::uiElementStateChangeHandler(std::shared_ptr<ManagedUIElement> el
 				axisText = std::to_wstring(lowerLineLocation);
 				m_uiManager.getElement<Graph>(L"Graph")->addAxisLabel(m_uiManager.getScreenSize(), axisText, X, lowerLineLocation);
 			}
+
+			//DEBUG: If We're currently gathering linear acceleration data, stop rendering image of the sensor
+			if (m_currentDataType == DataType::LINEAR_ACCELERATION) m_needsCamera = false;
 		}
 	}
 	else if (element->name == L"Data Dropdown Menu")
@@ -203,8 +288,7 @@ void GraphMode::addData(std::vector<std::vector<std::vector<float> > > const& se
 	if (!m_recording) return; //only add data if we're actually recording
 	if (!m_converged) return; //if the current data type needs to Madgwick filter to converge first don't record data yet
 
-	//DataType dt = m_currentDataType;
-	//if (dt == DataType::LINEAR_ACCELERATION) dt = DataType::ACCELERATION; //linear acceleration builds off of normal acceleration
+	m_update_in_process = true; //prevent access to data vectors while update is occuring
 
 	for (int i = 0; i < totalSamples; i++)
 	{
@@ -239,6 +323,21 @@ void GraphMode::addQuaternions(std::vector<glm::quat> const& quaternions, int qu
 	//the sensor's real life orientation. Linear Acceleration for example is calculated by removing 
 	//the effects of gravity calculated by looking at the current orientation. For these data types 
 	//we wait for the convergence to happen before any data is recorded.
+	//make sure that the length of the m_quaternion and m_timestamp vectors are the same as the quaternion_number parameter.
+	if (m_quaternions.size() != quaternion_number)
+	{
+		m_quaternions.erase(m_quaternions.begin() + quaternion_number, m_quaternions.end());
+		m_timeStamps.erase(m_timeStamps.begin() + quaternion_number, m_timeStamps.end());
+	}
+
+	m_currentQuaternion = -1; //reset the current quaternion to be rendered
+
+	for (int i = 0; i < quaternion_number; i++)
+	{
+		m_quaternions[i] = quaternions[i];
+		m_timeStamps[i] = time_stamp + i * delta_t;
+	}
+
 	if (!m_converged)
 	{
 		//if the filter hasn't yet converged add the first quaternion from this set to the convergence array
@@ -246,6 +345,9 @@ void GraphMode::addQuaternions(std::vector<glm::quat> const& quaternions, int qu
 		for (int i = 0; i < quaternion_number; i++) m_convergenceQuaternions.push_back(quaternions[i]);
 		convergenceCheck();
 	}
+
+	data_start_timer = std::chrono::steady_clock::now(); //set relative time
+	m_update_in_process = false; //grant access to data vectors once update is complete
 
 	//else
 	//{

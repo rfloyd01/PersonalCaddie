@@ -136,6 +136,7 @@ void MadgwickTestMode::uninitializeMode()
 	//out all text in the text map and color map
 	m_uiManager.removeAllElements();
 
+	//Clear out all volume Elements
 	for (int i = 0; i < m_volumeElements.size(); i++) m_volumeElements[i] = nullptr;
 	m_volumeElements.clear();
 

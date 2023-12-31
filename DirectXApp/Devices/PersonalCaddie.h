@@ -81,7 +81,6 @@ public:
 
 	PersonalCaddiePowerMode getCurrentPowerMode();
 
-
 	//BLE Methods
 	bool bleConnectionStatus();
 	bool bleDeviceWatcherStatus();
@@ -109,7 +108,7 @@ public:
 	float getMaxODR() { return this->p_imu->getMaxODR(); }
 	float getDataTimeStamp() { return this->m_first_data_time_stamp; }
 	glm::quat getHeadingOffset() { return m_heading_offset; }
-	void setHeadingOffset(glm::quat offset) { m_heading_offset = offset; }
+	void setHeadingOffset(glm::quat offset);
 
 	//Methods and fields from original BluetoothLE Class
 	int getCurrentSample();
@@ -145,6 +144,12 @@ private:
 	void updateRawDataWithCalibrationNumbers(DataType rdt, DataType dt, sensor_type_t sensor_type, const float* offset_cal, const float** gain_cal);
 	void updateMostRecentDeviceAddress(uint64_t address);
 	float convertTicksToSeconds(uint32_t timer_ticks);
+
+	//Heading Offset Methods
+	void getHeadingOffsetFromTextFile();
+	void setHeadingOffsetInTextFile();
+	std::wstring convertHeadingOffsetToText();
+	void convertTextToHeadingOffset(winrt::hstring calInfo);
 	
 	PersonalCaddiePowerMode current_power_mode;
 	bool dataNotificationsOn;
@@ -189,7 +194,7 @@ private:
 	//looks in practice: { { {raw_acc_x_1, raw_acc_x_2, ..., raw_acc_x_numberofsamples}, {raw_acc_y_1 ...}, {raw_acc_z_1 ...} }, { {raw_gyr_x_1...} ....}
 	std::vector<std::vector<std::vector<float> > > sensor_data; 
 	std::vector<glm::quat> orientation_quaternions; //this vector holds number_of_samples quaternions, where each quaternion matches the sensor orientation at a point in time
-	glm::quat m_heading_offset; //This quaternions represents the rotation necessary to have the computer screen pointing due north. This is used to line up the image with the monitor and not the North direction
+	glm::quat m_heading_offset = { 1, 0, 0, 0 }; //This quaternions represents the rotation necessary to have the computer screen pointing due north. This is used to line up the image with the monitor and not the North direction
 
 	//Movement variables
 	float lin_acc_threshold = 0.025f; //linear acceleration will be set to zero unless it exceeds this threshold. This will help with location drift with time. This number was obtained experimentally as most white noise falls within +/- .025 of actual readings
