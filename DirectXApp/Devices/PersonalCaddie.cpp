@@ -606,7 +606,6 @@ void PersonalCaddie::convertTextToHeadingOffset(winrt::hstring calInfo)
     //This method takes a string of 4 space separated floats and puts them 
     //into a glm::quat structure. The order of the floats is w, x, y and z.
     std::wstring headingText = calInfo.c_str();
-    float* quatLocation = (float*)&m_heading_offset.w;
     
     int i = 0, j = 0;
     for (int k = 0; k < 3; k++)

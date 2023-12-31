@@ -44,6 +44,9 @@ uint32_t GraphMode::initializeMode(winrt::Windows::Foundation::Size windowSize, 
 	}
 	m_renderQuaternion = { m_quaternions[0].x, m_quaternions[0].y, m_quaternions[0].z, m_quaternions[0].w };
 
+	//Get the current Heading Offset so the sensor is squared up when rendered
+	m_mode_screen_handler(ModeAction::IMUHeading, nullptr);
+
 	m_state = 0;
 	m_recording = false;
 	m_currentDataType = DataType::ACCELERATION; //Default to graphing acceleration data
@@ -451,4 +454,12 @@ void GraphMode::convergenceCheck()
 		m_convergenceQuaternions.clear();
 		m_converged = true; //prevents this convergenceCheck() from being called again and starts data capture
 	}
+}
+
+void GraphMode::getIMUHeadingOffset(glm::quat heading)
+{
+	//This method gets the heading offset saved in the IMU class and updates
+	//the local heading offset variable with it. This variable is used to make
+	//sure the rendered image aligns with the computer monitor
+	m_headingOffset = heading;
 }
