@@ -22,6 +22,7 @@ enum class UIElementType
 	GRAPH,
 	LINE,
 	ALERT,
+	COVER_BOX,
 	END
 };
 
@@ -235,4 +236,7 @@ private:
 
 	template<>
 	UIElementType type_to_UIElementType<Alert>() { return UIElementType::ALERT; }
+
+	template<>
+	UIElementType type_to_UIElementType<Box>() { return UIElementType::COVER_BOX; }
 };

@@ -10,6 +10,8 @@
 //and the map of the UIElementColors class
 enum class UIColor
 {
+	//SOLID COLORS
+	//-------------
 	//Standard Colors
 	Black,
 	White,
@@ -31,6 +33,10 @@ enum class UIColor
 	SwingAnalysisMode,
 	TrainingMode,
 	CalibrationMode,
+
+	//OPAQUE COLORS
+	//-------------
+	OpaqueBlue,
 
 	END
 };

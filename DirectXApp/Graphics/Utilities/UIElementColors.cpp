@@ -3,23 +3,30 @@
 
 UIElementColors::UIElementColors()
 {
-	colors.insert({ UIColor::Black, {0.0, 0.0, 0.0} });
-	colors.insert({ UIColor::White, {1.0, 1.0, 1.0} });
-	colors.insert({ UIColor::Red, {1.0, 0.0, 0.0} });
-	colors.insert({ UIColor::Green, {0.0, 1.0, 0.0} });
-	colors.insert({ UIColor::Blue, {0.0, 0.0, 1.0} });
-	colors.insert({ UIColor::LightBlue, {0.002, 0.894, 0.655} });
-	colors.insert({ UIColor::Yellow, {1.0, 0.788, 0.055} });
-	colors.insert({ UIColor::PaleGray, {0.75, 0.75, 0.75} });
-	colors.insert({ UIColor::Gray, {0.5, 0.5, 0.5} });
-	colors.insert({ UIColor::DarkGray, {0.25, 0.25, 0.25} });
+	colors.insert({ UIColor::Black, {0.0f, 0.0f, 0.0f, 1.0f} });
+	colors.insert({ UIColor::White, {1.0f, 1.0f, 1.0f, 1.0f} });
+	colors.insert({ UIColor::Red, {1.0f, 0.0f, 0.0f, 1.0f} });
+	colors.insert({ UIColor::Green, {0.0f, 1.0f, 0.0f, 1.0f} });
+	colors.insert({ UIColor::Blue, {0.0f, 0.0f, 1.0f, 1.0f} });
+	colors.insert({ UIColor::LightBlue, {0.002f, 0.894f, 0.655f, 1.0f} });
+	colors.insert({ UIColor::Yellow, {1.0f, 0.788f, 0.055f, 1.0f} });
+	colors.insert({ UIColor::PaleGray, {0.75f, 0.75f, 0.75f, 1.0f} });
+	colors.insert({ UIColor::Gray, {0.5f, 0.5f, 0.5f, 1.0f} });
+	colors.insert({ UIColor::DarkGray, {0.25f, 0.25f, 0.25f, 1.0f} });
 
-	colors.insert({ UIColor::ButtonPressed, {0.35, 0.35, 0.35} });
-	colors.insert({ UIColor::ButtonNotPressed, {0.9, 0.9, 0.9} });
+	colors.insert({ UIColor::ButtonPressed, {0.35f, 0.35f, 0.35f, 1.0f} });
+	colors.insert({ UIColor::ButtonNotPressed, {0.9f, 0.9f, 0.9f, 1.0f} });
 
-	colors.insert({ UIColor::FreeSwingMode, { 0.39, 0.592, 0.592} });
-	colors.insert({ UIColor::SwingAnalysisMode, { 0.58, 0.93, 0.588, 1 } });
-	colors.insert({ UIColor::TrainingMode, { 0.71, 0.541, 0.416, 1 } });
-	colors.insert({ UIColor::CalibrationMode, { 0.498, 0.498, 0.498, 1 } });
+	colors.insert({ UIColor::FreeSwingMode, { 0.39f, 0.592f, 0.592f, 1.0f} });
+	colors.insert({ UIColor::SwingAnalysisMode, { 0.58f, 0.93f, 0.588f, 1.0f } });
+	colors.insert({ UIColor::TrainingMode, { 0.71f, 0.541f, 0.416f, 1.0f } });
+	colors.insert({ UIColor::CalibrationMode, { 0.498f, 0.498f, 0.498f, 1.0f } });
 
+	colors.insert({ UIColor::OpaqueBlue, { 0.6f, 0.851f, 0.918f, 0.5f } });
+
+	//Assert that the number of colors in the color map is identical to the amount of 
+	//colors in the UIColor::Enum. If there isn't it will cause issues in the creation
+	//of some direct2D resources and cause the program to crash anyway so may as well
+	//crash it here with an error message as to why
+	assert(("The number of UIColors in the color map doesn't match the number of UIColors in the enum", colors.size() == static_cast<int>(UIColor::END)));
 }

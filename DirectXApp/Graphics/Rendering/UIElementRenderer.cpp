@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "UIElementRenderer.h"
 #include "UIConstants.h"
+#include <d2d1helper.h>
 
 using namespace D2D1;
 using namespace winrt::Windows::ApplicationModel;
@@ -17,6 +18,17 @@ UIElementRenderer::UIElementRenderer(_In_ std::shared_ptr<DX::DeviceResources> c
     for (int i = 0; i < static_cast<int>(UIColor::END); i++) m_solidColorBrushes.push_back(nullptr);
     for (int i = 0; i < static_cast<int>(UIColor::END); i++)
     {
+        //D2D1_BRUSH_PROPERTIES opacity;
+        //opacity.opacity = m_colors.colors.at(static_cast<UIColor>(i)).a; //extract the opacity from the D2D1_COLOR_F struct
+        //opacity.transform = Matrix3x2F::Translation({ 0.0f, 0.0f }); //create a null translation with the d2d1helper.h header
+
+        /*winrt::check_hresult(
+            d2dContext->CreateSolidColorBrush(
+                m_colors.colors.at(static_cast<UIColor>(i)),
+                opacity,
+                m_solidColorBrushes[i].put()
+            )
+        );*/
         winrt::check_hresult(
             d2dContext->CreateSolidColorBrush(
                 m_colors.colors.at(static_cast<UIColor>(i)),
@@ -166,7 +178,7 @@ void UIElementRenderer::render(std::map<UIElementType, std::vector<std::shared_p
     //on the top level of the screen, ensuring that we can use the scroll box child without any issue.
     for (int i = 0; i < static_cast<int>(UIElementType::END); i++)
     {
-        if (static_cast<UIElementType>(i) == UIElementType::DROP_DOWN_MENU) continue;
+        if (static_cast<UIElementType>(i) == UIElementType::DROP_DOWN_MENU || static_cast<UIElementType>(i) == UIElementType::COVER_BOX) continue;
 
         auto elements = managedUIElements.at(static_cast<UIElementType>(i));
         for (int j = 0; j < elements.size(); j++) renderUIElement(elements[j]->element);
@@ -178,6 +190,14 @@ void UIElementRenderer::render(std::map<UIElementType, std::vector<std::shared_p
     for (int i = 0; i < drop_downs.size(); i++)
     {
         renderUIElement(drop_downs[i]->element);
+    }
+
+    //Finally, render anything in the COVER_BOX section of the element map. These are typically opaque
+    //boxes that go on top of everything but still allow us to see what's underneath
+    auto cover_boxes = managedUIElements.at(UIElementType::COVER_BOX);
+    for (int i = 0; i < cover_boxes.size(); i++)
+    {
+        renderUIElement(cover_boxes[i]->element);
     }
 }
 
