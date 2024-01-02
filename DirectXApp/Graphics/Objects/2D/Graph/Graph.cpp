@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "Graph.h"
 #include "Graphics/Objects/2D/BasicElements/TextOverlay.h"
+#include "Graphics/Objects/2D/Graph/GraphDataSet.h"
 
 Graph::Graph(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, bool line,  UIColor fillColor, UIColor outlineColor, bool isSquare)
 {
@@ -76,13 +77,18 @@ void Graph::addDataSet(winrt::Windows::Foundation::Size windowSize, std::vector<
 		squareGraphDriftCorrection = childBox->fixSquareBoxDrift(windowSize);
 	}
 
+	//Create a GraphDataSet child element to add lines and or points to. This allows us to alter entire
+	//data sets without needing to change the properties of each individual line or point.
+	p_children.push_back(std::make_shared<GraphDataSet>());
+
 	if (m_lineGraph)
 	{
 		for (int i = 0; i < dataPoints.size(); i++)
 		{
 			currentPoint = { squareGraphRatioCorrection * (absoluteDifference.x * ((dataPoints[i].x - m_minimalDataPoint.x) / difference.x)) + m_minimalAbsolutePoint.x + squareGraphDriftCorrection, -1 * (absoluteDifference.y * ((dataPoints[i].y - m_minimalDataPoint.y) / difference.y) - m_maximalAbsolutePoint.y) };
 			Line line(windowSize, currentPoint, previousPoint, lineColor);
-			p_children.push_back(std::make_shared<Line>(line));
+			//p_children.push_back(std::make_shared<Line>(line));
+			((GraphDataSet*)p_children.back().get())->addLine(line);
 			previousPoint = currentPoint;
 		}
 	}
@@ -94,7 +100,8 @@ void Graph::addDataSet(winrt::Windows::Foundation::Size windowSize, std::vector<
 			currentPoint = { squareGraphRatioCorrection * (absoluteDifference.x * ((dataPoints[i].x - m_minimalDataPoint.x) / difference.x)) + m_minimalAbsolutePoint.x + squareGraphDriftCorrection, -1 * (absoluteDifference.y * ((dataPoints[i].y - m_minimalDataPoint.y) / difference.y) - m_maximalAbsolutePoint.y) };
 			
 			Ellipse ell(windowSize, currentPoint, { 0.0033f * m_size.y, 0.0033f * m_size.y }, true, lineColor);
-			p_children.push_back(std::make_shared<Ellipse>(ell));
+			//p_children.push_back(std::make_shared<Ellipse>(ell));
+			((GraphDataSet*)p_children.back().get())->addEllipse(ell);
 			previousPoint = currentPoint;
 		}
 	}

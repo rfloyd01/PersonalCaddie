@@ -116,9 +116,40 @@ void UIElementManager::updateGridSquareElements(InputState* input)
 		auto uiElement = m_gridLocations[mouseGridSquare.first][mouseGridSquare.second][i];
 		uint32_t uiElementState = uiElement.get()->element->update(input);
 
-		//If the given UIElement was clicked then add it to the action list. Elements in this 
-		//list cause logic to happen in the currently active mode.
-		if ((uiElementState & UIElementState::Clicked) && input->mouseClick) m_actionElements.push_back(uiElement);
+		//If the given UIElement has been clicked then add it to the UIElementManager's
+		//clicked list. This list keeps track of elements that have been clicked even 
+		//if the mouse moves to another grid square before being released. If the mouse 
+		//is released over one of these clicked items then it gets added to the action list
+		//which will cause the current mode to perform some kind of action.
+		if ((input->mouseClickState == MouseClickState::MouseClicked) && (uiElementState & UIElementState::Clicked))
+		{
+			//Only add elements to the clickedElement array during a physical click event
+			m_clickedElements.push_back(uiElement);
+		}
+		else if (uiElementState & UIElementState::Released)
+		{
+			m_clickedElements.erase(std::find(m_clickedElements.begin(), m_clickedElements.end(), uiElement));//remove the element from the clicked list
+			m_actionElements.push_back(uiElement); //and add it to the action list
+		}
+	}
+
+	//It's possible that an element was clicked with the mouse, but then the mouse moved off of 
+	//the element before being released. In a case like this the release logic for the element won't 
+	//occur (i.e. a button's color won't revert to the non-clicked color). Check to see if the 
+	//MouseReleased state is active
+	if (input->mouseClickState == MouseClickState::MouseReleased)
+	{
+		for (int i = 0; i < m_clickedElements.size(); i++)
+		{
+			//Any element in the click array will manually be unclicked here. These
+			//elements won't be added to the action list though so their functionality
+			//won't actually happen
+
+			//TODO: There may be some cases where I do want the functionality to happen
+			//so I may need to revisit this method in the future
+			m_clickedElements[i]->element->update(input);
+		}
+		m_clickedElements.clear(); //remove everything from the clicked array when done
 	}
 }
 

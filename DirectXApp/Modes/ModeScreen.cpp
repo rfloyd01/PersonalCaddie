@@ -100,7 +100,8 @@ void ModeScreen::processMouseInput(InputState* inputState)
 {
 	//If the mouse hasn't moved, been clicked, or the scroll wheel
 	//hasn't rotated then there's nothing to process here.
-	if (!inputState->mouseClick && inputState->scrollWheelDirection == 0 && ((inputState->mousePosition.x == m_previousMousePosition.x) && (inputState->mousePosition.y == m_previousMousePosition.y)))
+	if ((inputState->mouseClickState == MouseClickState::WaitForInput) && inputState->scrollWheelDirection == 0 &&
+		((inputState->mousePosition.x == m_previousMousePosition.x) && (inputState->mousePosition.y == m_previousMousePosition.y)))
 	{
 		return;
 	}
@@ -113,7 +114,9 @@ void ModeScreen::processMouseInput(InputState* inputState)
 	m_previousMousePosition = inputState->mousePosition; //update the mouse position variable
 
 	//reset input states if necessary
-	if (inputState->mouseClick) m_inputProcessor->setMouseState(MouseState::ButtonProcessed); //let the input processor know that the click has been handled
+	if (inputState->mouseClickState == MouseClickState::MouseClicked) m_inputProcessor->setMouseState(MouseClickState::MouseHeld); //after an initial click is processed to the MouseHeld state
+	else if (inputState->mouseClickState == MouseClickState::MouseReleased) m_inputProcessor->setMouseState(MouseClickState::WaitForInput); //after a mouse click is released reset to the waiting for input state
+	
 	if (inputState->scrollWheelDirection != 0) inputState->scrollWheelDirection = 0; //let the input processor know that mouse scroll has been handled
 }
 

@@ -16,7 +16,8 @@ public:
 	//virtual void removeState(uint32_t state) override;
 
 protected:
-	virtual void onClick() override;
+	virtual void onMouseClick() override;
+	virtual void onMouseRelease() override;
 
 	long long clickTimer = 100; //When a button is clicked the background will change color for 1/10th of a second
 };

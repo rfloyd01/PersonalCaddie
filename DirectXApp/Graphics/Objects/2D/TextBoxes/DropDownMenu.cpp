@@ -1,6 +1,12 @@
 #include "pch.h"
 #include "DropDownMenu.h"
 
+/*DropDownMenu Children Order
+   0: Text Box that displays the currently selected option
+   1: Arrow Button that brings up the selectable options
+   2: Scrolling Text box that holds the selectable options
+*/
+
 DropDownMenu::DropDownMenu(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, std::wstring message,
 	float fontSize, int optionsDisplayed, bool isInverted, std::vector<UIColor> textColor, std::vector<unsigned long long> textColorLocations, UITextJustification justification, UIColor textFillColor, bool isSquare, UIColor outlineColor, UIColor shadowColor)
 {
@@ -28,6 +34,7 @@ DropDownMenu::DropDownMenu(winrt::Windows::Foundation::Size windowSize, DirectX:
 	m_currentlySelectedOption = scrollBox.getChildren()[5]->getText()->message; //default selection is the first option
 
 	m_state = UIElementState::NeedTextPixels; //Let's the renderer know that we currently need the pixel size of text
+	m_state &= ~UIElementState::Dummy; //The default constructor wasn't used so this isn't a dummy element
 }
 
 std::vector<UIText*> DropDownMenu::setTextDimension()
@@ -104,11 +111,17 @@ uint32_t DropDownMenu::update(InputState* inputState)
 	//box and make the scroll box invisible.
 	uint32_t currentState = UIElement::update(inputState);
 
-	if ((p_children[1]->getState() & UIElementState::Clicked) && inputState->mouseClick)
+	/*if ((p_children[1]->getState() & UIElementState::Clicked) && inputState->mouseClick)
 	{
 		p_children[2]->setState(p_children[2]->getState() ^ UIElementState::Invisible);
+	}*/
+	if (p_children[1]->getState() & UIElementState::Released)
+	{
+		//Clicking the arrow button toggles the visibility of scrolling text box containing the selectable options
+		p_children[2]->setState(p_children[2]->getState() ^ UIElementState::Invisible);
 	}
-	else if (inputState->mouseClick && !(p_children[2]->getState() & UIElementState::Invisible) && (p_children[2]->getState() & UIElementState::Hovered))
+	else if ((inputState->mouseClickState == MouseClickState::MouseClicked) && !(p_children[2]->getState() & UIElementState::Invisible) &&
+		(p_children[2]->getState() & UIElementState::Hovered))
 	{
 		p_children[0]->getChildren()[1]->getText()->message = ((FullScrollingTextBox*)p_children[2].get())->getLastSelectedText();
 		p_children[0]->getChildren()[1]->getText()->colorLocations.back() = p_children[0]->getChildren()[1]->getText()->message.length();

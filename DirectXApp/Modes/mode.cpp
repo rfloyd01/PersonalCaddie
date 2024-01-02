@@ -21,14 +21,15 @@ void Mode::uiUpdate()
 	}
 
 	//Then see if any UIElements currently need to have an action checked
-	if (m_uiManager.getActionElements().size() > 0)
+	auto actionElements = m_uiManager.getActionElements();
+	for (int i = actionElements.size() - 1; i >= 0; i--) //iterate backwards so we can pop each action from the back when complete
 	{
-		//iterate backwards so we can pop each action from the back when complete
-		for (int i = m_uiManager.getActionElements().size() - 1; i >= 0; i--)
-		{
-			uiElementStateChangeHandler(m_uiManager.getActionElements()[i]);
-			m_uiManager.getActionElements().pop_back();
-		}
+		uiElementStateChangeHandler(actionElements[i]);
+
+		//Elements must be clicked and released to be added to the actionElements array. Remove
+		//the released state from elements after their actions have been complete.
+		actionElements[i]->element->removeState(UIElementState::Released);
+		m_uiManager.getActionElements().pop_back();
 	}
 }
 

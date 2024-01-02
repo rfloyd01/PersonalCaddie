@@ -173,6 +173,9 @@
     <ClCompile Include="Modes\FreeSwingMode.cpp">
       <Filter>Modes</Filter>
     </ClCompile>
+    <ClCompile Include="Graphics\Objects\2D\Graph\GraphDataSet.cpp">
+      <Filter>Graphics\Objects\2D\Graph</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -411,6 +414,9 @@
     </ClInclude>
     <ClInclude Include="Modes\FreeSwingMode.h">
       <Filter>Modes</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Objects\2D\Graph\GraphDataSet.h">
+      <Filter>Graphics\Objects\2D\Graph</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

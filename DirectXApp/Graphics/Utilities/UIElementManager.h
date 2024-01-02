@@ -168,7 +168,12 @@ private:
 	//Data Structures
 	std::map<UIElementType, std::vector<std::shared_ptr<ManagedUIElement> > > m_uiElements;
 	std::vector<std::vector<std::vector<std::shared_ptr<ManagedUIElement> > > > m_gridLocations; //splits the screen into a grid and keeps track of which elements are in which sector, useful for mouse hover detection
+	
+	//TODO: Consider turning clicked elements and action elements from vectors into single pointers.
+	//It shouldn't be possible to click on multiple UIElements at the same time
+	std::vector<std::shared_ptr<ManagedUIElement> > m_clickedElements; //Any element that get's clicked (and can be clicked) get's added to this list until the element get's the released state applied to it
 	std::vector<std::shared_ptr<ManagedUIElement> > m_actionElements; //Any UI Elements that have been interacted with and require the current mode to carry out some action will be added to this vector
+	
 	std::vector<std::shared_ptr<UIElement>> m_updateText; //An array of elements that currently require text dimension info from the Renderer class
 
 	winrt::Windows::Foundation::Size m_windowSize; //Keeps track of the current size of the window. UIElements have dimensions that are relative to the window size

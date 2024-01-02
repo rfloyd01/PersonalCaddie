@@ -53,13 +53,6 @@ uint32_t UIElement::update(InputState* inputState)
 
 	if ((m_state & UIElementState::Invisible) || (m_state & UIElementState::Disabled)) return 0; //Invisible and disabled elements don't get updated
 
-	
-
-	if (m_state & UIElementState::NeedTextPixels)
-	{
-		m_state |= UIElementState::NeedTextPixels;
-	}
-
 	//If the element can't be interacted with in any way then simple return the idle state.
 	if (!m_isClickable && !m_isHoverable && !m_isScrollable) m_state |= UIElementState::Idlee;
 
@@ -76,11 +69,12 @@ uint32_t UIElement::update(InputState* inputState)
 
 		if (m_isClickable)
 		{
-			//if the UI Element is clickable, check to see if we're currently clicking it.
-			if (inputState->mouseClick)
+			//if the UI Element is clickable, check to see if we're currently clicking it
+			//or releasing the mouse on it.
+			if (inputState->mouseClickState == MouseClickState::MouseClicked)
 			{
-				onClick();
-				m_state |= UIElementState::Clicked;
+				onMouseClick();
+				m_state |= UIElementState::Clicked; //add the clicked state to the element
 			}
 		}
 
@@ -105,8 +99,52 @@ uint32_t UIElement::update(InputState* inputState)
 		}
 	}
 
-	//After checking the current element for update, check all of it's children
-	for (int i = 0; i < p_children.size(); i++) m_state |= p_children[i]->update(inputState);
+	//Unlike the clicking action, the release action can occur when the mouse isn't
+	//hovering directly over the element. This is because you can click the element,
+	//move the mouse with the button held down, and then release somewhere else. We 
+	//put the element into a different state upon release depending on wheter or not
+	//the mouse is still hovering over the element or not.
+	if (m_isClickable && (m_state & UIElementState::Clicked) && (inputState->mouseClickState == MouseClickState::MouseReleased))
+	{
+		onMouseRelease();
+		m_state &= ~UIElementState::Clicked; //remove the clicked state from the element
+		if (mouseHovered) m_state |= UIElementState::Released; //add the release state if the mouse is hovering the element (this triggers action elsewhere)
+	}
+
+	//After checking the current element for updates, check all of it's children
+	uint32_t children_state = 0;
+	for (int i = 0; i < p_children.size(); i++) children_state |= p_children[i]->update(inputState);
+
+	//State flags (with the exception of the invisible, disabled, and idle flags) should bubble up from
+	//child elements to their parent element. In cases where children implement an interface that the
+	//parent doesn't, the parent's flag should equal that of the children's flag. If the parent and 
+	//children do implement the same interface then the flag will be set if either the parent or any
+	//children call for it, and won't be set if neither parent or children do.
+	if (!m_isHoverable)
+	{
+		if (children_state & UIElementState::Hovered) m_state |= UIElementState::Hovered; //at least one child is hovered so add it to the parent's state
+		else m_state &= ~UIElementState::Hovered; //no children are hovered so remove the hovered flag (if it's there) from the parent
+	}
+	else  m_state |= (children_state & UIElementState::Hovered); //If either the parent or child has the hover flag the parent will get it, otherwise the parent won't
+	
+	if (!m_isClickable)
+	{
+		//Check for both clicks and releases
+		if (children_state & UIElementState::Clicked) m_state |= UIElementState::Clicked; //at least one child is clicked so add it to the parent's state
+		else m_state &= ~UIElementState::Clicked; //no children are clicked so remove the clicked flag (if it's there) from the parent
+
+		if (children_state & UIElementState::Released) m_state |= UIElementState::Released; //at least one child is released so add it to the parent's state
+		else m_state &= ~UIElementState::Released; //no children are released so remove the released flag (if it's there) from the parent
+	}
+	else  m_state |= ((children_state & UIElementState::Clicked) | ((children_state & UIElementState::Released))); //If either the parent or child has the click/release flag the parent will get it, otherwise the parent won't
+
+	if (!m_isScrollable)
+	{
+		if (children_state & UIElementState::Scrolled) m_state |= UIElementState::Scrolled; //at least one child is scrolled so add it to the parent's state
+		else m_state &= ~UIElementState::Scrolled; //no children are scrolled so remove the scrolled flag (if it's there) from the parent
+	}
+	else  m_state |= (children_state & UIElementState::Scrolled); //If either the parent or child has the scroll flag the parent will get it, otherwise the parent won't
+
 
 	return m_state;
 }

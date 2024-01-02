@@ -6,5 +6,6 @@
 //have the ability to be clicked
 struct IClickableUI
 {
-	virtual void onClick() = 0;
+	virtual void onMouseClick() = 0;
+	virtual void onMouseRelease() = 0;
 };

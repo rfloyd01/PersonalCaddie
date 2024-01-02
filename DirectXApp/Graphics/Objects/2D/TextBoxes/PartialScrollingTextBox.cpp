@@ -187,12 +187,14 @@ uint32_t PartialScrollingTextBox::update(InputState* inputState)
 	//If so, it has the effect of scrolling the text twice.
 	uint32_t currentState = UIElement::update(inputState);
 
-	if ((p_children[2]->getState() & UIElementState::Clicked) && inputState->mouseClick)
+	//if ((p_children[2]->getState() & UIElementState::Clicked) && inputState->mouseClick)
+	if (p_children[2]->getState() & UIElementState::Released)
 	{
 		onScrollUp();
 		onScrollUp();
 	}
-	else if ((p_children[3]->getState() & UIElementState::Clicked) && inputState->mouseClick)
+	//else if ((p_children[3]->getState() & UIElementState::Clicked) && inputState->mouseClick)
+	else if (p_children[3]->getState() & UIElementState::Released)
 	{
 		onScrollDown();
 		onScrollDown();

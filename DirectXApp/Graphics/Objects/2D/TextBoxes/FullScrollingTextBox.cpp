@@ -374,20 +374,22 @@ uint32_t FullScrollingTextBox::update(InputState* inputState)
 	//If so, it has the effect of scrolling the text twice.
 	uint32_t currentState = UIElement::update(inputState);
 
-	if ((p_children[2]->getState() & UIElementState::Clicked) && inputState->mouseClick)
+	//if ((p_children[2]->getState() & UIElementState::Clicked) && inputState->mouseClick)
+	if (p_children[2]->getState() & UIElementState::Released)
 	{
 		onScrollUp();
 		onScrollUp();
 	}
-	else if ((p_children[1]->getState() & UIElementState::Clicked) && inputState->mouseClick)
+	//else if ((p_children[1]->getState() & UIElementState::Clicked) && inputState->mouseClick)
+	else if (p_children[1]->getState() & UIElementState::Released)
 	{
 		onScrollDown();
 		onScrollDown();
 	}
-	else if (inputState->mouseClick && isMouseHovered(inputState->mousePosition))
+	else if ((inputState->mouseClickState == MouseClickState::MouseClicked) && isMouseHovered(inputState->mousePosition))
 	{
-		//if a mouse click occurs while over the text bos (the m_size and m_location variables
-		//are tied to the text box) see which over the options the mouse is currently
+		//if a mouse click occurs while over the text box (the m_size and m_location variables
+		//are tied to the text box) see which of the options the mouse is currently
 		//over and set the m_selectedText variable
 		for (int i = m_topText; i < m_topText + m_displayedText; i++)
 		{

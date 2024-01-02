@@ -10,12 +10,13 @@ using namespace winrt::Windows::Gaming::Input;
 using namespace winrt::Windows::System;
 
 InputProcessor::InputProcessor(_In_ CoreWindow const& window) :
-    m_keyboardState(KeyboardState::None),
-    m_mouseState(MouseState::None)
+    m_keyboardState(KeyboardState::None)//,
+    //m_mouseState(MouseClickState::None)
 {
     m_state.currentPressedKey = KeyboardKeys::DeadKey;
     m_state.mousePosition = { 0, 0 };
-    m_state.mouseClick = false;
+    //m_state.mouseClick = false;
+    m_state.mouseClickState = MouseClickState::None;
     m_state.scrollWheelDirection = 0;
     InitWindow(window);
 }
@@ -50,9 +51,10 @@ void InputProcessor::setKeyboardState(KeyboardState ks)
     m_keyboardState = ks;
 }
 
-void InputProcessor::setMouseState(MouseState ms)
+void InputProcessor::setMouseState(MouseClickState ms)
 {
-    m_mouseState = ms;
+    //m_mouseState = ms;
+    m_state.mouseClickState = ms;
 }
 
 void InputProcessor::OnPointerPressed(
@@ -60,13 +62,15 @@ void InputProcessor::OnPointerPressed(
     _In_ PointerEventArgs const& args
 )
 {
-    if (m_mouseState ==MouseState::WaitForInput)
+    //if (m_mouseState ==MouseClickState::WaitForInput)
+    if (m_state.mouseClickState == MouseClickState::WaitForInput)
     {
         //When a key is pressed we change the keyboard state 
         //so that all other keys are disabled until this key
         //is released
-        m_mouseState = MouseState::ButtonPressed;
-        m_state.mouseClick = true;
+        //m_mouseState = MouseClickState::MouseClicked;
+        //m_state.mouseClick = true;
+        m_state.mouseClickState = MouseClickState::MouseClicked;
     }
 }
 
@@ -75,9 +79,11 @@ void InputProcessor::OnPointerReleased(
     _In_ PointerEventArgs const& args
 )
 {
-    if (m_mouseState == MouseState::ButtonPressed)
+    //if (m_mouseState == MouseClickState::MouseHeld)
+    if (m_state.mouseClickState == MouseClickState::MouseHeld)
     {
-        m_mouseState = MouseState::WaitForInput;
+        //m_mouseState = MouseClickState::WaitForInput;
+        m_state.mouseClickState = MouseClickState::MouseReleased;
     }
 }
 
@@ -237,19 +243,26 @@ void InputProcessor::OnKeyUp(
 
 InputState* InputProcessor::update()
 {
+    //The main render loop happens so quickly that this update method in the 
+    //Process Input class may be called hundreds of times in the amount of time
+    //it takes to press a keyboard key or click a mouse button and then release.
+    //To prevent certain logic tied to input commands from also happening hundreds
+    //of times with a single click or key press we change the state of the mouse
+    //and keyboard to "Processed" as soon as their desired action has been accomplished.
+    //This prevents the multiple actions that would normally arise from the 
+    //"Pressed" state being active
     if (m_keyboardState == KeyboardState::KeyProcessed)
     {
-        //The key processed state is necessary to only execute the necessary command from a key press
-        //a single time. Otherwise a single key press would most likely trigger the same thing multiple
-        //times due to how fast the program executes.
         m_state.currentPressedKey = KeyboardKeys::DeadKey;
-        m_keyboardState = KeyboardState::KeyPressed;
+        m_keyboardState = KeyboardState::KeyPressed; //TODO: Shouldn't this change to 'waiting for input'?
     }
-    if (m_mouseState == MouseState::ButtonProcessed)
-    {
-        m_state.mouseClick = false;
-        m_mouseState = MouseState::ButtonPressed;
-    }
+
+    //My new mouse clicking scheme renders the below block of code obsolete
+    //if (m_mouseState == MouseClickState::MouseHeld)
+    //{
+    //    m_state.mouseClick = false;
+    //    m_mouseState = MouseClickState::MouseReleased; //TODO: Shouldn't this change to 'waiting for input'?
+    //}
 
     return &m_state;
 }

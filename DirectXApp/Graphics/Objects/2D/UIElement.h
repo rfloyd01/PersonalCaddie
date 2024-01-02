@@ -26,7 +26,8 @@ enum UIElementState
 	NeedTextPixels = 32,
 	Selected = 64,
 	Disabled = 128,
-	Dummy = 256
+	Dummy = 256,
+	Released = 512
 };
 
 //used to make sure all parts of the UI element are rendered
@@ -88,7 +89,8 @@ protected:
 
 	virtual bool isMouseHovered(DirectX::XMFLOAT2 mousePosition);
 
-	virtual void onClick() {} //empty onClick method can be overriden by IClickable element users
+	virtual void onMouseClick() {} //empty onClick method can be overriden by IClickable element users
+	virtual void onMouseRelease() {} //empty onClick method can be overriden by IClickable element users
 	virtual void onScrollUp() {} //empty onClick method can be overriden by IClickable element users
 	virtual void onScrollDown() {} //empty onClick method can be overriden by IClickable element users
 	virtual void onHover() {} //empty onClick method can be overriden by IClickable element users
@@ -99,9 +101,9 @@ protected:
 	float                                         m_fontSize; //The desired font size for text as a ratio of the current screen size
 
 	//State variables
-	uint32_t                          m_state;
+	uint32_t                                      m_state;
 	
-	std::vector<std::shared_ptr<UIElement> > p_children; //pointers to any children UI elements
+	std::vector<std::shared_ptr<UIElement> >      p_children; //pointers to any children UI elements
 	
 	UIShape                                       m_shape; //A shape specific to this UI Element
 	UIText                                        m_text;  //Any text that's specific to this UI Element

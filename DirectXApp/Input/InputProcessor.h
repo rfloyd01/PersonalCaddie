@@ -24,12 +24,15 @@ enum class KeyboardState
     KeyProcessed,
 };
 
-enum class MouseState
+//TODO: Maybe rename this to MouseClickState to indicate it doesn't pertain
+//to all mouse input (scroll wheel, movement, etc.)
+enum class MouseClickState
 {
     None,
     WaitForInput,
-    ButtonPressed,
-    ButtonProcessed,
+    MouseClicked,
+    MouseHeld,
+    MouseReleased
 };
 
 //An update package that is sent to the rest of the application on keypress or 
@@ -38,7 +41,8 @@ struct InputState
 {
     winrt::Windows::System::VirtualKey currentPressedKey;
     DirectX::XMFLOAT2                  mousePosition;
-    bool                               mouseClick;
+    //bool                               mouseClick;
+    MouseClickState                    mouseClickState;
     int32_t                            scrollWheelDirection;
 };
 
@@ -50,7 +54,7 @@ public:
 	void InitWindow(_In_ winrt::Windows::UI::Core::CoreWindow const& window);
 
     void setKeyboardState(KeyboardState ks);
-    void setMouseState(MouseState ms);
+    void setMouseState(MouseClickState ms);
 
     InputState* update();
 
@@ -100,7 +104,7 @@ private:
 
     InputState           m_state;
     KeyboardState        m_keyboardState; // Enum to keep track of whether or not keyboard presses are allowed
-    MouseState           m_mouseState;   // Enum to keep track of whether or not mouse presses are allowed
+    //MouseClickState      m_mouseState;   // Enum to keep track of whether or not mouse presses are allowed
 
     bool newKeyPress = false;
 };
