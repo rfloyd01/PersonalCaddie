@@ -21,19 +21,7 @@ void Button::onMouseClick()
 	//we change its background color. This alerts the main part of the program
 	//to start a timer. When that timer goes off both the state and color will
 	//revert.
-	//setState(UIElementStateBasic::Clicked);
 	((Box*)p_children[0].get())->setBackgrounColor(UIColor::ButtonPressed);
-
-	//Create a timer and Asynchronously wait for it to complete. When it does,
-	//change the button back to its original color
-	/*concurrency::task<void> timer([this]()
-		{
-			auto timer = std::chrono::steady_clock::now();
-			while (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - timer).count() < clickTimer) {}
-
-			removeState(UIElementState::Clicked);
-			((Box*)p_children[0].get())->setBackgrounColor(UIColor::ButtonNotPressed);
-		});*/
 }
 
 void Button::onMouseRelease()

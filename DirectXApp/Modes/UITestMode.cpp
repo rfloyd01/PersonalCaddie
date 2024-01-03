@@ -19,18 +19,32 @@ uint32_t UITestMode::initializeMode(winrt::Windows::Foundation::Size windowSize,
 	//Create UI Text Elements on the page
 	initializeTextOverlay(windowSize);
 
-	DropDownMenu acc_menu(windowSize, { 0.5, 0.47 }, { 0.15, 0.1 }, L"One\nTwo\nThree\nFour\nFive", 0.0225); //the locations will get set by a separate method
-	DropDownMenu gyr_menu(windowSize, { 0.5, 0.43 }, { 0.15, 0.1 }, L"LongerOne\nLongerTwo\nLongerThree\nLongerFour\nLongerFive", 0.0225); //the locations will get set by a separate method
-	DropDownMenu mag_menu(windowSize, { 0.85, 0.47 }, { 0.25, 0.15 }, L"One\nTwo\nThree\nFour\nFive", 0.0225); //the locations will get set by a separate method
+	//DropDownMenu acc_menu(windowSize, { 0.5, 0.47 }, { 0.15, 0.1 }, L"One\nTwo\nThree\nFour\nFive", 0.0225); //the locations will get set by a separate method
+	//DropDownMenu gyr_menu(windowSize, { 0.5, 0.43 }, { 0.15, 0.1 }, L"LongerOne\nLongerTwo\nLongerThree\nLongerFour\nLongerFive", 0.0225); //the locations will get set by a separate method
+	//DropDownMenu mag_menu(windowSize, { 0.85, 0.47 }, { 0.25, 0.15 }, L"One\nTwo\nThree\nFour\nFive", 0.0225); //the locations will get set by a separate method
 	
 	//Test using opaque colors to see what's rendered behind them
-	Box opaque_box(windowSize, { 0.5f, 0.47f }, { 0.2f, 0.2f }, UIColor::OpaqueBlue);
-	//Button opaque_button(windowSize, { 0.5f, 0.47f }, { 0.2f, 0.2f }, false, UIColor::OpaqueBlue);
+	//Box opaque_box(windowSize, { 0.5f, 0.47f }, { 0.2f, 0.2f }, UIColor::OpaqueBlue);
 
-	m_uiManager.addElement<DropDownMenu>(gyr_menu, L"Gyr Model Drop Down Menu");
+	/*m_uiManager.addElement<DropDownMenu>(gyr_menu, L"Gyr Model Drop Down Menu");
 	m_uiManager.addElement<DropDownMenu>(acc_menu, L"Acc Model Drop Down Menu");
 	m_uiManager.addElement<DropDownMenu>(mag_menu, L"Mag Model Drop Down Menu");
-	m_uiManager.addElement<Box>(opaque_box, L"Opaque Box");
+	m_uiManager.addElement<Box>(opaque_box, L"Opaque Box");*/
+	Graph test_graph(windowSize, { 0.5f, 0.5F }, { 0.5f, 0.5f });
+	std::vector<DirectX::XMFLOAT2> test_data_1, test_data_2, test_data_3 = { {0.0f, 1.25f}, {2.0f * PI, 1.25f} };
+
+	for (int i = 0; i < 1000; i++)
+	{
+		test_data_1.push_back({ (float)(i * 2.0f * PI / 1000.0f), (float)sin(i * 2.0f * PI / 1000.0f) });
+		test_data_2.push_back({ (float)(i * 2.0f * PI / 1000.0f), (float)cos(i * 2.0f * PI / 1000.0f) });
+	}
+
+	test_graph.setAxisMaxAndMins({ 0.0f, -1.5f }, { 2.0f * PI, 1.5f });
+	test_graph.addDataSet(windowSize, test_data_1, UIColor::Red);
+	test_graph.addDataSet(windowSize, test_data_2, UIColor::Blue);
+	test_graph.addDataSet(windowSize, test_data_3, UIColor::Green);
+
+	m_uiManager.addElement<Graph>(test_graph, L"Test Graph");
 
 	//When this mode is initialzed we go into a state of CanTransfer and Active.
 	//Can Transfer allows us to use the esc. key to go back to the settings menu

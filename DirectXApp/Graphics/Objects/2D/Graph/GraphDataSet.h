@@ -14,10 +14,11 @@
 class GraphDataSet : public UIElement
 {
 public:
-	GraphDataSet();
+	GraphDataSet(DirectX::XMFLOAT2 minimalDataPoint, DirectX::XMFLOAT2 maximalDataPoint);
 
 	void addLine(Line const& l) { p_children.push_back(std::make_shared<Line>(l)); }
 	void addEllipse(Ellipse const& e) { p_children.push_back(std::make_shared<Ellipse>(e)); }
 
 private:
+	DirectX::XMFLOAT2 m_minimalDataPoint, m_maximalDataPoint; //these variables hold the actual data locations for the x and y min/maxes in the data set
 };

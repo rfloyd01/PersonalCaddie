@@ -2,7 +2,8 @@
 #include "GraphDataSet.h"
 #include "Graphics/Objects/2D/BasicElements/TextOverlay.h"
 
-GraphDataSet::GraphDataSet()
+GraphDataSet::GraphDataSet(DirectX::XMFLOAT2 minimalDataPoint, DirectX::XMFLOAT2 maximalDataPoint)
 {
-	//Blank for now
+	m_minimalDataPoint = minimalDataPoint;
+	m_maximalDataPoint = maximalDataPoint;
 }

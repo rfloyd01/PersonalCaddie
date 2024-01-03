@@ -13,11 +13,8 @@ public:
 	Button(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size,
 		bool isSquare = false, UIColor fillColor = UIColor::ButtonNotPressed, UIColor outlineColor = UIColor::Black, UIColor shadowColor = UIColor::DarkGray);
 
-	//virtual void removeState(uint32_t state) override;
-
 protected:
 	virtual void onMouseClick() override;
 	virtual void onMouseRelease() override;
 
-	long long clickTimer = 100; //When a button is clicked the background will change color for 1/10th of a second
 };
