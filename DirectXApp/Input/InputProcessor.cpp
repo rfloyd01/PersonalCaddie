@@ -62,15 +62,21 @@ void InputProcessor::OnPointerPressed(
     _In_ PointerEventArgs const& args
 )
 {
-    //if (m_mouseState ==MouseClickState::WaitForInput)
-    if (m_state.mouseClickState == MouseClickState::WaitForInput)
+    //Either a left or right mouse click has occured. Only update
+    //the MouseClickState if clicks are currently allowed.
+    if (args.CurrentPoint().Properties().IsLeftButtonPressed())
     {
-        //When a key is pressed we change the keyboard state 
-        //so that all other keys are disabled until this key
-        //is released
-        //m_mouseState = MouseClickState::MouseClicked;
-        //m_state.mouseClick = true;
-        m_state.mouseClickState = MouseClickState::MouseClicked;
+        if (m_state.mouseClickState == MouseClickState::WaitForInput)
+        {
+            m_state.mouseClickState = MouseClickState::MouseClicked;
+        }
+    }
+    else if (args.CurrentPoint().Properties().IsRightButtonPressed())
+    {
+        if (m_state.mouseClickState == MouseClickState::WaitForInput)
+        {
+            m_state.mouseClickState = MouseClickState::MouseRightClick;
+        }
     }
 }
 

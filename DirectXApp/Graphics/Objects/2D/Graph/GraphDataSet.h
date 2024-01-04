@@ -23,6 +23,9 @@ public:
 	int getVerticalGridLines() { return m_vertical_grid_lines; }
 	int getHorizontalGridLines() { return m_horizontal_grid_lines; }
 
+	DirectX::XMFLOAT2 getMinimalDataPoint() { return m_minimalDataPoint; }
+	DirectX::XMFLOAT2 getMaximalDataPoint() { return m_maximalDataPoint; }
+
 private:
 	DirectX::XMFLOAT2 m_minimalDataPoint, m_maximalDataPoint; //these variables hold the actual data locations for the x and y min/maxes in the data set
 	int m_vertical_grid_lines, m_horizontal_grid_lines;

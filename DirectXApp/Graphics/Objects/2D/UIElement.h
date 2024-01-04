@@ -89,11 +89,17 @@ protected:
 
 	virtual bool isMouseHovered(DirectX::XMFLOAT2 mousePosition);
 
-	virtual void onMouseClick() {} //empty onClick method can be overriden by IClickable element users
-	virtual void onMouseRelease() {} //empty onClick method can be overriden by IClickable element users
-	virtual void onScrollUp() {} //empty onClick method can be overriden by IClickable element users
-	virtual void onScrollDown() {} //empty onClick method can be overriden by IClickable element users
-	virtual void onHover() {} //empty onClick method can be overriden by IClickable element users
+	//Default IClickable Implementations
+	virtual void onMouseClick() {} //empty onMouseClick method can be overriden by IClickable element users
+	virtual void onMouseRelease() {} //empty onMouseRelease method can be overriden by IClickable element users
+	virtual void onMouseRightClick() {} //empty onMouseRightClick method can be overriden by IClickable element users
+
+	//Default IScrollable Implementations
+	virtual void onScrollUp() {} //empty onScrollUp method can be overriden by IScrollable element users
+	virtual void onScrollDown() {} //empty onScrollDown method can be overriden by IScrollable element users
+
+	//Default IHoverable Implementations
+	virtual void onHover() {} //empty onHoever method can be overriden by IHoverable element users
 
 	//Screen size dependent variables
 	DirectX::XMFLOAT2                             m_location; //location of the center of the element  as a ratio of the current screen size

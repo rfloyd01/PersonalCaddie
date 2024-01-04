@@ -3,7 +3,7 @@
 #include "Graphics/Objects/2D/BasicElements/TextOverlay.h"
 #include "Graphics/Objects/2D/Graph/GraphDataSet.h"
 
-Graph::Graph(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, bool line,  UIColor fillColor, UIColor outlineColor, bool isSquare)
+Graph::Graph(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, bool line,  UIColor fillColor, UIColor outlineColor, bool isSquare, bool canZoom)
 {
 	//Simply create the background of the graph. Normally the background for the graph is white, although it
 	//can be changed.
@@ -25,7 +25,25 @@ Graph::Graph(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 loca
 	m_lineGraph = line;
 	m_zoomBoxActive = false;
 	m_zoomBoxOrigin = { 0.0f, 0.0f };
-	m_isClickable = true;
+	m_currentZoomLevel = 0;
+	m_isClickable = canZoom; //we need to be able to click the graph to zoom in on data
+
+	if (canZoom)
+	{
+		//For graphs that can be zoomed in on we create two messages in the bottom
+		//corners of the graph letting the user know that they can zoom, unzoom.
+		std::wstring zoom_message = L"Left click and drag the mouse to select an area of data to zoom in on.";
+		TextOverlay zoom(windowSize, { location.x - size.x / 4.0f + 0.0025f, location.y + size.y / 4.0f }, { size.x / 2.0f, size.y / 2.0f }, zoom_message,
+			size.y * 0.022f, { UIColor::Black }, { 0,  (unsigned int)zoom_message.length() }, UITextJustification::LowerLeft);
+
+		std::wstring unzoom_message = L"Right click the mouse to go back a zoom level";
+		TextOverlay unzoom(windowSize, { location.x + size.x / 4.0f - 0.0025f, location.y + size.y / 4.0f }, { size.x / 2.0f, size.y / 2.0f }, unzoom_message,
+			size.y * 0.022f, { UIColor::Black }, { 0,  (unsigned int)unzoom_message.length() }, UITextJustification::LowerRight);
+		unzoom.updateState(UIElementState::Invisible);
+
+		p_children.push_back(std::make_shared<TextOverlay>(zoom));
+		p_children.push_back(std::make_shared<TextOverlay>(unzoom));
+	}
 }
 
 void Graph::setAxisMaxAndMins(DirectX::XMFLOAT2 axis_minimums, DirectX::XMFLOAT2 axis_maximums)
@@ -86,7 +104,11 @@ void Graph::addDataSet(winrt::Windows::Foundation::Size windowSize, std::vector<
 	if (dynamic_cast<GraphDataSet*>(p_children.back().get()) == nullptr)
 	{
 		GraphDataSet gds(m_minimalDataPoint, m_maximalDataPoint);
-		gds.addGridLines(windowSize, 6, 6, m_maximalAbsolutePoint, m_minimalAbsolutePoint);
+
+		//If we can zoom in on the graph then also add grid lines with labels
+		//which help keep track of the current zoom level
+		if (m_isClickable) gds.addGridLines(windowSize, 6, 6, m_maximalAbsolutePoint, m_minimalAbsolutePoint);
+
 		p_children.push_back(std::make_shared<GraphDataSet>(gds));
 	}
 
@@ -437,12 +459,37 @@ void Graph::onMouseRelease()
 	//be displayed. We also update the m_minimal and m_maximal values for the graph
 	//element. If no actual data points were selected by the zoom box then simply
 	//return from this method without changing anything
-	if (zoomed_in_data_set.getChildren().size() == 0) return;
+	if (zoomed_in_data_set.getChildren().size() == (2 * (vertical_grid_lines + horizontal_grid_lines))) return;
 
 	p_children.back()->setState(UIElementState::Invisible); //make the current data set invisible to reduce lines needing rendering
 	p_children.push_back(std::make_shared<GraphDataSet>(zoomed_in_data_set));
 	m_minimalDataPoint = new_minimal_points;
 	m_maximalDataPoint = new_maximal_points;
+	m_currentZoomLevel++;
+	p_children[2]->removeState(UIElementState::Invisible); //display the message on how to unzoom if it isn't already
+}
+
+void Graph::onMouseRightClick()
+{
+	//Right clicking on the graph will have the effect of going back one zoom
+	//level. If the graph is all the way zoomed out then nothing will happen.
+	//Zooming out is accomplished by simply deleting the last child element of
+	//of the graph and then removing the invisible state from the new last child
+	//element.
+	if (m_currentZoomLevel > 0)
+	{
+		m_currentZoomLevel--;
+		p_children.pop_back();
+		p_children.back()->removeState(UIElementState::Invisible);
+
+		//reset the max and min data points for the graph to match
+		//that of the current zoom level
+		m_minimalDataPoint = ((GraphDataSet*)p_children.back().get())->getMinimalDataPoint();
+		m_maximalDataPoint = ((GraphDataSet*)p_children.back().get())->getMaximalDataPoint();
+	}
+	
+	//make the unzoom message invisible if it isn't already at top zoom level
+	if (m_currentZoomLevel == 0) p_children[2]->updateState(UIElementState::Invisible);
 }
 
 void Graph::calculateGraphEdgeIntercept(DirectX::XMFLOAT2& intercept_point, DirectX::XMFLOAT2 standard_point)

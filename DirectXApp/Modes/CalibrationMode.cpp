@@ -45,9 +45,9 @@ uint32_t CalibrationMode::initializeMode(winrt::Windows::Foundation::Size window
 
 	//Create a few graph ui elements, they will stay invisible until after individual calibrations are complete
 	Graph accGraph(windowSize, { 0.7, 0.65 }, { 0.5, 0.5 });
-	Graph magGraph1(windowSize, { 0.55, 0.8 }, { 0.25, 0.25 }, false, UIColor::White, UIColor::Black, true);
-	Graph magGraph2(windowSize, { 0.85, 0.5 }, { 0.25, 0.25 }, false, UIColor::White, UIColor::Black, true);
-	Graph magGraph3(windowSize, { 0.85, 0.8 }, { 0.25, 0.25 }, false, UIColor::White, UIColor::Black, true);
+	Graph magGraph1(windowSize, { 0.55, 0.8 }, { 0.25, 0.25 }, false, UIColor::White, UIColor::Black, true, false);
+	Graph magGraph2(windowSize, { 0.85, 0.5 }, { 0.25, 0.25 }, false, UIColor::White, UIColor::Black, true, false);
+	Graph magGraph3(windowSize, { 0.85, 0.8 }, { 0.25, 0.25 }, false, UIColor::White, UIColor::Black, true, false);
 	accGraph.setState(accGraph.getState() | UIElementState::Invisible);
 	magGraph1.setState(magGraph1.getState() | UIElementState::Invisible);
 	magGraph2.setState(magGraph2.getState() | UIElementState::Invisible);
@@ -105,14 +105,12 @@ void CalibrationMode::initializeTextOverlay(winrt::Windows::Foundation::Size win
 	std::wstring title_message = L"Calibration Mode";
 	TextOverlay title(windowSize, { UIConstants::TitleTextLocationX, UIConstants::TitleTextLocationY }, { UIConstants::TitleTextSizeX, UIConstants::TitleTextSizeY },
 		title_message, UIConstants::TitleTextPointSize, { UIColor::White }, { 0,  (unsigned int)title_message.length() }, UITextJustification::CenterCenter);
-	//m_uiElements.push_back(std::make_shared<TextOverlay>(title));
 	m_uiManager.addElement<TextOverlay>(title, L"Title Text");
 
 	//Footnote information
 	std::wstring footnote_message = L"Press Esc. to return to settings menu.";
 	TextOverlay footnote(windowSize, { UIConstants::FootNoteTextLocationX, UIConstants::FootNoteTextLocationY }, { UIConstants::FootNoteTextSizeX, UIConstants::FootNoteTextSizeY },
 		footnote_message, UIConstants::FootNoteTextPointSize, { UIColor::White }, { 0,  (unsigned int)footnote_message.length() }, UITextJustification::LowerRight);
-	//m_uiElements.push_back(std::make_shared<TextOverlay>(footnote));
 	m_uiManager.addElement<TextOverlay>(footnote, L"Footnote Text");
 }
 

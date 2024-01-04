@@ -8,4 +8,6 @@ struct IClickableUI
 {
 	virtual void onMouseClick() = 0;
 	virtual void onMouseRelease() = 0;
+
+	virtual void onMouseRightClick() = 0;
 };

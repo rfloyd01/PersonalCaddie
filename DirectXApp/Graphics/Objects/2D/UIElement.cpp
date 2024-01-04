@@ -76,6 +76,13 @@ uint32_t UIElement::update(InputState* inputState)
 				onMouseClick();
 				m_state |= UIElementState::Clicked; //add the clicked state to the element
 			}
+			else if (inputState->mouseClickState == MouseClickState::MouseRightClick)
+			{
+				//As of right now there are very few uses for right clicks with very
+				//basic functionality so performing a right click won't effect the
+				//current state of the UIElement
+				onMouseRightClick();
+			}
 		}
 
 		if (m_isScrollable)

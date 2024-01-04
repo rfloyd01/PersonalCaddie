@@ -115,8 +115,8 @@ void ModeScreen::processMouseInput(InputState* inputState)
 
 	//reset input states if necessary
 	if (inputState->mouseClickState == MouseClickState::MouseClicked) m_inputProcessor->setMouseState(MouseClickState::MouseHeld); //after an initial click is processed to the MouseHeld state
-	else if (inputState->mouseClickState == MouseClickState::MouseReleased) m_inputProcessor->setMouseState(MouseClickState::WaitForInput); //after a mouse click is released reset to the waiting for input state
-	
+	else if (inputState->mouseClickState == MouseClickState::MouseReleased || inputState->mouseClickState == MouseClickState::MouseRightClick) m_inputProcessor->setMouseState(MouseClickState::WaitForInput); //after a left mouse click is released or a single right click, reset to the waiting for input state
+
 	if (inputState->scrollWheelDirection != 0) inputState->scrollWheelDirection = 0; //let the input processor know that mouse scroll has been handled
 }
 

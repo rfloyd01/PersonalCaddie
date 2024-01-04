@@ -29,3 +29,9 @@ void Button::onMouseRelease()
 	//Releasing the button causes the color to return to it's natrual state
 	((Box*)p_children[0].get())->setBackgrounColor(UIColor::ButtonNotPressed);
 }
+
+void Button::onMouseRightClick()
+{
+	//Right clicking has no effect on buttons currently, this is just here
+	//as the pure virtual method must be overridden.
+}

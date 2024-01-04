@@ -16,5 +16,5 @@ public:
 protected:
 	virtual void onMouseClick() override;
 	virtual void onMouseRelease() override;
-
+	virtual void onMouseRightClick() override;
 };

@@ -6,6 +6,9 @@ GraphDataSet::GraphDataSet(DirectX::XMFLOAT2 minimalDataPoint, DirectX::XMFLOAT2
 {
 	m_minimalDataPoint = minimalDataPoint;
 	m_maximalDataPoint = maximalDataPoint;
+
+	m_vertical_grid_lines = 0;
+	m_horizontal_grid_lines = 0;
 }
 
 void GraphDataSet::addGridLines(winrt::Windows::Foundation::Size windowSize, int vertical_grid_lines, int horizontal_grid_lines, DirectX::XMFLOAT2 absoluteGraphMaximums, DirectX::XMFLOAT2 absoluteGraphMinimums)
@@ -17,10 +20,10 @@ void GraphDataSet::addGridLines(winrt::Windows::Foundation::Size windowSize, int
 	m_horizontal_grid_lines = horizontal_grid_lines;
 
 	//Add the vertical lines and labels first
-	float line_spacing = (absoluteGraphMaximums.x - absoluteGraphMinimums.x) / (float)vertical_grid_lines;
-	float data_spacing = (m_maximalDataPoint.x - m_minimalDataPoint.x) / (float)vertical_grid_lines;
+	float line_spacing = (absoluteGraphMaximums.x - absoluteGraphMinimums.x) / ((float)vertical_grid_lines + 1);
+	float data_spacing = (m_maximalDataPoint.x - m_minimalDataPoint.x) / ((float)vertical_grid_lines + 1);
 	float location = absoluteGraphMinimums.x, label = m_minimalDataPoint.x;
-	for (int i = 1; i < vertical_grid_lines; i++)
+	for (int i = 1; i <= vertical_grid_lines; i++)
 	{
 		location += line_spacing;
 		label += data_spacing;
@@ -33,10 +36,10 @@ void GraphDataSet::addGridLines(winrt::Windows::Foundation::Size windowSize, int
 	}
 
 	//Add the horizontal lines and labels second
-	line_spacing = (absoluteGraphMaximums.y - absoluteGraphMinimums.y) / (float)horizontal_grid_lines;
-	data_spacing = (m_maximalDataPoint.y - m_minimalDataPoint.y) / (float)horizontal_grid_lines;
+	line_spacing = (absoluteGraphMaximums.y - absoluteGraphMinimums.y) / ((float)horizontal_grid_lines + 1);
+	data_spacing = (m_maximalDataPoint.y - m_minimalDataPoint.y) / ((float)horizontal_grid_lines + 1);
 	location = absoluteGraphMinimums.y, label = m_maximalDataPoint.y;
-	for (int i = 1; i < horizontal_grid_lines; i++)
+	for (int i = 1; i <= horizontal_grid_lines; i++)
 	{
 		location += line_spacing;
 		label -= data_spacing;
