@@ -35,6 +35,7 @@ Graph::Graph(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 loca
 		std::wstring zoom_message = L"Left click and drag the mouse to select an area of data to zoom in on.";
 		TextOverlay zoom(windowSize, { location.x - size.x / 4.0f + 0.0025f, location.y + size.y / 4.0f }, { size.x / 2.0f, size.y / 2.0f }, zoom_message,
 			size.y * 0.022f, { UIColor::Black }, { 0,  (unsigned int)zoom_message.length() }, UITextJustification::LowerLeft);
+		zoom.setState(UIElementState::Invisible);
 
 		std::wstring unzoom_message = L"Right click the mouse to go back a zoom level";
 		TextOverlay unzoom(windowSize, { location.x + size.x / 4.0f - 0.0025f, location.y + size.y / 4.0f }, { size.x / 2.0f, size.y / 2.0f }, unzoom_message,
@@ -107,7 +108,11 @@ void Graph::addDataSet(winrt::Windows::Foundation::Size windowSize, std::vector<
 
 		//If we can zoom in on the graph then also add grid lines with labels
 		//which help keep track of the current zoom level
-		if (m_isClickable) gds.addGridLines(windowSize, 6, 6, m_maximalAbsolutePoint, m_minimalAbsolutePoint);
+		if (m_isClickable)
+		{
+			gds.addGridLines(windowSize, 6, 6, m_maximalAbsolutePoint, m_minimalAbsolutePoint);
+			p_children[1]->removeState(UIElementState::Invisible);
+		}
 
 		p_children.push_back(std::make_shared<GraphDataSet>(gds));
 	}
@@ -183,9 +188,13 @@ void Graph::addLine(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOA
 
 void Graph::removeAllLines()
 {
-	//Remove all lines, labels and datasets from the graph. The first line starts at child element 1
-	for (int i = 1; i < p_children.size(); i++) p_children[i] = nullptr;
-	p_children.erase(p_children.begin() + 1, p_children.end());
+	//Removes all child elements from the graph (other than zoomable instructions on
+	//graphs that have that capability).
+	int start_index = 1;
+	if (m_isClickable) start_index = 3;
+
+	for (int i = start_index; i < p_children.size(); i++) p_children[i] = nullptr;
+	p_children.erase(p_children.begin() + start_index, p_children.end());
 }
 
 void Graph::addAxisLine(winrt::Windows::Foundation::Size windowSize, int axis, float location)
@@ -338,20 +347,21 @@ void Graph::onMouseClick()
 	//If there's currently data in the graph we can use the mouse to zoom in
 	//on it if we want. This is done by clicking and holding the mouse button
 	//and then dragging the box that pops up over the data to be zoomed in on.
+	if (dynamic_cast<GraphDataSet*>(p_children.back().get()) != nullptr)
+	{
+		m_zoomBoxOrigin = { m_mouseLocation.x / getCurrentWindowSize().Width, m_mouseLocation.y / getCurrentWindowSize().Height }; //set the origin of the zoom box
 
-	//TODO: Once the data stack is implemented, check its size to make sure
-	//there's data before creating the zoom box
-	m_zoomBoxOrigin = { m_mouseLocation.x / getCurrentWindowSize().Width, m_mouseLocation.y / getCurrentWindowSize().Height }; //set the origin of the zoom box
-
-	Box opaque_box(getCurrentWindowSize(), m_zoomBoxOrigin, {0.0f, 0.0f}, UIColor::OpaqueBlue); //box starts off with no size
-	p_children.push_back(std::make_shared<Box>(opaque_box));
-	m_zoomBoxActive = true;
+		Box opaque_box(getCurrentWindowSize(), m_zoomBoxOrigin, { 0.0f, 0.0f }, UIColor::OpaqueBlue); //box starts off with no size
+		p_children.push_back(std::make_shared<Box>(opaque_box));
+		m_zoomBoxActive = true;
+	}
 }
 
 void Graph::onMouseRelease()
 {
 	//Releasing the mouse while the zoom box is active will trigger the actual zoom
 	//to occur.
+	if (!m_zoomBoxActive) return;
 
 	//Calculate the new max and min data points of the zoomed in section. This is done
 	//by comparing the absoulte value of the zoom box with that of the entire graph 
