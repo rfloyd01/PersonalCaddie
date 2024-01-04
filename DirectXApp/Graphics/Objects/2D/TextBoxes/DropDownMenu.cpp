@@ -120,7 +120,7 @@ uint32_t DropDownMenu::update(InputState* inputState)
 		//Clicking the arrow button toggles the visibility of scrolling text box containing the selectable options
 		p_children[2]->setState(p_children[2]->getState() ^ UIElementState::Invisible);
 	}
-	else if ((inputState->mouseClickState == MouseClickState::MouseClicked) && !(p_children[2]->getState() & UIElementState::Invisible) &&
+	else if ((inputState->mouseClickState == MouseClickState::MouseReleased) && !(p_children[2]->getState() & UIElementState::Invisible) &&
 		(p_children[2]->getState() & UIElementState::Hovered))
 	{
 		p_children[0]->getChildren()[1]->getText()->message = ((FullScrollingTextBox*)p_children[2].get())->getLastSelectedText();

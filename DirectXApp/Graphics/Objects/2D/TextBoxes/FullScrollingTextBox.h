@@ -50,5 +50,6 @@ protected:
 
 	int m_topText; //Represent which line of text is currently at the top of the scroll box
 	int m_displayedText; //Represents how many lines of text are currently displayed in the scroll box
+	int m_clickedTextIndex; //Used to make sure the mouse is released on the same option that gets clicked
 	std::wstring m_lastSelectedText;
 };

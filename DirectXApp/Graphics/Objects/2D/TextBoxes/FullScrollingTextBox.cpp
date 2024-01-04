@@ -374,13 +374,11 @@ uint32_t FullScrollingTextBox::update(InputState* inputState)
 	//If so, it has the effect of scrolling the text twice.
 	uint32_t currentState = UIElement::update(inputState);
 
-	//if ((p_children[2]->getState() & UIElementState::Clicked) && inputState->mouseClick)
 	if (p_children[2]->getState() & UIElementState::Released)
 	{
 		onScrollUp();
 		onScrollUp();
 	}
-	//else if ((p_children[1]->getState() & UIElementState::Clicked) && inputState->mouseClick)
 	else if (p_children[1]->getState() & UIElementState::Released)
 	{
 		onScrollDown();
@@ -389,32 +387,61 @@ uint32_t FullScrollingTextBox::update(InputState* inputState)
 	else if ((inputState->mouseClickState == MouseClickState::MouseClicked) && isMouseHovered(inputState->mousePosition))
 	{
 		//if a mouse click occurs while over the text box (the m_size and m_location variables
-		//are tied to the text box) see which of the options the mouse is currently
-		//over and set the m_selectedText variable
+		//are tied to the text box), set the clicked flag of the state and also call the select()
+		//method on the option that was clicked. Remove the selected flag from any other previously 
+		//selected option
 		for (int i = m_topText; i < m_topText + m_displayedText; i++)
 		{
 			if (i >= p_children.size()) break; //it's possible that we can display more text than is currently in the box
 			if (p_children[i]->getState() & UIElementState::Hovered)
 			{
-				//We've selected the current line of text, see if any other lines are currently selected
-				//and reset their state, then select the current line
-				for (int j = m_topText; j < m_topText + m_displayedText; j++)
-				{
-					if (j >= p_children.size()) break; //again, make sure we don't go outside of the vector
-					if (p_children[j]->getState() & UIElementState::Selected)
-					{
-						p_children[j]->removeState(UIElementState::Selected);
-					}
-				}
-
-				((HighlightableTextOverlay*)p_children[i].get())->select(); //select the current option
-				m_lastSelectedText = p_children[i]->getText()->message;
+				//Set the m_clickedTextIndex variable which is used to confirm
+				//that the mouse is released on the same option that gets clicked.
+				m_clickedTextIndex = i;
 				break;
 			}
 		}
 
-		//add a click to the current state to let the current mode know the box was clicked
+		//add the clicked flag to the current state
 		currentState |= UIElementState::Clicked;
+	}
+	else if ((inputState->mouseClickState == MouseClickState::MouseReleased) && isMouseHovered(inputState->mousePosition))
+	{
+		//If a mouse click is released while over the text box (the m_size and m_location variables
+		//are tied to the text box) then we select the option being hovered over, however, only
+		//if that option was actually clicked first.
+		for (int i = m_topText; i < m_topText + m_displayedText; i++)
+		{
+			if (i >= p_children.size()) break; //it's possible that we can display more text than is currently in the box
+			if (p_children[i]->getState() & UIElementState::Hovered)
+			{
+				if (i == m_clickedTextIndex)
+				{
+					//The mouse was released on the same option that was clicked so we change
+					//the color of the text and update the last selected text for the scroll box
+					for (int j = m_topText; j < m_topText + m_displayedText; j++)
+					{
+						if (j >= p_children.size()) break; //again, make sure we don't go outside of the vector
+						if (p_children[j]->getState() & UIElementState::Selected)
+						{
+							p_children[j]->removeState(UIElementState::Selected);
+						}
+					}
+
+					((HighlightableTextOverlay*)p_children[i].get())->select(); //select the current option
+					m_lastSelectedText = p_children[i]->getText()->message;
+
+					//add the released flag to the current state
+					currentState |= UIElementState::Released;
+				}
+				
+				break;
+			}
+		}
+
+		//regardless of whether we release on the clicked option or not, remove the
+		//clicked state from the text box
+		currentState &= ~UIElementState::Clicked;
 	}
 
 	return currentState;

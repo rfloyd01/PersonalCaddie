@@ -252,21 +252,6 @@ void GraphMode::uiElementStateChangeHandler(std::shared_ptr<ManagedUIElement> el
 				float centerLineLocation = (m_minimalPoint.y + m_maximalPoint.y) / 2.0f; //The average of the highest and lowest data point
 				float upperLineLocation = m_maximalPoint.y - 0.05f * (m_maximalPoint.y - m_minimalPoint.y); //95% of the highest data point
 				float lowerLineLocation = m_minimalPoint.y + 0.05f * (m_maximalPoint.y - m_minimalPoint.y); //95% of the lowest data point
-
-				//TODO: The addAxisLine() and addAxisLabel() methods need to add children to the most recent data set of 
-				//the graph and not directly to the child list
-				/*m_uiManager.getElement<Graph>(L"Graph")->addAxisLine(m_uiManager.getScreenSize(), X, centerLineLocation);
-				m_uiManager.getElement<Graph>(L"Graph")->addAxisLine(m_uiManager.getScreenSize(), X, upperLineLocation);
-				m_uiManager.getElement<Graph>(L"Graph")->addAxisLine(m_uiManager.getScreenSize(), X, lowerLineLocation);
-
-				std::wstring axisText = std::to_wstring(centerLineLocation);
-				m_uiManager.getElement<Graph>(L"Graph")->addAxisLabel(m_uiManager.getScreenSize(), axisText, X, centerLineLocation);
-
-				axisText = std::to_wstring(upperLineLocation);
-				m_uiManager.getElement<Graph>(L"Graph")->addAxisLabel(m_uiManager.getScreenSize(), axisText, X, upperLineLocation);
-
-				axisText = std::to_wstring(lowerLineLocation);
-				m_uiManager.getElement<Graph>(L"Graph")->addAxisLabel(m_uiManager.getScreenSize(), axisText, X, lowerLineLocation);*/
 			}
 
 			//DEBUG: If We're currently gathering linear acceleration data, stop rendering image of the sensor
