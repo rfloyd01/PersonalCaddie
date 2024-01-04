@@ -85,7 +85,9 @@ void Graph::addDataSet(winrt::Windows::Foundation::Size windowSize, std::vector<
 	//data sets without needing to change the properties of each individual line or point.
 	if (dynamic_cast<GraphDataSet*>(p_children.back().get()) == nullptr)
 	{
-		p_children.push_back(std::make_shared<GraphDataSet>(m_minimalDataPoint, m_maximalDataPoint));
+		GraphDataSet gds(m_minimalDataPoint, m_maximalDataPoint);
+		gds.addGridLines(windowSize, 6, 6, m_maximalAbsolutePoint, m_minimalAbsolutePoint);
+		p_children.push_back(std::make_shared<GraphDataSet>(gds));
 	}
 
 	if (m_lineGraph)
@@ -112,10 +114,38 @@ void Graph::addDataSet(winrt::Windows::Foundation::Size windowSize, std::vector<
 	}
 }
 
+void Graph::addUIElementBeforeData(std::shared_ptr<UIElement> element)
+{
+	//After the introduction of the GraphDataSet class which holds all lines and points that make
+	//up the actual data part of the graph, it's changed the way that other lines and child elements
+	//need to be added to the graph. The zoom functionality works by making a stack of different
+	//data set views at the end of the child element array, so anything that has nothing to do with
+	//physical data must be added before sets of data. This method safely adds UIElements to the 
+	//graph without breaking the zoom functionality of the graph
+
+	if (dynamic_cast<GraphDataSet*>(p_children.back().get()) == nullptr) p_children.push_back(element); //can safely place at the back
+	else
+	{
+		bool placed = false;
+		for (auto it = p_children.end() - 2; it != p_children.begin(); it--)
+		{
+			if (dynamic_cast<GraphDataSet*>(it->get()) == nullptr)
+			{
+				p_children.insert(it + 1, element);
+				placed = true;
+				break;
+			}
+		}
+
+		if (!placed) p_children.insert(p_children.begin() + 1, element); //add the line right after the graph box child element
+	}
+}
+
 void Graph::addLine(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 point1, DirectX::XMFLOAT2 point2)
 {
 	//Create a line from the given data points and add it to the cild array. Before creating the line we need
-	//to first see if the graph has the square parameter and change the points accordingly.
+	//to first see if the graph has the square parameter and change the points accordingly. Lines created by this method
+	//persist through different zoom levels which may appear somewhat unexpected.
 
 	//TODO: Need to add the square Graph ratio correction variable at some point
 	float squareGraphCorrection = 0.0f;
@@ -126,21 +156,22 @@ void Graph::addLine(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOA
 	point2.x += squareGraphCorrection;
 
 	Line dataLine(windowSize, point1, point2);
-	p_children.push_back(std::make_shared<Line>(dataLine));
+	addUIElementBeforeData(std::make_shared<Line>(dataLine)); //safely add the new line to the child array
 }
 
 void Graph::removeAllLines()
 {
-	//Remove all lines from the graph. The first line starts at child element 1
+	//Remove all lines, labels and datasets from the graph. The first line starts at child element 1
 	for (int i = 1; i < p_children.size(); i++) p_children[i] = nullptr;
 	p_children.erase(p_children.begin() + 1, p_children.end());
 }
 
 void Graph::addAxisLine(winrt::Windows::Foundation::Size windowSize, int axis, float location)
 {
-	//this method simply adds a straight black line going across the entire graph for the specified axis
+	//This method simply adds a straight black line going across the entire graph for the specified axis
 	//and specified location. If the location is outside of the current min/max of the graph then it won't
-	//actually be displayed. The location must be given in absolute coordinates.
+	//actually be displayed. The location must be given in absolute coordinates. Lines created by this method
+	//persist through different zoom levels which may appear somewhat unexpected.
 	DirectX::XMFLOAT2 difference = { m_maximalDataPoint.x - m_minimalDataPoint.x, m_maximalDataPoint.y - m_minimalDataPoint.y };
 	DirectX::XMFLOAT2 absoluteDifference = { m_maximalAbsolutePoint.x - m_minimalAbsolutePoint.x, m_maximalAbsolutePoint.y - m_minimalAbsolutePoint.y };
 
@@ -157,33 +188,42 @@ void Graph::addAxisLine(winrt::Windows::Foundation::Size windowSize, int axis, f
 		squareGraphDriftCorrection = childBox->fixSquareBoxDrift(windowSize);
 	}
 
+	DirectX::XMFLOAT2 point_one = {0.0f, 0.0f}, point_two = { 0.0f, 0.0f };
+
 	switch (axis)
 	{
 	case 0:
 	{
-		//this is the x-axis, so we place a straight horizontal line at the specified y-value. 
-		location = -1 * (absoluteDifference.y * ((location - m_minimalDataPoint.y) / difference.y) - m_maximalAbsolutePoint.y);//convert the given location from data coordinates into absolute window coordinates (y-axis is flipped)
+		//this is the x-axis, so we place a straight horizontal line at the specified y-value.
+		//This line needs to be correct if the graph is a "square"
+		location = -1 * (absoluteDifference.y * ((location - m_minimalDataPoint.y) / difference.y) - m_maximalAbsolutePoint.y); //convert the given location from data coordinates into absolute window coordinates (y-axis is flipped)
 		DirectX::XMFLOAT2 corrected_x_location = { m_minimalAbsolutePoint.x + squareGraphDriftCorrection, squareGraphRatioCorrection * absoluteDifference.x + m_minimalAbsolutePoint.x + squareGraphDriftCorrection };
-		Line dataLine(windowSize, { corrected_x_location.x, location}, { corrected_x_location.y, location }, UIColor::Black, 1.5f);
-		p_children.push_back(std::make_shared<Line>(dataLine));
+		point_one = { corrected_x_location.x, location };
+		point_two = { corrected_x_location.y, location };
 		break;
 	}
 	case 1:
 	{
 		//this is the y-axis, so we place a straight vertical line at the specified x-value.
 		location = squareGraphRatioCorrection * (absoluteDifference.x * ((location - m_minimalDataPoint.x) / difference.x)) + m_minimalAbsolutePoint.x + squareGraphDriftCorrection; //convert the given location from data coordinates into absolute window coordinates.
-		Line dataLine(windowSize, { location,  m_location.y - m_size.y / 2.0f }, { location,  m_location.y + m_size.y / 2.0f }, UIColor::Black, 1.5f);
-		p_children.push_back(std::make_shared<Line>(dataLine));
+		point_one = { location,  m_location.y - m_size.y / 2.0f };
+		point_two = { location,  m_location.y + m_size.y / 2.0f };
 		break;
 	}
 	}
+
+	//Create the line and place it in the last location of the child
+	//array that isn't a GraphDataSet type
+	Line dataLine(windowSize, point_one, point_two, UIColor::Black, 1.5f);
+	addUIElementBeforeData(std::make_shared<Line>(dataLine)); //safely add the line to the child array
 }
 
 void Graph::addAxisLabel(winrt::Windows::Foundation::Size windowSize, std::wstring label, int axis, float location)
 {
 	//adds a label to the x or y-axis of the graph at the specified location. The location
 	//is specified in the same units as the data itself, so it must be converted into absolute
-	//coordinates.
+	//coordinates. Labels added with this method persist through different zoom levels which
+	//may appear somewhat unexpected.
 	switch (axis)
 	{
 	case 0:
@@ -217,11 +257,10 @@ void Graph::addAxisLabel(winrt::Windows::Foundation::Size windowSize, std::wstri
 		float absoluteXLocation = squareGraphRatioCorrection * (absoluteDifference.x * ((location - m_minimalDataPoint.x) / difference.x)) + m_minimalAbsolutePoint.x + squareGraphDriftCorrection;
 
 		TextOverlay graphText(getCurrentWindowSize(), { absoluteXLocation, m_location.y + m_size.y / 2.0f }, { m_size.x, 0.035 }, label, 0.015, { UIColor::Black }, { 0, (unsigned int)label.length() }, UITextJustification::UpperCenter);
-		p_children.push_back(std::make_shared<TextOverlay>(graphText));
+		addUIElementBeforeData(std::make_shared<TextOverlay>(graphText)); //safely add the text to the child array
 		break;
 	}
 	}
-	
 }
 
 uint32_t Graph::update(InputState* inputState)
@@ -315,6 +354,12 @@ void Graph::onMouseRelease()
 	DirectX::XMFLOAT2 new_maximal_points = { new_x_data_max, new_y_data_max };
 	GraphDataSet zoomed_in_data_set(new_minimal_points, new_maximal_points);
 
+	//Add the same number of grid lines to the zoomed in view that the 
+	//current view has
+	int vertical_grid_lines = ((GraphDataSet*)p_children.back().get())->getVerticalGridLines();
+	int horizontal_grid_lines = ((GraphDataSet*)p_children.back().get())->getHorizontalGridLines();
+	zoomed_in_data_set.addGridLines(getCurrentWindowSize(), vertical_grid_lines, horizontal_grid_lines, m_maximalAbsolutePoint, m_minimalAbsolutePoint);
+
 	//Now iterate through all the child lines and points of the current data set
 	//and create new lines and points for the new zoomed in data set. All the existing data
 	//is given in terms of absolute coordinates on the screen, so each point needs to be 
@@ -324,9 +369,11 @@ void Graph::onMouseRelease()
 	DirectX::XMFLOAT2 originalDifference = { m_maximalDataPoint.x - m_minimalDataPoint.x, m_maximalDataPoint.y - m_minimalDataPoint.y };
 	DirectX::XMFLOAT2 newDifference = { new_x_data_max - new_x_data_min, new_y_data_max - new_y_data_min };
 
-	for (auto data : existing_data)
+	//Don't add existing grid lines or their labels to the zoomed in graph as 
+	//new ones were already added above.
+	for (int i = 2 * (vertical_grid_lines + horizontal_grid_lines); i < existing_data.size(); i++)
 	{
-		Line* line = dynamic_cast<Line*>(data.get());
+		Line* line = dynamic_cast<Line*>(existing_data[i].get());
 		if (line != nullptr)
 		{
 			//We're dealing with a line child element. Convert its two points from absolute
@@ -380,7 +427,7 @@ void Graph::onMouseRelease()
 			Line new_line(getCurrentWindowSize(), newAbsoluteDataPointOne, newAbsoluteDataPointTwo, line->getLineColor());
 			zoomed_in_data_set.addLine(new_line);
 		}
-		else if (dynamic_cast<Ellipse*>(data.get()) != nullptr)
+		else if (dynamic_cast<Ellipse*>(existing_data[i].get()) != nullptr)
 		{
 			//TODO: Need to add this at some point
 		}

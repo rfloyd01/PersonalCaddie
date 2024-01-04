@@ -19,6 +19,11 @@ public:
 	void addLine(Line const& l) { p_children.push_back(std::make_shared<Line>(l)); }
 	void addEllipse(Ellipse const& e) { p_children.push_back(std::make_shared<Ellipse>(e)); }
 
+	void addGridLines(winrt::Windows::Foundation::Size windowSize, int vertical_grid_lines, int horizontal_grid_lines, DirectX::XMFLOAT2 absoluteGraphMaximums, DirectX::XMFLOAT2 absoluteGraphMinimums);
+	int getVerticalGridLines() { return m_vertical_grid_lines; }
+	int getHorizontalGridLines() { return m_horizontal_grid_lines; }
+
 private:
 	DirectX::XMFLOAT2 m_minimalDataPoint, m_maximalDataPoint; //these variables hold the actual data locations for the x and y min/maxes in the data set
+	int m_vertical_grid_lines, m_horizontal_grid_lines;
 };

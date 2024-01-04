@@ -35,6 +35,8 @@ protected:
 	void calculateGraphEdgeIntercept(DirectX::XMFLOAT2& intercept_point, DirectX::XMFLOAT2 standard_point);
 	bool calculateGraphEdgeIntercepts(DirectX::XMFLOAT2& intercept_point_one, DirectX::XMFLOAT2& intercept_point_two);
 
+	void addUIElementBeforeData(std::shared_ptr<UIElement> element);
+
 	DirectX::XMFLOAT2 m_minimalAbsolutePoint, m_maximalAbsolutePoint; //these variables hold the absolute locations for the x and y min/maxes in the graph
 	DirectX::XMFLOAT2 m_minimalDataPoint, m_maximalDataPoint; //these variables hold the actual data locations for the x and y min/maxes in the graph
 	bool m_lineGraph; //true if lines should be drawn between successive data points, otherwise the graph will just be a scatterplot
