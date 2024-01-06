@@ -44,6 +44,12 @@ uint32_t UITestMode::initializeMode(winrt::Windows::Foundation::Size windowSize,
 	RelativeBox relative_box_2(windowSize, { 0.4f, 0.6f }, { 1.0f, 0.1f }, UIColor::White);
 	RelativeBox relative_box_3(windowSize, { 0.6f, 0.4f }, { 1.0f, 0.1f }, UIColor::Gray);
 	RelativeBox relative_box_4(windowSize, { 0.6f, 0.6f }, { 1.0f, 0.1f }, UIColor::Blue);
+
+	Box box_1(windowSize, { 0.4f, 0.4f }, { 0.0772f, 0.1f }, UIColor::Blue);
+	Box box_2(windowSize, { 0.4f, 0.6f }, { 0.0772f, 0.1f });
+	Box box_3(windowSize, { 0.6f, 0.4f }, { 0.0772f, 0.1f }, UIColor::White);
+	Box box_4(windowSize, { 0.6f, 0.6f }, { 0.0772f, 0.1f }, UIColor::Gray);
+
 	Line line1(windowSize, { 0.5f, 0.25f }, { 0.5f, 0.95f }, UIColor::Red);
 	Line line2(windowSize, { 0.05f, 0.5f }, { 0.95f, 0.5f }, UIColor::Red);
 
@@ -51,6 +57,12 @@ uint32_t UITestMode::initializeMode(winrt::Windows::Foundation::Size windowSize,
 	m_uiManager.addElement<RelativeBox>(relative_box_2, L"Relative Box 2");
 	m_uiManager.addElement<RelativeBox>(relative_box_3, L"Relative Box 3");
 	m_uiManager.addElement<RelativeBox>(relative_box_4, L"Relative Box 4");
+
+	m_uiManager.addElement<Box>(box_1, L"Box 1");
+	m_uiManager.addElement<Box>(box_2, L"Box 2");
+	m_uiManager.addElement<Box>(box_3, L"Box 3");
+	m_uiManager.addElement<Box>(box_4, L"Box 4");
+
 	m_uiManager.addElement<Line>(line1, L"Line 1");
 	m_uiManager.addElement<Line>(line2, L"Line 2");
 

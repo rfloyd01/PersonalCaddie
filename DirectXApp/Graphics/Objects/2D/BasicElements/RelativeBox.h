@@ -22,9 +22,10 @@ public:
 		//to horizontal center line.
 		float maximum_pixel_height = m_size.y / (MAX_WIDTH + MAX_HEIGHT) * (2 * MAX_WIDTH * MAX_HEIGHT); //ex. 276.48
 		m_maxRelativeDistanceToHorizontal = element_pixel_center.x - screen_pixel_center.x; //ex. 576
+		m_maxRelativeDistanceToVertical = (element_pixel_center.y - screen_pixel_center.y) / MAX_HEIGHT; //ex. ???
 		m_horizontalMultiplier = m_maxRelativeDistanceToHorizontal / maximum_pixel_height; //ex. 25/12 = 2.083333
 
-		m_maxRelativeDistanceToHorizontal /= MAX_WIDTH; //convert pixels to absolute units ex. 576/3840 = 0.15
+		m_maxRelativeDistanceToHorizontal /= MAX_WIDTH; //convert horizontal pixels to absolute units ex. 576/3840 = 0.15
 	}
 
 	virtual void resize(winrt::Windows::Foundation::Size windowSize) override
@@ -40,10 +41,16 @@ public:
 		box_pixel_dimensions.y = m_size.y / (windowSize.Width + windowSize.Height) * (2 * windowSize.Width * windowSize.Height);
 		box_pixel_dimensions.x = m_size.x * box_pixel_dimensions.y;
 
-		//TODO: Add calculations for the new pixel center of the box
+		//TODO: Add vertical calculations
 		float newPixelDistanceToHorizontal = m_horizontalMultiplier * m_size.y / (windowSize.Width + windowSize.Height) * (2 * windowSize.Width * windowSize.Height); //ex. 523.256
-		float relative_difference = newPixelDistanceToHorizontal / windowSize.Width - m_maxRelativeDistanceToHorizontal; //ex. 523.256 / 3000 - 0.15 = 0.0244187
-		pixel_center.x += relative_difference * windowSize.Width; //i.e += 0.0244187 * 3000 --> += 73.256
+		float newPixelDistanceToVertical = m_maxRelativeDistanceToVertical / (windowSize.Width + windowSize.Height) * (2 * windowSize.Width * windowSize.Height); //ex. ???
+
+		//TODO: The below four lines should be able to be combined into two and get rid of some division along the way
+		float horizontal_relative_difference = newPixelDistanceToHorizontal / windowSize.Width - m_maxRelativeDistanceToHorizontal; //ex. 523.256 / 3000 - 0.15 = 0.0244187
+		float vertical_relative_difference = newPixelDistanceToVertical / windowSize.Height - m_maxRelativeDistanceToVertical; //ex. ???
+		
+		pixel_center.x += horizontal_relative_difference * windowSize.Width; //i.e += 0.0244187 * 3000 --> += 73.256
+		pixel_center.y += vertical_relative_difference * windowSize.Height; // i.e. ???
 
 		m_shape.m_rectangle.left = pixel_center.x - box_pixel_dimensions.x / 2.0f;
 		m_shape.m_rectangle.top = pixel_center.y - box_pixel_dimensions.y / 2.0f;
@@ -53,6 +60,6 @@ public:
 
 	float m_maxRelativeDistanceToVertical;
 	float m_maxRelativeDistanceToHorizontal;
+
 	float m_horizontalMultiplier;
-	float m_verticalMultiplier;
 };
