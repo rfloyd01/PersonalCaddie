@@ -170,13 +170,17 @@
     <ClInclude Include="Graphics\Objects\2D\BasicElements\Ellipse.h" />
     <ClInclude Include="Graphics\Objects\2D\BasicElements\Line.h" />
     <ClInclude Include="Graphics\Objects\2D\BasicElements\OutlinedBox.h" />
+    <ClInclude Include="Graphics\Objects\2D\BasicElements\RelativeBox.h" />
     <ClInclude Include="Graphics\Objects\2D\BasicElements\ShadowedBox.h" />
     <ClInclude Include="Graphics\Objects\2D\BasicElements\TextOverlay.h" />
     <ClInclude Include="Graphics\Objects\2D\Buttons\ArrowButton.h" />
     <ClInclude Include="Graphics\Objects\2D\Buttons\Button.h" />
+    <ClInclude Include="Graphics\Objects\2D\Buttons\CheckBox.h" />
     <ClInclude Include="Graphics\Objects\2D\Buttons\TextButton.h" />
     <ClInclude Include="Graphics\Objects\2D\Graph\Graph.h" />
+    <ClInclude Include="Graphics\Objects\2D\Graph\GraphData.h" />
     <ClInclude Include="Graphics\Objects\2D\Graph\GraphDataSet.h" />
+    <ClInclude Include="Graphics\Objects\2D\Graph\GraphKey.h" />
     <ClInclude Include="Graphics\Objects\2D\Interfaces\IClickableUI.h" />
     <ClInclude Include="Graphics\Objects\2D\Interfaces\IHoverableUI.h" />
     <ClInclude Include="Graphics\Objects\2D\Interfaces\IScrollableUI.h" />
@@ -288,7 +292,9 @@
     <ClCompile Include="Graphics\Objects\2D\BasicElements\TextOverlay.cpp" />
     <ClCompile Include="Graphics\Objects\2D\Buttons\Button.cpp" />
     <ClCompile Include="Graphics\Objects\2D\Graph\Graph.cpp" />
+    <ClCompile Include="Graphics\Objects\2D\Graph\GraphData.cpp" />
     <ClCompile Include="Graphics\Objects\2D\Graph\GraphDataSet.cpp" />
+    <ClCompile Include="Graphics\Objects\2D\Graph\GraphKey.cpp" />
     <ClCompile Include="Graphics\Objects\2D\TextBoxes\DropDownMenu.cpp" />
     <ClCompile Include="Graphics\Objects\2D\TextBoxes\FullScrollingTextBox.cpp" />
     <ClCompile Include="Graphics\Objects\2D\TextBoxes\HighlightableTextOverlay.cpp" />

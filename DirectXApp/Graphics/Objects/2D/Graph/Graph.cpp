@@ -70,7 +70,7 @@ void Graph::setAxisMaxAndMins(DirectX::XMFLOAT2 axis_minimums, DirectX::XMFLOAT2
 	m_maximalDataPoint = axis_maximums;
 }
 
-void Graph::addDataSet(winrt::Windows::Foundation::Size windowSize, std::vector<DirectX::XMFLOAT2> const& dataPoints, UIColor lineColor)
+void Graph::addGraphData(winrt::Windows::Foundation::Size windowSize, std::vector<DirectX::XMFLOAT2> const& dataPoints, UIColor lineColor)
 {
 	//Takes a full set of data and creates a line on the graph with it in the indicated color
 
@@ -117,13 +117,15 @@ void Graph::addDataSet(winrt::Windows::Foundation::Size windowSize, std::vector<
 		p_children.push_back(std::make_shared<GraphDataSet>(gds));
 	}
 
+	GraphData newData;
+
 	if (m_lineGraph)
 	{
 		for (int i = 1; i < dataPoints.size(); i++)
 		{
 			currentPoint = { squareGraphRatioCorrection * (absoluteDifference.x * ((dataPoints[i].x - m_minimalDataPoint.x) / difference.x)) + m_minimalAbsolutePoint.x + squareGraphDriftCorrection, -1 * (absoluteDifference.y * ((dataPoints[i].y - m_minimalDataPoint.y) / difference.y) - m_maximalAbsolutePoint.y) };
 			Line line(windowSize, currentPoint, previousPoint, lineColor);
-			((GraphDataSet*)p_children.back().get())->addLine(line);
+			newData.addLine(line);
 			previousPoint = currentPoint;
 		}
 	}
@@ -135,10 +137,13 @@ void Graph::addDataSet(winrt::Windows::Foundation::Size windowSize, std::vector<
 			currentPoint = { squareGraphRatioCorrection * (absoluteDifference.x * ((dataPoints[i].x - m_minimalDataPoint.x) / difference.x)) + m_minimalAbsolutePoint.x + squareGraphDriftCorrection, -1 * (absoluteDifference.y * ((dataPoints[i].y - m_minimalDataPoint.y) / difference.y) - m_maximalAbsolutePoint.y) };
 			
 			Ellipse ell(windowSize, currentPoint, { 0.0033f * m_size.y, 0.0033f * m_size.y }, true, lineColor);
-			((GraphDataSet*)p_children.back().get())->addEllipse(ell);
+			newData.addEllipse(ell);
 			previousPoint = currentPoint;
 		}
 	}
+
+	//Add the new GraphData object to the current GraphDataSet object
+	if (newData.getChildren().size() > 0) ((GraphDataSet*)p_children.back().get())->addGraphData(newData);
 }
 
 void Graph::addUIElementBeforeData(std::shared_ptr<UIElement> element)
@@ -397,75 +402,98 @@ void Graph::onMouseRelease()
 	//is given in terms of absolute coordinates on the screen, so each point needs to be 
 	//reverted back into its actual data component. Once this occurs, we need to figure
 	//out if the old point should be placed on the zoomed in graph or not
-	auto existing_data = p_children.back()->getChildren();
+	auto data_set_children = p_children.back()->getChildren();
 	DirectX::XMFLOAT2 originalDifference = { m_maximalDataPoint.x - m_minimalDataPoint.x, m_maximalDataPoint.y - m_minimalDataPoint.y };
 	DirectX::XMFLOAT2 newDifference = { new_x_data_max - new_x_data_min, new_y_data_max - new_y_data_min };
 
 	//Don't add existing grid lines or their labels to the zoomed in graph as 
 	//new ones were already added above.
-	for (int i = 2 * (vertical_grid_lines + horizontal_grid_lines); i < existing_data.size(); i++)
+	for (int i = 2 * (vertical_grid_lines + horizontal_grid_lines); i < data_set_children.size(); i++)
 	{
-		Line* line = dynamic_cast<Line*>(existing_data[i].get());
-		if (line != nullptr)
+		GraphData* data = dynamic_cast<GraphData*>(data_set_children[i].get());
+		if (data != nullptr)
 		{
-			//We're dealing with a line child element. Convert its two points from absolute
-			//coordinates to data coordinates to see if the whole line, part of the line,
-			//or none of the line will appear on the zoomed in graph
-			auto absolute_points = line->getPointsAbsolute();
+			GraphData zoomed_in_data; //create a new GraphData object
+			auto existing_data = data->getChildren();
 
-			//Convert the two absolute points of the line to their original data values
-			DirectX::XMFLOAT2 dataPointOne = { (absolute_points.first.x - m_minimalAbsolutePoint.x) * originalDifference.x / absoluteDifference.x + m_minimalDataPoint.x, (m_maximalAbsolutePoint.y - absolute_points.first.y) * originalDifference.y / absoluteDifference.y + m_minimalDataPoint.y };
-			DirectX::XMFLOAT2 dataPointTwo = { (absolute_points.second.x - m_minimalAbsolutePoint.x) * originalDifference.x / absoluteDifference.x + m_minimalDataPoint.x, (m_maximalAbsolutePoint.y - absolute_points.second.y) * originalDifference.y / absoluteDifference.y + m_minimalDataPoint.y };
-
-			//Calculate the absolute locations of the above data points with the new
-			//zoomed in graph boundaries
-			DirectX::XMFLOAT2 newAbsoluteDataPointOne = { absoluteDifference.x * ((dataPointOne.x - new_x_data_min) / newDifference.x) + m_minimalAbsolutePoint.x, -1 * (absoluteDifference.y * ((dataPointOne.y - new_y_data_min) / newDifference.y) - m_maximalAbsolutePoint.y) };
-			DirectX::XMFLOAT2 newAbsoluteDataPointTwo = { absoluteDifference.x * ((dataPointTwo.x - new_x_data_min) / newDifference.x) + m_minimalAbsolutePoint.x, -1 * (absoluteDifference.y * ((dataPointTwo.y - new_y_data_min) / newDifference.y) - m_maximalAbsolutePoint.y) };
-
-			//See if the first point falls inside the new graph boundaries
-			bool first_data_point_in_bounds = ((dataPointOne.x >= new_x_data_min) && (dataPointOne.x <= new_x_data_max)) && ((dataPointOne.y >= new_y_data_min) && (dataPointOne.y <= new_y_data_max));
-			bool second_data_point_in_bounds = ((dataPointTwo.x >= new_x_data_min) && (dataPointTwo.x <= new_x_data_max)) && ((dataPointTwo.y >= new_y_data_min) && (dataPointTwo.y <= new_y_data_max));
-			
-			if (first_data_point_in_bounds)
+			for (int j = 0; j < existing_data.size(); j++)
 			{
-				//If both data points already fall inside the graph then there's no 
-				//need to change anything.
-				if (!second_data_point_in_bounds)
+				Line* line = dynamic_cast<Line*>(existing_data[j].get());
+				if (line != nullptr)
 				{
-					//Only the first data point fits inside the new zoomed in graph.
-					//Alter the second point so that it sits on the edge of the graph.
-					calculateGraphEdgeIntercept(newAbsoluteDataPointTwo, newAbsoluteDataPointOne);
+					//We're dealing with a line child element. Convert its two points from absolute
+					//coordinates to data coordinates to see if the whole line, part of the line,
+					//or none of the line will appear on the zoomed in graph
+					auto absolute_points = line->getPointsAbsolute();
+
+					//Convert the two absolute points of the line to their original data values
+					DirectX::XMFLOAT2 dataPointOne = { (absolute_points.first.x - m_minimalAbsolutePoint.x) * originalDifference.x / absoluteDifference.x + m_minimalDataPoint.x, (m_maximalAbsolutePoint.y - absolute_points.first.y) * originalDifference.y / absoluteDifference.y + m_minimalDataPoint.y };
+					DirectX::XMFLOAT2 dataPointTwo = { (absolute_points.second.x - m_minimalAbsolutePoint.x) * originalDifference.x / absoluteDifference.x + m_minimalDataPoint.x, (m_maximalAbsolutePoint.y - absolute_points.second.y) * originalDifference.y / absoluteDifference.y + m_minimalDataPoint.y };
+
+					//Calculate the absolute locations of the above data points with the new
+					//zoomed in graph boundaries
+					DirectX::XMFLOAT2 newAbsoluteDataPointOne = { absoluteDifference.x * ((dataPointOne.x - new_x_data_min) / newDifference.x) + m_minimalAbsolutePoint.x, -1 * (absoluteDifference.y * ((dataPointOne.y - new_y_data_min) / newDifference.y) - m_maximalAbsolutePoint.y) };
+					DirectX::XMFLOAT2 newAbsoluteDataPointTwo = { absoluteDifference.x * ((dataPointTwo.x - new_x_data_min) / newDifference.x) + m_minimalAbsolutePoint.x, -1 * (absoluteDifference.y * ((dataPointTwo.y - new_y_data_min) / newDifference.y) - m_maximalAbsolutePoint.y) };
+
+					//See if the first point falls inside the new graph boundaries
+					bool first_data_point_in_bounds = ((dataPointOne.x >= new_x_data_min) && (dataPointOne.x <= new_x_data_max)) && ((dataPointOne.y >= new_y_data_min) && (dataPointOne.y <= new_y_data_max));
+					bool second_data_point_in_bounds = ((dataPointTwo.x >= new_x_data_min) && (dataPointTwo.x <= new_x_data_max)) && ((dataPointTwo.y >= new_y_data_min) && (dataPointTwo.y <= new_y_data_max));
+
+					if (first_data_point_in_bounds)
+					{
+						//If both data points already fall inside the graph then there's no 
+						//need to change anything.
+						if (!second_data_point_in_bounds)
+						{
+							//Only the first data point fits inside the new zoomed in graph.
+							//Alter the second point so that it sits on the edge of the graph.
+							calculateGraphEdgeIntercept(newAbsoluteDataPointTwo, newAbsoluteDataPointOne);
+						}
+					}
+					else
+					{
+						if (second_data_point_in_bounds)
+						{
+							//Only the second data point fits inside the new zoomed in graph.
+							//Alter the first point so that it sits on the edge of the graph.
+							calculateGraphEdgeIntercept(newAbsoluteDataPointOne, newAbsoluteDataPointTwo);
+						}
+						else
+						{
+							//Neither of the points of the line fit inside the new zoomed in graph,
+							//however, the line itself may cross over the graph in which case two
+							//new points need to be created. If the line doesn't cross over the viewing
+							//area then skip ahead to the next line, if it does though then change the
+							//locations of both points as necessary.
+							if (!calculateGraphEdgeIntercepts(newAbsoluteDataPointOne, newAbsoluteDataPointTwo)) continue;
+						}
+					}
+
+					Line new_line(getCurrentWindowSize(), newAbsoluteDataPointOne, newAbsoluteDataPointTwo, line->getLineColor());
+					zoomed_in_data.addLine(new_line);
+				}
+				else if (dynamic_cast<Ellipse*>(data_set_children[j].get()) != nullptr)
+				{
+					//Unlike lines, a graph point is either entirely in the viewing area, or not.
+					//Simply see if the point falls in the viewing area and add it to the GraphData
+					//object if it does.
+					DirectX::XMFLOAT2 absolutePoint = dynamic_cast<Ellipse*>(existing_data[j].get())->getAbsoluteLocation();
+					DirectX::XMFLOAT2 newPoint = { (absolutePoint.x - m_minimalAbsolutePoint.x) * originalDifference.x / absoluteDifference.x + m_minimalDataPoint.x, (m_maximalAbsolutePoint.y - absolutePoint.y) * originalDifference.y / absoluteDifference.y + m_minimalDataPoint.y };
+					if (((newPoint.x >= new_x_data_min) && (newPoint.x <= new_x_data_max)) && ((newPoint.y >= new_y_data_min) && (newPoint.y <= new_y_data_max)))
+					{
+						Ellipse copy(*dynamic_cast<Ellipse*>(existing_data[j].get())); //Make a copy of the current ellipse to add to the new GraphData object
+						zoomed_in_data.addEllipse(copy);
+					}
 				}
 			}
-			else
-			{
-				if (second_data_point_in_bounds)
-				{
-					//Only the second data point fits inside the new zoomed in graph.
-					//Alter the first point so that it sits on the edge of the graph.
-					calculateGraphEdgeIntercept(newAbsoluteDataPointOne, newAbsoluteDataPointTwo);
-				}
-				else
-				{
-					//Neither of the points of the line fit inside the new zoomed in graph,
-					//however, the line itself may cross over the graph in which case two
-					//new points need to be created. If the line doesn't cross over the viewing
-					//area then skip ahead to the next line, if it does though then change the
-					//locations of both points as necessary.
-					if (!calculateGraphEdgeIntercepts(newAbsoluteDataPointOne, newAbsoluteDataPointTwo)) continue;
-				}
-			}
 
-			Line new_line(getCurrentWindowSize(), newAbsoluteDataPointOne, newAbsoluteDataPointTwo, line->getLineColor());
-			zoomed_in_data_set.addLine(new_line);
-		}
-		else if (dynamic_cast<Ellipse*>(existing_data[i].get()) != nullptr)
-		{
-			//TODO: Need to add this at some point
+			//Once all lines and points have been processed add the zoomed in GraphData object
+			//to the zoomed in GraphDataSet object (if it contains any actual data)
+			if (zoomed_in_data.getChildren().size() > 0) zoomed_in_data_set.addGraphData(zoomed_in_data);
 		}
 	}
 
-	//Finally add the new data set to the graphs child UI Element list so it will
+	//Finally add the new graph data set to the graphs child UI Element list so it will
 	//be displayed. We also update the m_minimal and m_maximal values for the graph
 	//element. If no actual data points were selected by the zoom box then simply
 	//return from this method without changing anything

@@ -1914,9 +1914,9 @@ void CalibrationMode::displayGraph()
 		upperLineLocation = 50.0f;
 		lowerLineLocation = -50.0f;
 
-		m_uiManager.getElement<Graph>(L"Acc Graph")->addDataSet(screenSize, m_graphDataX, UIColor::Red);
-		m_uiManager.getElement<Graph>(L"Acc Graph")->addDataSet(screenSize, m_graphDataY, UIColor::Blue);
-		m_uiManager.getElement<Graph>(L"Acc Graph")->addDataSet(screenSize, m_graphDataZ, UIColor::Green);
+		m_uiManager.getElement<Graph>(L"Acc Graph")->addGraphData(screenSize, m_graphDataX, UIColor::Red);
+		m_uiManager.getElement<Graph>(L"Acc Graph")->addGraphData(screenSize, m_graphDataY, UIColor::Blue);
+		m_uiManager.getElement<Graph>(L"Acc Graph")->addGraphData(screenSize, m_graphDataZ, UIColor::Green);
 
 		m_uiManager.getElement<Graph>(L"Acc Graph")->addAxisLine(screenSize, 0, centerLineLocation);
 		m_uiManager.getElement<Graph>(L"Acc Graph")->addAxisLine(screenSize, 0, upperLineLocation);
@@ -1945,9 +1945,9 @@ void CalibrationMode::displayGraph()
 		upperLineLocation = GRAVITY; //95% of the highest data point
 		lowerLineLocation = -GRAVITY; //95% of the lowest data point
 
-		m_uiManager.getElement<Graph>(L"Acc Graph")->addDataSet(screenSize, m_graphDataX, UIColor::Red);
-		m_uiManager.getElement<Graph>(L"Acc Graph")->addDataSet(screenSize, m_graphDataY, UIColor::Blue);
-		m_uiManager.getElement<Graph>(L"Acc Graph")->addDataSet(screenSize, m_graphDataZ, UIColor::Green);
+		m_uiManager.getElement<Graph>(L"Acc Graph")->addGraphData(screenSize, m_graphDataX, UIColor::Red);
+		m_uiManager.getElement<Graph>(L"Acc Graph")->addGraphData(screenSize, m_graphDataY, UIColor::Blue);
+		m_uiManager.getElement<Graph>(L"Acc Graph")->addGraphData(screenSize, m_graphDataZ, UIColor::Green);
 
 		m_uiManager.getElement<Graph>(L"Acc Graph")->addAxisLine(screenSize, 0, centerLineLocation);
 		m_uiManager.getElement<Graph>(L"Acc Graph")->addAxisLine(screenSize, 0, upperLineLocation);
@@ -2013,8 +2013,8 @@ void CalibrationMode::displayGraph()
 		}
 
 		m_uiManager.getElement<Graph>(L"Mag1 Graph")->setAxisMaxAndMins({ -maximal_value,  -maximal_value }, { maximal_value, maximal_value });
-		m_uiManager.getElement<Graph>(L"Mag1 Graph")->addDataSet(screenSize, xy, UIColor::Red);
-		m_uiManager.getElement<Graph>(L"Mag1 Graph")->addDataSet(screenSize, xyc, UIColor::Green);
+		m_uiManager.getElement<Graph>(L"Mag1 Graph")->addGraphData(screenSize, xy, UIColor::Red);
+		m_uiManager.getElement<Graph>(L"Mag1 Graph")->addGraphData(screenSize, xyc, UIColor::Green);
 		m_uiManager.getElement<Graph>(L"Mag1 Graph")->addAxisLine(screenSize, 0, 0);
 		m_uiManager.getElement<Graph>(L"Mag1 Graph")->addAxisLine(screenSize, 1, 0);
 		m_uiManager.getElement<Graph>(L"Mag1 Graph")->addAxisLine(screenSize, 1, min_calibrated_values[0]); //vertical line corresponding to min calibrated X value
@@ -2024,8 +2024,8 @@ void CalibrationMode::displayGraph()
 		m_uiManager.getElement<Graph>(L"Mag1 Graph")->resize(screenSize); //resize the graph to get the labels in the correct locations
 		
 		m_uiManager.getElement<Graph>(L"Mag2 Graph")->setAxisMaxAndMins({ -maximal_value,  -maximal_value }, { maximal_value, maximal_value });
-		m_uiManager.getElement<Graph>(L"Mag2 Graph")->addDataSet(screenSize, xz, UIColor::Blue);
-		m_uiManager.getElement<Graph>(L"Mag2 Graph")->addDataSet(screenSize, xzc, UIColor::Green);
+		m_uiManager.getElement<Graph>(L"Mag2 Graph")->addGraphData(screenSize, xz, UIColor::Blue);
+		m_uiManager.getElement<Graph>(L"Mag2 Graph")->addGraphData(screenSize, xzc, UIColor::Green);
 		m_uiManager.getElement<Graph>(L"Mag2 Graph")->addAxisLine(screenSize, 0, 0);
 		m_uiManager.getElement<Graph>(L"Mag2 Graph")->addAxisLine(screenSize, 1, 0);
 		m_uiManager.getElement<Graph>(L"Mag2 Graph")->addAxisLine(screenSize, 0, min_calibrated_values[2]); //horizontal line corresponding to min calibrated Z value
@@ -2035,8 +2035,8 @@ void CalibrationMode::displayGraph()
 		m_uiManager.getElement<Graph>(L"Mag2 Graph")->resize(screenSize); //resize the graph to get the labels in the correct locations
 
 		m_uiManager.getElement<Graph>(L"Mag3 Graph")->setAxisMaxAndMins({ -maximal_value,  -maximal_value }, { maximal_value, maximal_value });
-		m_uiManager.getElement<Graph>(L"Mag3 Graph")->addDataSet(screenSize, yz, UIColor::Yellow);
-		m_uiManager.getElement<Graph>(L"Mag3 Graph")->addDataSet(screenSize, yzc, UIColor::Green);
+		m_uiManager.getElement<Graph>(L"Mag3 Graph")->addGraphData(screenSize, yz, UIColor::Yellow);
+		m_uiManager.getElement<Graph>(L"Mag3 Graph")->addGraphData(screenSize, yzc, UIColor::Green);
 		m_uiManager.getElement<Graph>(L"Mag3 Graph")->addAxisLine(screenSize, 0, 0);
 		m_uiManager.getElement<Graph>(L"Mag3 Graph")->addAxisLine(screenSize, 1, 0);
 		m_uiManager.getElement<Graph>(L"Mag3 Graph")->addAxisLine(screenSize, 1, min_calibrated_values[1]); //vertical line corresponding to min calibrated Y value

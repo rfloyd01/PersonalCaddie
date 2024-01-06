@@ -244,9 +244,9 @@ void GraphMode::uiElementStateChangeHandler(std::shared_ptr<ManagedUIElement> el
 				//set the min and max data values for the graph
 				m_uiManager.getElement<Graph>(L"Graph")->setAxisMaxAndMins({ m_graphDataX[0].x,  m_minimalPoint.y }, { m_graphDataX.back().x, m_maximalPoint.y });
 
-				m_uiManager.getElement<Graph>(L"Graph")->addDataSet(m_uiManager.getScreenSize(), m_graphDataX, UIColor::Red);
-				m_uiManager.getElement<Graph>(L"Graph")->addDataSet(m_uiManager.getScreenSize(), m_graphDataY, UIColor::Blue);
-				m_uiManager.getElement<Graph>(L"Graph")->addDataSet(m_uiManager.getScreenSize(), m_graphDataZ, UIColor::Green);
+				m_uiManager.getElement<Graph>(L"Graph")->addGraphData(m_uiManager.getScreenSize(), m_graphDataX, UIColor::Red);
+				m_uiManager.getElement<Graph>(L"Graph")->addGraphData(m_uiManager.getScreenSize(), m_graphDataY, UIColor::Blue);
+				m_uiManager.getElement<Graph>(L"Graph")->addGraphData(m_uiManager.getScreenSize(), m_graphDataZ, UIColor::Green);
 
 				//add a few axis lines to the graph
 				float centerLineLocation = (m_minimalPoint.y + m_maximalPoint.y) / 2.0f; //The average of the highest and lowest data point

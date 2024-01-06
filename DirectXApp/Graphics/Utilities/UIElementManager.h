@@ -13,6 +13,7 @@ enum class UIElementType
 	BUTTON,
 	TEXT_BUTTON,
 	ARROW_BUTTON,
+	CHECK_BOX,
 	TEXT_BOX,
 	PARTIAL_SCROLLING_TEXT_BOX,
 	FULL_SCROLLING_TEXT_BOX,
@@ -23,6 +24,7 @@ enum class UIElementType
 	LINE,
 	ALERT,
 	COVER_BOX,
+	RELATIVE_BOX,
 	END
 };
 
@@ -216,6 +218,9 @@ private:
 	UIElementType type_to_UIElementType<ArrowButton>() { return UIElementType::ARROW_BUTTON; }
 
 	template<>
+	UIElementType type_to_UIElementType<CheckBox>() { return UIElementType::CHECK_BOX; }
+
+	template<>
 	UIElementType type_to_UIElementType<TextBox>() { return UIElementType::TEXT_BOX; }
 
 	template<>
@@ -244,4 +249,7 @@ private:
 
 	template<>
 	UIElementType type_to_UIElementType<Box>() { return UIElementType::COVER_BOX; }
+
+	template<>
+	UIElementType type_to_UIElementType<RelativeBox>() { return UIElementType::RELATIVE_BOX; }
 };

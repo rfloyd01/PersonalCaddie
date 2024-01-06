@@ -13,6 +13,8 @@ Button::Button(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 lo
 	ShadowedBox box(windowSize, location, size, isSquare, fillColor, outlineColor, shadowColor);
 	p_children.push_back(std::make_shared<ShadowedBox>(box));
 	m_isClickable = true; //buttons can be clicked so we set this variable to true
+
+	m_state &= ~UIElementState::Dummy; //anything created without the default constructor shouldn't have the dummy state
 }
 
 void Button::onMouseClick()
