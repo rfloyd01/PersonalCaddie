@@ -40,10 +40,12 @@ uint32_t UITestMode::initializeMode(winrt::Windows::Foundation::Size windowSize,
 	//CheckBox test_check(windowSize, { 0.33f, 0.9f }, { 0.1f, 0.1f });
 	//m_uiManager.addElement<CheckBox>(test_check, L"Test Check Box");
 
-	RelativeBox relative_box_1(windowSize, { 0.4f, 0.4f }, { 1.0f, 0.1f });
-	RelativeBox relative_box_2(windowSize, { 0.4f, 0.6f }, { 1.0f, 0.1f }, UIColor::White);
-	RelativeBox relative_box_3(windowSize, { 0.6f, 0.4f }, { 1.0f, 0.1f }, UIColor::Gray);
-	RelativeBox relative_box_4(windowSize, { 0.6f, 0.6f }, { 1.0f, 0.1f }, UIColor::Blue);
+	RelativeBox relative_box_1(windowSize, { 0.471875f, 0.45f }, { 0.05625f, 0.1f });
+	RelativeBox relative_box_2(windowSize, { 0.528125f, 0.45f }, { 0.05625f, 0.1f }, UIColor::White);
+	RelativeBox relative_box_3(windowSize, { 0.584375f, 0.35f}, { 0.05625f, 0.1f }, UIColor::Gray); //0.371875f
+	RelativeBox relative_box_4(windowSize, { 0.471875f, 0.55f }, { 0.05625f, 0.1f }, UIColor::Blue);
+	RelativeBox relative_box_5(windowSize, { 0.528125f, 0.55f }, { 0.05625f, 0.1f }, UIColor::Red);
+	RelativeBox relative_box_6(windowSize, { 0.6f, 0.55f }, { 0.05625f, 0.1f }, UIColor::DarkGray);
 
 	Box box_1(windowSize, { 0.4f, 0.4f }, { 0.0772f, 0.1f }, UIColor::Blue);
 	Box box_2(windowSize, { 0.4f, 0.6f }, { 0.0772f, 0.1f });
@@ -57,11 +59,13 @@ uint32_t UITestMode::initializeMode(winrt::Windows::Foundation::Size windowSize,
 	m_uiManager.addElement<RelativeBox>(relative_box_2, L"Relative Box 2");
 	m_uiManager.addElement<RelativeBox>(relative_box_3, L"Relative Box 3");
 	m_uiManager.addElement<RelativeBox>(relative_box_4, L"Relative Box 4");
+	m_uiManager.addElement<RelativeBox>(relative_box_5, L"Relative Box 5");
+	//m_uiManager.addElement<RelativeBox>(relative_box_6, L"Relative Box 6");
 
-	m_uiManager.addElement<Box>(box_1, L"Box 1");
+	/*m_uiManager.addElement<Box>(box_1, L"Box 1");
 	m_uiManager.addElement<Box>(box_2, L"Box 2");
 	m_uiManager.addElement<Box>(box_3, L"Box 3");
-	m_uiManager.addElement<Box>(box_4, L"Box 4");
+	m_uiManager.addElement<Box>(box_4, L"Box 4");*/
 
 	m_uiManager.addElement<Line>(line1, L"Line 1");
 	m_uiManager.addElement<Line>(line2, L"Line 2");
