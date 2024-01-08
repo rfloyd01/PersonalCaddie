@@ -17,7 +17,7 @@ DropDownMenu::DropDownMenu(winrt::Windows::Foundation::Size windowSize, DirectX:
 	//we just create the child elements. They will all get resized and positioned later on.
 	FullScrollingTextBox scrollBox(windowSize, location, size, message, fontSize);
 	TextBox textBox(windowSize, location, size, scrollBox.getChildren()[5]->getText()->message, fontSize); //use the first option in the scroll box to populate the text box
-	ArrowButton button(windowSize, location, size, isInverted, true);
+	ArrowButton button(windowSize, location, size, isInverted);
 
 	scrollBox.setState(scrollBox.getState() | UIElementState::Invisible); //the scroll box is invisible to start off. Clicking the button makes it appear
 

@@ -13,7 +13,7 @@ class CheckBox : public Button
 {
 public:
 	CheckBox(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size) :
-		Button(windowSize, location, size, true, UIColor::White, UIColor::Black, UIColor::White)
+		Button(windowSize, location, size, UIColor::White, UIColor::Black, UIColor::White)
 	{
 		//The X is made up of two lines. One from the bottom left corner to the top right of the button, and the other from the top
 		//left to the bottom right

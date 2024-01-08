@@ -10,11 +10,12 @@ class ShadowedBox : public UIElement
 public:
 	ShadowedBox() {} //compty default constructor
 
-	ShadowedBox(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, bool isSquare, UIColor fillColor = UIColor::White, UIColor outlineColor = UIColor::Black, UIColor shadowColor = UIColor::DarkGray)
+	ShadowedBox(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, UIColor fillColor = UIColor::White, UIColor outlineColor = UIColor::Black, UIColor shadowColor = UIColor::DarkGray, float shadowPixels = 8.0f)
 	{
 		//A shadow box is a compound element comprised of an outlined box and a standard box child elements.
 		//The standard box gets rendered first and is offset a few pixels down and to the right of the 
 		//outlined box, giving the outlined box the appearance of having a shadow.
+		m_shadowSizePixels = shadowPixels;
 
 		//The m_size.x variable measures from the left side of the outlined box to the right side
 		//of the shadow while the m_size.y variable measures from the top of the outlined box to 
@@ -24,10 +25,10 @@ public:
 		
 		DirectX::XMFLOAT2 maximumAbsolutePixelSize = { 1.0f / MAX_SCREEN_WIDTH, 1.0f / MAX_SCREEN_HEIGHT };
 		Box shadow(windowSize, { location.x + (maximumAbsolutePixelSize.x * m_shadowSizePixels) / 2.0f, location.y + (maximumAbsolutePixelSize.y * m_shadowSizePixels) / 2.0f },
-			{ size.x - maximumAbsolutePixelSize.x * m_shadowSizePixels, size.y - maximumAbsolutePixelSize.y * m_shadowSizePixels }, shadowColor, UIShapeFillType::Fill, isSquare);
+			{ size.x - maximumAbsolutePixelSize.x * m_shadowSizePixels, size.y - maximumAbsolutePixelSize.y * m_shadowSizePixels }, shadowColor, UIShapeFillType::Fill);
 		
 		OutlinedBox outline(windowSize, { location.x - (maximumAbsolutePixelSize.x * m_shadowSizePixels) / 2.0f, location.y - (maximumAbsolutePixelSize.y * m_shadowSizePixels) / 2.0f },
-			{ size.x - maximumAbsolutePixelSize.x * m_shadowSizePixels, size.y - maximumAbsolutePixelSize.y * m_shadowSizePixels }, isSquare, fillColor, outlineColor);
+			{ size.x - maximumAbsolutePixelSize.x * m_shadowSizePixels, size.y - maximumAbsolutePixelSize.y * m_shadowSizePixels }, false, fillColor, outlineColor);
 		
 		//The shadow gets added to the child array first so the outline box
 		//gets rendered on top of it.
@@ -40,6 +41,5 @@ public:
 	float getShadowWidth() { return m_shadowSizePixels; }
 
 protected:
-	const float m_shadowSizePixels = 20.0f; //The size of the shadow in pixels. At some point a may want to make this a changeable value but for now keep it const
-
+	float m_shadowSizePixels; //The size of the shadow in pixels. Default value is set in constructor
 };

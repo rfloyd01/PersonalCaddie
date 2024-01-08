@@ -340,10 +340,10 @@ void UIElement::setAbsoluteSize(DirectX::XMFLOAT2 size)
 	//children though. Instead we compare the old size of the current element to the 
 	//new size to get a ratio. We increase the absolute size of the children by the
 	//same ratio.
-	updateLocationAndSize(m_location, size);
+	DirectX::XMFLOAT2 originalAbsoluteSieze = getAbsoluteSize();
+	updateLocationAndSize(getAbsoluteLocation(), size);
 
-	DirectX::XMFLOAT2 sizeRatio = { size.x / m_size.x, size.y / m_size.y };
-	m_size = size;
+	DirectX::XMFLOAT2 sizeRatio = { size.x / originalAbsoluteSieze.x, size.y / originalAbsoluteSieze.y };
 
 	for (int i = 0; i < p_children.size(); i++)
 	{
@@ -368,7 +368,7 @@ void UIElement::setAbsoluteLocation(DirectX::XMFLOAT2 location)
 	//location to each child (as some children have locations offset from their
 	//parents). Instead we compare the current location and the new location
 	//to get a difference. This same difference is then applied to the children.
-	updateLocationAndSize(location, m_size);
+	updateLocationAndSize(location, getAbsoluteSize());
 
 	DirectX::XMFLOAT2 locationDifference = { location.x - m_location.x, location.y - m_location.y };
 	m_location = location;

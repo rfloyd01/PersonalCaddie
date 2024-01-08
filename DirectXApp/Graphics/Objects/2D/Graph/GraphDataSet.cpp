@@ -29,7 +29,7 @@ void GraphDataSet::addGridLines(winrt::Windows::Foundation::Size windowSize, int
 		label += data_spacing;
 		Line grid_line(windowSize, { location, absoluteGraphMaximums.y }, { location, absoluteGraphMinimums.y }, UIColor::Black, 0.5f);
 		TextBox line_label(windowSize, { location, absoluteGraphMaximums.y + 0.014f }, { 0.025f, 0.018f }, std::to_wstring(label), 0.01f, { UIColor::Black },
-			{}, UITextJustification::CenterCenter, UIColor::White, false, UIColor::White, UIColor::White);
+			{}, UITextJustification::CenterCenter, UIColor::White, UIColor::White, UIColor::White);
 
 		p_children.push_back(std::make_shared<Line>(grid_line));
 		p_children.push_back(std::make_shared<TextBox>(line_label));
@@ -45,7 +45,7 @@ void GraphDataSet::addGridLines(winrt::Windows::Foundation::Size windowSize, int
 		label -= data_spacing;
 		Line grid_line(windowSize, { absoluteGraphMaximums.x, location }, { absoluteGraphMinimums.x, location }, UIColor::Black, 0.5f);
 		TextBox line_label(windowSize, { absoluteGraphMinimums.x - 0.0175f, location }, { 0.025f, 0.018f }, std::to_wstring(label), 0.01f, { UIColor::Black },
-			{}, UITextJustification::CenterCenter, UIColor::White, false, UIColor::White, UIColor::White);
+			{}, UITextJustification::CenterCenter, UIColor::White, UIColor::White, UIColor::White);
 
 		p_children.push_back(std::make_shared<Line>(grid_line));
 		p_children.push_back(std::make_shared<TextBox>(line_label));

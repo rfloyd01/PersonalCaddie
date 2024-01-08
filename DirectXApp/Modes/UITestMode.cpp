@@ -24,33 +24,9 @@ uint32_t UITestMode::initializeMode(winrt::Windows::Foundation::Size windowSize,
 
 	std::wstring scrollText = L"Start the device watcher to begin enumerating nearby BluetoothLE devices...";
 	FullScrollingTextBox deviceWatcherResults(windowSize, { 0.5, 0.575 }, { 0.85, 0.35 }, scrollText, 0.05f, false, false);
-	//m_uiManager.addElement<FullScrollingTextBox>(deviceWatcherResults, L"Device Watcher Text Box");
+	m_uiManager.addElement<FullScrollingTextBox>(deviceWatcherResults, L"Device Watcher Text Box");
+	//m_uiManager.drawDebugOutline(m_uiManager.getElement<FullScrollingTextBox>(L"Device Watcher Text Box"));
 
-	RelativeBox relative_box_1(windowSize, { 0.471875f, 0.45f }, { 0.05625f, 0.1f });
-	RelativeBox relative_box_2(windowSize, { 0.528125f, 0.45f }, { 0.05625f, 0.1f }, UIColor::White);
-	RelativeBox relative_box_3(windowSize, { 0.584375f, 0.35f}, { 0.05625f, 0.1f }, UIColor::Gray); //0.371875f
-	RelativeBox relative_box_4(windowSize, { 0.471875f, 0.55f }, { 0.05625f, 0.1f }, UIColor::Blue);
-	RelativeBox relative_box_5(windowSize, { 0.528125f, 0.55f }, { 0.05625f, 0.1f }, UIColor::Red);
-	RelativeBox relative_box_6(windowSize, { 0.6f, 0.55f }, { 0.05625f, 0.1f }, UIColor::DarkGray);
-
-	ShadowedBox sb(windowSize, { 0.5f, 0.5f }, { screen_ratio * 0.15f, 0.15f }, false);
-	m_uiManager.addElement<ShadowedBox>(sb, L"Shadowed Box 1");
-	m_uiManager.drawDebugOutline(m_uiManager.getElement<ShadowedBox>(L"Shadowed Box 1"), false);
-
-	/*m_uiManager.addElement<RelativeBox>(relative_box_1, L"Relative Box 1");
-	m_uiManager.addElement<RelativeBox>(relative_box_2, L"Relative Box 2");
-	m_uiManager.addElement<RelativeBox>(relative_box_3, L"Relative Box 3");
-	m_uiManager.addElement<RelativeBox>(relative_box_4, L"Relative Box 4");
-	m_uiManager.addElement<RelativeBox>(relative_box_5, L"Relative Box 5");*/
-	//m_uiManager.addElement<RelativeBox>(relative_box_6, L"Relative Box 6");
-
-	//CheckBox cb(windowSize, { 0.5f, 0.5f }, { screen_ratio * 0.1f, 0.1f });
-	//m_uiManager.addElement<CheckBox>(cb, L"Check Box 1");
-
-	//When this mode is initialzed we go into a state of CanTransfer and Active.
-	//Can Transfer allows us to use the esc. key to go back to the settings menu
-	//while active diverts state control to this mode
-	//return (ModeState::CanTransfer | ModeState::NeedTextUpdate);
 	return ModeState::CanTransfer;
 }
 
@@ -58,10 +34,6 @@ void UITestMode::uninitializeMode()
 {
 	//The only thing to do when leaving the main menu mode is to clear
 	//out all text in the text map and color map
-	
-	//for (int i = 0; i < m_uiElements.size(); i++) m_uiElements[i] = nullptr;
-	//m_uiElements.clear();
-
 	m_uiManager.removeAllElements();
 	m_volumeElements.clear();
 }

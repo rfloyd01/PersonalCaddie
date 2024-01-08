@@ -13,7 +13,7 @@ PartialScrollingTextBox::PartialScrollingTextBox(winrt::Windows::Foundation::Siz
 		textColorLocations.push_back(message.length());
 	}
 
-	TextBox textBox(windowSize, location, size, message, fontSize, textColor, textColorLocations, justification, textFillColor, isSquare, outlineColor, shadowColor);
+	TextBox textBox(windowSize, location, size, message, fontSize, textColor, textColorLocations, justification, textFillColor, outlineColor, shadowColor);
 
 	//The text covering box is the same width as the text box, and extends from the top of the text box
 	//all the way to the top of the window.
@@ -22,8 +22,8 @@ PartialScrollingTextBox::PartialScrollingTextBox(winrt::Windows::Foundation::Siz
 	//A scrolling text box also features two arrow buttons, one up and one down.
 	//Both of these buttons are squares
 	m_buttonSize = 0.1 * size.y; //for now make both buttons 1/10th the height of the box
-	ArrowButton upButton(windowSize, { location.x + (size.x + m_buttonSize) / (float)2.0, location.y - (size.y - m_buttonSize) / (float)2.0 }, { m_buttonSize, m_buttonSize }, false, true);
-	ArrowButton downButton(windowSize, { location.x + (size.x + m_buttonSize) / (float)2.0, location.y + (size.y - m_buttonSize) / (float)2.0 }, { m_buttonSize, m_buttonSize }, true, true);
+	ArrowButton upButton(windowSize, { location.x + (size.x + m_buttonSize) / (float)2.0, location.y - (size.y - m_buttonSize) / (float)2.0 }, { m_buttonSize, m_buttonSize }, false);
+	ArrowButton downButton(windowSize, { location.x + (size.x + m_buttonSize) / (float)2.0, location.y + (size.y - m_buttonSize) / (float)2.0 }, { m_buttonSize, m_buttonSize }, true);
 
 	//Finally, there's a progress bar between the buttons that shows how much of the text has
 	//been scrolled through. This progress bar is composed of a background shadow box and a
@@ -31,7 +31,7 @@ PartialScrollingTextBox::PartialScrollingTextBox(winrt::Windows::Foundation::Siz
 	//as the window get's bigger and smaller.
 	float shadowPixels = (((ShadowedBox*)upButton.getChildren()[0].get())->getShadowWidth() + 1.0f) / windowSize.Width; //get the relative width of the button shadows
 	OutlinedBox progressBarBackground(windowSize, { location.x + (size.x + m_buttonSize) / (float)2.0 + shadowPixels / 2.0f, location.y + shadowPixels / 2.0f}, { m_buttonSize + shadowPixels, size.y - 2.0f * m_buttonSize - shadowPixels}, true, UIColor::Gray);
-	ShadowedBox progressBarForeground(windowSize, { location.x + (size.x + m_buttonSize) / (float)2.0 - shadowPixels, location.y }, { m_buttonSize - 2.0f / windowSize.Width, (size.y - 2.0f * m_buttonSize) / 2.0f }, true, UIColor::PaleGray); //y size and location will change
+	ShadowedBox progressBarForeground(windowSize, { location.x + (size.x + m_buttonSize) / (float)2.0 - shadowPixels, location.y }, { m_buttonSize - 2.0f / windowSize.Width, (size.y - 2.0f * m_buttonSize) / 2.0f }, UIColor::PaleGray); //y size and location will change
 
 	//The order of the child elements is important here. The text background must be first, then the text,
 	//and then finally the hiding box to go on top of it.

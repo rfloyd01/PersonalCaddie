@@ -35,25 +35,24 @@ FullScrollingTextBox::FullScrollingTextBox(winrt::Windows::Foundation::Size wind
 	m_buttonHeight = 0.125f * size.y; //for now make both buttons 1/8th the height of the box
 	float buttonWidth = screen_ratio * m_buttonHeight;
 
-	ArrowButton upButton(windowSize, { location.x + (size.x - buttonWidth) / 2.0f, location.y - (size.y - m_buttonHeight) / 2.0f }, { buttonWidth, m_buttonHeight }, false, true);
-	ArrowButton downButton(windowSize, { location.x + (size.x - buttonWidth) / 2.0f, location.y + (size.y - m_buttonHeight) / 2.0f }, { buttonWidth, m_buttonHeight }, true, true);
+	ArrowButton upButton(windowSize, { location.x + (size.x - buttonWidth) / 2.0f, location.y - (size.y - m_buttonHeight) / 2.0f }, { buttonWidth, m_buttonHeight }, false, 3.0f);
+	ArrowButton downButton(windowSize, { location.x + (size.x - buttonWidth) / 2.0f, location.y + (size.y - m_buttonHeight) / 2.0f }, { buttonWidth, m_buttonHeight }, true, 3.0f);
 
 	//If the dynamic size variable is chosen then we won't actually know the width
 	//of the text box until after we get the text pixel dimensions from the renderer.
 	//Either way though, the textBox is the first child element.
-	ShadowedBox textBox(windowSize, { location.x - buttonWidth / 2.0f, location.y }, { size.x - buttonWidth, size.y }, false);
+	OutlinedBox textBox(windowSize, { location.x - buttonWidth / 2.0f, location.y }, { size.x - buttonWidth, size.y }, false);
 
 	//Finally, there's a progress bar between the buttons that shows how much of the text has
 	//been scrolled through. This progress bar is composed of two elements: an outlined box that
 	//acts as a background, and a shadowed box which shows the actual progress.
-	float shadowPixels = (((ShadowedBox*)upButton.getChildren()[0].get())->getShadowWidth() + 1.0f) / windowSize.Width; //get the relative width of the button shadows
-	OutlinedBox progressBarBackground(windowSize, { location.x + (size.x + m_buttonHeight) / (float)2.0 + shadowPixels / 2.0f, location.y + shadowPixels / 2.0f }, { m_buttonHeight + shadowPixels, size.y - 2.0f * m_buttonHeight - shadowPixels }, true, UIColor::Gray);
-	ShadowedBox progressBarForeground(windowSize, { location.x + (size.x + m_buttonHeight) / (float)2.0 - shadowPixels, location.y }, { m_buttonHeight - 2.0f / windowSize.Width, (size.y - 2.0f * m_buttonHeight) / 2.0f }, true, UIColor::PaleGray); //y size and location will change
+	OutlinedBox progressBarBackground(windowSize, { location.x + (size.x - buttonWidth) / 2.0f, location.y}, { buttonWidth, size.y}, true, UIColor::Gray);
+	ShadowedBox progressBarForeground(windowSize, { location.x + (size.x - buttonWidth) / 2.0f, location.y }, { buttonWidth, (size.y - 2.0f * m_buttonHeight) / 2.0f }, UIColor::PaleGray); //y size and location will change after text is added
 
-	p_children.push_back(std::make_shared<ShadowedBox>(textBox));
+	p_children.push_back(std::make_shared<OutlinedBox>(textBox));
+	p_children.push_back(std::make_shared<OutlinedBox>(progressBarBackground));
 	p_children.push_back(std::make_shared<ArrowButton>(upButton));
 	p_children.push_back(std::make_shared<ArrowButton>(downButton));
-	p_children.push_back(std::make_shared<OutlinedBox>(progressBarBackground));
 	p_children.push_back(std::make_shared<ShadowedBox>(progressBarForeground));
 
 	//Set values for class variables
@@ -66,7 +65,7 @@ FullScrollingTextBox::FullScrollingTextBox(winrt::Windows::Foundation::Size wind
 	m_lastSelectedText = L"";
 
 	//Once everything is set we add text to the text box
-	addText(message, windowSize, m_highlightableText, false);
+	//addText(message, windowSize, m_highlightableText, false);
 }
 
 void FullScrollingTextBox::addText(std::wstring message, winrt::Windows::Foundation::Size windowSize, bool highlightable, bool existingText)
@@ -127,12 +126,13 @@ void FullScrollingTextBox::addText(std::wstring message, winrt::Windows::Foundat
 		if (highlightable)
 		{
 			HighlightableTextOverlay newText(windowSize, { textLocation.x, textLocation.y + currentLine * existingTextHeight}, textSize, textLine, m_fontSize,
-				{ UIColor::Black }, { 0, (unsigned int)textLine.length() }, UITextJustification::CenterLeft);
+				{ UIColor::Black }, { 0, (unsigned int)textLine.length() }, UITextJustification::CenterLeft, false);
 			p_children.push_back(std::make_shared<HighlightableTextOverlay>(newText));
 		}
 		else
 		{
-			TextOverlay newText(windowSize, { textLocation.x, textLocation.y + currentLine * existingTextHeight }, textSize, textLine, m_fontSize, { UIColor::Black }, { 0, (unsigned int)textLine.length() }, UITextJustification::CenterLeft);
+			TextOverlay newText(windowSize, { textLocation.x, textLocation.y + currentLine * existingTextHeight }, textSize, textLine, m_fontSize,
+				{ UIColor::Black }, { 0, (unsigned int)textLine.length() }, UITextJustification::CenterLeft, false);
 			p_children.push_back(std::make_shared<TextOverlay>(newText));
 		}
 
@@ -196,7 +196,7 @@ void FullScrollingTextBox::repositionText()
 		}
 
 		currentTextBoxAbsoluteSize.x /= currentWindowSize.Width; //convert pixels back to absolute size
-		currentTextBoxAbsoluteSize.x += 0.005; //give a little breathing room so text isn't reight up against the edge of the box
+		currentTextBoxAbsoluteSize.x += 0.005; //give a little breathing room so text isn't right up against the edge of the box
 	}
 
 	//In order to make everything look clean, set the absolute height of the scroll box to 
@@ -207,8 +207,9 @@ void FullScrollingTextBox::repositionText()
 
 	//Update the absolute size for the TextBox, this should also update the size of
 	//all children elements accordingly.
-	p_children[0]->setAbsoluteSize(currentTextBoxAbsoluteSize);
-	m_size = currentTextBoxAbsoluteSize; //update the size of the FullScrollingTextBox to reflect that of the text box child element.
+	//p_children[0]->setAbsoluteSize(currentTextBoxAbsoluteSize);
+	//m_size = currentTextBoxAbsoluteSize; //update the size of the FullScrollingTextBox to reflect that of the text box child element.
+	setAbsoluteSize(currentTextBoxAbsoluteSize);
 	
 	//We now need to update the locations for each text element. Whatever element is currently at the top
 	//should have it's location changed to match the top of the text box. All other text elements are then

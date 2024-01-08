@@ -5,12 +5,12 @@
 #include <chrono>
 
 Button::Button(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size,
-	bool isSquare, UIColor fillColor, UIColor outlineColor, UIColor shadowColor)
+	UIColor fillColor, UIColor outlineColor, UIColor shadowColor, float shadowPixels)
 {
 	//Set the window size dependent variables
 	updateLocationAndSize(location, size);
 
-	ShadowedBox box(windowSize, location, size, isSquare, fillColor, outlineColor, shadowColor);
+	ShadowedBox box(windowSize, location, size, fillColor, outlineColor, shadowColor, shadowPixels);
 	p_children.push_back(std::make_shared<ShadowedBox>(box));
 	m_isClickable = true; //buttons can be clicked so we set this variable to true
 
