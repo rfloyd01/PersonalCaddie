@@ -8,8 +8,8 @@ Button::Button(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 lo
 	bool isSquare, UIColor fillColor, UIColor outlineColor, UIColor shadowColor)
 {
 	//Set the window size dependent variables
-	m_location = location;
-	m_size = size;
+	updateLocationAndSize(location, size);
+
 	ShadowedBox box(windowSize, location, size, isSquare, fillColor, outlineColor, shadowColor);
 	p_children.push_back(std::make_shared<ShadowedBox>(box));
 	m_isClickable = true; //buttons can be clicked so we set this variable to true

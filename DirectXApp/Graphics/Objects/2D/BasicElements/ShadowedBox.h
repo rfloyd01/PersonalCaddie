@@ -11,16 +11,18 @@ public:
 	ShadowedBox(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, bool isSquare, UIColor fillColor = UIColor::White, UIColor outlineColor = UIColor::Black, UIColor shadowColor = UIColor::DarkGray) :
 		OutlinedBox(windowSize, location, size, isSquare, fillColor, outlineColor)
 	{
-		//Create a second box that's the same shape as the fill box, but is offset slightly to the right and down
-		DirectX::XMFLOAT2 absolutePixelSize = { (float)1.0 / windowSize.Width, (float)1.0 / windowSize.Height };
-		Box outline(windowSize, { location.x + (absolutePixelSize.x * m_shadowSizePixels) / (float)2.0, location.y + (absolutePixelSize.y * m_shadowSizePixels) / (float)2.0 },
-			{ size.x + absolutePixelSize.x * m_shadowSizePixels, size.y + absolutePixelSize.y * m_shadowSizePixels }, shadowColor, UIShapeFillType::Fill, isSquare);
+		//Create a second box that's the same shape as the fill box, but is offset slightly to the right and down.
+		//This will give the effect of there being a shadown behind the element
+		DirectX::XMFLOAT2 maximumAbsolutePixelSize = { 1.0f / MAX_SCREEN_WIDTH, 1.0f / MAX_SCREEN_HEIGHT };
+		Box outline(windowSize, { location.x + (maximumAbsolutePixelSize.x * m_shadowSizePixels) / 2.0f, location.y + (maximumAbsolutePixelSize.y * m_shadowSizePixels) / 2.0f },
+			{ size.x + maximumAbsolutePixelSize.x * m_shadowSizePixels, size.y + maximumAbsolutePixelSize.y * m_shadowSizePixels }, shadowColor, UIShapeFillType::Fill, isSquare);
+		
 		p_children.push_back(std::make_shared<Box>(outline));
 	}
 
 	float getShadowWidth() { return m_shadowSizePixels; }
 
 protected:
-	const float m_shadowSizePixels = 3.0; //The size of the shadow in pixels. At some point a may want to make this a changeable value but for now keep it const
+	const float m_shadowSizePixels = 5.0f; //The size of the shadow in pixels. At some point a may want to make this a changeable value but for now keep it const
 
 };

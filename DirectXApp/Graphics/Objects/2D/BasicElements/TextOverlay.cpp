@@ -2,11 +2,16 @@
 #include "TextOverlay.h"
 
 TextOverlay::TextOverlay(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, std::wstring message,
-	float fontSize, std::vector<UIColor> colors, std::vector<unsigned long long> colorLocations, UITextJustification justification)
+	float fontSize, std::vector<UIColor> colors, std::vector<unsigned long long> colorLocations, UITextJustification justification, bool useAbsolute)
 {
-	//Set the screen size dependent variables
-	m_size = size;
-	m_location = location;
+	//Set the screen size dependent variables. Unlike most UI Elements, there are times when it makes sense
+	//for the TextOverlay class to use the edges of the screen as a reference instead of the middle of the screen.
+	//For example, we always want the title at the top of the screen to stay in the same relative position to the
+	//top of the screen. There are times though when it makes sense to use the standard relative coordinates, like 
+	//when text appears inside of a button for example. We can set the m_useAbsoluteCoordinates variable accordingly
+	//use whichever paradigm is necessary.
+	m_useAbsoluteCoordinates = useAbsolute;
+	updateLocationAndSize(location, size);
 	m_fontSize = fontSize;
 
 	//Create a text object from the given wstring

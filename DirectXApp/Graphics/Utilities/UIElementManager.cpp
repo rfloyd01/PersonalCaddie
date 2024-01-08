@@ -4,8 +4,8 @@
 
 #include <chrono>
 
-//Populate the need text update vector
-std::vector<UIElementType> UIElementManager::m_textUpdateElements = { UIElementType::DROP_DOWN_MENU, UIElementType::PARTIAL_SCROLLING_TEXT_BOX, UIElementType::FULL_SCROLLING_TEXT_BOX };
+//Populate the need text update vector -- deprecated
+//std::vector<UIElementType> UIElementManager::m_textUpdateElements = { UIElementType::DROP_DOWN_MENU, UIElementType::PARTIAL_SCROLLING_TEXT_BOX, UIElementType::FULL_SCROLLING_TEXT_BOX };
 
 UIElementManager::UIElementManager()
 {
@@ -208,29 +208,31 @@ std::vector<std::shared_ptr<ManagedUIElement> >::iterator UIElementManager::find
 	return std::find_if(vec.begin(), vec.end(), [&n = name](const std::shared_ptr<ManagedUIElement>& e) -> bool {return n == e->name; });
 }
 
-void UIElementManager::checkForTextResize()
-{
-	//Some UIElements rely on the renderer class to update their dimensions by first rendering text
-	//and calculating the size in pixels. To make this process more seemless, this method gets called
-	//during each iteration of the render loop to check whether any UI Elements need an update. As of
-	//right now the only elements that require this feature are: FullScrollingTextBox, DropDownMenu,
-	//and PartialScrollingTextBox. As more UI Elements are created they will need to be added to the
-	//static m_textUpdateElements vector.
-	
-	for (int type = 0; type < m_textUpdateElements.size(); type++)
-	{
-		for (int i = 0; i < m_uiElements.at(m_textUpdateElements[type]).size(); i++)
-		{
-			if (m_uiElements.at(m_textUpdateElements[type])[i]->element->getState() & UIElementState::NeedTextPixels)
-			{
-				m_updateText.push_back(m_uiElements.at(m_textUpdateElements[type])[i]->element);
-			}
-		}
-	}
-}
+//void UIElementManager::checkForTextResize()
+//{
+//  DEPRECATED
+//	//Some UIElements rely on the renderer class to update their dimensions by first rendering text
+//	//and calculating the size in pixels. To make this process more seemless, this method gets called
+//	//during each iteration of the render loop to check whether any UI Elements need an update. As of
+//	//right now the only elements that require this feature are: FullScrollingTextBox, DropDownMenu,
+//	//and PartialScrollingTextBox. As more UI Elements are created they will need to be added to the
+//	//static m_textUpdateElements vector.
+//	
+//	for (int type = 0; type < m_textUpdateElements.size(); type++)
+//	{
+//		for (int i = 0; i < m_uiElements.at(m_textUpdateElements[type]).size(); i++)
+//		{
+//			if (m_uiElements.at(m_textUpdateElements[type])[i]->element->getState() & UIElementState::NeedTextPixels)
+//			{
+//				m_updateText.push_back(m_uiElements.at(m_textUpdateElements[type])[i]->element);
+//			}
+//		}
+//	}
+//}
 
 //std::vector<UIText*> UIElementManager::getResizeText()
 //{
+//   DEPRECATED
 //	//The m_updateText array holds entire UIElements, however, we really only care about the UIText elements inside
 //	//of the UIElements. Extract any UIText that we need, and add it to a new vector which gets returned from this
 //	//method.

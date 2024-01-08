@@ -2,13 +2,13 @@
 #include "HighlightableTextOverlay.h"
 
 HighlightableTextOverlay::HighlightableTextOverlay(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, std::wstring message,
-	float fontSize, std::vector<UIColor> colors, std::vector<unsigned long long> colorLocations, UITextJustification justification) :
-	TextOverlay(windowSize, location, size, message, fontSize, colors, colorLocations, justification)
+	float fontSize, std::vector<UIColor> colors, std::vector<unsigned long long> colorLocations, UITextJustification justification, bool useAbsolute) :
+	TextOverlay(windowSize, location, size, message, fontSize, colors, colorLocations, justification, useAbsolute)
 {
 	//Set the screen size dependent variables
-	m_size = size;
+	/*m_size = size;
 	m_location = location;
-	m_fontSize = fontSize;
+	m_fontSize = fontSize;*/
 	m_isHoverable = true;
 	m_primaryColor = colors[0];
 }

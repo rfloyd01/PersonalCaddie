@@ -10,9 +10,9 @@ namespace UIConstants
     //TextType::TITLE constants
     static const float TitleTextPointSize = 0.10f;
     static const float TitleRectangleX0 = WidthMargin;
-    static const float TitleRectangleX1 = 1.0 - WidthMargin;
+    static const float TitleRectangleX1 = 1.0f - WidthMargin;
     static const float TitleRectangleY0 = HeightMargin;
-    static const float TitleRectangleY1 = TitleRectangleY0 + 0.15;
+    static const float TitleRectangleY1 = TitleRectangleY0 + 0.15f;
     static const float TitleTextLocationX = (TitleRectangleX0 + TitleRectangleX1) / 2.0f;
     static const float TitleTextLocationY = (TitleRectangleY0 + TitleRectangleY1) / 2.0f;
     static const float TitleTextSizeX = TitleRectangleX1 - TitleRectangleX0;
@@ -21,9 +21,9 @@ namespace UIConstants
     //TextType::SUB_TITLE constants
     static const float SubTitleTextPointSize = 0.033f;
     static const float SubTitleRectangleX0 = WidthMargin;
-    static const float SubTitleRectangleX1 = 1.0 - WidthMargin;
+    static const float SubTitleRectangleX1 = 1.0f - WidthMargin;
     static const float SubTitleRectangleY0 = TitleRectangleY1 + HeightMargin;
-    static const float SubTitleRectangleY1 = SubTitleRectangleY0 + 0.07;
+    static const float SubTitleRectangleY1 = SubTitleRectangleY0 + 0.07f;
     static const float SubTitleTextLocationX = (SubTitleRectangleX0 + SubTitleRectangleX1) / 2.0f;
     static const float SubTitleTextLocationY = (SubTitleRectangleY0 + SubTitleRectangleY1) / 2.0f;
     static const float SubTitleTextSizeX = SubTitleRectangleX1 - SubTitleRectangleX0;

@@ -43,6 +43,9 @@ ModeScreen::ModeScreen() :
 	//Set default times for various timers (in milliseconds)
 	alert_timer_duration = 2500;
 	button_pressed_duration = 100;
+
+	//DEBUG: Set the home screen to UI Element test mode while working on UI stuff
+	m_currentMode = ModeType::UI_TEST_MODE;
 }
 
 winrt::fire_and_forget ModeScreen::Initialize(

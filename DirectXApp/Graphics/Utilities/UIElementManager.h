@@ -151,7 +151,7 @@ public:
 	void overwriteAlerts(std::vector<std::shared_ptr<ManagedUIElement>> const& alerts);
 
 	//Automatic Text Updating Methods
-	void checkForTextResize();
+	//void checkForTextResize(); //Deprecated
 	//std::vector<UIText*> getResizeText(); //Deprecated
 	void applyTextResizeUpdates();
 	int elementsCurrentlyNeedingTextUpdate() { return m_updateText.size(); }
@@ -174,7 +174,7 @@ private:
 	std::vector<std::shared_ptr<UIElement>> m_updateText; //An array of elements that currently require text dimension info from the Renderer class
 
 	winrt::Windows::Foundation::Size m_windowSize; //Keeps track of the current size of the window. UIElements have dimensions that are relative to the window size
-	static std::vector<UIElementType> m_textUpdateElements;
+	//static std::vector<UIElementType> m_textUpdateElements; --deprecated
 	long long m_alertTimer = 2000; //The amount of time (in milliseconds) that alerts remain on screen before disappearing
 
 	void populateGridLocations(std::shared_ptr<ManagedUIElement> managedElement);

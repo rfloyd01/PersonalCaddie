@@ -55,11 +55,11 @@ uint32_t UITestMode::initializeMode(winrt::Windows::Foundation::Size windowSize,
 	Line line1(windowSize, { 0.5f, 0.25f }, { 0.5f, 0.95f }, UIColor::Red);
 	Line line2(windowSize, { 0.05f, 0.5f }, { 0.95f, 0.5f }, UIColor::Red);
 
-	m_uiManager.addElement<RelativeBox>(relative_box_1, L"Relative Box 1");
+	/*m_uiManager.addElement<RelativeBox>(relative_box_1, L"Relative Box 1");
 	m_uiManager.addElement<RelativeBox>(relative_box_2, L"Relative Box 2");
 	m_uiManager.addElement<RelativeBox>(relative_box_3, L"Relative Box 3");
 	m_uiManager.addElement<RelativeBox>(relative_box_4, L"Relative Box 4");
-	m_uiManager.addElement<RelativeBox>(relative_box_5, L"Relative Box 5");
+	m_uiManager.addElement<RelativeBox>(relative_box_5, L"Relative Box 5");*/
 	//m_uiManager.addElement<RelativeBox>(relative_box_6, L"Relative Box 6");
 
 	/*m_uiManager.addElement<Box>(box_1, L"Box 1");
@@ -69,6 +69,9 @@ uint32_t UITestMode::initializeMode(winrt::Windows::Foundation::Size windowSize,
 
 	//m_uiManager.addElement<Line>(line1, L"Line 1");
 	//m_uiManager.addElement<Line>(line2, L"Line 2");
+
+	TextButton butt(windowSize, { 0.5f, 0.5f }, { 0.1f, 0.1f }, L"Test");
+	m_uiManager.addElement<TextButton>(butt, L"Button 1");
 
 	//When this mode is initialzed we go into a state of CanTransfer and Active.
 	//Can Transfer allows us to use the esc. key to go back to the settings menu

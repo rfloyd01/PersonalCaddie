@@ -4,9 +4,11 @@
 Line::Line(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 firstPointLlocation, DirectX::XMFLOAT2 secondPointLlocation, UIColor color, float width)
 {
 	//For m_shape, we still use a rectangle struct, however, the first two values are the x and y coordinates of the first
-	//point while the second two values are the x and y coordinates for the second point.
-	m_location = {(firstPointLlocation.x + secondPointLlocation.x) / (float)2.0, (firstPointLlocation.y + secondPointLlocation.y) / (float)2.0 };
-	m_size = { secondPointLlocation.x - firstPointLlocation.x, secondPointLlocation.y - firstPointLlocation.y };
+	//point while the second two values are the x and y coordinates for the second point. The m_location variable becomes
+	//the mid-point of the line
+	DirectX::XMFLOAT2 location = { (firstPointLlocation.x + secondPointLlocation.x) / 2.0f, (firstPointLlocation.y + secondPointLlocation.y) / 2.0f };
+	DirectX::XMFLOAT2 size = { secondPointLlocation.x - firstPointLlocation.x, secondPointLlocation.y - firstPointLlocation.y };
+	updateLocationAndSize(location, size);
 
 	m_lineColor = color;
 

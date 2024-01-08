@@ -16,6 +16,12 @@
 #include "Interfaces/IScrollableUI.h"
 #include "Interfaces/ITextDimensionsUI.h"
 
+//TODO: These maximum screen height and widths should be 
+//calculated by the DirectX device resources class and be
+//put into a static variable in the UIElement class
+#define MAX_SCREEN_HEIGHT 2160.0f
+#define MAX_SCREEN_WIDTH 3840.0f
+
 enum UIElementState
 {
 	Idlee = 1,
@@ -42,6 +48,7 @@ public:
 		m_location = { 0.0f, 0.0f };
 		m_fontSize = 0.0f;
 		m_state = Dummy;
+		m_useAbsoluteCoordinates = false; //relative coordinates are used by defulat isntead of absolute coordinates
 	}
 	~UIElement()
 	{
@@ -68,6 +75,9 @@ public:
 	UIShape* getShape() { return &m_shape; }
 	UIText* getText() { return &m_text; }
 
+	//TODO: The getabsolutesize and getabsolutelocation methods may need to 
+	//be changed so that the actual absolute values are given instead of
+	///the new relative values
 	DirectX::XMFLOAT2 getAbsoluteSize() { return m_size; }
 	virtual void setAbsoluteSize(DirectX::XMFLOAT2 size); //some elements that are tied to specific locations of other elements need to override this method
 
@@ -85,6 +95,9 @@ public:
 	void getAllTextNeedingDimensions(std::vector<UIText*>* text);
 
 protected:
+	void updateLocationAndSize(DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size);
+	void convertAbsoluteCoordinatesToRelativeCoordinates();
+
 	int pixelCompare(float pixelOne, float pixelTwo);
 
 	virtual bool isMouseHovered(DirectX::XMFLOAT2 mousePosition);
@@ -102,23 +115,26 @@ protected:
 	virtual void onHover() {} //empty onHoever method can be overriden by IHoverable element users
 
 	//Screen size dependent variables
-	DirectX::XMFLOAT2                             m_location; //location of the center of the element  as a ratio of the current screen size
-	DirectX::XMFLOAT2                             m_size; //size of the ui element as a ratio of the current screen size
-	float                                         m_fontSize; //The desired font size for text as a ratio of the current screen size
+	DirectX::XMFLOAT2                        m_location; //location of the center of the element  as a ratio of the current screen size
+	DirectX::XMFLOAT2                        m_size; //size of the ui element as a ratio of the current screen size
+	DirectX::XMFLOAT2                        m_absoluteDistanceToScreenCenter; //Represents the absolute distance from the center of the element to the center of the screen when it's fully maximized
+	float                                    m_horizontalSizeMultiplier; //the ratio of the element's width to its height
+	float                                    m_horizontalDriftMultiplier; //the ratio of the horizontal distance from the center of the element to the center vertical axis and the elements height when the screen is maximized
+	float                                    m_fontSize; //The desired font size for text as a ratio of the current screen size
+	bool                                     m_useAbsoluteCoordinates; //For some elements it makes sense to use the edges of the screen as a reference as opposed to the center
 
 	//State variables
-	uint32_t                                      m_state;
+	uint32_t                                 m_state;
 	
-	std::vector<std::shared_ptr<UIElement> >      p_children; //pointers to any children UI elements
+	//Rendering variables
+	UIShape                                  m_shape; //A shape specific to this UI Element
+	UIText                                   m_text;  //Any text that's specific to this UI Element
+	std::vector<std::shared_ptr<UIElement> > p_children; //pointers to any children UI elements that need to be rendered
 	
-	UIShape                                       m_shape; //A shape specific to this UI Element
-	UIText                                        m_text;  //Any text that's specific to this UI Element
-	
-	bool                                          m_isClickable = false;
-	bool                                          m_isScrollable = false;
-	bool                                          m_isHoverable = false;
-	bool                                          m_isAlert = false;
-
-	bool                                          m_needTextRenderDimensions = false; //lets the current mode know if we need the full height for any elementText items in pixels
-	//bool                                          m_gotTextRenderDimensions = false; //lets the current mode know when elementText pixels have been received
+	//Interface booleans
+	bool                                     m_isClickable = false;
+	bool                                     m_isScrollable = false;
+	bool                                     m_isHoverable = false;
+	bool                                     m_isAlert = false; //Deprecated
+	bool                                     m_needTextRenderDimensions = false; //lets the current mode know if we need the full height for any elementText items in pixels
 };
