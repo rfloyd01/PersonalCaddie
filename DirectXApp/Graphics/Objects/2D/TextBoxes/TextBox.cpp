@@ -17,7 +17,9 @@ TextBox::TextBox(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 
 		textColorLocations.push_back(message.length());
 	}
 
-	TextOverlay text(windowSize, location, size, message, fontSize, textColor, textColorLocations, justification);
+	//Create a text overlay which holds the actual text. To keep the text in the box properly
+	//the text overlay should be set to use relative coordinates instead of absolute coordinates.
+	TextOverlay text(windowSize, location, size, message, fontSize, textColor, textColorLocations, justification, false);
 
 	//The order of the child elements is important here. The text background must be first, then the text.
 	p_children.push_back(std::make_shared<ShadowedBox>(textBackground));

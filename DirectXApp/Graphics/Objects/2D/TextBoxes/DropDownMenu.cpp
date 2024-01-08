@@ -99,7 +99,8 @@ void DropDownMenu::repositionText()
 	//it to the right side of the text box (making sure to compensate for square
 	//element drift)
 	p_children[1]->setAbsoluteSize({ absoluteTextHeight, absoluteTextHeight });
-	float driftCorrectedButtonLocation = m_location.x + (m_size.x + absoluteTextHeight) / 2.0f - ((ShadowedBox*)p_children[1]->getChildren()[0].get())->fixSquareBoxDrift(currentWindowSize);
+	//float driftCorrectedButtonLocation = m_location.x + (m_size.x + absoluteTextHeight) / 2.0f - ((ShadowedBox*)p_children[1]->getChildren()[0].get())->fixSquareBoxDrift(currentWindowSize);
+	float driftCorrectedButtonLocation = 0.0f;
 	p_children[1]->setAbsoluteLocation({driftCorrectedButtonLocation, m_location.y});
 }
 

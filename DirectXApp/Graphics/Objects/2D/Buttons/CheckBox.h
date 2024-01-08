@@ -35,7 +35,7 @@ public:
 		button_children[1]->updateState(UIElementState::Invisible);
 
 		//Force the X to be a square shape
-		setAbsoluteSize(size);
+		//setAbsoluteSize(size);
 	}
 
 	CheckBox() {} //empty default constructor
@@ -63,32 +63,6 @@ public:
 		}
 
 		m_isChecked = !m_isChecked;
-	}
-
-	virtual void setAbsoluteSize(DirectX::XMFLOAT2 size) override
-	{
-		//Since the sides of the arrows are tied to either the top or bottom of the central arrow,
-		//resizing will cause them to shift a touch. Call the standard size setting method, and then
-		//shift the sides of the arrows accordingly/
-		DirectX::XMFLOAT2 diagonalOne = p_children[1]->getAbsoluteSize();
-		DirectX::XMFLOAT2 diagonalTwo = p_children[2]->getAbsoluteSize();
-		UIElement::setAbsoluteSize(size);
-
-		DirectX::XMFLOAT2 diagonalOneNewSize = p_children[1]->getAbsoluteSize();
-		DirectX::XMFLOAT2 diagonalTwoNewSize = p_children[2]->getAbsoluteSize();
-
-		DirectX::XMFLOAT2 diagonalOneNewLocation = p_children[1]->getAbsoluteLocation();
-		DirectX::XMFLOAT2 diagonalTwoNewLocation = p_children[2]->getAbsoluteLocation();
-
-		p_children[1]->setAbsoluteLocation({ diagonalOneNewLocation.x - (diagonalOne.x - diagonalOneNewSize.x) / 2.0f, diagonalOneNewLocation.y + (diagonalOne.y - diagonalOneNewSize.y) / 2.0f });
-		p_children[2]->setAbsoluteLocation({ diagonalTwoNewLocation.x - (diagonalTwo.x - diagonalTwoNewSize.x) / 2.0f, diagonalTwoNewLocation.y + (diagonalTwo.y - diagonalTwoNewSize.y) / 2.0f });
-	}
-
-	virtual void resize(winrt::Windows::Foundation::Size windowSize) override
-	{
-		//Since the check box is a square we need to override the
-		//resize method and make sure that the 'X' stays square as well.
-
 	}
 
 private:

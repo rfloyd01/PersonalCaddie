@@ -170,7 +170,8 @@ void PartialScrollingTextBox::repositionText()
 	auto scrollBarLocation = p_children[4]->getAbsoluteLocation();
 	auto scrollBarProgressLocation = p_children[5]->getAbsoluteLocation();
 
-	float buttonWidthDifferential = ((ShadowedBox*)p_children[2]->getChildren()[0].get())->fixSquareBoxDrift(currentWindowSize);
+	//float buttonWidthDifferential = ((ShadowedBox*)p_children[2]->getChildren()[0].get())->fixSquareBoxDrift(currentWindowSize);
+	float buttonWidthDifferential = 0.0f;
 	
 
 	float buttonRelativeXLocation = m_location.x + (m_size.x + m_buttonSize) / 2.0f + shadowPixels - buttonWidthDifferential;

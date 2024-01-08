@@ -20,25 +20,11 @@ uint32_t UITestMode::initializeMode(winrt::Windows::Foundation::Size windowSize,
 	//Create UI Text Elements on the page
 	initializeTextOverlay(windowSize);
 
-	//Graph Testing
-	/*Graph test_graph(windowSize, { 0.5f, 0.5F }, { 0.5f, 0.5f });
-	std::vector<DirectX::XMFLOAT2> test_data_1, test_data_2, test_data_3 = { {0.0f, 1.25f}, {2.0f * PI, 1.25f} };
+	float screen_ratio = MAX_SCREEN_HEIGHT / MAX_SCREEN_WIDTH;
 
-	for (int i = 0; i < 1000; i++)
-	{
-		test_data_1.push_back({ (float)(i * 2.0f * PI / 1000.0f), (float)sin(i * 2.0f * PI / 1000.0f) });
-		test_data_2.push_back({ (float)(i * 2.0f * PI / 1000.0f), (float)cos(i * 2.0f * PI / 1000.0f) });
-	}
-
-	test_graph.setAxisMaxAndMins({ 0.0f, -1.5f }, { 2.0f * PI, 1.5f });
-	test_graph.addGraphData(windowSize, test_data_1, UIColor::Red);
-	test_graph.addGraphData(windowSize, test_data_2, UIColor::Blue);
-	test_graph.addGraphData(windowSize, test_data_3, UIColor::Green);
-
-	m_uiManager.addElement<Graph>(test_graph, L"Test Graph");*/
-
-	//CheckBox test_check(windowSize, { 0.33f, 0.9f }, { 0.1f, 0.1f });
-	//m_uiManager.addElement<CheckBox>(test_check, L"Test Check Box");
+	std::wstring scrollText = L"Start the device watcher to begin enumerating nearby BluetoothLE devices...";
+	FullScrollingTextBox deviceWatcherResults(windowSize, { 0.5, 0.575 }, { 0.85, 0.35 }, scrollText, 0.05f, false, false);
+	//m_uiManager.addElement<FullScrollingTextBox>(deviceWatcherResults, L"Device Watcher Text Box");
 
 	RelativeBox relative_box_1(windowSize, { 0.471875f, 0.45f }, { 0.05625f, 0.1f });
 	RelativeBox relative_box_2(windowSize, { 0.528125f, 0.45f }, { 0.05625f, 0.1f }, UIColor::White);
@@ -47,13 +33,9 @@ uint32_t UITestMode::initializeMode(winrt::Windows::Foundation::Size windowSize,
 	RelativeBox relative_box_5(windowSize, { 0.528125f, 0.55f }, { 0.05625f, 0.1f }, UIColor::Red);
 	RelativeBox relative_box_6(windowSize, { 0.6f, 0.55f }, { 0.05625f, 0.1f }, UIColor::DarkGray);
 
-	Box box_1(windowSize, { 0.4f, 0.4f }, { 0.0772f, 0.1f }, UIColor::Blue);
-	Box box_2(windowSize, { 0.4f, 0.6f }, { 0.0772f, 0.1f });
-	Box box_3(windowSize, { 0.6f, 0.4f }, { 0.0772f, 0.1f }, UIColor::White);
-	Box box_4(windowSize, { 0.6f, 0.6f }, { 0.0772f, 0.1f }, UIColor::Gray);
-
-	Line line1(windowSize, { 0.5f, 0.25f }, { 0.5f, 0.95f }, UIColor::Red);
-	Line line2(windowSize, { 0.05f, 0.5f }, { 0.95f, 0.5f }, UIColor::Red);
+	ShadowedBox sb(windowSize, { 0.5f, 0.5f }, { screen_ratio * 0.15f, 0.15f }, false);
+	m_uiManager.addElement<ShadowedBox>(sb, L"Shadowed Box 1");
+	m_uiManager.drawDebugOutline(m_uiManager.getElement<ShadowedBox>(L"Shadowed Box 1"), false);
 
 	/*m_uiManager.addElement<RelativeBox>(relative_box_1, L"Relative Box 1");
 	m_uiManager.addElement<RelativeBox>(relative_box_2, L"Relative Box 2");
@@ -62,16 +44,8 @@ uint32_t UITestMode::initializeMode(winrt::Windows::Foundation::Size windowSize,
 	m_uiManager.addElement<RelativeBox>(relative_box_5, L"Relative Box 5");*/
 	//m_uiManager.addElement<RelativeBox>(relative_box_6, L"Relative Box 6");
 
-	/*m_uiManager.addElement<Box>(box_1, L"Box 1");
-	m_uiManager.addElement<Box>(box_2, L"Box 2");
-	m_uiManager.addElement<Box>(box_3, L"Box 3");
-	m_uiManager.addElement<Box>(box_4, L"Box 4");*/
-
-	//m_uiManager.addElement<Line>(line1, L"Line 1");
-	//m_uiManager.addElement<Line>(line2, L"Line 2");
-
-	TextButton butt(windowSize, { 0.5f, 0.5f }, { 0.1f, 0.1f }, L"Test");
-	m_uiManager.addElement<TextButton>(butt, L"Button 1");
+	//CheckBox cb(windowSize, { 0.5f, 0.5f }, { screen_ratio * 0.1f, 0.1f });
+	//m_uiManager.addElement<CheckBox>(cb, L"Check Box 1");
 
 	//When this mode is initialzed we go into a state of CanTransfer and Active.
 	//Can Transfer allows us to use the esc. key to go back to the settings menu

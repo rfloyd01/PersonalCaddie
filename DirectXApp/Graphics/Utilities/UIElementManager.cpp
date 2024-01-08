@@ -24,6 +24,8 @@ UIElementManager::UIElementManager()
 		m_gridLocations.push_back(vec);
 	}
 
+	m_debugBoxCount = 0;
+
 	//DEBUG: Uncomment the below lines to draw lines representing the grid on screen.
 	//This is helpful for confirming which elements can be interacted with by the mouse
 	/*for (int i = 0; i < GRID_WIDTH; i++)
@@ -327,5 +329,22 @@ void UIElementManager::refreshGrid()
 	{
 		std::vector<std::shared_ptr<ManagedUIElement>>& elementVector = m_uiElements.at(static_cast<UIElementType>(i));
 		for (int j = 0; j < elementVector.size(); j++) populateGridLocations(elementVector[j]);
+	}
+}
+
+void UIElementManager::drawDebugOutline(std::shared_ptr<UIElement> element, bool draw_children)
+{
+	//This method draws red lines around the edge of the given UI Element
+	//and places a small circle in the center to confirm that the element
+	//looks correct. This effect can also be cascaded down to all child
+	//elements if desired.
+	Box debug(getScreenSize(), element->getAbsoluteLocation(), element->getAbsoluteSize(), UIColor::Red, UIShapeFillType::NoFill);
+	Ellipse ell(getScreenSize(), element->getAbsoluteLocation(), { MAX_SCREEN_HEIGHT / MAX_SCREEN_WIDTH * 0.001f, 0.001f }, false, UIColor::Red);
+	addElement<Box>(debug, L"Debug " + std::to_wstring(++m_debugBoxCount));
+	addElement<Ellipse>(ell, L"Debug Ellipse " + std::to_wstring(m_debugBoxCount));
+
+	if (draw_children)
+	{
+		for (int i = 0; i < element->getChildren().size(); i++) drawDebugOutline(element->getChildren()[i], draw_children);
 	}
 }

@@ -44,7 +44,7 @@ protected:
 	virtual void onScrollDown() override;
 	void calcualteScrollBarLocation(winrt::Windows::Foundation::Size windowSize);
 
-	float m_buttonSize; //the size of the scroll buttons relative to the height of the text box
+	float m_buttonHeight; //the height of the scroll buttons relative to the height of the text box
 	bool m_highlightableText;
 	bool m_dynamicSize;
 

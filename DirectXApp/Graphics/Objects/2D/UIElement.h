@@ -75,13 +75,10 @@ public:
 	UIShape* getShape() { return &m_shape; }
 	UIText* getText() { return &m_text; }
 
-	//TODO: The getabsolutesize and getabsolutelocation methods may need to 
-	//be changed so that the actual absolute values are given instead of
-	///the new relative values
-	DirectX::XMFLOAT2 getAbsoluteSize() { return m_size; }
-	virtual void setAbsoluteSize(DirectX::XMFLOAT2 size); //some elements that are tied to specific locations of other elements need to override this method
+	DirectX::XMFLOAT2 getAbsoluteSize();
+	void setAbsoluteSize(DirectX::XMFLOAT2 size);
 
-	DirectX::XMFLOAT2 getAbsoluteLocation() { return m_location; }
+	DirectX::XMFLOAT2 getAbsoluteLocation();
 	void setAbsoluteLocation(DirectX::XMFLOAT2 location);
 
 	std::vector<std::shared_ptr<UIElement> > const& getChildren() { return p_children; }
@@ -118,7 +115,7 @@ protected:
 	DirectX::XMFLOAT2                        m_location; //location of the center of the element  as a ratio of the current screen size
 	DirectX::XMFLOAT2                        m_size; //size of the ui element as a ratio of the current screen size
 	DirectX::XMFLOAT2                        m_absoluteDistanceToScreenCenter; //Represents the absolute distance from the center of the element to the center of the screen when it's fully maximized
-	float                                    m_horizontalSizeMultiplier; //the ratio of the element's width to its height
+	DirectX::XMFLOAT2                        m_sizeMultiplier; //the ratio of the element's width to its height
 	float                                    m_horizontalDriftMultiplier; //the ratio of the horizontal distance from the center of the element to the center vertical axis and the elements height when the screen is maximized
 	float                                    m_fontSize; //The desired font size for text as a ratio of the current screen size
 	bool                                     m_useAbsoluteCoordinates; //For some elements it makes sense to use the edges of the screen as a reference as opposed to the center

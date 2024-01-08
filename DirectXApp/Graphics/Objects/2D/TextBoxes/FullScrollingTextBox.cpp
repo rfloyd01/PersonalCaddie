@@ -21,24 +21,34 @@ FullScrollingTextBox::FullScrollingTextBox(winrt::Windows::Foundation::Size wind
 	m_highlightableText = highlightableText;
 	m_dynamicSize = dynamicSize;
 
+	//Then set the screen size dependent variables. The size variable
+	//encompasses the text box, as well as the buttons and scroll bar
+	//which means that the center of the element will be offset a little
+	//bit from the actual center of the text box.
+	updateLocationAndSize(location, size);
+	m_fontSize = fontSize;
+
+	//A scrolling text box features two arrow buttons, one up and one down.
+	//Both of these buttons are squares. Create these elements first to 
+	//help eith placement and sizing of the other elements.
+	float screen_ratio = MAX_SCREEN_HEIGHT / MAX_SCREEN_WIDTH;
+	m_buttonHeight = 0.125f * size.y; //for now make both buttons 1/8th the height of the box
+	float buttonWidth = screen_ratio * m_buttonHeight;
+
+	ArrowButton upButton(windowSize, { location.x + (size.x - buttonWidth) / 2.0f, location.y - (size.y - m_buttonHeight) / 2.0f }, { buttonWidth, m_buttonHeight }, false, true);
+	ArrowButton downButton(windowSize, { location.x + (size.x - buttonWidth) / 2.0f, location.y + (size.y - m_buttonHeight) / 2.0f }, { buttonWidth, m_buttonHeight }, true, true);
+
 	//If the dynamic size variable is chosen then we won't actually know the width
 	//of the text box until after we get the text pixel dimensions from the renderer.
 	//Either way though, the textBox is the first child element.
-	ShadowedBox textBox(windowSize, location, size, false);
-
-	//A scrolling text box also features two arrow buttons, one up and one down.
-	//Both of these buttons are squares
-	m_buttonSize = 0.1 * size.y; //for now make both buttons 1/10th the height of the box
-	ArrowButton upButton(windowSize, { location.x + (size.x + m_buttonSize) / (float)2.0, location.y - (size.y - m_buttonSize) / (float)2.0 }, { m_buttonSize, m_buttonSize }, false, true);
-	ArrowButton downButton(windowSize, { location.x + (size.x + m_buttonSize) / (float)2.0, location.y + (size.y - m_buttonSize) / (float)2.0 }, { m_buttonSize, m_buttonSize }, true, true);
+	ShadowedBox textBox(windowSize, { location.x - buttonWidth / 2.0f, location.y }, { size.x - buttonWidth, size.y }, false);
 
 	//Finally, there's a progress bar between the buttons that shows how much of the text has
-	//been scrolled through. This progress bar is composed of a background shadow box and a
-	//foreground shadow box. The Foreground shadow box will need to potentially change in size
-	//as the window get's bigger and smaller.
+	//been scrolled through. This progress bar is composed of two elements: an outlined box that
+	//acts as a background, and a shadowed box which shows the actual progress.
 	float shadowPixels = (((ShadowedBox*)upButton.getChildren()[0].get())->getShadowWidth() + 1.0f) / windowSize.Width; //get the relative width of the button shadows
-	OutlinedBox progressBarBackground(windowSize, { location.x + (size.x + m_buttonSize) / (float)2.0 + shadowPixels / 2.0f, location.y + shadowPixels / 2.0f }, { m_buttonSize + shadowPixels, size.y - 2.0f * m_buttonSize - shadowPixels }, true, UIColor::Gray);
-	ShadowedBox progressBarForeground(windowSize, { location.x + (size.x + m_buttonSize) / (float)2.0 - shadowPixels, location.y }, { m_buttonSize - 2.0f / windowSize.Width, (size.y - 2.0f * m_buttonSize) / 2.0f }, true, UIColor::PaleGray); //y size and location will change
+	OutlinedBox progressBarBackground(windowSize, { location.x + (size.x + m_buttonHeight) / (float)2.0 + shadowPixels / 2.0f, location.y + shadowPixels / 2.0f }, { m_buttonHeight + shadowPixels, size.y - 2.0f * m_buttonHeight - shadowPixels }, true, UIColor::Gray);
+	ShadowedBox progressBarForeground(windowSize, { location.x + (size.x + m_buttonHeight) / (float)2.0 - shadowPixels, location.y }, { m_buttonHeight - 2.0f / windowSize.Width, (size.y - 2.0f * m_buttonHeight) / 2.0f }, true, UIColor::PaleGray); //y size and location will change
 
 	p_children.push_back(std::make_shared<ShadowedBox>(textBox));
 	p_children.push_back(std::make_shared<ArrowButton>(upButton));
@@ -54,11 +64,6 @@ FullScrollingTextBox::FullScrollingTextBox(winrt::Windows::Foundation::Size wind
 	m_needTextRenderDimensions = true; //alerts the current mode that this element will need text pixels from the renderer at some point
 	m_topText = 5; //Set the first line of text as the current top
 	m_lastSelectedText = L"";
-
-	//set screen size dependent variables
-	m_location = location;
-	m_size = size; //if m_dynamicSize is set to true then this will be overridden
-	m_fontSize = fontSize;
 
 	//Once everything is set we add text to the text box
 	addText(message, windowSize, m_highlightableText, false);
@@ -264,11 +269,12 @@ void FullScrollingTextBox::repositionText()
 	auto downButtonLocation = p_children[2]->getAbsoluteLocation();
 
 	//Need to account for the "drift" of square elements in the scroll bar and button
-	float driftCorrectedButtonLocation = m_location.x + (m_size.x + progressBarBackgroundSize.x) / 2.0f - ((ShadowedBox*)p_children[2]->getChildren()[0].get())->fixSquareBoxDrift(currentWindowSize);
+	//float driftCorrectedButtonLocation = m_location.x + (m_size.x + progressBarBackgroundSize.x) / 2.0f - ((ShadowedBox*)p_children[2]->getChildren()[0].get())->fixSquareBoxDrift(currentWindowSize);
+	float driftCorrectedButtonLocation = 0.0f;
 
-	p_children[1]->setAbsoluteLocation({ driftCorrectedButtonLocation, m_location.y - (m_size.y - m_buttonSize) / 2.0f });
-	p_children[2]->setAbsoluteLocation({ driftCorrectedButtonLocation, m_location.y + (m_size.y - m_buttonSize) / 2.0f });
-	p_children[3]->setAbsoluteSize({ progressBarBackgroundSize.x, m_size.y - 2.0f * m_buttonSize});
+	p_children[1]->setAbsoluteLocation({ driftCorrectedButtonLocation, m_location.y - (m_size.y - m_buttonHeight) / 2.0f });
+	p_children[2]->setAbsoluteLocation({ driftCorrectedButtonLocation, m_location.y + (m_size.y - m_buttonHeight) / 2.0f });
+	p_children[3]->setAbsoluteSize({ progressBarBackgroundSize.x, m_size.y - 2.0f * m_buttonHeight });
 	p_children[3]->setAbsoluteLocation({ driftCorrectedButtonLocation, m_location.y });
 
 	float shadowPixels = (((ShadowedBox*)p_children[2]->getChildren()[0].get())->getShadowWidth() + 1.0) / currentWindowSize.Width; //get the relative width of the shadow box shadow for the buttons
@@ -279,11 +285,11 @@ void FullScrollingTextBox::repositionText()
 	float textProgress = (float)m_displayedText / (float)(p_children.size() - 5);
 	if (textProgress > 1)
 	{
-		p_children[4]->setAbsoluteSize({ progressBarBackgroundSize.x, 0.98f * (m_size.y - 2.0f * m_buttonSize) });
+		p_children[4]->setAbsoluteSize({ progressBarBackgroundSize.x, 0.98f * (m_size.y - 2.0f * m_buttonHeight) });
 	}
 	else
 	{
-		p_children[4]->setAbsoluteSize({ progressBarBackgroundSize.x, textProgress * (m_size.y - 2.0f * m_buttonSize) });
+		p_children[4]->setAbsoluteSize({ progressBarBackgroundSize.x, textProgress * (m_size.y - 2.0f * m_buttonHeight) });
 		calcualteScrollBarLocation(currentWindowSize);
 	}
 }
@@ -364,7 +370,7 @@ void FullScrollingTextBox::calcualteScrollBarLocation(winrt::Windows::Foundation
 	scrollBarAbsoluteHeightFromBottom /= windowSize.Height;
 	scrollBarAbsoluteHeightFromBottom -= -shadowHeight / windowSize.Height;
 
-	p_children[4]->setAbsoluteLocation({ scrollProgressBarAbsoluteLocation.x, (m_location.y + m_size.y / 2.0f) - m_buttonSize - scrollBarAbsoluteHeightFromBottom });
+	p_children[4]->setAbsoluteLocation({ scrollProgressBarAbsoluteLocation.x, (m_location.y + m_size.y / 2.0f) - m_buttonHeight - scrollBarAbsoluteHeightFromBottom });
 	p_children[4]->resize(windowSize);
 }
 

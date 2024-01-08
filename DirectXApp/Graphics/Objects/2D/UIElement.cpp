@@ -52,7 +52,7 @@ void UIElement::resize(winrt::Windows::Foundation::Size windowSize)
 			//height to the screen's current width, with the screen height getting the heigher weigtht.
 			//The pixel width of the element is just a simple multiple of the height after it's calculated.
 			element_pixel_dimensions.y = m_size.y / (windowSize.Width + windowSize.Height) * (2 * windowSize.Width * windowSize.Height);
-			element_pixel_dimensions.x = m_horizontalSizeMultiplier * element_pixel_dimensions.y;
+			element_pixel_dimensions.x = m_sizeMultiplier.x * element_pixel_dimensions.y;
 
 			//Second, account for the "drift" effect of the center of the element. This effect occurs
 			//since the dimensions are co-dependent on the height AND width of the current screen as opposed
@@ -268,6 +268,7 @@ void UIElement::updateLocationAndSize(DirectX::XMFLOAT2 location, DirectX::XMFLO
 	//parameters to the relative coordinates needed to correct screen placement.
 	m_size = size;
 	m_location = location;
+
 	if (m_useAbsoluteCoordinates) return; //Any elements using absolute coordinates don't need a conversion
 
 	convertAbsoluteCoordinatesToRelativeCoordinates();
@@ -304,9 +305,7 @@ void UIElement::convertAbsoluteCoordinatesToRelativeCoordinates()
 	//coordinates that will give the desired result.
 	float desired_pixel_height = m_size.y * MAX_SCREEN_HEIGHT;
 	float actual_pixel_height = m_size.y / (MAX_SCREEN_WIDTH + MAX_SCREEN_HEIGHT) * (2 * MAX_SCREEN_WIDTH * MAX_SCREEN_HEIGHT);
-
-	float height_multiplier = desired_pixel_height / actual_pixel_height;
-	float relative_height = m_size.y * height_multiplier;
+	m_sizeMultiplier.y = desired_pixel_height / actual_pixel_height;
 
 	//Since the relative height was just changed, the relative Y location
 	//must also be changed to reflect this. This is done by taking the absolute
@@ -317,12 +316,21 @@ void UIElement::convertAbsoluteCoordinatesToRelativeCoordinates()
 	//value from the absolute midpoint of the screen. The line below shows
 	//that this reduces down to a very simple equation, although, it was actually
 	//pretty tricky to figure out.
-	m_location.y = 0.5f - relative_height / m_size.y * (0.5f - m_location.y);
-	m_size.y = relative_height;
+	m_location.y = 0.5f - m_sizeMultiplier.y * (0.5f - m_location.y);
+	m_size.y *= m_sizeMultiplier.y;
 
 	//Set the horizontal multiplier based on the original absolute coordinates
 	float desired_pixel_width = m_size.x * MAX_SCREEN_WIDTH;
-	m_horizontalSizeMultiplier = desired_pixel_width / desired_pixel_height;
+	m_sizeMultiplier.x = desired_pixel_width / desired_pixel_height;
+}
+
+DirectX::XMFLOAT2 UIElement::getAbsoluteSize()
+{
+	//If the UI Element uses relative coordinates instead of absolute coordinates
+	//then the y component of the m_size variable needs to be put back to its
+	//original value before returning.
+	if (m_useAbsoluteCoordinates) return m_size;
+	else return { m_size.x, m_size.y / m_sizeMultiplier.y };
 }
 
 void UIElement::setAbsoluteSize(DirectX::XMFLOAT2 size)
@@ -342,6 +350,15 @@ void UIElement::setAbsoluteSize(DirectX::XMFLOAT2 size)
 		auto childAbsoluteSize = p_children[i]->getAbsoluteSize();
 		p_children[i]->setAbsoluteSize({ childAbsoluteSize.x * sizeRatio.x, childAbsoluteSize.y * sizeRatio.y});
 	}
+}
+
+DirectX::XMFLOAT2 UIElement::getAbsoluteLocation()
+{
+	//If the UI Element uses relative coordinates instead of absolute coordinates
+	//then the y component of the m_location variable needs to be shifted back to its
+	//original value before returning.
+	if (m_useAbsoluteCoordinates) return m_location;
+	else return { m_location.x, 0.5f - (0.5f - m_location.y) / m_sizeMultiplier.y };
 }
 
 void UIElement::setAbsoluteLocation(DirectX::XMFLOAT2 location)

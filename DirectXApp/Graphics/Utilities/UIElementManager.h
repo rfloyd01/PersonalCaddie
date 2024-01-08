@@ -25,6 +25,8 @@ enum class UIElementType
 	ALERT,
 	COVER_BOX,
 	RELATIVE_BOX,
+	SHADOWED_BOX,
+	ELLIPSE,
 	END
 };
 
@@ -161,6 +163,8 @@ public:
 	//Get Methods
 	std::map<UIElementType, std::vector<std::shared_ptr<ManagedUIElement> > > const& getElementsMap() { return m_uiElements; } //useful for rendering elements
 
+	void drawDebugOutline(std::shared_ptr<UIElement> element, bool draw_children = false);
+
 private:
 	//Data Structures
 	std::map<UIElementType, std::vector<std::shared_ptr<ManagedUIElement> > > m_uiElements;
@@ -176,6 +180,7 @@ private:
 	winrt::Windows::Foundation::Size m_windowSize; //Keeps track of the current size of the window. UIElements have dimensions that are relative to the window size
 	//static std::vector<UIElementType> m_textUpdateElements; --deprecated
 	long long m_alertTimer = 2000; //The amount of time (in milliseconds) that alerts remain on screen before disappearing
+	int m_debugBoxCount = 0; //COunts the number of debugging boxes currently being rendered
 
 	void populateGridLocations(std::shared_ptr<ManagedUIElement> managedElement);
 
@@ -247,4 +252,10 @@ private:
 
 	template<>
 	UIElementType type_to_UIElementType<RelativeBox>() { return UIElementType::RELATIVE_BOX; }
+
+	template<>
+	UIElementType type_to_UIElementType<ShadowedBox>() { return UIElementType::SHADOWED_BOX; }
+
+	template<>
+	UIElementType type_to_UIElementType<Ellipse>() { return UIElementType::ELLIPSE; }
 };
