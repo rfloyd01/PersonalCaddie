@@ -87,7 +87,15 @@ void UIElementManager::updateScreenSize(winrt::Windows::Foundation::Size newWind
 	for (int i = 0; i < static_cast<int>(UIElementType::END); i++)
 	{
 		std::vector<std::shared_ptr<ManagedUIElement>>& elements = m_uiElements.at(static_cast<UIElementType>(i));
-		for (int j = 0; j < elements.size(); j++) elements[j]->element->resize(m_windowSize);
+		for (int j = 0; j < elements.size(); j++)
+		{
+			elements[j]->element->resize(m_windowSize);
+
+			//Some elements are dynamically sized based on the text inside of them. If calling
+			//the resize method on an element causes the NeedTextPixels flag to appear in the 
+			//element's state, the element gets added to the m_updateText vector
+			if (elements[j]->element->getState() & UIElementState::NeedTextPixels) m_updateText.push_back(elements[j]->element);
+		}
 	}
 }
 
@@ -221,20 +229,20 @@ void UIElementManager::checkForTextResize()
 	}
 }
 
-std::vector<UIText*> UIElementManager::getResizeText()
-{
-	//The m_updateText array holds entire UIElements, however, we really only care about the UIText elements inside
-	//of the UIElements. Extract any UIText that we need, and add it to a new vector which gets returned from this
-	//method.
-	std::vector<UIText*> textElements;
-	for (int i = 0; i < m_updateText.size(); i++)
-	{
-		auto elementText = m_updateText[i]->setTextDimension();
-		for (int j = 0; j < elementText.size(); j++) textElements.push_back(elementText[j]);
-	}
-
-	return textElements; //return a copy of this temporary vector
-}
+//std::vector<UIText*> UIElementManager::getResizeText()
+//{
+//	//The m_updateText array holds entire UIElements, however, we really only care about the UIText elements inside
+//	//of the UIElements. Extract any UIText that we need, and add it to a new vector which gets returned from this
+//	//method.
+//	std::vector<UIText*> textElements;
+//	for (int i = 0; i < m_updateText.size(); i++)
+//	{
+//		auto elementText = m_updateText[i]->setTextDimension(); //get the actual UIText elements with the text needing updating
+//		for (int j = 0; j < elementText.size(); j++) textElements.push_back(elementText[j]);
+//	}
+//
+//	return textElements; //return a copy of this temporary vector
+//}
 
 void UIElementManager::applyTextResizeUpdates()
 {
@@ -244,7 +252,6 @@ void UIElementManager::applyTextResizeUpdates()
 	{
 		m_updateText[i]->repositionText(); //see if any text needs to be repositioned after getting new dimensions
 		m_updateText[i]->resize(m_windowSize); //and then resize the ui element
-		//remove the 
 	}
 
 	//After all updates are made, clear out the m_updateText vector

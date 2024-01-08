@@ -4,9 +4,6 @@
 
 #define MAX_HEIGHT 2160.0f
 #define MAX_WIDTH 3840.0f
-//#define MAX_HEIGHT 1368.0f
-//#define MAX_WIDTH 2560.0f
-
 
 class RelativeBox : public Box
 {
@@ -15,6 +12,7 @@ public:
 		Box(windowSize, location, size, color, fill, isSquare)
 	{
 		convertAbsoluteCoordinatesToRelativeCoordinates(size);
+
 		//Using the maximum window sizes, calculate the relative distance that the right edge
 		//of the box would be from a vertical centerline (in terms of percentage of window length)
 		//and calculate the relative distance that the top edge of the box would be from a 

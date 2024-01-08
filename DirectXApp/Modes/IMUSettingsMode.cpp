@@ -587,7 +587,7 @@ void IMUSettingsMode::update()
 	if (!dropDownsSet)
 	{
 		//Before attempting to move anything, make sure that all the text boxes have been resized.
-		//Due to the timing of when the drop downs get createded in the main render loop, a full
+		//Due to the timing of when the drop downs get created in the main render loop, a full
 		//render cycle will pass before they get resized.
 		if (m_uiManager.getElement<DropDownMenu>(L"Acc Setting Drop Down Menu 1")->getChildren()[0]->getAbsoluteSize().x == m_uiManager.getElement<DropDownMenu>(L"Acc Setting Drop Down Menu 1")->getChildren()[1]->getAbsoluteSize().x) return;
 
@@ -625,10 +625,10 @@ void IMUSettingsMode::update()
 				if (dropDown->getSelectedOption() == L"") m_uiManager.removeElement<DropDownMenu>(dropdown_name + std::to_wstring(type)); //remove the drop down if its empty
 				else
 				{
-					//TODO: Update the state of the Dropdown (and its scroll box) to include the NeedTextPixels flag.
-					//We need to do this because of some legacy code which needed a full iteration of the render loop to
-					//go by before we could force a resize to happen. I'll need to change the resize method of the UIElement
-					//class at some point to get rid of this feature.
+					//Do to the nature of the drop downs not having their location set until after the
+					//size is created, we need to reset the NeedTextPixels flag here so that the resize
+					//method of each drop box can be called for relocation (and not actual resizing)
+					//purposes
 					dropDown->updateState(UIElementState::NeedTextPixels); //test, see if this helps invisibility issue
 					dropDown->getChildren()[2]->updateState(UIElementState::NeedTextPixels);
 
@@ -682,8 +682,8 @@ void IMUSettingsMode::update()
 						dropDown->setAbsoluteLocation({ (1.0f / 6.0f + location) - marginWidth - dropDown->getAbsoluteSize().x / 2.0f, 0.1f * (row + 3.0f) + 0.23f });
 
 						//after setting the location for each drop down it can be resized
-						//firstDropDown->resize(m_uiManager.getScreenSize()); //since only the location has changed, not the size, this is ok
-						//dropDown->resize(m_uiManager.getScreenSize()); //since only the location has changed, not the size, this is ok
+						firstDropDown->resize(m_uiManager.getScreenSize()); //since only the location has changed, not the size, this is ok
+						dropDown->resize(m_uiManager.getScreenSize()); //since only the location has changed, not the size, this is ok
 
 						//We also place text overlays above each box letting the user know what the options represent
 						TextOverlay one(dropDown->getCurrentWindowSize(), { dropDown->getAbsoluteLocation().x, dropDown->getAbsoluteLocation().y - dropDown->getAbsoluteSize().y }, { 0.25f, dropDown->getAbsoluteSize().y * 2.0f }, getSettingString(type), 0.025,

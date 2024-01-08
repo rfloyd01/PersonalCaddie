@@ -67,8 +67,8 @@ uint32_t UITestMode::initializeMode(winrt::Windows::Foundation::Size windowSize,
 	m_uiManager.addElement<Box>(box_3, L"Box 3");
 	m_uiManager.addElement<Box>(box_4, L"Box 4");*/
 
-	m_uiManager.addElement<Line>(line1, L"Line 1");
-	m_uiManager.addElement<Line>(line2, L"Line 2");
+	//m_uiManager.addElement<Line>(line1, L"Line 1");
+	//m_uiManager.addElement<Line>(line2, L"Line 2");
 
 	//When this mode is initialzed we go into a state of CanTransfer and Active.
 	//Can Transfer allows us to use the esc. key to go back to the settings menu

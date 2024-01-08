@@ -6,21 +6,48 @@ std::function<void(ModeAction, void*)> Mode::m_mode_screen_handler = nullptr;
 
 void Mode::uiUpdate()
 {
-	//Since all modes contain UIElements, they all share the same method for updating them.
-	//This method gets called in every single iteration of the main render loop.
+	//The uiUpdate method is used to make updates to UI Elements that they 
+	//can't make themselves. For example, if an element needs information
+	//from the renderer class that will happen here. If an element has been
+	//clicked and needs to interact with the current mode, that will happen here
+	//as well for example
 
 	//First see if any UIElements need information from the renderer class
-	m_uiManager.checkForTextResize();
-	if (m_uiManager.elementsCurrentlyNeedingTextUpdate() > 0)
+	//m_uiManager.checkForTextResize();
+	//if (m_uiManager.elementsCurrentlyNeedingTextUpdate() > 0)
+	//{
+	//	auto text = m_uiManager.getResizeText();
+	//	m_mode_screen_handler(ModeAction::RendererGetTextSize, (void*)&text);
+
+	//	//Once the text dimensions have been received we can reposition the text and resize the element as necessary
+	//	m_uiManager.applyTextResizeUpdates();
+	//}
+
+	//If there are UIText objects that need their sizes updated from the renderer
+	//class, add them to a new vector, send it to the rendered for updating, and
+	//once that's complete have each UI Element update itself as necessary
+	auto textUpdateElements = m_uiManager.getTextUpdateElements();
+	if (textUpdateElements.size() > 0)
 	{
-		auto text = m_uiManager.getResizeText();
-		m_mode_screen_handler(ModeAction::RendererGetTextSize, (void*)&text);
+		//First, get all UIText objects needing updating
+		std::vector<UIText*> updateText;
+		for (int i = 0; i < textUpdateElements.size(); i++)
+		{
+			auto elementText = textUpdateElements[i]->setTextDimension(); //get the actual UIText elements with the text needing updating
+			for (int j = 0; j < elementText.size(); j++) updateText.push_back(elementText[j]);
+		}
 
-		//Once the text dimensions have been received we can reposition the text and resize the element as necessary
-		m_uiManager.applyTextResizeUpdates();
+		//Then send these UIText objects to the renderer to get 
+		//their sizes updated based on the current screen size
+		m_mode_screen_handler(ModeAction::RendererGetTextSize, (void*)&updateText);
+
+		//Once the text dimensions have been received the UI Manager can reposition
+		//the text and resize the element as necessary
+	    m_uiManager.applyTextResizeUpdates();
 	}
-
-	//Then see if any UIElements currently need to have an action checked
+	
+	//If any clickable UI Elements have been clicked, their effects
+	//on the current mode happens here.
 	auto actionElements = m_uiManager.getActionElements();
 	for (int i = actionElements.size() - 1; i >= 0; i--) //iterate backwards so we can pop each action from the back when complete
 	{

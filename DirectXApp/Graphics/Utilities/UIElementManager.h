@@ -70,11 +70,10 @@ public:
 		//Then add the element to the back of it's appropriate array in the m_uiElements map
 		m_uiElements.at(type).push_back(managedElement);
 
-		//Once the ManagedUIElement is created, we take the shared pointer for the actual UIElement and at
-		//it to the render vector. This vector is what ultimately gets passed to the render class to create
-		//visuals on screen. The order of the elements in this vector matters (things rendered at the back of 
-		//the vector will be rendered on top of elements earlier in the vector in the case of overlap).
-		//m_renderElements.push_back(managedElement->element);
+		//Some UI Elements need information from the renderer class to size themselves
+		//when first created. If the newly added element has the needTextPixels flag set in its
+		//state then add it to the m_updateText vector.
+		if (managedElement->element->getState() & UIElementState::NeedTextPixels) m_updateText.push_back(managedElement->element);
 	}
 
 	template <typename T>
@@ -87,10 +86,6 @@ public:
 
 		if (it != m_uiElements.at(type).end())
 		{
-			//Remove the UIElement from the render vector first.
-			/*auto render_it = std::find(m_renderElements.begin(), m_renderElements.end(), it->get()->element);
-			m_renderElements.erase(render_it);*/
-
 			for (int i = 0; i < it->get()->grid_locations.size(); i++)
 			{
 				//The grid vectors aren't ordered so we need to search for the appropriate
@@ -112,7 +107,6 @@ public:
 
 	//Get Methods for rendering and updating
 	std::vector<std::vector<std::vector<std::shared_ptr<ManagedUIElement> > > > & getElementGrid() { return m_gridLocations; } //not a const reference as we need the ability to change the state of UIElements in teh grid
-	//std::vector<std::shared_ptr<UIElement> > const& getRenderElements() { return m_renderElements; }
 	std::vector<std::shared_ptr<ManagedUIElement> > & getActionElements() { return m_actionElements; }
 
 	//Methods for interactions of UIElements with the Mouse
@@ -158,9 +152,10 @@ public:
 
 	//Automatic Text Updating Methods
 	void checkForTextResize();
-	std::vector<UIText*> getResizeText();
+	//std::vector<UIText*> getResizeText(); //Deprecated
 	void applyTextResizeUpdates();
 	int elementsCurrentlyNeedingTextUpdate() { return m_updateText.size(); }
+	std::vector<std::shared_ptr<UIElement>>& getTextUpdateElements() { return m_updateText; }
 	void refreshGrid();
 
 	//Get Methods
