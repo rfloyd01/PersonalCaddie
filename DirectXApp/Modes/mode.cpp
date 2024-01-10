@@ -65,10 +65,10 @@ const UIColor Mode::getBackgroundColor()
 	return m_backgroundColor;
 }
 
-void Mode::createAlert(std::wstring message, UIColor color, winrt::Windows::Foundation::Size windowSize, long long duration)
+void Mode::createAlert(std::wstring message, UIColor color, long long duration)
 {
 	//Creates an alert to be displayed on the screen
-	Alert newAlert(windowSize, { UIConstants::AlertTextLocationX, UIConstants::AlertTextLocationY }, { UIConstants::AlertTextSizeX, UIConstants::AlertTextSizeY },
+	Alert newAlert(m_uiManager.getScreenSize(), {UIConstants::AlertTextLocationX, UIConstants::AlertTextLocationY}, {UIConstants::AlertTextSizeX, UIConstants::AlertTextSizeY},
 		message, UIConstants::AlertTextPointSize, { color }, { 0, (unsigned int)message.length() }, UITextJustification::UpperCenter, duration);
 	m_uiManager.addElement<Alert>(newAlert, message.substr(0, 10)); //give the alert a name equal to the first 10 characters of it's message
 }

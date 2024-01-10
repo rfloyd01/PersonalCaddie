@@ -14,7 +14,9 @@ public:
 	virtual void handleKeyPress(winrt::Windows::System::VirtualKey pressedKey) override;
 
 private:
-	void initializeTextOverlay(winrt::Windows::Foundation::Size windowSize);
+	void initializeTextOverlay();
+
+	void uiElementStateChangeHandler(std::shared_ptr<ManagedUIElement> element);
 
 	float m_angle = 0;
 

@@ -7,9 +7,11 @@
    2: Scrolling Text box that holds the selectable options
 */
 
-DropDownMenu::DropDownMenu(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, std::wstring message,
+DropDownMenu::DropDownMenu(std::shared_ptr<winrt::Windows::Foundation::Size> windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, std::wstring message,
 	float fontSize, int optionsDisplayed, bool isInverted, std::vector<UIColor> textColor, std::vector<unsigned long long> textColorLocations, UITextJustification justification, UIColor textFillColor, bool isSquare, UIColor outlineColor, UIColor shadowColor)
 {
+	m_screenSize = windowSize;
+
 	//The Drop down menu uses a full scrolling text box whose width is determined by the length of
 	//the longest option contained in it. The width of the text box for the drop down menu will
 	//match this width, which means, we can't know the appropriate width of the text box until 
@@ -62,13 +64,13 @@ void DropDownMenu::clearAllOptions()
 	((FullScrollingTextBox*)getChildren()[2].get())->setLastSelectedText(L""); //since there are no options set an empty string as the currently selected option
 }
 
-void DropDownMenu::setNewOptions(std::wstring options, winrt::Windows::Foundation::Size windowSize, bool highlightable)
+void DropDownMenu::setNewOptions(std::wstring options, bool highlightable)
 {
 	//Overwrite the options currently in the drop down menu with the given options.
 	//The options string here should be a string delimited with \n characters between
 	//each option to be displayed.
 	clearAllOptions();
-	((FullScrollingTextBox*)getChildren()[2].get())->addText(options, windowSize, highlightable);
+	((FullScrollingTextBox*)getChildren()[2].get())->addText(options, highlightable);
 
 	//Setting new options will force the Drop down menu to resize to fit the longest
 	//of the new options

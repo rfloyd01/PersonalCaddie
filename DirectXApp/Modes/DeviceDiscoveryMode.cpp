@@ -17,9 +17,9 @@ uint32_t DeviceDiscoveryMode::initializeMode(winrt::Windows::Foundation::Size wi
 	std::wstring buttonText = L"Connect to Device";
 	std::wstring scrollText = L"Start the device watcher to begin enumerating nearby BluetoothLE devices...";
 
-	FullScrollingTextBox deviceWatcherResults(windowSize, { 0.5, 0.575 }, { 0.85, 0.35 }, scrollText, 0.05f, false, false);
-	TextButton deviceWatcherButton(windowSize, { 0.4, 0.25 }, { 0.12, 0.1 }, L"Start Device Watcher");
-	TextButton connectButton(windowSize, { 0.6, 0.25 }, { 0.12, 0.1 }, buttonText);
+	FullScrollingTextBox deviceWatcherResults(m_uiManager.getScreenSize(), {0.5, 0.575}, {0.85, 0.35}, scrollText, 0.05f, false, false);
+	TextButton deviceWatcherButton(m_uiManager.getScreenSize(), { 0.4, 0.25 }, { 0.12, 0.1 }, L"Start Device Watcher");
+	TextButton connectButton(m_uiManager.getScreenSize(), { 0.6, 0.25 }, { 0.12, 0.1 }, buttonText);
 
 	//Before initializing, see if we're currently connected to a BLE device or not as it will effect
 	//the options available to use. Also, see if the device watcher is already turned on, if so, turn it off.
@@ -42,7 +42,7 @@ uint32_t DeviceDiscoveryMode::initializeMode(winrt::Windows::Foundation::Size wi
 		//updated to say "Disconnect" and be enabled. The device watcher button whould be disabled.
 		connectButton.updateText(L"Disconnect from Device");
 		deviceWatcherResults.clearText();
-		deviceWatcherResults.addText(L"Disconnect from the current device to use the device watcher...", windowSize, false, false);
+		deviceWatcherResults.addText(L"Disconnect from the current device to use the device watcher...", false, false);
 		deviceWatcherButton.setState(UIElementState::Disabled); //disable until we disconnect from the current device
 	}
 	else connectButton.setState(UIElementState::Disabled); //The button is disabled until an actual device is selected
@@ -51,7 +51,7 @@ uint32_t DeviceDiscoveryMode::initializeMode(winrt::Windows::Foundation::Size wi
 	m_uiManager.addElement<TextButton>(deviceWatcherButton, L"Device Watcher Button");
 	m_uiManager.addElement<TextButton>(connectButton, L"Connect Button");
 
-	initializeTextOverlay(windowSize);
+	initializeTextOverlay();
 
 	return ModeState::CanTransfer;
 }
@@ -83,17 +83,17 @@ void DeviceDiscoveryMode::handleKeyPress(winrt::Windows::System::VirtualKey pres
 	}
 }
 
-void DeviceDiscoveryMode::initializeTextOverlay(winrt::Windows::Foundation::Size windowSize)
+void DeviceDiscoveryMode::initializeTextOverlay()
 {
 	//Title information
 	std::wstring title_message = L"Device Discovery";
-	TextOverlay title(windowSize, { UIConstants::TitleTextLocationX, UIConstants::TitleTextLocationY }, { UIConstants::TitleTextSizeX, UIConstants::TitleTextSizeY },
+	TextOverlay title(m_uiManager.getScreenSize(), { UIConstants::TitleTextLocationX, UIConstants::TitleTextLocationY }, { UIConstants::TitleTextSizeX, UIConstants::TitleTextSizeY },
 		title_message, UIConstants::TitleTextPointSize, { UIColor::White }, { 0,  (unsigned int)title_message.length() }, UITextJustification::CenterCenter);
 	m_uiManager.addElement<TextOverlay>(title, L"Title Text");
 
 	//Footnote information
 	std::wstring footnote_message = L"Press Esc. to return to settings menu.";
-	TextOverlay footnote(windowSize, { UIConstants::FootNoteTextLocationX, UIConstants::FootNoteTextLocationY }, { UIConstants::FootNoteTextSizeX, UIConstants::FootNoteTextSizeY },
+	TextOverlay footnote(m_uiManager.getScreenSize(), { UIConstants::FootNoteTextLocationX, UIConstants::FootNoteTextLocationY }, { UIConstants::FootNoteTextSizeX, UIConstants::FootNoteTextSizeY },
 		footnote_message, UIConstants::FootNoteTextPointSize, { UIColor::White }, { 0,  (unsigned int)footnote_message.length() }, UITextJustification::LowerRight);
 	m_uiManager.addElement<TextOverlay>(footnote, L"Footnote Text");
 }
@@ -189,7 +189,7 @@ void DeviceDiscoveryMode::handlePersonalCaddieConnectionEvent(bool connectionSta
 		//update the scroll box text
 		std::wstring scrollText = L"Start the device watcher to begin enumerating nearby BluetoothLE devices...";
 		m_uiManager.getElement<FullScrollingTextBox>(L"Device Watcher Text Box")->clearText();
-		m_uiManager.getElement<FullScrollingTextBox>(L"Device Watcher Text Box")->addText(scrollText, { 0, 0 }, false, false);
+		m_uiManager.getElement<FullScrollingTextBox>(L"Device Watcher Text Box")->addText(scrollText, false, false);
 	}
 	else
 	{
@@ -205,7 +205,7 @@ void DeviceDiscoveryMode::handlePersonalCaddieConnectionEvent(bool connectionSta
 		//update the scroll box text
 		std::wstring scrollText = L"Disconnect from the current device to use the device watcher...";
 		m_uiManager.getElement<FullScrollingTextBox>(L"Device Watcher Text Box")->clearText();
-		m_uiManager.getElement<FullScrollingTextBox>(L"Device Watcher Text Box")->addText(scrollText, { 0, 0 }, false, false);
+		m_uiManager.getElement<FullScrollingTextBox>(L"Device Watcher Text Box")->addText(scrollText, false, false);
 
 		//Update the connection status on this page and turn off the device watcher
 		m_connected = true;
@@ -223,5 +223,5 @@ void DeviceDiscoveryMode::getString(std::wstring message)
 	//This method gets called any time a new device is added to the device watcher. To avoid duplicate
 	//entries we erase the text currently inside the scroll box and replaced it with the new string.
 	m_uiManager.getElement<FullScrollingTextBox>(L"Device Watcher Text Box")->clearText();
-	m_uiManager.getElement<FullScrollingTextBox>(L"Device Watcher Text Box")->addText(message, m_uiManager.getScreenSize(), true);
+	m_uiManager.getElement<FullScrollingTextBox>(L"Device Watcher Text Box")->addText(message, true);
 }

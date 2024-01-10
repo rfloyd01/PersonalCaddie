@@ -20,7 +20,7 @@ public:
 	virtual void getIMUHeadingOffset(glm::quat heading) override;
 
 private:
-	void initializeTextOverlay(winrt::Windows::Foundation::Size windowSize);
+	void initializeTextOverlay();
 	DataType getCurrentlySelectedDataType(std::wstring dropDownSelection);
 	float testIntegrateData(float p1, float p2, float t);
 	void convergenceCheck();

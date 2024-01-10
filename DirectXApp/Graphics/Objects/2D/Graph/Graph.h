@@ -13,17 +13,17 @@
 class Graph : public UIElement, IClickableUI
 {
 public:
-	Graph(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, bool line = true, UIColor fillColor = UIColor::White, UIColor outlineColor = UIColor::Black, bool isSquare = false, bool canZoom = true);
+	Graph(std::shared_ptr<winrt::Windows::Foundation::Size> windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, bool line = true, UIColor fillColor = UIColor::White, UIColor outlineColor = UIColor::Black, bool isSquare = false, bool canZoom = true);
 	Graph() {} //empty default constructor
 
-	void addGraphData(winrt::Windows::Foundation::Size windowSize, std::vector<DirectX::XMFLOAT2> const& dataPoints, UIColor lineColor);
+	void addGraphData(std::vector<DirectX::XMFLOAT2> const& dataPoints, UIColor lineColor);
 
 	void setAxisMaxAndMins(DirectX::XMFLOAT2 axis_minimums, DirectX::XMFLOAT2 axis_maximums);
-	void addLine(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 point1, DirectX::XMFLOAT2 point2);
+	void addLine(DirectX::XMFLOAT2 point1, DirectX::XMFLOAT2 point2);
 	void removeAllLines();
 
-	void addAxisLine(winrt::Windows::Foundation::Size windowSize, int axis, float location);
-	void addAxisLabel(winrt::Windows::Foundation::Size windowSize, std::wstring label, int axis, float location);
+	void addAxisLine(int axis, float location);
+	void addAxisLabel(std::wstring label, int axis, float location);
 
 	virtual uint32_t update(InputState* inputState) override;
 

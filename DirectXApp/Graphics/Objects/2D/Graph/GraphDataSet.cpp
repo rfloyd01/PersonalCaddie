@@ -2,8 +2,10 @@
 #include "GraphDataSet.h"
 #include "Graphics/Objects/2D/TextBoxes/TextBox.h"
 
-GraphDataSet::GraphDataSet(DirectX::XMFLOAT2 minimalDataPoint, DirectX::XMFLOAT2 maximalDataPoint)
+GraphDataSet::GraphDataSet(std::shared_ptr<winrt::Windows::Foundation::Size> windowSize, DirectX::XMFLOAT2 minimalDataPoint, DirectX::XMFLOAT2 maximalDataPoint)
 {
+	m_screenSize = windowSize;
+
 	m_minimalDataPoint = minimalDataPoint;
 	m_maximalDataPoint = maximalDataPoint;
 
@@ -11,7 +13,7 @@ GraphDataSet::GraphDataSet(DirectX::XMFLOAT2 minimalDataPoint, DirectX::XMFLOAT2
 	m_horizontal_grid_lines = 0;
 }
 
-void GraphDataSet::addGridLines(winrt::Windows::Foundation::Size windowSize, int vertical_grid_lines, int horizontal_grid_lines, DirectX::XMFLOAT2 absoluteGraphMaximums, DirectX::XMFLOAT2 absoluteGraphMinimums)
+void GraphDataSet::addGridLines(int vertical_grid_lines, int horizontal_grid_lines, DirectX::XMFLOAT2 absoluteGraphMaximums, DirectX::XMFLOAT2 absoluteGraphMinimums)
 {
 	//This method will add vertical and horizontal grid lines to the graph and add labels for each one.
 	//The absoluteGraphWidth parameter holds the absolute locations for the left and right edges of the graph
@@ -27,8 +29,8 @@ void GraphDataSet::addGridLines(winrt::Windows::Foundation::Size windowSize, int
 	{
 		location += line_spacing;
 		label += data_spacing;
-		Line grid_line(windowSize, { location, absoluteGraphMaximums.y }, { location, absoluteGraphMinimums.y }, UIColor::Black, 0.5f);
-		TextBox line_label(windowSize, { location, absoluteGraphMaximums.y + 0.014f }, { 0.025f, 0.018f }, std::to_wstring(label), 0.01f, { UIColor::Black },
+		Line grid_line(m_screenSize, { location, absoluteGraphMaximums.y }, { location, absoluteGraphMinimums.y }, UIColor::Black, 0.5f);
+		TextBox line_label(m_screenSize, { location, absoluteGraphMaximums.y + 0.014f }, { 0.025f, 0.018f }, std::to_wstring(label), 0.01f, { UIColor::Black },
 			{}, UITextJustification::CenterCenter, UIColor::White, UIColor::White, UIColor::White);
 
 		p_children.push_back(std::make_shared<Line>(grid_line));
@@ -43,8 +45,8 @@ void GraphDataSet::addGridLines(winrt::Windows::Foundation::Size windowSize, int
 	{
 		location += line_spacing;
 		label -= data_spacing;
-		Line grid_line(windowSize, { absoluteGraphMaximums.x, location }, { absoluteGraphMinimums.x, location }, UIColor::Black, 0.5f);
-		TextBox line_label(windowSize, { absoluteGraphMinimums.x - 0.0175f, location }, { 0.025f, 0.018f }, std::to_wstring(label), 0.01f, { UIColor::Black },
+		Line grid_line(m_screenSize, { absoluteGraphMaximums.x, location }, { absoluteGraphMinimums.x, location }, UIColor::Black, 0.5f);
+		TextBox line_label(m_screenSize, { absoluteGraphMinimums.x - 0.0175f, location }, { 0.025f, 0.018f }, std::to_wstring(label), 0.01f, { UIColor::Black },
 			{}, UITextJustification::CenterCenter, UIColor::White, UIColor::White, UIColor::White);
 
 		p_children.push_back(std::make_shared<Line>(grid_line));

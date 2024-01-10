@@ -19,9 +19,9 @@ uint32_t IMUSettingsMode::initializeMode(winrt::Windows::Foundation::Size window
 
 	//Create UI Elements on the page
 	std::wstring buttonText = L"Update Settings";
-	TextButton updateButton(windowSize, { 0.5, 0.225 }, { 0.12, 0.1 }, buttonText);
-	Line line1(windowSize, { 0.33, 0.3 }, { 0.33, 0.92 }, UIColor::White, 2.0f);
-	Line line2(windowSize, { 0.67, 0.3 }, { 0.67, 0.92 }, UIColor::White, 2.0f);
+	TextButton updateButton(m_uiManager.getScreenSize(), { 0.5, 0.225 }, { 0.12, 0.1 }, buttonText);
+	Line line1(m_uiManager.getScreenSize(), { 0.33, 0.3 }, { 0.33, 0.92 }, UIColor::White, 2.0f);
+	Line line2(m_uiManager.getScreenSize(), { 0.67, 0.3 }, { 0.67, 0.92 }, UIColor::White, 2.0f);
 
 	m_uiManager.addElement<TextButton>(updateButton, L"Update Button");
 	m_uiManager.addElement<Line>(line1, L"Line 1"); //separates sensor options into columns
@@ -29,7 +29,7 @@ uint32_t IMUSettingsMode::initializeMode(winrt::Windows::Foundation::Size window
 
 	m_uiManager.getElement<TextButton>(L"Update Button")->updateState(UIElementState::Disabled);
 
-	initializeTextOverlay(windowSize);
+	initializeTextOverlay();
 
 	m_state = initialState;
 
@@ -70,17 +70,17 @@ void IMUSettingsMode::uninitializeMode()
 	m_externalSensors.clear();
 }
 
-void IMUSettingsMode::initializeTextOverlay(winrt::Windows::Foundation::Size windowSize)
+void IMUSettingsMode::initializeTextOverlay()
 {
 	//Title information
 	std::wstring title_message = L"IMU Settings";
-	TextOverlay title(windowSize, { UIConstants::TitleTextLocationX, UIConstants::TitleTextLocationY }, { UIConstants::TitleTextSizeX, UIConstants::TitleTextSizeY },
+	TextOverlay title(m_uiManager.getScreenSize(), { UIConstants::TitleTextLocationX, UIConstants::TitleTextLocationY }, { UIConstants::TitleTextSizeX, UIConstants::TitleTextSizeY },
 		title_message, UIConstants::TitleTextPointSize, { UIColor::White }, { 0,  (unsigned int)title_message.length() }, UITextJustification::CenterCenter);
 	m_uiManager.addElement<TextOverlay>(title, L"Title Text");
 
 	//Footnote information
 	std::wstring footnote_message = L"Press Esc. to return to settings menu.";
-	TextOverlay footnote(windowSize, { UIConstants::FootNoteTextLocationX, UIConstants::FootNoteTextLocationY }, { UIConstants::FootNoteTextSizeX, UIConstants::FootNoteTextSizeY },
+	TextOverlay footnote(m_uiManager.getScreenSize(), { UIConstants::FootNoteTextLocationX, UIConstants::FootNoteTextLocationY }, { UIConstants::FootNoteTextSizeX, UIConstants::FootNoteTextSizeY },
 		footnote_message, UIConstants::FootNoteTextPointSize, { UIColor::White }, { 0,  (unsigned int)footnote_message.length() }, UITextJustification::LowerRight);
 	m_uiManager.addElement<TextOverlay>(footnote, L"Footnote Text");
 }
@@ -126,10 +126,10 @@ void IMUSettingsMode::getCurrentSettings(std::vector<uint8_t*> settings, std::ve
 
 	//After getting the current settings we need to add some text, as well as
 	//all of the drop down menus on screen
-	createDropDownMenus(m_uiManager.getScreenSize(), use_current);
+	createDropDownMenus(use_current);
 }
 
-void IMUSettingsMode::createDropDownMenus(winrt::Windows::Foundation::Size windowSize, bool use_current)
+void IMUSettingsMode::createDropDownMenus(bool use_current)
 {
 	//The screen is split into three columns, one each for the acc, gyr and mag sensors.
 	//Each of these columns features 7 drop down menus.
@@ -138,27 +138,27 @@ void IMUSettingsMode::createDropDownMenus(winrt::Windows::Foundation::Size windo
 	{
 		//First split the screen into three columns, each with its own sub-title
 		std::wstring sub_title = L"Accelerometer Settings";
-		TextOverlay acc(windowSize, { 0.15, 0.35 }, { 0.33, 0.1 },
+		TextOverlay acc(m_uiManager.getScreenSize(), { 0.15, 0.35 }, { 0.33, 0.1 },
 			sub_title, UIConstants::SubTitleTextPointSize, { UIColor::White }, { 0,  (unsigned int)sub_title.length() }, UITextJustification::UpperCenter);
 
 		sub_title = L"Gyroscope Settings";
-		TextOverlay gyr(windowSize, { 0.5, 0.35 }, { 0.33, 0.1 },
+		TextOverlay gyr(m_uiManager.getScreenSize(), { 0.5, 0.35 }, { 0.33, 0.1 },
 			sub_title, UIConstants::SubTitleTextPointSize, { UIColor::White }, { 0,  (unsigned int)sub_title.length() }, UITextJustification::UpperCenter);
 
 		sub_title = L"Magnetometer Settings";
-		TextOverlay mag(windowSize, { 0.85, 0.35 }, { 0.33, 0.1 },
+		TextOverlay mag(m_uiManager.getScreenSize(), { 0.85, 0.35 }, { 0.33, 0.1 },
 			sub_title, UIConstants::SubTitleTextPointSize, { UIColor::White }, { 0,  (unsigned int)sub_title.length() }, UITextJustification::UpperCenter);
 
 		sub_title = L"Model";
-		TextOverlay acc_mod(windowSize, { 0.15, 0.42 }, { 0.33, 0.1 },
+		TextOverlay acc_mod(m_uiManager.getScreenSize(), { 0.15, 0.42 }, { 0.33, 0.1 },
 			sub_title, 0.025, { UIColor::White }, { 0,  (unsigned int)sub_title.length() }, UITextJustification::UpperCenter);
 
 		//sub_title = L"Gyr. Model";
-		TextOverlay gyr_mod(windowSize, { 0.5, 0.42 }, { 0.33, 0.1 },
+		TextOverlay gyr_mod(m_uiManager.getScreenSize(), { 0.5, 0.42 }, { 0.33, 0.1 },
 			sub_title, 0.025, { UIColor::White }, { 0,  (unsigned int)sub_title.length() }, UITextJustification::UpperCenter);
 
 		//sub_title = L"Mag. Model";
-		TextOverlay mag_mod(windowSize, { 0.85, 0.42 }, { 0.33, 0.1 },
+		TextOverlay mag_mod(m_uiManager.getScreenSize(), { 0.85, 0.42 }, { 0.33, 0.1 },
 			sub_title, 0.025, { UIColor::White }, { 0,  (unsigned int)sub_title.length() }, UITextJustification::UpperCenter);
 
 		m_uiManager.addElement<TextOverlay>(acc, L"Acc Setting Text");
@@ -173,9 +173,9 @@ void IMUSettingsMode::createDropDownMenus(winrt::Windows::Foundation::Size windo
 		//will be calculated separately.
 
 		//The first drop downs added hold the names of the sensors that we can switch to
-		DropDownMenu acc_menu(windowSize, { 0.15, 0.43 }, { 0.15, 0.1 }, m_dropDownText[ACC_SENSOR][SENSOR_MODEL], 0.0225); //the locations will get set by a separate method
-		DropDownMenu gyr_menu(windowSize, { 0.5, 0.43 }, { 0.15, 0.1 }, m_dropDownText[GYR_SENSOR][SENSOR_MODEL], 0.0225); //the locations will get set by a separate method
-		DropDownMenu mag_menu(windowSize, { 0.85, 0.43 }, { 0.15, 0.1 }, m_dropDownText[MAG_SENSOR][SENSOR_MODEL], 0.0225); //the locations will get set by a separate method
+		DropDownMenu acc_menu(m_uiManager.getScreenSize(), { 0.15, 0.43 }, { 0.15, 0.1 }, m_dropDownText[ACC_SENSOR][SENSOR_MODEL], 0.0225); //the locations will get set by a separate method
+		DropDownMenu gyr_menu(m_uiManager.getScreenSize(), { 0.5, 0.43 }, { 0.15, 0.1 }, m_dropDownText[GYR_SENSOR][SENSOR_MODEL], 0.0225); //the locations will get set by a separate method
+		DropDownMenu mag_menu(m_uiManager.getScreenSize(), { 0.85, 0.43 }, { 0.15, 0.1 }, m_dropDownText[MAG_SENSOR][SENSOR_MODEL], 0.0225); //the locations will get set by a separate method
 
 		m_uiManager.addElement<DropDownMenu>(acc_menu, L"Acc Model Drop Down Menu");
 		m_uiManager.addElement<DropDownMenu>(gyr_menu, L"Gyr Model Drop Down Menu");
@@ -195,7 +195,7 @@ void IMUSettingsMode::createDropDownMenus(winrt::Windows::Foundation::Size windo
 
 		for (int j = FS_RANGE; j <= EXTRA_2; j++)
 		{
-			DropDownMenu menu(windowSize, { 0, 0 }, { 0.15, 0.1 }, m_dropDownText[i][j], 0.0225); //the locations will get set by a separate method
+			DropDownMenu menu(m_uiManager.getScreenSize(), { 0, 0 }, { 0.15, 0.1 }, m_dropDownText[i][j], 0.0225); //the locations will get set by a separate method
 			m_uiManager.addElement<DropDownMenu>(menu, sensorType + L"Setting Drop Down Menu " + std::to_wstring(j));
 		}
 	}
@@ -361,7 +361,7 @@ void IMUSettingsMode::uiElementStateChangeHandler(std::shared_ptr<ManagedUIEleme
 
 				//By Removing all text overlays we've also removed the title and foot note so add those back. Calling the 
 				//intitialzeTextOverlay() method will also put the body text back which we don't want so remove that again
-				initializeTextOverlay(m_uiManager.getScreenSize());
+				initializeTextOverlay();
 
 				m_dropDownText = { {}, {}, {} };
 				m_dropDownCategories = {};
@@ -378,7 +378,7 @@ void IMUSettingsMode::uiElementStateChangeHandler(std::shared_ptr<ManagedUIEleme
 				//Recreate and populate all drop down menus and their titles
 				dropDownsSet = false;
 				getAvailableSensors();
-				createDropDownMenus(m_uiManager.getScreenSize());
+				createDropDownMenus();
 			}
 		}
 	}
@@ -506,8 +506,8 @@ void IMUSettingsMode::updateSetting(sensor_type_t sensor_type, sensor_settings_t
 				//set the TextResize flag for each box to make sure they get resized appropriately
 				m_dropDownText[ACC_SENSOR][ODR] = fxas_fxos_get_complete_settings_string(ACC_SENSOR, static_cast<sensor_settings_t>(combined_odr));
 				m_dropDownText[MAG_SENSOR][ODR] = fxas_fxos_get_complete_settings_string(MAG_SENSOR, static_cast<sensor_settings_t>(combined_odr));
-				accODRDropdown->setNewOptions(m_dropDownText[ACC_SENSOR][ODR], m_uiManager.getScreenSize(), true);
-				magODRDropdown->setNewOptions(m_dropDownText[MAG_SENSOR][ODR], m_uiManager.getScreenSize(), true);
+				accODRDropdown->setNewOptions(m_dropDownText[ACC_SENSOR][ODR],true);
+				magODRDropdown->setNewOptions(m_dropDownText[MAG_SENSOR][ODR], true);
 			}
 			
 			//Update the odr and power drop down menu text as neceessary
@@ -682,13 +682,13 @@ void IMUSettingsMode::update()
 						dropDown->setAbsoluteLocation({ (1.0f / 6.0f + location) - marginWidth - dropDown->getAbsoluteSize().x / 2.0f, 0.1f * (row + 3.0f) + 0.23f });
 
 						//after setting the location for each drop down it can be resized
-						firstDropDown->resize(m_uiManager.getScreenSize()); //since only the location has changed, not the size, this is ok
-						dropDown->resize(m_uiManager.getScreenSize()); //since only the location has changed, not the size, this is ok
+						firstDropDown->resize(); //since only the location has changed, not the size, this is ok
+						dropDown->resize(); //since only the location has changed, not the size, this is ok
 
 						//We also place text overlays above each box letting the user know what the options represent
-						TextOverlay one(dropDown->getCurrentWindowSize(), { dropDown->getAbsoluteLocation().x, dropDown->getAbsoluteLocation().y - dropDown->getAbsoluteSize().y }, { 0.25f, dropDown->getAbsoluteSize().y * 2.0f }, getSettingString(type), 0.025,
+						TextOverlay one(m_uiManager.getScreenSize(), { dropDown->getAbsoluteLocation().x, dropDown->getAbsoluteLocation().y - dropDown->getAbsoluteSize().y }, { 0.25f, dropDown->getAbsoluteSize().y * 2.0f }, getSettingString(type), 0.025,
 							{ UIColor::White }, { 0, (unsigned int)getSettingString(type).length() }, UITextJustification::UpperCenter);
-						TextOverlay two(firstDropDown->getCurrentWindowSize(), { firstDropDown->getAbsoluteLocation().x, firstDropDown->getAbsoluteLocation().y - firstDropDown->getAbsoluteSize().y }, { 0.25f, firstDropDown->getAbsoluteSize().y * 2.0f }, getSettingString(first_index), 0.025,
+						TextOverlay two(m_uiManager.getScreenSize(), { firstDropDown->getAbsoluteLocation().x, firstDropDown->getAbsoluteLocation().y - firstDropDown->getAbsoluteSize().y }, { 0.25f, firstDropDown->getAbsoluteSize().y * 2.0f }, getSettingString(first_index), 0.025,
 							{ UIColor::White }, { 0, (unsigned int)getSettingString(first_index).length() }, UITextJustification::UpperCenter);
 						
 						m_uiManager.addElement<TextOverlay>(one, title_name + std::to_wstring(type));
@@ -708,9 +708,9 @@ void IMUSettingsMode::update()
 				//we ended a row with only a single drop down so put it in the middle of the column
 				auto dropDown = m_uiManager.getElement<DropDownMenu>(dropdown_name + std::to_wstring(first_index));
 				dropDown->setAbsoluteLocation({ location, 0.10f * (row + 3.0f) + 0.23f });
-				dropDown->resize(m_uiManager.getScreenSize());
+				dropDown->resize();
 
-				TextOverlay one(dropDown->getCurrentWindowSize(), { dropDown->getAbsoluteLocation().x, dropDown->getAbsoluteLocation().y - dropDown->getAbsoluteSize().y }, { 0.25f, dropDown->getAbsoluteSize().y * 2.0f }, getSettingString(first_index), 0.025,
+				TextOverlay one(m_uiManager.getScreenSize(), { dropDown->getAbsoluteLocation().x, dropDown->getAbsoluteLocation().y - dropDown->getAbsoluteSize().y }, { 0.25f, dropDown->getAbsoluteSize().y * 2.0f }, getSettingString(first_index), 0.025,
 					{ UIColor::White }, { 0, (unsigned int)getSettingString(first_index).length() }, UITextJustification::UpperCenter);
 				m_uiManager.addElement<TextOverlay>(one, title_name + std::to_wstring(first_index));
 			}

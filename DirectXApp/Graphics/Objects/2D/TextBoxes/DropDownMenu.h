@@ -14,7 +14,7 @@
 class DropDownMenu : public UIElement, ITextDimensionsUI
 {
 public:
-	DropDownMenu(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, std::wstring message, float fontSize,
+	DropDownMenu(std::shared_ptr<winrt::Windows::Foundation::Size> windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, std::wstring message, float fontSize,
 		int optionsDisplayed = 5, bool isInverted = false, std::vector<UIColor> textColor = { UIColor::Black }, std::vector<unsigned long long> textColorLocations = {}, UITextJustification justification = UITextJustification::UpperLeft, 
 		UIColor textFillColor = UIColor::White, bool isSquare = false,  UIColor outlineColor = UIColor::Black, UIColor shadowColor = UIColor::DarkGray);
 
@@ -27,7 +27,7 @@ public:
 	void setSelectedOption(std::wstring option);
 	std::wstring getSelectedOption() { return m_currentlySelectedOption; }
 	void clearAllOptions();
-	void setNewOptions(std::wstring options, winrt::Windows::Foundation::Size windowSize, bool highlightable);
+	void setNewOptions(std::wstring options, bool highlightable);
 
 protected:
 	virtual void repositionText() override;

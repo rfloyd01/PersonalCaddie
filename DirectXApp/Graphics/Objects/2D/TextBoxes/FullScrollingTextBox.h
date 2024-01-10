@@ -20,18 +20,19 @@
 class FullScrollingTextBox : public UIElement, IScrollableUI, ITextDimensionsUI
 {
 public:
-	FullScrollingTextBox(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, std::wstring message, float fontSize,
+	FullScrollingTextBox(std::shared_ptr<winrt::Windows::Foundation::Size> windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, std::wstring message, float fontSize,
 		bool highlightableText = true, bool dynamicSize = true,
 		UITextJustification justification = UITextJustification::UpperLeft, UIColor textFillColor = UIColor::White, bool isSquare = false,  UIColor outlineColor = UIColor::Black, UIColor shadowColor = UIColor::DarkGray);
 
 	FullScrollingTextBox() {} //empty default constructor
 
-	void addText(std::wstring text, winrt::Windows::Foundation::Size windowSize = { 0, 0 }, bool highlightable = false, bool existingText = true);
+	void addText(std::wstring text, bool highlightable = false, bool existingText = true);
 	void clearText();
 
 	virtual uint32_t update(InputState* inputState) override;
 	virtual std::vector<UIText*> setTextDimension() override;
 
+	virtual void setAbsoluteSize(DirectX::XMFLOAT2 size) override;
 	virtual void repositionText() override;
 
 	std::wstring getLastSelectedText() { return m_lastSelectedText; }
@@ -42,9 +43,10 @@ protected:
 
 	virtual void onScrollUp() override;
 	virtual void onScrollDown() override;
-	void calcualteScrollBarLocation(winrt::Windows::Foundation::Size windowSize);
+	void calcualteScrollBarLocation();
 
 	float m_buttonHeight; //the height of the scroll buttons relative to the height of the text box
+	float m_buttonRatio = 0.125f; //the ratio of the buttons' height to the overall height of the scroll box
 	bool m_highlightableText;
 	bool m_dynamicSize;
 

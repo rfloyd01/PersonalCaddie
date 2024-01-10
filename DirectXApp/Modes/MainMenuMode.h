@@ -13,5 +13,5 @@ public:
 	virtual void handleKeyPress(winrt::Windows::System::VirtualKey pressedKey) override;
 
 private:
-	void initializeTextOverlay(winrt::Windows::Foundation::Size windowSize);
+	void initializeTextOverlay();
 };

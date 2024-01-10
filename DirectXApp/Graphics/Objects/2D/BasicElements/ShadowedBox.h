@@ -10,8 +10,10 @@ class ShadowedBox : public UIElement
 public:
 	ShadowedBox() {} //compty default constructor
 
-	ShadowedBox(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, UIColor fillColor = UIColor::White, UIColor outlineColor = UIColor::Black, UIColor shadowColor = UIColor::DarkGray, float shadowPixels = 8.0f)
+	ShadowedBox(std::shared_ptr<winrt::Windows::Foundation::Size> windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, UIColor fillColor = UIColor::White, UIColor outlineColor = UIColor::Black, UIColor shadowColor = UIColor::DarkGray, float shadowPixels = 8.0f)
 	{
+		m_screenSize = windowSize;
+
 		//A shadow box is a compound element comprised of an outlined box and a standard box child elements.
 		//The standard box gets rendered first and is offset a few pixels down and to the right of the 
 		//outlined box, giving the outlined box the appearance of having a shadow.
@@ -28,14 +30,34 @@ public:
 			{ size.x - maximumAbsolutePixelSize.x * m_shadowSizePixels, size.y - maximumAbsolutePixelSize.y * m_shadowSizePixels }, shadowColor, UIShapeFillType::Fill);
 		
 		OutlinedBox outline(windowSize, { location.x - (maximumAbsolutePixelSize.x * m_shadowSizePixels) / 2.0f, location.y - (maximumAbsolutePixelSize.y * m_shadowSizePixels) / 2.0f },
-			{ size.x - maximumAbsolutePixelSize.x * m_shadowSizePixels, size.y - maximumAbsolutePixelSize.y * m_shadowSizePixels }, false, fillColor, outlineColor);
+			{ size.x - maximumAbsolutePixelSize.x * m_shadowSizePixels, size.y - maximumAbsolutePixelSize.y * m_shadowSizePixels }, fillColor, outlineColor);
 		
 		//The shadow gets added to the child array first so the outline box
 		//gets rendered on top of it.
 		p_children.push_back(std::make_shared<Box>(shadow));
 		p_children.push_back(std::make_shared<OutlinedBox>(outline));
 
-		resize(windowSize);
+		resize();
+	}
+
+	virtual void setAbsoluteSize(DirectX::XMFLOAT2 size) override
+	{
+		//The shadowed box has two child elements that are smaller and slightly offset
+		//from the center of the element. Shrinking the shadowed box means
+		//that the two children will also need to be translated to maintain
+		//the boxes integrity
+		UIElement::setAbsoluteSize(size);
+
+		auto screen_size = getCurrentWindowSize();
+		DirectX::XMFLOAT2 currentAbsolutePixelSize = { screen_size.Width * m_shadowSizePixels / (MAX_SCREEN_WIDTH * MAX_SCREEN_WIDTH), screen_size.Height * m_shadowSizePixels / (MAX_SCREEN_HEIGHT * MAX_SCREEN_HEIGHT) };
+		DirectX::XMFLOAT2 newSize = { size.x - currentAbsolutePixelSize.x, size.y - currentAbsolutePixelSize.y };
+		
+		p_children[0]->setAbsoluteSize(newSize);
+		p_children[1]->setAbsoluteSize(newSize);
+		
+		auto absolute_location = getAbsoluteLocation();
+		p_children[0]->setAbsoluteLocation({ absolute_location.x + currentAbsolutePixelSize.x / 2.0f, absolute_location.y + currentAbsolutePixelSize.y / 2.0f });
+		p_children[1]->setAbsoluteLocation({ absolute_location.x - currentAbsolutePixelSize.x / 2.0f, absolute_location.y - currentAbsolutePixelSize.y / 2.0f });
 	}
 
 	float getShadowWidth() { return m_shadowSizePixels; }

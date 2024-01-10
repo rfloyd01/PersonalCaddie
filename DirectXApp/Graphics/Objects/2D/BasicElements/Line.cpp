@@ -1,8 +1,10 @@
 #include "pch.h"
 #include "Line.h"
 
-Line::Line(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 firstPointLlocation, DirectX::XMFLOAT2 secondPointLlocation, UIColor color, float width)
+Line::Line(std::shared_ptr<winrt::Windows::Foundation::Size> windowSize, DirectX::XMFLOAT2 firstPointLlocation, DirectX::XMFLOAT2 secondPointLlocation, UIColor color, float width)
 {
+	m_screenSize = windowSize;
+
 	//For m_shape, we still use a rectangle struct, however, the first two values are the x and y coordinates of the first
 	//point while the second two values are the x and y coordinates for the second point. The m_location variable becomes
 	//the mid-point of the line
@@ -16,7 +18,7 @@ Line::Line(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 firstP
 	//size variable will contain negative numbers. Is this an issue?
 
 	m_shape = { {0, 0, 0, 0}, color, UIShapeFillType::NoFill, UIShapeType::LINE, width };
-	resize(windowSize);
+	resize();
 }
 
 std::pair<DirectX::XMFLOAT2, DirectX::XMFLOAT2> Line::getPointsAbsolute()

@@ -16,7 +16,7 @@
 class PartialScrollingTextBox : public UIElement, IScrollableUI, ITextDimensionsUI
 {
 public:
-	PartialScrollingTextBox(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, UIColor backgroundColor, std::wstring message, float fontSize,
+	PartialScrollingTextBox(std::shared_ptr<winrt::Windows::Foundation::Size> windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, UIColor backgroundColor, std::wstring message, float fontSize,
 		std::vector<UIColor> textColor = { UIColor::Black }, std::vector<unsigned long long> textColorLocations = {}, UITextJustification justification = UITextJustification::UpperLeft, 
 		UIColor textFillColor = UIColor::White, bool isSquare = false,  UIColor outlineColor = UIColor::Black, UIColor shadowColor = UIColor::DarkGray);
 
@@ -29,7 +29,7 @@ protected:
 
 	virtual void onScrollUp() override;
 	virtual void onScrollDown() override;
-	void calcualteScrollBarLocation(winrt::Windows::Foundation::Size windowSize);
+	void calcualteScrollBarLocation();
 
 	virtual std::vector<UIText*> setTextDimension() override;
 	virtual void repositionText() override;

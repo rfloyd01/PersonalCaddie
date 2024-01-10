@@ -8,8 +8,8 @@
 class RelativeBox : public Box
 {
 public:
-	RelativeBox(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, UIColor color = UIColor::Black, UIShapeFillType fill = UIShapeFillType::Fill, bool isSquare = false) :
-		Box(windowSize, location, size, color, fill, isSquare)
+	RelativeBox(std::shared_ptr<winrt::Windows::Foundation::Size> windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, UIColor color = UIColor::Black, UIShapeFillType fill = UIShapeFillType::Fill, bool isSquare = false) :
+		Box(windowSize, location, size, color, fill)
 	{
 		//Before doing anything, convert the absolute coordinates entered for the size and location
 		//parameters to the relative coordinates needed to correct screen placement.
@@ -34,7 +34,7 @@ public:
 		m_absoluteDistanceToScreenCenter.y = (element_pixel_center.y - screen_pixel_center.y) / MAX_HEIGHT;
 
 		//Once the relative parameters have been set, resize the element
-		resize(windowSize);
+		resize();
 	}
 
 	void convertAbsoluteCoordinatesToRelativeCoordinates()
@@ -71,16 +71,16 @@ public:
 		m_horizontalSizeMultiplier = desired_pixel_width / desired_pixel_height;
 	}
 
-	virtual void resize(winrt::Windows::Foundation::Size windowSize) override
+	virtual void resize() override
 	{
 		//First, calculate the center location of the element and its height and width in pixels
-		DirectX::XMFLOAT2 element_pixel_center = { windowSize.Width * m_location.x, windowSize.Height * m_location.y };
+		DirectX::XMFLOAT2 element_pixel_center = { m_screenSize->Width * m_location.x, m_screenSize->Height * m_location.y };
 		DirectX::XMFLOAT2 element_pixel_dimensions;
 
 		//The height of the element is calculated by using a weighted ratio of the screen's current
 		//height to the screen's current width, with the screen height getting the heigher weigtht.
 		//The pixel width of the element is just a simple multiple of the height after it's calculated.
-		element_pixel_dimensions.y = m_size.y / (windowSize.Width + windowSize.Height) * (2 * windowSize.Width * windowSize.Height);
+		element_pixel_dimensions.y = m_size.y / (m_screenSize->Width + m_screenSize->Height) * (2 * m_screenSize->Width * m_screenSize->Height);
 		element_pixel_dimensions.x = m_horizontalSizeMultiplier * element_pixel_dimensions.y;
 
 		//Second, account for the "drift" effect of the center of the element. This effect occurs
@@ -90,8 +90,8 @@ public:
 		float newPixelDistanceToHorizontal = m_horizontalDriftMultiplier * element_pixel_dimensions.y;
 		float newPixelDistanceToVertical = m_absoluteDistanceToScreenCenter.y * element_pixel_dimensions.y / m_size.y;
 
-		element_pixel_center.x += newPixelDistanceToHorizontal - m_absoluteDistanceToScreenCenter.x * windowSize.Width;
-		element_pixel_center.y += newPixelDistanceToVertical - m_absoluteDistanceToScreenCenter.y * windowSize.Height;
+		element_pixel_center.x += newPixelDistanceToHorizontal - m_absoluteDistanceToScreenCenter.x * m_screenSize->Width;
+		element_pixel_center.y += newPixelDistanceToVertical - m_absoluteDistanceToScreenCenter.y * m_screenSize->Height;
 
 		//Once the center drift has been accounted for, size the m_shape rectangle so that
 		//the new pixel center is the exact center of the element.

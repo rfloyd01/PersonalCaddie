@@ -16,7 +16,7 @@ uint32_t MadgwickTestMode::initializeMode(winrt::Windows::Foundation::Size windo
 	m_uiManager.updateScreenSize(windowSize);
 
 	//Create UI Elements on the page
-	initializeTextOverlay(windowSize);
+	initializeTextOverlay();
 
 	//Load the model of the Personal Caddie to render on screen
 	loadModel();
@@ -151,17 +151,17 @@ void MadgwickTestMode::uninitializeMode()
 	m_mode_screen_handler(ModeAction::PersonalCaddieChangeMode, (void*)&mode);
 }
 
-void MadgwickTestMode::initializeTextOverlay(winrt::Windows::Foundation::Size windowSize)
+void MadgwickTestMode::initializeTextOverlay()
 {
 	//Title information
 	std::wstring title_message = L"Madgwick Filter Testing";
-	TextOverlay title(windowSize, { UIConstants::TitleTextLocationX, UIConstants::TitleTextLocationY }, { UIConstants::TitleTextSizeX, UIConstants::TitleTextSizeY },
+	TextOverlay title(m_uiManager.getScreenSize(), { UIConstants::TitleTextLocationX, UIConstants::TitleTextLocationY }, { UIConstants::TitleTextSizeX, UIConstants::TitleTextSizeY },
 		title_message, UIConstants::TitleTextPointSize, { UIColor::White }, { 0,  (unsigned int)title_message.length() }, UITextJustification::CenterCenter);
 	m_uiManager.addElement<TextOverlay>(title, L"Title Text");
 
 	//Footnote information
 	std::wstring footnote_message = L"Press Esc. to return to settings menu";
-	TextOverlay footnote(windowSize, { UIConstants::FootNoteTextLocationX, UIConstants::FootNoteTextLocationY }, { UIConstants::FootNoteTextSizeX, UIConstants::FootNoteTextSizeY },
+	TextOverlay footnote(m_uiManager.getScreenSize(), { UIConstants::FootNoteTextLocationX, UIConstants::FootNoteTextLocationY }, { UIConstants::FootNoteTextSizeX, UIConstants::FootNoteTextSizeY },
 		footnote_message, UIConstants::FootNoteTextPointSize, { UIColor::White }, { 0,  (unsigned int)footnote_message.length() }, UITextJustification::LowerRight);
 	m_uiManager.addElement<TextOverlay>(footnote, L"Footnote Text");
 
@@ -170,7 +170,7 @@ void MadgwickTestMode::initializeTextOverlay(winrt::Windows::Foundation::Size wi
 	std::wstring sensor_info_message_two = L"\n";
 	std::wstring sensor_info_message_three = L"\n";
 	std::wstring sensor_info_message_four = L"";
-	TextOverlay sensor_info(windowSize, { UIConstants::SensorInfoTextLocationX, UIConstants::SensorInfoTextLocationY }, { UIConstants::SensorInfoTextSizeX, UIConstants::SensorInfoTextSizeY },
+	TextOverlay sensor_info(m_uiManager.getScreenSize(), { UIConstants::SensorInfoTextLocationX, UIConstants::SensorInfoTextLocationY }, { UIConstants::SensorInfoTextSizeX, UIConstants::SensorInfoTextSizeY },
 		sensor_info_message_one + sensor_info_message_two + sensor_info_message_three + sensor_info_message_four, UIConstants::SensorInfoTextPointSize * 0.8f, { UIColor::White, UIColor::Red, UIColor::Blue, UIColor::Green },
 		{ 0,  (unsigned int)sensor_info_message_one.length(),  (unsigned int)sensor_info_message_two.length(),  (unsigned int)sensor_info_message_three.length(),  (unsigned int)sensor_info_message_four.length() }, UITextJustification::LowerLeft);
 	m_uiManager.addElement<TextOverlay>(sensor_info, L"Sensor Info 1 Text");
@@ -179,14 +179,14 @@ void MadgwickTestMode::initializeTextOverlay(winrt::Windows::Foundation::Size wi
 	sensor_info_message_two = L"\n";
 	sensor_info_message_three = L"\n";
 	sensor_info_message_four = L"";
-	TextOverlay sensor_info_two(windowSize, { UIConstants::SensorInfoTextLocationX, UIConstants::SensorInfoTextLocationY }, { UIConstants::SensorInfoTextSizeX, UIConstants::SensorInfoTextSizeY },
+	TextOverlay sensor_info_two(m_uiManager.getScreenSize(), { UIConstants::SensorInfoTextLocationX, UIConstants::SensorInfoTextLocationY }, { UIConstants::SensorInfoTextSizeX, UIConstants::SensorInfoTextSizeY },
 		sensor_info_message_one + sensor_info_message_two + sensor_info_message_three + sensor_info_message_four, UIConstants::SensorInfoTextPointSize * 0.8f, { UIColor::White, UIColor::Red, UIColor::Blue, UIColor::Green },
 		{ 0,  (unsigned int)sensor_info_message_one.length(),  (unsigned int)sensor_info_message_two.length(),  (unsigned int)sensor_info_message_three.length(),  (unsigned int)sensor_info_message_four.length() }, UITextJustification::LowerRight);
 	m_uiManager.addElement<TextOverlay>(sensor_info_two, L"Sensor Info 2 Text");
 
 	//View data message
 	std::wstring view_data_message = L"Press Enter to see live Data from Sensor\nPress Space to Center the Sensor\nPress ^ Arrow to Swap Filter";
-	TextOverlay view_data(windowSize, { UIConstants::FootNoteTextLocationX - 0.33f, UIConstants::FootNoteTextLocationY }, { UIConstants::FootNoteTextSizeX, UIConstants::FootNoteTextSizeY },
+	TextOverlay view_data(m_uiManager.getScreenSize(), { UIConstants::FootNoteTextLocationX - 0.33f, UIConstants::FootNoteTextLocationY }, { UIConstants::FootNoteTextSizeX, UIConstants::FootNoteTextSizeY },
 		view_data_message, UIConstants::FootNoteTextPointSize, { UIColor::White }, { 0,  (unsigned int)view_data_message.length() }, UITextJustification::LowerCenter);
 	m_uiManager.addElement<TextOverlay>(view_data, L"View Data Text");
 }

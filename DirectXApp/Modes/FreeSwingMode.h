@@ -24,7 +24,7 @@ public:
 	void setCurrentHeadingOffset();
 
 private:
-	void initializeTextOverlay(winrt::Windows::Foundation::Size windowSize);
+	void initializeTextOverlay();
 	void loadModel();
 
 	void convergenceCheck();

@@ -7,12 +7,13 @@
 class TextButton : public Button
 {
 public:
-	TextButton(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, std::wstring text,
+	TextButton(std::shared_ptr<winrt::Windows::Foundation::Size> windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, std::wstring text,
 		bool isSquare = false, UIColor fillColor = UIColor::ButtonNotPressed, UIColor outlineColor = UIColor::Black, UIColor shadowColor = UIColor::DarkGray) :
 		Button(windowSize, location, size, fillColor, outlineColor, shadowColor)
 	{
-		//For now make the font size something random
-		m_fontSize = 0.35 * m_size.y;
+		//Font size is expressed as a ratio of the overall height of the button.
+		//For now just make it 35% of the button height
+		m_fontSize = 0.35f;
 
 		//Create a text object from the given wstring
 		m_text.textType = UITextType::ELEMENT_TEXT;
@@ -21,7 +22,7 @@ public:
 		m_text.colors = { UIColor::Black };
 		m_text.colorLocations = { 0, (unsigned int)text.length() };
 
-		resize(windowSize); //Force a resize so the text is created properly
+		resize(); //Force a resize so the text is created properly
 	}
 
 	TextButton() {}; //use the Button default constructor

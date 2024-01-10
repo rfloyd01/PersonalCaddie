@@ -7,9 +7,9 @@
 class Ellipse : public UIElement
 {
 public:
-	Ellipse(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 centerLocation, DirectX::XMFLOAT2 radii, bool circle = false, UIColor color = UIColor::Black);
+	Ellipse(std::shared_ptr<winrt::Windows::Foundation::Size> windowSize, DirectX::XMFLOAT2 centerLocation, DirectX::XMFLOAT2 radii, bool circle = false, UIColor color = UIColor::Black);
 
-	virtual void resize(winrt::Windows::Foundation::Size windowSize) override;
+	virtual void resize() override;
 
 private:
 	bool m_circle;

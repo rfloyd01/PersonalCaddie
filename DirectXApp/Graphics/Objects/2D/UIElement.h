@@ -57,7 +57,7 @@ public:
 		p_children.clear();
 	}
 
-	virtual void resize(winrt::Windows::Foundation::Size windowSize);
+	virtual void resize();
 
 	virtual uint32_t update(InputState* inputState);
 
@@ -70,16 +70,17 @@ public:
 	virtual void updateState(uint32_t state);
 	virtual void removeState(uint32_t state);
 
+	float getFontSize() { return m_fontSize; }
 	void setFontSize(float size) { m_fontSize = size; }
 
 	UIShape* getShape() { return &m_shape; }
 	UIText* getText() { return &m_text; }
 
 	DirectX::XMFLOAT2 getAbsoluteSize();
-	void setAbsoluteSize(DirectX::XMFLOAT2 size);
+	virtual void setAbsoluteSize(DirectX::XMFLOAT2 size);
 
 	DirectX::XMFLOAT2 getAbsoluteLocation();
-	void setAbsoluteLocation(DirectX::XMFLOAT2 location);
+	virtual void setAbsoluteLocation(DirectX::XMFLOAT2 location);
 
 	std::vector<std::shared_ptr<UIElement> > const& getChildren() { return p_children; }
 
@@ -94,6 +95,7 @@ public:
 protected:
 	void updateLocationAndSize(DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size);
 	void convertAbsoluteCoordinatesToRelativeCoordinates();
+	bool screenBoundaryCheck(DirectX::XMFLOAT2& location, DirectX::XMFLOAT2& size);
 
 	int pixelCompare(float pixelOne, float pixelTwo);
 
@@ -112,6 +114,8 @@ protected:
 	virtual void onHover() {} //empty onHoever method can be overriden by IHoverable element users
 
 	//Screen size dependent variables
+	std::shared_ptr< winrt::Windows::Foundation::Size> m_screenSize; //a pointer to the current size of the screen. This gets updated automatically when the screen is resized
+
 	DirectX::XMFLOAT2                        m_location; //location of the center of the element  as a ratio of the current screen size
 	DirectX::XMFLOAT2                        m_size; //size of the ui element as a ratio of the current screen size
 	DirectX::XMFLOAT2                        m_absoluteDistanceToScreenCenter; //Represents the absolute distance from the center of the element to the center of the screen when it's fully maximized
@@ -119,6 +123,7 @@ protected:
 	float                                    m_horizontalDriftMultiplier; //the ratio of the horizontal distance from the center of the element to the center vertical axis and the elements height when the screen is maximized
 	float                                    m_fontSize; //The desired font size for text as a ratio of the current screen size
 	bool                                     m_useAbsoluteCoordinates; //For some elements it makes sense to use the edges of the screen as a reference as opposed to the center
+	float                                    m_edgeThreshold = 20.0f; //When the edge of a UI Element gets this close to the edge of the screen (in pixels) it will automatically get shifted to stay on screen
 
 	//State variables
 	uint32_t                                 m_state;

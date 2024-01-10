@@ -22,8 +22,8 @@ public:
 	bool dropDownsSet;
 
 private:
-	void initializeTextOverlay(winrt::Windows::Foundation::Size windowSize);
-	void createDropDownMenus(winrt::Windows::Foundation::Size windowSize, bool use_current = false);
+	void initializeTextOverlay();
+	void createDropDownMenus(bool use_current = false);
 
 	void uiElementStateChangeHandler(std::shared_ptr<ManagedUIElement> element);
 

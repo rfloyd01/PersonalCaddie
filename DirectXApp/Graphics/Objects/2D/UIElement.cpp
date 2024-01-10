@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "UIElement.h"
 
-void UIElement::resize(winrt::Windows::Foundation::Size windowSize)
+void UIElement::resize()
 {
 	//Recalculate the coordinates for m_shape and m_text based on 
 	//the current size of the screen and the absolute dimensions (m_location
@@ -17,74 +17,81 @@ void UIElement::resize(winrt::Windows::Foundation::Size windowSize)
 	}
 
 	//Resize the element based on either its m_shape or m_text variable and the 
-	//current m_location and m_size variables. If the element doesn't have an 
-	//m_shape or m_text variable defined, then the resizing of the element is 
-	//handled entirely by child elements
-	if (m_shape.m_shapeType != UIShapeType::END || m_text.textType != UITextType::END)
+	//current m_location and m_size variables.
+	if (m_useAbsoluteCoordinates)
 	{
-		if (m_useAbsoluteCoordinates)
+		//If the element uses absolute coordinates then now complex
+		//drift calculations need to be carried out.
+		if (m_shape.m_shapeType != UIShapeType::END)
 		{
-			//If the element uses absolute coordinates then now complex
-		    //drift calculations need to be carried out.
-			if (m_shape.m_shapeType != UIShapeType::END)
-			{
-				m_shape.m_rectangle.left = windowSize.Width * (m_location.x - m_size.x / 2.0f);
-				m_shape.m_rectangle.top = windowSize.Height * (m_location.y - m_size.y / 2.0f);
-				m_shape.m_rectangle.right = windowSize.Width * (m_location.x + m_size.x / 2.0f);
-				m_shape.m_rectangle.bottom = windowSize.Height * (m_location.y + m_size.y / 2.0f);
-			}
-			else if (m_text.textType != UITextType::END)
-			{
-				m_text.startLocation = { windowSize.Width * (m_location.x - m_size.x / 2.0f), windowSize.Height * (m_location.y - m_size.y / 2.0f) }; //text always starts at the top left of the UI Element
-				m_text.renderArea = { windowSize.Width * m_size.x, windowSize.Height * m_size.y };
-				m_text.fontSize = windowSize.Height * m_fontSize; //TODO: This would make more sense to be based on element height, not screen height
-			}
+			m_shape.m_rectangle.left = m_screenSize->Width * (m_location.x - m_size.x / 2.0f);
+			m_shape.m_rectangle.top = m_screenSize->Height * (m_location.y - m_size.y / 2.0f);
+			m_shape.m_rectangle.right = m_screenSize->Width * (m_location.x + m_size.x / 2.0f);
+			m_shape.m_rectangle.bottom = m_screenSize->Height * (m_location.y + m_size.y / 2.0f);
 		}
-		else
+		
+		if (m_text.textType != UITextType::END)
 		{
-			//If the element uses relative coordinates then drift calculations need to
-			//be carried out. First calculate the center location of the element, its
-			//height and its width in pixels
-			DirectX::XMFLOAT2 element_pixel_center = { windowSize.Width * m_location.x, windowSize.Height * m_location.y };
-			DirectX::XMFLOAT2 element_pixel_dimensions;
+			m_text.startLocation = { m_screenSize->Width * (m_location.x - m_size.x / 2.0f), m_screenSize->Height * (m_location.y - m_size.y / 2.0f) }; //text always starts at the top left of the UI Element
+			m_text.renderArea = { m_screenSize->Width * m_size.x, m_screenSize->Height * m_size.y };
+			m_text.fontSize = m_screenSize->Height * m_fontSize; //TODO: This would make more sense to be based on element height, not screen height
+		}
+	}
+	else
+	{
+		//If the element uses relative coordinates then drift calculations need to
+		//be carried out. First calculate the center location of the element, its
+		//height and its width in pixels
+		DirectX::XMFLOAT2 element_pixel_center = { m_screenSize->Width * m_location.x, m_screenSize->Height * m_location.y };
+		DirectX::XMFLOAT2 element_pixel_dimensions;
 
-			//The height of the element is calculated by using a weighted ratio of the screen's current
-			//height to the screen's current width, with the screen height getting the heigher weigtht.
-			//The pixel width of the element is just a simple multiple of the height after it's calculated.
-			element_pixel_dimensions.y = m_size.y / (windowSize.Width + windowSize.Height) * (2 * windowSize.Width * windowSize.Height);
-			element_pixel_dimensions.x = m_sizeMultiplier.x * element_pixel_dimensions.y;
+		//The height of the element is calculated by using a weighted ratio of the screen's current
+		//height to the screen's current width, with the screen height getting the heigher weigtht.
+		//The pixel width of the element is just a simple multiple of the height after it's calculated.
+		element_pixel_dimensions.y = m_size.y / (m_screenSize->Width + m_screenSize->Height) * (2 * m_screenSize->Width * m_screenSize->Height);
+		element_pixel_dimensions.x = m_sizeMultiplier.x * element_pixel_dimensions.y;
 
-			//Second, account for the "drift" effect of the center of the element. This effect occurs
-			//since the dimensions are co-dependent on the height AND width of the current screen as opposed
-			//to the element height only being dependent on screen height, and the element width only 
-			//being dependent on screen width.
-			float newPixelDistanceToHorizontal = m_horizontalDriftMultiplier * element_pixel_dimensions.y;
-			float newPixelDistanceToVertical = m_absoluteDistanceToScreenCenter.y * element_pixel_dimensions.y / m_size.y;
+		//Second, account for the "drift" effect of the center of the element. This effect occurs
+		//since the dimensions are co-dependent on the height AND width of the current screen as opposed
+		//to the element height only being dependent on screen height, and the element width only 
+		//being dependent on screen width.
+		float newPixelDistanceToHorizontal = m_horizontalDriftMultiplier * element_pixel_dimensions.y;
+		float newPixelDistanceToVertical = m_absoluteDistanceToScreenCenter.y * element_pixel_dimensions.y / m_size.y;
 
-			element_pixel_center.x += newPixelDistanceToHorizontal - m_absoluteDistanceToScreenCenter.x * windowSize.Width;
-			element_pixel_center.y += newPixelDistanceToVertical - m_absoluteDistanceToScreenCenter.y * windowSize.Height;
+		element_pixel_center.x += newPixelDistanceToHorizontal - m_absoluteDistanceToScreenCenter.x * m_screenSize->Width;
+		element_pixel_center.y += newPixelDistanceToVertical - m_absoluteDistanceToScreenCenter.y * m_screenSize->Height;
 
-			//Once the center drift has been accounted for, size either the m_shape or m_text variable so that
-			//the new pixel center is the exact center of the element. The m_shape variable gets preference over
-			//the m_text variable so check for this variable first.
-			if (m_shape.m_shapeType != UIShapeType::END)
-			{
-				m_shape.m_rectangle.left = element_pixel_center.x - element_pixel_dimensions.x / 2.0f;
-				m_shape.m_rectangle.top = element_pixel_center.y - element_pixel_dimensions.y / 2.0f;
-				m_shape.m_rectangle.right = element_pixel_center.x + element_pixel_dimensions.x / 2.0f;
-				m_shape.m_rectangle.bottom = element_pixel_center.y + element_pixel_dimensions.y / 2.0f;
-			}
-			else if (m_text.textType != UITextType::END)
-			{
-				m_text.startLocation = { element_pixel_center.x - element_pixel_dimensions.x / 2.0f, element_pixel_center.y - element_pixel_dimensions.y / 2.0f }; //text always starts at the top left of the UI Element
-				m_text.renderArea = { element_pixel_dimensions.x, element_pixel_dimensions.y };
-				m_text.fontSize = windowSize.Height * m_fontSize; //TODO: This would make more sense to be based on element height, not screen height
-			}
+		//Once the correct location has been found, check to make sure that no part of the element will be 
+		//outside of the screen. If it is, then the element will need to be shrunk so that it remains in 
+		//screen.
+		if (screenBoundaryCheck(element_pixel_center, element_pixel_dimensions))
+		{
+			//Since parent UI Elements are checked before child elements, and the dimensions for
+			//all child elements are contained within the dimensions of the parent element, only
+			//parent elements will actually trigger the screen boundary check.
+		}
+
+		//Once the center drift has been accounted for, size either the m_shape or m_text variable so that
+		//the new pixel center is the exact center of the element. The m_shape variable gets preference over
+		//the m_text variable so check for this variable first.
+		if (m_shape.m_shapeType != UIShapeType::END)
+		{
+			m_shape.m_rectangle.left = element_pixel_center.x - element_pixel_dimensions.x / 2.0f;
+			m_shape.m_rectangle.top = element_pixel_center.y - element_pixel_dimensions.y / 2.0f;
+			m_shape.m_rectangle.right = element_pixel_center.x + element_pixel_dimensions.x / 2.0f;
+			m_shape.m_rectangle.bottom = element_pixel_center.y + element_pixel_dimensions.y / 2.0f;
+		}
+		
+		if (m_text.textType != UITextType::END)
+		{
+			m_text.startLocation = { element_pixel_center.x - element_pixel_dimensions.x / 2.0f, element_pixel_center.y - element_pixel_dimensions.y / 2.0f }; //text always starts at the top left of the UI Element
+			m_text.renderArea = { element_pixel_dimensions.x, element_pixel_dimensions.y };
+			m_text.fontSize = element_pixel_dimensions.y * m_fontSize;
 		}
 	}
 
 	//Resize all child elements as well
-	for (int i = 0; i < p_children.size(); i++) p_children[i]->resize(windowSize);
+	for (int i = 0; i < p_children.size(); i++) p_children[i]->resize();
 
 	if (m_needTextRenderDimensions)
 	{
@@ -93,6 +100,57 @@ void UIElement::resize(winrt::Windows::Foundation::Size windowSize)
 		//need for pixels from the current state
 		m_state ^= UIElementState::NeedTextPixels;
 	}
+}
+
+bool UIElement::screenBoundaryCheck(DirectX::XMFLOAT2& pix_location, DirectX::XMFLOAT2& pix_size)
+{
+	//Elements with relative dimensions are placed and sized relative to the center of
+	//the screen, which means the they don't care about their location with respect to
+	//the edges of the screen. If the screen is shrunk too small then elements may 
+	//actually shift out of the viewing area. When that happens this method will detect
+	//it and srink elements accordingly to prevent this from happening.
+
+	//Check the width first
+	if (pix_location.x - pix_size.x / 2.0f < m_edgeThreshold)
+	{
+		if (m_location.x == 0.5f)
+		{
+			//If the center of the element is in the center of the screen
+		    //then we shrink the element enough so that both edges are within
+		    //the threshold
+			pix_size.x -= 2 * (m_edgeThreshold - pix_location.x) + pix_size.x;
+			pix_size.y = pix_size.x / m_sizeMultiplier.x;
+		}
+		
+	}
+	else if (pix_location.x + pix_size.x / 2.0f > (m_screenSize->Width - m_edgeThreshold))
+	{
+		//resize the x dimension of the element so that it fits and then 
+		//scale the y dimension to match it.
+		pix_size.x -= 2 * (pix_location.x + m_edgeThreshold - m_screenSize->Width) + pix_size.x;
+		pix_size.y = pix_size.x / m_sizeMultiplier.x;
+	}
+
+	//It's possible that after shrinking the width, the height could
+	//still be out of bounds. Or it's possible the width was fine to
+	//being with and the height wasn't. Either way, check the height 
+	//as well.
+	if (pix_location.y - pix_size.y / 2.0f < m_edgeThreshold)
+	{
+		//resize the x dimension of the element so that it fits and then 
+		//scale the y dimension to match it.
+		pix_size.y -= 2 * (m_edgeThreshold - pix_location.y) + pix_size.y;
+		pix_size.x = pix_size.y * m_sizeMultiplier.x;
+	}
+	else if (pix_location.y + pix_size.y / 2.0f > (m_screenSize->Height - m_edgeThreshold))
+	{
+		//resize the x dimension of the element so that it fits and then 
+		//scale the y dimension to match it.
+		pix_size.y -= 2 * (pix_location.y + m_edgeThreshold - m_screenSize->Height) + pix_size.y;
+		pix_size.x = pix_size.y * m_sizeMultiplier.x;
+	}
+
+	return false;
 }
 
 uint32_t UIElement::update(InputState* inputState)
@@ -215,14 +273,15 @@ winrt::Windows::Foundation::Size UIElement::getCurrentWindowSize()
 	//UI Element doesn't have its own shape or text, then a child's will be used.
 	if (m_shape.m_shapeType != UIShapeType::END)
 	{
-		return { (m_shape.m_rectangle.right - m_shape.m_rectangle.left) / m_size.x, (m_shape.m_rectangle.bottom - m_shape.m_rectangle.top) / m_size.y };
+		auto absoluteSize = getAbsoluteSize();
+		return { (m_shape.m_rectangle.right - m_shape.m_rectangle.left) / absoluteSize.x, (m_shape.m_rectangle.bottom - m_shape.m_rectangle.top) / absoluteSize.y};
 	}
 	else if (m_text.textType != UITextType::END)
 	{
 		//Text height isn't always linked to the m_size.y variable so we calculate the screen height by comparing the
 		//absolute font height vs. its pixel height. On the other hand text width should always be snapped to the 
 		//m_size.x variable
-		return { m_text.renderArea.x / m_size.x, m_text.fontSize / m_fontSize };
+		return { m_text.renderArea.x / getAbsoluteSize().x, m_text.fontSize / m_fontSize };
 	}
 	else
 	{
@@ -335,21 +394,25 @@ DirectX::XMFLOAT2 UIElement::getAbsoluteSize()
 
 void UIElement::setAbsoluteSize(DirectX::XMFLOAT2 size)
 {
-	//Changing the absolute size for an element needs to change the absolute size of
-	//itself, and, all of its children. We don't apply the same size parameter to the
-	//children though. Instead we compare the old size of the current element to the 
-	//new size to get a ratio. We increase the absolute size of the children by the
-	//same ratio.
-	DirectX::XMFLOAT2 originalAbsoluteSieze = getAbsoluteSize();
+	//This method changes the absolute size of the UI Element. Unlike the 
+	//setAbsoluteLocation method() which translates well to all child elemnts,
+	//this method does not. The reason for this is that elements are sized 
+	//from their center. Shrinking the size of two child elements that are 
+	//supposed to share an edge will cause them to retract from this shared
+	//edge and have a disjointed look.
+
+	//Because of this, all compound UI Elements must implement their own 
+	//version of this method.
+	DirectX::XMFLOAT2 originalAbsoluteSize = getAbsoluteSize();
 	updateLocationAndSize(getAbsoluteLocation(), size);
 
-	DirectX::XMFLOAT2 sizeRatio = { size.x / originalAbsoluteSieze.x, size.y / originalAbsoluteSieze.y };
+	/*DirectX::XMFLOAT2 sizeRatio = { size.x / originalAbsoluteSize.x, size.y / originalAbsoluteSize.y };
 
 	for (int i = 0; i < p_children.size(); i++)
 	{
 		auto childAbsoluteSize = p_children[i]->getAbsoluteSize();
 		p_children[i]->setAbsoluteSize({ childAbsoluteSize.x * sizeRatio.x, childAbsoluteSize.y * sizeRatio.y});
-	}
+	}*/
 }
 
 DirectX::XMFLOAT2 UIElement::getAbsoluteLocation()
@@ -368,10 +431,10 @@ void UIElement::setAbsoluteLocation(DirectX::XMFLOAT2 location)
 	//location to each child (as some children have locations offset from their
 	//parents). Instead we compare the current location and the new location
 	//to get a difference. This same difference is then applied to the children.
+	DirectX::XMFLOAT2 originalAbsoluteLocation = getAbsoluteLocation();
 	updateLocationAndSize(location, getAbsoluteSize());
 
-	DirectX::XMFLOAT2 locationDifference = { location.x - m_location.x, location.y - m_location.y };
-	m_location = location;
+	DirectX::XMFLOAT2 locationDifference = { location.x - originalAbsoluteLocation.x, location.y - originalAbsoluteLocation.y };
 
 	for (int i = 0; i < p_children.size(); i++)
 	{

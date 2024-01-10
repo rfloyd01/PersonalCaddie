@@ -10,7 +10,7 @@ DevelopmentMenuMode::DevelopmentMenuMode()
 uint32_t DevelopmentMenuMode::initializeMode(winrt::Windows::Foundation::Size windowSize, uint32_t initialState)
 {
 	//Initialize all overlay text
-	initializeTextOverlay(windowSize);
+	initializeTextOverlay();
 
 	//See if we're currently connected to a Personal Caddie device or not, transferring to some modes from
 	//this menu requires it
@@ -50,13 +50,13 @@ void DevelopmentMenuMode::handleKeyPress(winrt::Windows::System::VirtualKey pres
 	case winrt::Windows::System::VirtualKey::Number2:
 	{
 		if (m_connected) newMode = ModeType::GRAPH_MODE;
-		else createAlert(L"Must be connected to a Personal Caddie to go to Graph Mode.", UIColor::Red, m_uiManager.getScreenSize());
+		else createAlert(L"Must be connected to a Personal Caddie to go to Graph Mode.", UIColor::Red);
 		break;
 	}
 	case winrt::Windows::System::VirtualKey::Number3:
 	{
 		if (m_connected) newMode = ModeType::MADGWICK;
-		else createAlert(L"Must be connected to a Personal Caddie to go to Madgwick Mode.", UIColor::Red, m_uiManager.getScreenSize());
+		else createAlert(L"Must be connected to a Personal Caddie to go to Madgwick Mode.", UIColor::Red);
 		break;
 	}
 	}
@@ -64,17 +64,17 @@ void DevelopmentMenuMode::handleKeyPress(winrt::Windows::System::VirtualKey pres
 	if (newMode != ModeType::DEVELOPER_TOOLS) m_mode_screen_handler(ModeAction::ChangeMode, (void*)&newMode);
 }
 
-void DevelopmentMenuMode::initializeTextOverlay(winrt::Windows::Foundation::Size windowSize)
+void DevelopmentMenuMode::initializeTextOverlay()
 {
 	//Title information
 	std::wstring title_message = L"Developer Tools";
-	TextOverlay title(windowSize, { UIConstants::TitleTextLocationX, UIConstants::TitleTextLocationY }, { UIConstants::TitleTextSizeX, UIConstants::TitleTextSizeY },
+	TextOverlay title(m_uiManager.getScreenSize(), {UIConstants::TitleTextLocationX, UIConstants::TitleTextLocationY}, {UIConstants::TitleTextSizeX, UIConstants::TitleTextSizeY},
 		title_message, UIConstants::TitleTextPointSize, { UIColor::White }, { 0,  (unsigned int)title_message.length() }, UITextJustification::CenterCenter);
 	m_uiManager.addElement<TextOverlay>(title, L"Title Text");
 
 	//Sub-Title information
 	std::wstring subtitle_message = L"Modes to aid in the development of the Personal Caddie";
-	TextOverlay subtitle(windowSize, { UIConstants::SubTitleTextLocationX, UIConstants::SubTitleTextLocationY }, { UIConstants::SubTitleTextSizeX, UIConstants::SubTitleTextSizeY },
+	TextOverlay subtitle(m_uiManager.getScreenSize(), { UIConstants::SubTitleTextLocationX, UIConstants::SubTitleTextLocationY }, { UIConstants::SubTitleTextSizeX, UIConstants::SubTitleTextSizeY },
 		subtitle_message, UIConstants::SubTitleTextPointSize, { UIColor::White }, { 0,  (unsigned int)subtitle_message.length() }, UITextJustification::CenterCenter);
 	m_uiManager.addElement<TextOverlay>(subtitle, L"Subtitle Text");
 
@@ -82,14 +82,14 @@ void DevelopmentMenuMode::initializeTextOverlay(winrt::Windows::Foundation::Size
 	std::wstring body_message_1 = L"1. UI Element Testing \n";
 	std::wstring body_message_2 = L"2. Graph IMU Data \n";
 	std::wstring body_message_3 = L"3. Madgwick Filter Testing \n";
-	TextOverlay body(windowSize, { UIConstants::BodyTextLocationX, UIConstants::BodyTextLocationY }, { UIConstants::BodyTextSizeX, UIConstants::BodyTextSizeY },
+	TextOverlay body(m_uiManager.getScreenSize(), { UIConstants::BodyTextLocationX, UIConstants::BodyTextLocationY }, { UIConstants::BodyTextSizeX, UIConstants::BodyTextSizeY },
 		body_message_1 + body_message_2 + body_message_3, UIConstants::BodyTextPointSize, { UIColor::PaleGray, UIColor::DarkGray }, { 0, (unsigned int)body_message_1.length(), (unsigned int)body_message_2.length(), (unsigned int)body_message_3.length() },
 		UITextJustification::UpperLeft);
 	m_uiManager.addElement<TextOverlay>(body, L"Body Text");
 
 	//Footnote information
 	std::wstring footnote_message = L"Press Esc. to return to main menu";
-	TextOverlay footnote(windowSize, { UIConstants::FootNoteTextLocationX, UIConstants::FootNoteTextLocationY }, { UIConstants::FootNoteTextSizeX, UIConstants::FootNoteTextSizeY },
+	TextOverlay footnote(m_uiManager.getScreenSize(), { UIConstants::FootNoteTextLocationX, UIConstants::FootNoteTextLocationY }, { UIConstants::FootNoteTextSizeX, UIConstants::FootNoteTextSizeY },
 		footnote_message, UIConstants::FootNoteTextPointSize, { UIColor::White }, { 0,  (unsigned int)footnote_message.length() }, UITextJustification::LowerRight);
 	m_uiManager.addElement<TextOverlay>(footnote, L"Footnote Text");
 }

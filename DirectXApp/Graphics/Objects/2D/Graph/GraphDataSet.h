@@ -15,9 +15,9 @@
 class GraphDataSet : public UIElement
 {
 public:
-	GraphDataSet(DirectX::XMFLOAT2 minimalDataPoint, DirectX::XMFLOAT2 maximalDataPoint);
+	GraphDataSet(std::shared_ptr<winrt::Windows::Foundation::Size> windowSize, DirectX::XMFLOAT2 minimalDataPoint, DirectX::XMFLOAT2 maximalDataPoint);
 
-	void addGridLines(winrt::Windows::Foundation::Size windowSize, int vertical_grid_lines, int horizontal_grid_lines, DirectX::XMFLOAT2 absoluteGraphMaximums, DirectX::XMFLOAT2 absoluteGraphMinimums);
+	void addGridLines(int vertical_grid_lines, int horizontal_grid_lines, DirectX::XMFLOAT2 absoluteGraphMaximums, DirectX::XMFLOAT2 absoluteGraphMinimums);
 	int getVerticalGridLines() { return m_vertical_grid_lines; }
 	int getHorizontalGridLines() { return m_horizontal_grid_lines; }
 

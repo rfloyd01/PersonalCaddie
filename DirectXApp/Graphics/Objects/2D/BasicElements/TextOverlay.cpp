@@ -1,9 +1,11 @@
 #include "pch.h"
 #include "TextOverlay.h"
 
-TextOverlay::TextOverlay(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, std::wstring message,
+TextOverlay::TextOverlay(std::shared_ptr<winrt::Windows::Foundation::Size> windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, std::wstring message,
 	float fontSize, std::vector<UIColor> colors, std::vector<unsigned long long> colorLocations, UITextJustification justification, bool useAbsolute)
 {
+	m_screenSize = windowSize;
+
 	//Set the screen size dependent variables. Unlike most UI Elements, there are times when it makes sense
 	//for the TextOverlay class to use the edges of the screen as a reference instead of the middle of the screen.
 	//For example, we always want the title at the top of the screen to stay in the same relative position to the
@@ -21,7 +23,7 @@ TextOverlay::TextOverlay(winrt::Windows::Foundation::Size windowSize, DirectX::X
 	m_text.colors = colors;
 	m_text.colorLocations = colorLocations;
 
-	resize(windowSize);
+	resize();
 }
 
 void TextOverlay::updateText(std::wstring message)

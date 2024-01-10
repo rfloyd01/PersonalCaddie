@@ -29,7 +29,7 @@ public:
 	virtual void getString(std::wstring message) override;
 
 private:
-	void initializeTextOverlay(winrt::Windows::Foundation::Size windowSize);
+	void initializeTextOverlay();
 	virtual void uiElementStateChangeHandler(std::shared_ptr<ManagedUIElement> element) override;
 
 	std::wstring m_currentlySelectedDeviceAddress = L"";

@@ -5,15 +5,15 @@
 class Box : public UIElement
 {
 public:
-	Box(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, UIColor color = UIColor::Black, UIShapeFillType fill = UIShapeFillType::Fill, bool isSquare = false);
+	Box(std::shared_ptr<winrt::Windows::Foundation::Size> windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, UIColor color = UIColor::Black, UIShapeFillType fill = UIShapeFillType::Fill);
 
-	//virtual void resize(winrt::Windows::Foundation::Size windowSize) override;
+	Box () {} //empty default constructor
 
 	void setBackgrounColor(UIColor color) { m_shape.m_color = color; }
 
 	bool isSquare() { return m_isSquare; }
 
-	float fixSquareBoxDrift(winrt::Windows::Foundation::Size const& currentWindowSize);
+	float fixSquareBoxDrift();
 
 protected:
 	//Sometimes it's useful to have boxes that only scale in a single direction. For

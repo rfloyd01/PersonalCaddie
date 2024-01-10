@@ -16,19 +16,19 @@ uint32_t GraphMode::initializeMode(winrt::Windows::Foundation::Size windowSize, 
 	m_uiManager.updateScreenSize(windowSize);
 
 	//Create a button that will generate a sin graph
-	TextButton recordButton(windowSize, { 0.1, 0.2 }, { 0.12, 0.1 }, L"Start Recording Data");
+	TextButton recordButton(m_uiManager.getScreenSize(), { 0.1, 0.2 }, { 0.12, 0.1 }, L"Start Recording Data");
 
 	std::wstring options = L"Acceleration\nAngular Velocity\nMagnetic Field\nRaw Acceleration\nRaw Angular Velocity\nRaw Magnetic Field\nLinear Acceleration";
-	DropDownMenu dataSelection(windowSize, { 0.9, 0.2 }, { 0.2, 0.1 }, options, 0.025, 5, false);
+	DropDownMenu dataSelection(m_uiManager.getScreenSize(), { 0.9, 0.2 }, { 0.2, 0.1 }, options, 0.025, 5, false);
 
-	Graph graph(windowSize, { 0.5, 0.65 }, { 0.9, 0.6 });
+	Graph graph(m_uiManager.getScreenSize(), { 0.5, 0.65 }, { 0.9, 0.6 });
 
 	m_uiManager.addElement<TextButton>(recordButton, L"Record Button");
 	m_uiManager.addElement<DropDownMenu>(dataSelection, L"Data Dropdown Menu");
 	m_uiManager.addElement<Graph>(graph, L"Graph");
 
 	//Initialize all overlay text
-	initializeTextOverlay(windowSize);
+	initializeTextOverlay();
 
 	//Load the model of the Personal Caddie to render on screen
 	loadModel();
@@ -87,17 +87,17 @@ void GraphMode::uninitializeMode()
 	m_mode_screen_handler(ModeAction::PersonalCaddieChangeMode, (void*)&mode);//request the Personal Caddie to be placed into active mode to start recording data
 }
 
-void GraphMode::initializeTextOverlay(winrt::Windows::Foundation::Size windowSize)
+void GraphMode::initializeTextOverlay()
 {
 	//Title information
 	std::wstring title_message = L"Graph Mode";
-	TextOverlay title(windowSize, { UIConstants::TitleTextLocationX, UIConstants::TitleTextLocationY }, { UIConstants::TitleTextSizeX, UIConstants::TitleTextSizeY },
+	TextOverlay title(m_uiManager.getScreenSize(), { UIConstants::TitleTextLocationX, UIConstants::TitleTextLocationY }, { UIConstants::TitleTextSizeX, UIConstants::TitleTextSizeY },
 		title_message, UIConstants::TitleTextPointSize, { UIColor::White }, { 0,  (unsigned int)title_message.length() }, UITextJustification::CenterCenter);
 	m_uiManager.addElement<TextOverlay>(title, L"Title Text");
 
 	//Footnote information
 	std::wstring footnote_message = L"Press Esc. to return to main menu";
-	TextOverlay footnote(windowSize, { UIConstants::FootNoteTextLocationX, UIConstants::FootNoteTextLocationY }, { UIConstants::FootNoteTextSizeX, UIConstants::FootNoteTextSizeY },
+	TextOverlay footnote(m_uiManager.getScreenSize(), { UIConstants::FootNoteTextLocationX, UIConstants::FootNoteTextLocationY }, { UIConstants::FootNoteTextSizeX, UIConstants::FootNoteTextSizeY },
 		footnote_message, UIConstants::FootNoteTextPointSize, { UIColor::White }, { 0,  (unsigned int)footnote_message.length() }, UITextJustification::LowerRight);
 	m_uiManager.addElement<TextOverlay>(footnote, L"Footnote Text");
 }
@@ -244,9 +244,9 @@ void GraphMode::uiElementStateChangeHandler(std::shared_ptr<ManagedUIElement> el
 				//set the min and max data values for the graph
 				m_uiManager.getElement<Graph>(L"Graph")->setAxisMaxAndMins({ m_graphDataX[0].x,  m_minimalPoint.y }, { m_graphDataX.back().x, m_maximalPoint.y });
 
-				m_uiManager.getElement<Graph>(L"Graph")->addGraphData(m_uiManager.getScreenSize(), m_graphDataX, UIColor::Red);
-				m_uiManager.getElement<Graph>(L"Graph")->addGraphData(m_uiManager.getScreenSize(), m_graphDataY, UIColor::Blue);
-				m_uiManager.getElement<Graph>(L"Graph")->addGraphData(m_uiManager.getScreenSize(), m_graphDataZ, UIColor::Green);
+				m_uiManager.getElement<Graph>(L"Graph")->addGraphData(m_graphDataX, UIColor::Red);
+				m_uiManager.getElement<Graph>(L"Graph")->addGraphData(m_graphDataY, UIColor::Blue);
+				m_uiManager.getElement<Graph>(L"Graph")->addGraphData(m_graphDataZ, UIColor::Green);
 
 				//add a few axis lines to the graph
 				float centerLineLocation = (m_minimalPoint.y + m_maximalPoint.y) / 2.0f; //The average of the highest and lowest data point
@@ -437,7 +437,7 @@ void GraphMode::convergenceCheck()
 		m_mode_screen_handler(ModeAction::MadgwickUpdateFilter, (void*)&initial_beta_value);;
 
 		//And do a little clean up
-		createAlert(L"Convergence Complete", UIColor::DarkGray, m_uiManager.getScreenSize());
+		createAlert(L"Convergence Complete", UIColor::DarkGray);
 		m_convergenceQuaternions.clear();
 		m_converged = true; //prevents this convergenceCheck() from being called again and starts data capture
 	}

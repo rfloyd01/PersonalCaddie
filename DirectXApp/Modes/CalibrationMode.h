@@ -45,7 +45,7 @@ public:
 	virtual void ble_NotificationsChange(int state) override;
 
 private:
-	void initializeTextOverlay(winrt::Windows::Foundation::Size windowSize);
+	void initializeTextOverlay();
 	void initializeCalibrationVariables();
 
 	//Handler Methods

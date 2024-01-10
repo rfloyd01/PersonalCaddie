@@ -16,7 +16,7 @@ uint32_t FreeSwingMode::initializeMode(winrt::Windows::Foundation::Size windowSi
 	m_uiManager.updateScreenSize(windowSize);
 
 	//Create UI Elements on the page
-	initializeTextOverlay(windowSize);
+	initializeTextOverlay();
 
 	//load the model of the golf club
 	loadModel();
@@ -75,23 +75,23 @@ void FreeSwingMode::uninitializeMode()
 	m_mode_screen_handler(ModeAction::PersonalCaddieChangeMode, (void*)&mode);
 }
 
-void FreeSwingMode::initializeTextOverlay(winrt::Windows::Foundation::Size windowSize)
+void FreeSwingMode::initializeTextOverlay()
 {
 	//Title information
 	std::wstring title_message = L"Madgwick Filter Testing";
-	TextOverlay title(windowSize, { UIConstants::TitleTextLocationX, UIConstants::TitleTextLocationY }, { UIConstants::TitleTextSizeX, UIConstants::TitleTextSizeY },
+	TextOverlay title(m_uiManager.getScreenSize(), { UIConstants::TitleTextLocationX, UIConstants::TitleTextLocationY }, { UIConstants::TitleTextSizeX, UIConstants::TitleTextSizeY },
 		title_message, UIConstants::TitleTextPointSize, { UIColor::White }, { 0,  (unsigned int)title_message.length() }, UITextJustification::CenterCenter);
 	m_uiManager.addElement<TextOverlay>(title, L"Title Text");
 
 	//Footnote information
 	std::wstring footnote_message = L"Press Esc. to return to settings menu";
-	TextOverlay footnote(windowSize, { UIConstants::FootNoteTextLocationX, UIConstants::FootNoteTextLocationY }, { UIConstants::FootNoteTextSizeX, UIConstants::FootNoteTextSizeY },
+	TextOverlay footnote(m_uiManager.getScreenSize(), { UIConstants::FootNoteTextLocationX, UIConstants::FootNoteTextLocationY }, { UIConstants::FootNoteTextSizeX, UIConstants::FootNoteTextSizeY },
 		footnote_message, UIConstants::FootNoteTextPointSize, { UIColor::White }, { 0,  (unsigned int)footnote_message.length() }, UITextJustification::LowerRight);
 	m_uiManager.addElement<TextOverlay>(footnote, L"Footnote Text");
 
 	//View data message
 	std::wstring view_data_message = L"Press Space to Center the Club";
-	TextOverlay view_data(windowSize, { UIConstants::FootNoteTextLocationX - 0.33f, UIConstants::FootNoteTextLocationY }, { UIConstants::FootNoteTextSizeX, UIConstants::FootNoteTextSizeY },
+	TextOverlay view_data(m_uiManager.getScreenSize(), { UIConstants::FootNoteTextLocationX - 0.33f, UIConstants::FootNoteTextLocationY }, { UIConstants::FootNoteTextSizeX, UIConstants::FootNoteTextSizeY },
 		view_data_message, UIConstants::FootNoteTextPointSize, { UIColor::White }, { 0,  (unsigned int)view_data_message.length() }, UITextJustification::LowerCenter);
 	m_uiManager.addElement<TextOverlay>(view_data, L"View Data Text");
 }

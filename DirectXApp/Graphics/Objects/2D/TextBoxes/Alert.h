@@ -12,7 +12,7 @@
 class Alert : public TextOverlay
 {
 public:
-	Alert(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, std::wstring message,
+	Alert(std::shared_ptr<winrt::Windows::Foundation::Size> windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, std::wstring message,
 		float fontSize, std::vector<UIColor> colors, std::vector<unsigned long long> colorLocations, UITextJustification justification, long long time = 2500)
 		: TextOverlay(windowSize, location, size, message, fontSize, colors, colorLocations, justification)
 	{

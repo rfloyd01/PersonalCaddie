@@ -25,29 +25,29 @@ uint32_t CalibrationMode::initializeMode(winrt::Windows::Foundation::Size window
 	std::wstring toggleButtonText = L"Data Type: Standard";
 	std::wstring axesButtonText = L"Test Type: Data Calibration";
 
-	TextButton accButton(windowSize, { 0.16, 0.85 }, { 0.14, 0.1 }, accButtonText);
-	TextButton gyrButton(windowSize, { 0.5, 0.85 }, { 0.14, 0.1 }, gyrButtonText);
-	TextButton magButton(windowSize, { 0.83, 0.85 }, { 0.14, 0.1 }, magButtonText);
-	TextButton continueButton(windowSize, { 0.16, 0.85 }, { 0.14, 0.1 }, continueButtonText);
-	TextButton noButton(windowSize, { 0.32, 0.85 }, { 0.14, 0.1 }, noButtonText);
-	TextButton toggleButton(windowSize, { 0.83, 0.65 }, { 0.14, 0.1 }, toggleButtonText);
-	TextButton axesButton(windowSize, { 0.5, 0.65 }, { 0.14, 0.1 }, axesButtonText);
+	TextButton accButton(m_uiManager.getScreenSize(), {0.16, 0.85}, {0.14, 0.1}, accButtonText);
+	TextButton gyrButton(m_uiManager.getScreenSize(), { 0.5, 0.85 }, { 0.14, 0.1 }, gyrButtonText);
+	TextButton magButton(m_uiManager.getScreenSize(), { 0.83, 0.85 }, { 0.14, 0.1 }, magButtonText);
+	TextButton continueButton(m_uiManager.getScreenSize(), { 0.16, 0.85 }, { 0.14, 0.1 }, continueButtonText);
+	TextButton noButton(m_uiManager.getScreenSize(), { 0.32, 0.85 }, { 0.14, 0.1 }, noButtonText);
+	TextButton toggleButton(m_uiManager.getScreenSize(), { 0.83, 0.65 }, { 0.14, 0.1 }, toggleButtonText);
+	TextButton axesButton(m_uiManager.getScreenSize(), { 0.5, 0.65 }, { 0.14, 0.1 }, axesButtonText);
 	continueButton.updateState(UIElementState::Invisible); //this button is invisible to start off
 	noButton.updateState(UIElementState::Invisible); //this button is invisible to start off
 
 	//The body and sub-title text overlays will change depending on the current mode state so they
 	//aren't declared in the initializeTextOverlay() method
-	TextOverlay body(windowSize, { UIConstants::BodyTextLocationX, UIConstants::BodyTextLocationY }, { UIConstants::BodyTextSizeX, UIConstants::BodyTextSizeY },
+	TextOverlay body(m_uiManager.getScreenSize(), { UIConstants::BodyTextLocationX, UIConstants::BodyTextLocationY }, { UIConstants::BodyTextSizeX, UIConstants::BodyTextSizeY },
 		introMessage, 0.65f * UIConstants::BodyTextPointSize, { UIColor::White }, { 0,  (unsigned int)introMessage.length() }, UITextJustification::UpperLeft);
-	TextOverlay subTitle(windowSize, { UIConstants::SubTitleTextLocationX, UIConstants::SubTitleTextLocationY - 0.025f }, { UIConstants::SubTitleTextSizeX, UIConstants::SubTitleTextSizeY },
+	TextOverlay subTitle(m_uiManager.getScreenSize(), { UIConstants::SubTitleTextLocationX, UIConstants::SubTitleTextLocationY - 0.025f }, { UIConstants::SubTitleTextSizeX, UIConstants::SubTitleTextSizeY },
 		L"Fill", 1.05f * UIConstants::SubTitleTextPointSize, {UIColor::White}, {0, 4}, UITextJustification::UpperCenter);
 	subTitle.setState(subTitle.getState() | UIElementState::Invisible); ///the sub-title starts off invisible
 
 	//Create a few graph ui elements, they will stay invisible until after individual calibrations are complete
-	Graph accGraph(windowSize, { 0.7, 0.65 }, { 0.5, 0.5 });
-	Graph magGraph1(windowSize, { 0.55, 0.8 }, { 0.25, 0.25 }, false, UIColor::White, UIColor::Black, true, false);
-	Graph magGraph2(windowSize, { 0.85, 0.5 }, { 0.25, 0.25 }, false, UIColor::White, UIColor::Black, true, false);
-	Graph magGraph3(windowSize, { 0.85, 0.8 }, { 0.25, 0.25 }, false, UIColor::White, UIColor::Black, true, false);
+	Graph accGraph(m_uiManager.getScreenSize(), { 0.7, 0.65 }, { 0.5, 0.5 });
+	Graph magGraph1(m_uiManager.getScreenSize(), { 0.55, 0.8 }, { 0.25, 0.25 }, false, UIColor::White, UIColor::Black, true, false);
+	Graph magGraph2(m_uiManager.getScreenSize(), { 0.85, 0.5 }, { 0.25, 0.25 }, false, UIColor::White, UIColor::Black, true, false);
+	Graph magGraph3(m_uiManager.getScreenSize(), { 0.85, 0.8 }, { 0.25, 0.25 }, false, UIColor::White, UIColor::Black, true, false);
 	accGraph.setState(accGraph.getState() | UIElementState::Invisible);
 	magGraph1.setState(magGraph1.getState() | UIElementState::Invisible);
 	magGraph2.setState(magGraph2.getState() | UIElementState::Invisible);
@@ -72,7 +72,7 @@ uint32_t CalibrationMode::initializeMode(winrt::Windows::Foundation::Size window
 	m_axisCalibration = false;
 
 	//Initialize any unchanging text
-	initializeTextOverlay(windowSize);
+	initializeTextOverlay();
 
 	//This mode has a lot of UI Elements so the following method is used to 
 	//quickly load the landing page
@@ -99,17 +99,17 @@ void CalibrationMode::uninitializeMode()
 	m_materialTypes.clear();
 }
 
-void CalibrationMode::initializeTextOverlay(winrt::Windows::Foundation::Size windowSize)
+void CalibrationMode::initializeTextOverlay()
 {
 	//Title information
 	std::wstring title_message = L"Calibration Mode";
-	TextOverlay title(windowSize, { UIConstants::TitleTextLocationX, UIConstants::TitleTextLocationY }, { UIConstants::TitleTextSizeX, UIConstants::TitleTextSizeY },
+	TextOverlay title(m_uiManager.getScreenSize(), { UIConstants::TitleTextLocationX, UIConstants::TitleTextLocationY }, { UIConstants::TitleTextSizeX, UIConstants::TitleTextSizeY },
 		title_message, UIConstants::TitleTextPointSize, { UIColor::White }, { 0,  (unsigned int)title_message.length() }, UITextJustification::CenterCenter);
 	m_uiManager.addElement<TextOverlay>(title, L"Title Text");
 
 	//Footnote information
 	std::wstring footnote_message = L"Press Esc. to return to settings menu.";
-	TextOverlay footnote(windowSize, { UIConstants::FootNoteTextLocationX, UIConstants::FootNoteTextLocationY }, { UIConstants::FootNoteTextSizeX, UIConstants::FootNoteTextSizeY },
+	TextOverlay footnote(m_uiManager.getScreenSize(), { UIConstants::FootNoteTextLocationX, UIConstants::FootNoteTextLocationY }, { UIConstants::FootNoteTextSizeX, UIConstants::FootNoteTextSizeY },
 		footnote_message, UIConstants::FootNoteTextPointSize, { UIColor::White }, { 0,  (unsigned int)footnote_message.length() }, UITextJustification::LowerRight);
 	m_uiManager.addElement<TextOverlay>(footnote, L"Footnote Text");
 }
@@ -1898,9 +1898,6 @@ void CalibrationMode::displayGraph()
 	//Although not necessary for the calibration process it's useful to look at a graphical
 	//representation of the accumulated data to make sure that things look correct. This
 	//method get's called after all calibration data has been gathered.
-
-	auto screenSize = m_uiManager.getScreenSize();
-
 	if (m_axisCalibration)
 	{
 		//set the min and max data values for the graph, this value will change depending on which 
@@ -1914,22 +1911,22 @@ void CalibrationMode::displayGraph()
 		upperLineLocation = 50.0f;
 		lowerLineLocation = -50.0f;
 
-		m_uiManager.getElement<Graph>(L"Acc Graph")->addGraphData(screenSize, m_graphDataX, UIColor::Red);
-		m_uiManager.getElement<Graph>(L"Acc Graph")->addGraphData(screenSize, m_graphDataY, UIColor::Blue);
-		m_uiManager.getElement<Graph>(L"Acc Graph")->addGraphData(screenSize, m_graphDataZ, UIColor::Green);
+		m_uiManager.getElement<Graph>(L"Acc Graph")->addGraphData(m_graphDataX, UIColor::Red);
+		m_uiManager.getElement<Graph>(L"Acc Graph")->addGraphData(m_graphDataY, UIColor::Blue);
+		m_uiManager.getElement<Graph>(L"Acc Graph")->addGraphData(m_graphDataZ, UIColor::Green);
 
-		m_uiManager.getElement<Graph>(L"Acc Graph")->addAxisLine(screenSize, 0, centerLineLocation);
-		m_uiManager.getElement<Graph>(L"Acc Graph")->addAxisLine(screenSize, 0, upperLineLocation);
-		m_uiManager.getElement<Graph>(L"Acc Graph")->addAxisLine(screenSize, 0, lowerLineLocation);
+		m_uiManager.getElement<Graph>(L"Acc Graph")->addAxisLine(0, centerLineLocation);
+		m_uiManager.getElement<Graph>(L"Acc Graph")->addAxisLine(0, upperLineLocation);
+		m_uiManager.getElement<Graph>(L"Acc Graph")->addAxisLine(0, lowerLineLocation);
 
 		std::wstring axisText = std::to_wstring(centerLineLocation);
-		m_uiManager.getElement<Graph>(L"Acc Graph")->addAxisLabel(screenSize, axisText, 0, centerLineLocation);
+		m_uiManager.getElement<Graph>(L"Acc Graph")->addAxisLabel(axisText, 0, centerLineLocation);
 
 		axisText = std::to_wstring(upperLineLocation);
-		m_uiManager.getElement<Graph>(L"Acc Graph")->addAxisLabel(screenSize, axisText, 0, upperLineLocation);
+		m_uiManager.getElement<Graph>(L"Acc Graph")->addAxisLabel(axisText, 0, upperLineLocation);
 
 		axisText = std::to_wstring(lowerLineLocation);
-		m_uiManager.getElement<Graph>(L"Acc Graph")->addAxisLabel(screenSize, axisText, 0, lowerLineLocation);
+		m_uiManager.getElement<Graph>(L"Acc Graph")->addAxisLabel(axisText, 0, lowerLineLocation);
 
 		m_uiManager.getElement<Graph>(L"Acc Graph")->removeState(UIElementState::Invisible); //lastly, make the graph visible
 	}
@@ -1945,22 +1942,22 @@ void CalibrationMode::displayGraph()
 		upperLineLocation = GRAVITY; //95% of the highest data point
 		lowerLineLocation = -GRAVITY; //95% of the lowest data point
 
-		m_uiManager.getElement<Graph>(L"Acc Graph")->addGraphData(screenSize, m_graphDataX, UIColor::Red);
-		m_uiManager.getElement<Graph>(L"Acc Graph")->addGraphData(screenSize, m_graphDataY, UIColor::Blue);
-		m_uiManager.getElement<Graph>(L"Acc Graph")->addGraphData(screenSize, m_graphDataZ, UIColor::Green);
+		m_uiManager.getElement<Graph>(L"Acc Graph")->addGraphData(m_graphDataX, UIColor::Red);
+		m_uiManager.getElement<Graph>(L"Acc Graph")->addGraphData(m_graphDataY, UIColor::Blue);
+		m_uiManager.getElement<Graph>(L"Acc Graph")->addGraphData(m_graphDataZ, UIColor::Green);
 
-		m_uiManager.getElement<Graph>(L"Acc Graph")->addAxisLine(screenSize, 0, centerLineLocation);
-		m_uiManager.getElement<Graph>(L"Acc Graph")->addAxisLine(screenSize, 0, upperLineLocation);
-		m_uiManager.getElement<Graph>(L"Acc Graph")->addAxisLine(screenSize, 0, lowerLineLocation);
+		m_uiManager.getElement<Graph>(L"Acc Graph")->addAxisLine(0, centerLineLocation);
+		m_uiManager.getElement<Graph>(L"Acc Graph")->addAxisLine(0, upperLineLocation);
+		m_uiManager.getElement<Graph>(L"Acc Graph")->addAxisLine(0, lowerLineLocation);
 
 		std::wstring axisText = std::to_wstring(centerLineLocation);
-		m_uiManager.getElement<Graph>(L"Acc Graph")->addAxisLabel(screenSize, axisText, 0, centerLineLocation);
+		m_uiManager.getElement<Graph>(L"Acc Graph")->addAxisLabel(axisText, 0, centerLineLocation);
 
 		axisText = std::to_wstring(upperLineLocation);
-		m_uiManager.getElement<Graph>(L"Acc Graph")->addAxisLabel(screenSize, axisText, 0, upperLineLocation);
+		m_uiManager.getElement<Graph>(L"Acc Graph")->addAxisLabel(axisText, 0, upperLineLocation);
 
 		axisText = std::to_wstring(lowerLineLocation);
-		m_uiManager.getElement<Graph>(L"Acc Graph")->addAxisLabel(screenSize, axisText, 0, lowerLineLocation);
+		m_uiManager.getElement<Graph>(L"Acc Graph")->addAxisLabel(axisText, 0, lowerLineLocation);
 
 		m_uiManager.getElement<Graph>(L"Acc Graph")->removeState(UIElementState::Invisible); //lastly, make the graph visible
 	}
@@ -2013,37 +2010,37 @@ void CalibrationMode::displayGraph()
 		}
 
 		m_uiManager.getElement<Graph>(L"Mag1 Graph")->setAxisMaxAndMins({ -maximal_value,  -maximal_value }, { maximal_value, maximal_value });
-		m_uiManager.getElement<Graph>(L"Mag1 Graph")->addGraphData(screenSize, xy, UIColor::Red);
-		m_uiManager.getElement<Graph>(L"Mag1 Graph")->addGraphData(screenSize, xyc, UIColor::Green);
-		m_uiManager.getElement<Graph>(L"Mag1 Graph")->addAxisLine(screenSize, 0, 0);
-		m_uiManager.getElement<Graph>(L"Mag1 Graph")->addAxisLine(screenSize, 1, 0);
-		m_uiManager.getElement<Graph>(L"Mag1 Graph")->addAxisLine(screenSize, 1, min_calibrated_values[0]); //vertical line corresponding to min calibrated X value
-		m_uiManager.getElement<Graph>(L"Mag1 Graph")->addAxisLine(screenSize, 1, max_calibrated_values[0]); //vertical line corresponding to max calibrated X value
-		m_uiManager.getElement<Graph>(L"Mag1 Graph")->addAxisLabel(screenSize, L"Min X = " + std::to_wstring(min_calibrated_values[0]), 1, min_calibrated_values[0]);
-		m_uiManager.getElement<Graph>(L"Mag1 Graph")->addAxisLabel(screenSize, L"Max X = " + std::to_wstring(max_calibrated_values[0]), 1, max_calibrated_values[0]);
-		m_uiManager.getElement<Graph>(L"Mag1 Graph")->resize(screenSize); //resize the graph to get the labels in the correct locations
+		m_uiManager.getElement<Graph>(L"Mag1 Graph")->addGraphData(xy, UIColor::Red);
+		m_uiManager.getElement<Graph>(L"Mag1 Graph")->addGraphData(xyc, UIColor::Green);
+		m_uiManager.getElement<Graph>(L"Mag1 Graph")->addAxisLine(0, 0);
+		m_uiManager.getElement<Graph>(L"Mag1 Graph")->addAxisLine(1, 0);
+		m_uiManager.getElement<Graph>(L"Mag1 Graph")->addAxisLine(1, min_calibrated_values[0]); //vertical line corresponding to min calibrated X value
+		m_uiManager.getElement<Graph>(L"Mag1 Graph")->addAxisLine(1, max_calibrated_values[0]); //vertical line corresponding to max calibrated X value
+		m_uiManager.getElement<Graph>(L"Mag1 Graph")->addAxisLabel(L"Min X = " + std::to_wstring(min_calibrated_values[0]), 1, min_calibrated_values[0]);
+		m_uiManager.getElement<Graph>(L"Mag1 Graph")->addAxisLabel(L"Max X = " + std::to_wstring(max_calibrated_values[0]), 1, max_calibrated_values[0]);
+		m_uiManager.getElement<Graph>(L"Mag1 Graph")->resize(); //resize the graph to get the labels in the correct locations
 		
 		m_uiManager.getElement<Graph>(L"Mag2 Graph")->setAxisMaxAndMins({ -maximal_value,  -maximal_value }, { maximal_value, maximal_value });
-		m_uiManager.getElement<Graph>(L"Mag2 Graph")->addGraphData(screenSize, xz, UIColor::Blue);
-		m_uiManager.getElement<Graph>(L"Mag2 Graph")->addGraphData(screenSize, xzc, UIColor::Green);
-		m_uiManager.getElement<Graph>(L"Mag2 Graph")->addAxisLine(screenSize, 0, 0);
-		m_uiManager.getElement<Graph>(L"Mag2 Graph")->addAxisLine(screenSize, 1, 0);
-		m_uiManager.getElement<Graph>(L"Mag2 Graph")->addAxisLine(screenSize, 0, min_calibrated_values[2]); //horizontal line corresponding to min calibrated Z value
-		m_uiManager.getElement<Graph>(L"Mag2 Graph")->addAxisLine(screenSize, 0, max_calibrated_values[2]); //horizontal line corresponding to max calibrated Z value
-		m_uiManager.getElement<Graph>(L"Mag2 Graph")->addAxisLabel(screenSize, L"Min Z = " + std::to_wstring(min_calibrated_values[2]), 0, min_calibrated_values[2]);
-		m_uiManager.getElement<Graph>(L"Mag2 Graph")->addAxisLabel(screenSize, L"Max Z = " + std::to_wstring(max_calibrated_values[2]), 0, max_calibrated_values[2]);
-		m_uiManager.getElement<Graph>(L"Mag2 Graph")->resize(screenSize); //resize the graph to get the labels in the correct locations
+		m_uiManager.getElement<Graph>(L"Mag2 Graph")->addGraphData(xz, UIColor::Blue);
+		m_uiManager.getElement<Graph>(L"Mag2 Graph")->addGraphData(xzc, UIColor::Green);
+		m_uiManager.getElement<Graph>(L"Mag2 Graph")->addAxisLine(0, 0);
+		m_uiManager.getElement<Graph>(L"Mag2 Graph")->addAxisLine(1, 0);
+		m_uiManager.getElement<Graph>(L"Mag2 Graph")->addAxisLine(0, min_calibrated_values[2]); //horizontal line corresponding to min calibrated Z value
+		m_uiManager.getElement<Graph>(L"Mag2 Graph")->addAxisLine(0, max_calibrated_values[2]); //horizontal line corresponding to max calibrated Z value
+		m_uiManager.getElement<Graph>(L"Mag2 Graph")->addAxisLabel(L"Min Z = " + std::to_wstring(min_calibrated_values[2]), 0, min_calibrated_values[2]);
+		m_uiManager.getElement<Graph>(L"Mag2 Graph")->addAxisLabel(L"Max Z = " + std::to_wstring(max_calibrated_values[2]), 0, max_calibrated_values[2]);
+		m_uiManager.getElement<Graph>(L"Mag2 Graph")->resize(); //resize the graph to get the labels in the correct locations
 
 		m_uiManager.getElement<Graph>(L"Mag3 Graph")->setAxisMaxAndMins({ -maximal_value,  -maximal_value }, { maximal_value, maximal_value });
-		m_uiManager.getElement<Graph>(L"Mag3 Graph")->addGraphData(screenSize, yz, UIColor::Yellow);
-		m_uiManager.getElement<Graph>(L"Mag3 Graph")->addGraphData(screenSize, yzc, UIColor::Green);
-		m_uiManager.getElement<Graph>(L"Mag3 Graph")->addAxisLine(screenSize, 0, 0);
-		m_uiManager.getElement<Graph>(L"Mag3 Graph")->addAxisLine(screenSize, 1, 0);
-		m_uiManager.getElement<Graph>(L"Mag3 Graph")->addAxisLine(screenSize, 1, min_calibrated_values[1]); //vertical line corresponding to min calibrated Y value
-		m_uiManager.getElement<Graph>(L"Mag3 Graph")->addAxisLine(screenSize, 1, max_calibrated_values[1]); //vertical line corresponding to max calibrated Y value
-		m_uiManager.getElement<Graph>(L"Mag3 Graph")->addAxisLabel(screenSize, L"Min Y = " + std::to_wstring(min_calibrated_values[1]), 1, min_calibrated_values[1]);
-		m_uiManager.getElement<Graph>(L"Mag3 Graph")->addAxisLabel(screenSize, L"Max Y = " + std::to_wstring(max_calibrated_values[1]), 1, max_calibrated_values[1]);
-		m_uiManager.getElement<Graph>(L"Mag3 Graph")->resize(screenSize); //resize the graph to get the labels in the correct locations
+		m_uiManager.getElement<Graph>(L"Mag3 Graph")->addGraphData(yz, UIColor::Yellow);
+		m_uiManager.getElement<Graph>(L"Mag3 Graph")->addGraphData(yzc, UIColor::Green);
+		m_uiManager.getElement<Graph>(L"Mag3 Graph")->addAxisLine(0, 0);
+		m_uiManager.getElement<Graph>(L"Mag3 Graph")->addAxisLine(1, 0);
+		m_uiManager.getElement<Graph>(L"Mag3 Graph")->addAxisLine(1, min_calibrated_values[1]); //vertical line corresponding to min calibrated Y value
+		m_uiManager.getElement<Graph>(L"Mag3 Graph")->addAxisLine(1, max_calibrated_values[1]); //vertical line corresponding to max calibrated Y value
+		m_uiManager.getElement<Graph>(L"Mag3 Graph")->addAxisLabel(L"Min Y = " + std::to_wstring(min_calibrated_values[1]), 1, min_calibrated_values[1]);
+		m_uiManager.getElement<Graph>(L"Mag3 Graph")->addAxisLabel(L"Max Y = " + std::to_wstring(max_calibrated_values[1]), 1, max_calibrated_values[1]);
+		m_uiManager.getElement<Graph>(L"Mag3 Graph")->resize(); //resize the graph to get the labels in the correct locations
 
 		//lastly, make the graphs visible
 		m_uiManager.getElement<Graph>(L"Mag1 Graph")->removeState(UIElementState::Invisible);

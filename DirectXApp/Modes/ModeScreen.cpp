@@ -191,7 +191,7 @@ const UIColor ModeScreen::getBackgroundColor()
 
 void ModeScreen::createAlert(std::wstring message, UIColor color)
 {
-	m_modes[static_cast<int>(m_currentMode)]->createAlert(message, color, m_renderer->getCurrentScreenSize());
+	m_modes[static_cast<int>(m_currentMode)]->createAlert(message, color);
 }
 
 void ModeScreen::PersonalCaddieHandler(PersonalCaddieEventType pcEvent, void* eventArgs)

@@ -17,7 +17,7 @@ public:
 	virtual void handlePersonalCaddieConnectionEvent(bool connectionStatus) override;
 
 private:
-	void initializeTextOverlay(winrt::Windows::Foundation::Size windowSize);
+	void initializeTextOverlay();
 
 	bool m_connected;
 };

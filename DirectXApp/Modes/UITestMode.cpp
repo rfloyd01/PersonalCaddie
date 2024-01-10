@@ -18,14 +18,24 @@ uint32_t UITestMode::initializeMode(winrt::Windows::Foundation::Size windowSize,
 	m_uiManager.updateScreenSize(windowSize);
 
 	//Create UI Text Elements on the page
-	initializeTextOverlay(windowSize);
+	initializeTextOverlay();
 
 	float screen_ratio = MAX_SCREEN_HEIGHT / MAX_SCREEN_WIDTH;
 
 	std::wstring scrollText = L"Start the device watcher to begin enumerating nearby BluetoothLE devices...";
-	FullScrollingTextBox deviceWatcherResults(windowSize, { 0.5, 0.575 }, { 0.85, 0.35 }, scrollText, 0.05f, false, false);
+	FullScrollingTextBox deviceWatcherResults(m_uiManager.getScreenSize(), { 0.65f, 0.575f }, { 0.5f, 0.35f }, scrollText, 0.125f, false, false);
 	m_uiManager.addElement<FullScrollingTextBox>(deviceWatcherResults, L"Device Watcher Text Box");
-	//m_uiManager.drawDebugOutline(m_uiManager.getElement<FullScrollingTextBox>(L"Device Watcher Text Box"));
+	//m_uiManager.drawDebugOutline(m_uiManager.getElement<FullScrollingTextBox>(L"Device Watcher Text Box"), false);
+
+	TextButton shrink(m_uiManager.getScreenSize(), { 0.15f, 0.35f }, { 0.15f, 0.15f }, L"Shrink");
+	TextButton toggle(m_uiManager.getScreenSize(), { 0.15f, 0.75f }, { 0.15f, 0.15f }, L"Toggle Outline");
+	CheckBox box1(m_uiManager.getScreenSize(), { 0.75f, 0.5f }, { screen_ratio * 0.15f, 0.15f });
+	OutlinedBox box2(m_uiManager.getScreenSize(), { 0.75f, 0.6f }, { 0.1f, 0.1f });
+
+	m_uiManager.addElement<TextButton>(shrink, L"Button 1");
+	m_uiManager.addElement<TextButton>(toggle, L"Button 2");
+	//m_uiManager.addElement<CheckBox>(box1, L"Device Watcher Text Box");
+	//m_uiManager.addElement<OutlinedBox>(box2, L"Box 2");
 
 	return ModeState::CanTransfer;
 }
@@ -38,26 +48,40 @@ void UITestMode::uninitializeMode()
 	m_volumeElements.clear();
 }
 
-void UITestMode::initializeTextOverlay(winrt::Windows::Foundation::Size windowSize)
+void UITestMode::initializeTextOverlay()
 {
 	//Title information
 	std::wstring title_message = L"UI Testing";
-	HighlightableTextOverlay title(windowSize, { UIConstants::TitleTextLocationX, UIConstants::TitleTextLocationY }, { UIConstants::TitleTextSizeX, UIConstants::TitleTextSizeY },
+	HighlightableTextOverlay title(m_uiManager.getScreenSize(), { UIConstants::TitleTextLocationX, UIConstants::TitleTextLocationY }, { UIConstants::TitleTextSizeX, UIConstants::TitleTextSizeY },
 		title_message, UIConstants::TitleTextPointSize, { UIColor::White }, { 0,  (unsigned int)title_message.length() }, UITextJustification::CenterCenter);
 	title.updateSecondaryColor(UIColor::Red);
 	m_uiManager.addElement<HighlightableTextOverlay>(title, L"Title");
 
 	//Sub-Title information
 	std::wstring subtitle_message = L"A place to develop custom UI Elements (hover over the title to see some stuff in action!)";
-	TextOverlay subtitle(windowSize, { UIConstants::SubTitleTextLocationX, UIConstants::SubTitleTextLocationY }, { UIConstants::SubTitleTextSizeX, UIConstants::SubTitleTextSizeY },
+	TextOverlay subtitle(m_uiManager.getScreenSize(), { UIConstants::SubTitleTextLocationX, UIConstants::SubTitleTextLocationY }, { UIConstants::SubTitleTextSizeX, UIConstants::SubTitleTextSizeY },
 		subtitle_message, UIConstants::SubTitleTextPointSize, { UIColor::White }, { 0,  (unsigned int)subtitle_message.length() }, UITextJustification::CenterCenter);
 	m_uiManager.addElement<TextOverlay>(subtitle, L"Sub-Title");
 
 	//Footnote information
 	std::wstring footnote_message = L"Press Esc. to return to settings menu";
-	TextOverlay footnote(windowSize, { UIConstants::FootNoteTextLocationX, UIConstants::FootNoteTextLocationY }, { UIConstants::FootNoteTextSizeX, UIConstants::FootNoteTextSizeY },
+	TextOverlay footnote(m_uiManager.getScreenSize(), { UIConstants::FootNoteTextLocationX, UIConstants::FootNoteTextLocationY }, { UIConstants::FootNoteTextSizeX, UIConstants::FootNoteTextSizeY },
 		footnote_message, UIConstants::FootNoteTextPointSize, { UIColor::White }, { 0,  (unsigned int)footnote_message.length() }, UITextJustification::LowerRight);
 	m_uiManager.addElement<TextOverlay>(footnote, L"Footnote");
+}
+
+void UITestMode::uiElementStateChangeHandler(std::shared_ptr<ManagedUIElement> element)
+{
+	if (element->name == L"Button 1")
+	{
+		auto currentSize = m_uiManager.getElement<FullScrollingTextBox>(L"Device Watcher Text Box")->getAbsoluteSize();
+		m_uiManager.getElement<FullScrollingTextBox>(L"Device Watcher Text Box")->setAbsoluteSize({ currentSize.x / 1.2f, currentSize.y / 1.2f });
+		m_uiManager.getElement<FullScrollingTextBox>(L"Device Watcher Text Box")->resize();
+	}
+	if (element->name == L"Button 2")
+	{
+		m_uiManager.drawDebugOutline(m_uiManager.getElement<FullScrollingTextBox>(L"Device Watcher Text Box"), false);
+	}
 }
 
 void UITestMode::update()

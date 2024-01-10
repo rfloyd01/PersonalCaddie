@@ -13,7 +13,7 @@ uint32_t MainMenuMode::initializeMode(winrt::Windows::Foundation::Size windowSiz
 	//how large to make each element.
 	m_uiManager.updateScreenSize(windowSize);
 
-	initializeTextOverlay(windowSize);
+	initializeTextOverlay();
 
 	//When this mode is initialzed we go into a state of CanTransfer
 	return ModeState::CanTransfer;
@@ -50,7 +50,7 @@ void MainMenuMode::handleKeyPress(winrt::Windows::System::VirtualKey pressedKey)
 	{
 		//These modes haven't been implemented yet so for now just display
 		//an alert letting the user know.
-		createAlert(L"This mode hasn't been implemented yet.", UIColor::Red, m_uiManager.getScreenSize());
+		createAlert(L"This mode hasn't been implemented yet.", UIColor::Red);
 		break;
 	}
 	case winrt::Windows::System::VirtualKey::Number4:
@@ -68,17 +68,17 @@ void MainMenuMode::handleKeyPress(winrt::Windows::System::VirtualKey pressedKey)
 	if (newMode != ModeType::MAIN_MENU) m_mode_screen_handler(ModeAction::ChangeMode, (void*)&newMode);
 }
 
-void MainMenuMode::initializeTextOverlay(winrt::Windows::Foundation::Size windowSize)
+void MainMenuMode::initializeTextOverlay()
 {
 	//Title information
 	std::wstring title_message = L"Personal Caddie v1.0";
-	TextOverlay title(windowSize, { UIConstants::TitleTextLocationX, UIConstants::TitleTextLocationY }, { UIConstants::TitleTextSizeX, UIConstants::TitleTextSizeY },
+	TextOverlay title(m_uiManager.getScreenSize(), { UIConstants::TitleTextLocationX, UIConstants::TitleTextLocationY }, { UIConstants::TitleTextSizeX, UIConstants::TitleTextSizeY },
 		title_message, UIConstants::TitleTextPointSize, { UIColor::White }, { 0,  (unsigned int)title_message.length() }, UITextJustification::CenterCenter);
 	m_uiManager.addElement<TextOverlay>(title, L"Title Text");
 
 	//Sub-Title information
 	std::wstring subtitle_message = L"(Press one of the keys listed below to select a mode)";
-	TextOverlay subtitle(windowSize, { UIConstants::SubTitleTextLocationX, UIConstants::SubTitleTextLocationY }, { UIConstants::SubTitleTextSizeX, UIConstants::SubTitleTextSizeY },
+	TextOverlay subtitle(m_uiManager.getScreenSize(), { UIConstants::SubTitleTextLocationX, UIConstants::SubTitleTextLocationY }, { UIConstants::SubTitleTextSizeX, UIConstants::SubTitleTextSizeY },
 		subtitle_message, UIConstants::SubTitleTextPointSize, { UIColor::White }, { 0,  (unsigned int)subtitle_message.length() }, UITextJustification::CenterCenter);
 	m_uiManager.addElement<TextOverlay>(subtitle, L"Subtitle Text");
 
@@ -88,7 +88,7 @@ void MainMenuMode::initializeTextOverlay(winrt::Windows::Foundation::Size window
 	std::wstring body_message_3 = L"3. Training Mode \n";
 	std::wstring body_message_4 = L"4. Sensor Settings \n";
 	std::wstring body_message_5 = L"5. Developer Tools \n";
-	TextOverlay body(windowSize, { UIConstants::BodyTextLocationX, UIConstants::BodyTextLocationY }, { UIConstants::BodyTextSizeX, UIConstants::BodyTextSizeY },
+	TextOverlay body(m_uiManager.getScreenSize(), { UIConstants::BodyTextLocationX, UIConstants::BodyTextLocationY }, { UIConstants::BodyTextSizeX, UIConstants::BodyTextSizeY },
 		body_message_1 + body_message_2 + body_message_3 + body_message_4 + body_message_5, UIConstants::BodyTextPointSize,
 		{ UIColor::FreeSwingMode, UIColor::SwingAnalysisMode, UIColor::TrainingMode, UIColor::CalibrationMode, UIColor::PaleGray },
 		{ 0,  (unsigned int)body_message_1.length(),  (unsigned int)body_message_2.length(),  (unsigned int)body_message_3.length(), (unsigned int)body_message_4.length(), (unsigned int)body_message_5.length() },
@@ -97,7 +97,7 @@ void MainMenuMode::initializeTextOverlay(winrt::Windows::Foundation::Size window
 
 	//Footnote information
 	std::wstring footnote_message = L"Press Esc. to exit the program.";
-	TextOverlay footnote(windowSize, { UIConstants::FootNoteTextLocationX, UIConstants::FootNoteTextLocationY }, { UIConstants::FootNoteTextSizeX, UIConstants::FootNoteTextSizeY },
+	TextOverlay footnote(m_uiManager.getScreenSize(), { UIConstants::FootNoteTextLocationX, UIConstants::FootNoteTextLocationY }, { UIConstants::FootNoteTextSizeX, UIConstants::FootNoteTextSizeY },
 		footnote_message, UIConstants::FootNoteTextPointSize, { UIColor::White }, { 0,  (unsigned int)footnote_message.length() }, UITextJustification::LowerRight);
 	m_uiManager.addElement<TextOverlay>(footnote, L"Footnote Text");
 }

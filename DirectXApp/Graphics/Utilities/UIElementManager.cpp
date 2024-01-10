@@ -84,14 +84,14 @@ void UIElementManager::updateScreenSize(winrt::Windows::Foundation::Size newWind
 { 
 	//This method automatically gets called when the screen changes sizes, it causes all UI elements
 	//on the screen to change proportionally with the new screen size.
-	m_windowSize = newWindowSize;
+	m_screenSize = std::make_shared<winrt::Windows::Foundation::Size>(newWindowSize); //all UIElements share this smart pointer so they see the change as well
 
 	for (int i = 0; i < static_cast<int>(UIElementType::END); i++)
 	{
 		std::vector<std::shared_ptr<ManagedUIElement>>& elements = m_uiElements.at(static_cast<UIElementType>(i));
 		for (int j = 0; j < elements.size(); j++)
 		{
-			elements[j]->element->resize(m_windowSize);
+			elements[j]->element->resize();
 
 			//Some elements are dynamically sized based on the text inside of them. If calling
 			//the resize method on an element causes the NeedTextPixels flag to appear in the 
@@ -106,7 +106,7 @@ void UIElementManager::updateGridSquareElements(InputState* input)
 	//If the mouse moves, clicks or scrolls we inspect all of the UIElements that are in the 
 	//same grid square as the mouse and apply these updates. Mouse coordinates come in as 
 	//absolute pixels and not relative ones.
-	std::pair<int, int> mouseGridSquare = { GRID_WIDTH * (input->mousePosition.y / m_windowSize.Height), GRID_WIDTH * (input->mousePosition.x / m_windowSize.Width) };
+	std::pair<int, int> mouseGridSquare = { GRID_WIDTH * (input->mousePosition.y / m_screenSize->Height), GRID_WIDTH * (input->mousePosition.x / m_screenSize->Width) };
 
 	//Make sure the mouse calculation puts it inside of the screen
 	if (mouseGridSquare.first < 0) mouseGridSquare.first = 0;
@@ -255,7 +255,7 @@ void UIElementManager::applyTextResizeUpdates()
 	for (int i = 0; i < m_updateText.size(); i++)
 	{
 		m_updateText[i]->repositionText(); //see if any text needs to be repositioned after getting new dimensions
-		m_updateText[i]->resize(m_windowSize); //and then resize the ui element
+		m_updateText[i]->resize(); //and then resize the ui element
 	}
 
 	//After all updates are made, clear out the m_updateText vector
@@ -338,8 +338,8 @@ void UIElementManager::drawDebugOutline(std::shared_ptr<UIElement> element, bool
 	//and places a small circle in the center to confirm that the element
 	//looks correct. This effect can also be cascaded down to all child
 	//elements if desired.
-	Box debug(getScreenSize(), element->getAbsoluteLocation(), element->getAbsoluteSize(), UIColor::Red, UIShapeFillType::NoFill);
-	Ellipse ell(getScreenSize(), element->getAbsoluteLocation(), { MAX_SCREEN_HEIGHT / MAX_SCREEN_WIDTH * 0.001f, 0.001f }, false, UIColor::Red);
+	Box debug(m_screenSize, element->getAbsoluteLocation(), element->getAbsoluteSize(), UIColor::Red, UIShapeFillType::NoFill);
+	Ellipse ell(m_screenSize, element->getAbsoluteLocation(), { MAX_SCREEN_HEIGHT / MAX_SCREEN_WIDTH * 0.001f, 0.001f }, false, UIColor::Red);
 	addElement<Box>(debug, L"Debug " + std::to_wstring(++m_debugBoxCount));
 	addElement<Ellipse>(ell, L"Debug Ellipse " + std::to_wstring(m_debugBoxCount));
 

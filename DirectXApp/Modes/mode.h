@@ -95,7 +95,7 @@ public:
 	virtual void addQuaternions(std::vector<glm::quat> const& quaternions, int quaternion_number, float time_stamp, float delta_t) {} //A method that modes can overwrite when they need data from the Personal Caddie
 
 	//Alert Methods
-	void createAlert(std::wstring message, UIColor color, winrt::Windows::Foundation::Size windowSize, long long duration = 2500); //default to 2.5 second alerts
+	void createAlert(std::wstring message, UIColor color, long long duration = 2500); //default to 2.5 second alerts
 	std::vector<std::shared_ptr<ManagedUIElement>> removeAlerts();
 	void overwriteAlerts(std::vector<std::shared_ptr<ManagedUIElement>> const& alerts);
 	void checkAlerts();

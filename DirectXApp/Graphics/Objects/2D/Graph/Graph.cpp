@@ -3,11 +3,13 @@
 #include "Graphics/Objects/2D/BasicElements/TextOverlay.h"
 #include "Graphics/Objects/2D/Graph/GraphDataSet.h"
 
-Graph::Graph(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, bool line,  UIColor fillColor, UIColor outlineColor, bool isSquare, bool canZoom)
+Graph::Graph(std::shared_ptr<winrt::Windows::Foundation::Size> windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, bool line,  UIColor fillColor, UIColor outlineColor, bool isSquare, bool canZoom)
 {
+	m_screenSize = windowSize;
+
 	//Simply create the background of the graph. Normally the background for the graph is white, although it
 	//can be changed.
-	OutlinedBox graphBackground(windowSize, location, size, isSquare, fillColor, outlineColor);
+	OutlinedBox graphBackground(windowSize, location, size, fillColor, outlineColor);
 	p_children.push_back(std::make_shared<OutlinedBox>(graphBackground));
 
 	//Set the screen size dependent information for the TextBox
@@ -70,7 +72,7 @@ void Graph::setAxisMaxAndMins(DirectX::XMFLOAT2 axis_minimums, DirectX::XMFLOAT2
 	m_maximalDataPoint = axis_maximums;
 }
 
-void Graph::addGraphData(winrt::Windows::Foundation::Size windowSize, std::vector<DirectX::XMFLOAT2> const& dataPoints, UIColor lineColor)
+void Graph::addGraphData(std::vector<DirectX::XMFLOAT2> const& dataPoints, UIColor lineColor)
 {
 	//Takes a full set of data and creates a line on the graph with it in the indicated color
 
@@ -95,8 +97,8 @@ void Graph::addGraphData(winrt::Windows::Foundation::Size windowSize, std::vecto
 		//Get the ratio of the screen width to it's height. Since most screens are in portrait mode
 		//instead of landscape this will almost always result and a ratio less than one, which will
 		//effectively squish the data points along the x-axis to fit into the graph.
-		squareGraphRatioCorrection = windowSize.Height / windowSize.Width;
-		squareGraphDriftCorrection = childBox->fixSquareBoxDrift(windowSize);
+		squareGraphRatioCorrection = m_screenSize->Height / m_screenSize->Width;
+		squareGraphDriftCorrection = childBox->fixSquareBoxDrift();
 	}
 
 	//If there's any existing GraphDataSet child element add this new set to it, otherwise
@@ -104,13 +106,13 @@ void Graph::addGraphData(winrt::Windows::Foundation::Size windowSize, std::vecto
 	//data sets without needing to change the properties of each individual line or point.
 	if (dynamic_cast<GraphDataSet*>(p_children.back().get()) == nullptr)
 	{
-		GraphDataSet gds(m_minimalDataPoint, m_maximalDataPoint);
+		GraphDataSet gds(m_screenSize, m_minimalDataPoint, m_maximalDataPoint);
 
 		//If we can zoom in on the graph then also add grid lines with labels
 		//which help keep track of the current zoom level
 		if (m_isClickable)
 		{
-			gds.addGridLines(windowSize, 6, 6, m_maximalAbsolutePoint, m_minimalAbsolutePoint);
+			gds.addGridLines(6, 6, m_maximalAbsolutePoint, m_minimalAbsolutePoint);
 			p_children[1]->removeState(UIElementState::Invisible);
 		}
 
@@ -124,7 +126,7 @@ void Graph::addGraphData(winrt::Windows::Foundation::Size windowSize, std::vecto
 		for (int i = 1; i < dataPoints.size(); i++)
 		{
 			currentPoint = { squareGraphRatioCorrection * (absoluteDifference.x * ((dataPoints[i].x - m_minimalDataPoint.x) / difference.x)) + m_minimalAbsolutePoint.x + squareGraphDriftCorrection, -1 * (absoluteDifference.y * ((dataPoints[i].y - m_minimalDataPoint.y) / difference.y) - m_maximalAbsolutePoint.y) };
-			Line line(windowSize, currentPoint, previousPoint, lineColor);
+			Line line(m_screenSize, currentPoint, previousPoint, lineColor);
 			newData.addLine(line);
 			previousPoint = currentPoint;
 		}
@@ -136,7 +138,7 @@ void Graph::addGraphData(winrt::Windows::Foundation::Size windowSize, std::vecto
 			//This creates small circles instead of lines to create the graph.
 			currentPoint = { squareGraphRatioCorrection * (absoluteDifference.x * ((dataPoints[i].x - m_minimalDataPoint.x) / difference.x)) + m_minimalAbsolutePoint.x + squareGraphDriftCorrection, -1 * (absoluteDifference.y * ((dataPoints[i].y - m_minimalDataPoint.y) / difference.y) - m_maximalAbsolutePoint.y) };
 			
-			Ellipse ell(windowSize, currentPoint, { 0.0033f * m_size.y, 0.0033f * m_size.y }, true, lineColor);
+			Ellipse ell(m_screenSize, currentPoint, { 0.0033f * m_size.y, 0.0033f * m_size.y }, true, lineColor);
 			newData.addEllipse(ell);
 			previousPoint = currentPoint;
 		}
@@ -173,7 +175,7 @@ void Graph::addUIElementBeforeData(std::shared_ptr<UIElement> element)
 	}
 }
 
-void Graph::addLine(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOAT2 point1, DirectX::XMFLOAT2 point2)
+void Graph::addLine(DirectX::XMFLOAT2 point1, DirectX::XMFLOAT2 point2)
 {
 	//Create a line from the given data points and add it to the cild array. Before creating the line we need
 	//to first see if the graph has the square parameter and change the points accordingly. Lines created by this method
@@ -182,12 +184,12 @@ void Graph::addLine(winrt::Windows::Foundation::Size windowSize, DirectX::XMFLOA
 	//TODO: Need to add the square Graph ratio correction variable at some point
 	float squareGraphCorrection = 0.0f;
 	auto childBox = ((OutlinedBox*)p_children[0].get());
-	if (childBox->isSquare()) squareGraphCorrection = childBox->fixSquareBoxDrift(windowSize);
+	if (childBox->isSquare()) squareGraphCorrection = childBox->fixSquareBoxDrift();
 
 	point1.x += squareGraphCorrection;
 	point2.x += squareGraphCorrection;
 
-	Line dataLine(windowSize, point1, point2);
+	Line dataLine(m_screenSize, point1, point2);
 	addUIElementBeforeData(std::make_shared<Line>(dataLine)); //safely add the new line to the child array
 }
 
@@ -202,7 +204,7 @@ void Graph::removeAllLines()
 	p_children.erase(p_children.begin() + start_index, p_children.end());
 }
 
-void Graph::addAxisLine(winrt::Windows::Foundation::Size windowSize, int axis, float location)
+void Graph::addAxisLine(int axis, float location)
 {
 	//This method simply adds a straight black line going across the entire graph for the specified axis
 	//and specified location. If the location is outside of the current min/max of the graph then it won't
@@ -220,8 +222,8 @@ void Graph::addAxisLine(winrt::Windows::Foundation::Size windowSize, int axis, f
 		//Get the ratio of the screen width to it's height. Since most screens are in portrait mode
 		//instead of landscape this will almost always result and a ratio less than one, which will
 		//effectively squish the data points along the x-axis to fit into the graph.
-		squareGraphRatioCorrection = windowSize.Height / windowSize.Width;
-		squareGraphDriftCorrection = childBox->fixSquareBoxDrift(windowSize);
+		squareGraphRatioCorrection = m_screenSize->Height / m_screenSize->Width;
+		squareGraphDriftCorrection = childBox->fixSquareBoxDrift();
 	}
 
 	DirectX::XMFLOAT2 point_one = {0.0f, 0.0f}, point_two = { 0.0f, 0.0f };
@@ -250,11 +252,11 @@ void Graph::addAxisLine(winrt::Windows::Foundation::Size windowSize, int axis, f
 
 	//Create the line and place it in the last location of the child
 	//array that isn't a GraphDataSet type
-	Line dataLine(windowSize, point_one, point_two, UIColor::Black, 1.5f);
+	Line dataLine(m_screenSize, point_one, point_two, UIColor::Black, 1.5f);
 	addUIElementBeforeData(std::make_shared<Line>(dataLine)); //safely add the line to the child array
 }
 
-void Graph::addAxisLabel(winrt::Windows::Foundation::Size windowSize, std::wstring label, int axis, float location)
+void Graph::addAxisLabel(std::wstring label, int axis, float location)
 {
 	//adds a label to the x or y-axis of the graph at the specified location. The location
 	//is specified in the same units as the data itself, so it must be converted into absolute
@@ -266,7 +268,7 @@ void Graph::addAxisLabel(winrt::Windows::Foundation::Size windowSize, std::wstri
 	{
 		//This is an x-axis label so the location indicates the height that we want the label at
 		float absoluteYLocation = convertUnitsToAbsolute({ 0, location }).y;
-		TextOverlay graphText(getCurrentWindowSize(), { m_location.x, absoluteYLocation }, { m_size.x, 0.035 }, label, 0.015, { UIColor::Black }, { 0, (unsigned int)label.length() }, UITextJustification::UpperLeft);
+		TextOverlay graphText(m_screenSize, { m_location.x, absoluteYLocation }, { m_size.x, 0.035 }, label, 0.015, { UIColor::Black }, { 0, (unsigned int)label.length() }, UITextJustification::UpperLeft);
 		p_children.push_back(std::make_shared<TextOverlay>(graphText));
 		break;
 	}
@@ -283,8 +285,8 @@ void Graph::addAxisLabel(winrt::Windows::Foundation::Size windowSize, std::wstri
 			//Get the ratio of the screen width to it's height. Since most screens are in portrait mode
 			//instead of landscape this will almost always result and a ratio less than one, which will
 			//effectively squish the data points along the x-axis to fit into the graph.
-			squareGraphRatioCorrection = windowSize.Height / windowSize.Width;
-			squareGraphDriftCorrection = childBox->fixSquareBoxDrift(windowSize);
+			squareGraphRatioCorrection = m_screenSize->Height / m_screenSize->Width;
+			squareGraphDriftCorrection = childBox->fixSquareBoxDrift();
 		}
 
 		DirectX::XMFLOAT2 difference = { m_maximalDataPoint.x - m_minimalDataPoint.x, m_maximalDataPoint.y - m_minimalDataPoint.y };
@@ -292,7 +294,7 @@ void Graph::addAxisLabel(winrt::Windows::Foundation::Size windowSize, std::wstri
 
 		float absoluteXLocation = squareGraphRatioCorrection * (absoluteDifference.x * ((location - m_minimalDataPoint.x) / difference.x)) + m_minimalAbsolutePoint.x + squareGraphDriftCorrection;
 
-		TextOverlay graphText(getCurrentWindowSize(), { absoluteXLocation, m_location.y + m_size.y / 2.0f }, { m_size.x, 0.035 }, label, 0.015, { UIColor::Black }, { 0, (unsigned int)label.length() }, UITextJustification::UpperCenter);
+		TextOverlay graphText(m_screenSize, { absoluteXLocation, m_location.y + m_size.y / 2.0f }, { m_size.x, 0.035 }, label, 0.015, { UIColor::Black }, { 0, (unsigned int)label.length() }, UITextJustification::UpperCenter);
 		addUIElementBeforeData(std::make_shared<TextOverlay>(graphText)); //safely add the text to the child array
 		break;
 	}
@@ -341,7 +343,7 @@ uint32_t Graph::update(InputState* inputState)
 		Box* zoom_box = ((Box*)p_children.back().get());
 		zoom_box->setAbsoluteLocation(new_origin);
 		zoom_box->setAbsoluteSize(new_size);
-		zoom_box->resize(windowSize); //convert the new absoulte units into actual pixels
+		zoom_box->resize(); //convert the new absoulte units into actual pixels
 	}
 
 	return currentState;
@@ -356,7 +358,7 @@ void Graph::onMouseClick()
 	{
 		m_zoomBoxOrigin = { m_mouseLocation.x / getCurrentWindowSize().Width, m_mouseLocation.y / getCurrentWindowSize().Height }; //set the origin of the zoom box
 
-		Box opaque_box(getCurrentWindowSize(), m_zoomBoxOrigin, { 0.0f, 0.0f }, UIColor::OpaqueBlue); //box starts off with no size
+		Box opaque_box(m_screenSize, m_zoomBoxOrigin, { 0.0f, 0.0f }, UIColor::OpaqueBlue); //box starts off with no size
 		p_children.push_back(std::make_shared<Box>(opaque_box));
 		m_zoomBoxActive = true;
 	}
@@ -389,13 +391,13 @@ void Graph::onMouseRelease()
 	//Create the new GraphDataSet UIElement
 	DirectX::XMFLOAT2 new_minimal_points = { new_x_data_min, new_y_data_min };
 	DirectX::XMFLOAT2 new_maximal_points = { new_x_data_max, new_y_data_max };
-	GraphDataSet zoomed_in_data_set(new_minimal_points, new_maximal_points);
+	GraphDataSet zoomed_in_data_set(m_screenSize, new_minimal_points, new_maximal_points);
 
 	//Add the same number of grid lines to the zoomed in view that the 
 	//current view has
 	int vertical_grid_lines = ((GraphDataSet*)p_children.back().get())->getVerticalGridLines();
 	int horizontal_grid_lines = ((GraphDataSet*)p_children.back().get())->getHorizontalGridLines();
-	zoomed_in_data_set.addGridLines(getCurrentWindowSize(), vertical_grid_lines, horizontal_grid_lines, m_maximalAbsolutePoint, m_minimalAbsolutePoint);
+	zoomed_in_data_set.addGridLines(vertical_grid_lines, horizontal_grid_lines, m_maximalAbsolutePoint, m_minimalAbsolutePoint);
 
 	//Now iterate through all the child lines and points of the current data set
 	//and create new lines and points for the new zoomed in data set. All the existing data
@@ -469,7 +471,7 @@ void Graph::onMouseRelease()
 						}
 					}
 
-					Line new_line(getCurrentWindowSize(), newAbsoluteDataPointOne, newAbsoluteDataPointTwo, line->getLineColor());
+					Line new_line(m_screenSize, newAbsoluteDataPointOne, newAbsoluteDataPointTwo, line->getLineColor());
 					zoomed_in_data.addLine(new_line);
 				}
 				else if (dynamic_cast<Ellipse*>(data_set_children[j].get()) != nullptr)

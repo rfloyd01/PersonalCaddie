@@ -26,6 +26,7 @@ enum class UIElementType
 	COVER_BOX,
 	RELATIVE_BOX,
 	SHADOWED_BOX,
+	OUTLINED_BOX,
 	ELLIPSE,
 	END
 };
@@ -113,7 +114,7 @@ public:
 
 	//Methods for interactions of UIElements with the Mouse
 	void updateScreenSize(winrt::Windows::Foundation::Size newWindowSize);
-	winrt::Windows::Foundation::Size getScreenSize() { return m_windowSize; }
+	std::shared_ptr<winrt::Windows::Foundation::Size> getScreenSize() { return m_screenSize; }
 	void updateGridSquareElements(InputState* input);
 
 	template <typename T>
@@ -177,7 +178,7 @@ private:
 	
 	std::vector<std::shared_ptr<UIElement>> m_updateText; //An array of elements that currently require text dimension info from the Renderer class
 
-	winrt::Windows::Foundation::Size m_windowSize; //Keeps track of the current size of the window. UIElements have dimensions that are relative to the window size
+	std::shared_ptr<winrt::Windows::Foundation::Size> m_screenSize; //Keeps track of the current size of the window. UIElements have dimensions that are relative to the window size
 	//static std::vector<UIElementType> m_textUpdateElements; --deprecated
 	long long m_alertTimer = 2000; //The amount of time (in milliseconds) that alerts remain on screen before disappearing
 	int m_debugBoxCount = 0; //COunts the number of debugging boxes currently being rendered
@@ -255,6 +256,9 @@ private:
 
 	template<>
 	UIElementType type_to_UIElementType<ShadowedBox>() { return UIElementType::SHADOWED_BOX; }
+
+	template<>
+	UIElementType type_to_UIElementType<OutlinedBox>() { return UIElementType::OUTLINED_BOX; }
 
 	template<>
 	UIElementType type_to_UIElementType<Ellipse>() { return UIElementType::ELLIPSE; }

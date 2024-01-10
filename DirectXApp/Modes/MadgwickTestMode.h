@@ -30,7 +30,7 @@ public:
 	void toggleFilter() { m_useNewFilter = !m_useNewFilter; }
 
 private:
-	void initializeTextOverlay(winrt::Windows::Foundation::Size windowSize);
+	void initializeTextOverlay();
 	void updateDisplayText();
 
 	void loadModel();
