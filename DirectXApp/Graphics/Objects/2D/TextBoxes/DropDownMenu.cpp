@@ -84,8 +84,8 @@ void DropDownMenu::repositionText()
 	//by the m_optionsDisplayed field will perfectly fit in the box. Then resize the drop down text box
 	//accordingly and place the scroll box directly on top of or below the text box (depending on the value
 	//of the m_inverted field).
-	auto currentWindowSize = getCurrentWindowSize();
-	float absoluteTextHeight = p_children[2]->getChildren()[5]->getText()->renderDPI.y / currentWindowSize.Height;
+
+	float absoluteTextHeight = p_children[2]->getChildren()[5]->getText()->renderDPI.y / m_screenSize->Height;
 	//p_children[2]->setAbsoluteSize({ p_children[2]->getAbsoluteSize().x, absoluteTextHeight * m_optionsDisplayed }); //the x-dimension will get resized by the scroll box class
 	//p_children[2]->resize(currentWindowSize);
 	p_children[2]->repositionText(); //resize the scroll box

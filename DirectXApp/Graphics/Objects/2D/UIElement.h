@@ -61,8 +61,6 @@ public:
 
 	virtual uint32_t update(InputState* inputState);
 
-	winrt::Windows::Foundation::Size getCurrentWindowSize();
-
 	//Methods for modifying the state of the UI Element
 	uint32_t getState() { return m_state; }
 	void updateState(UIElementState state) { m_state |= state; } //add the given state to the overall state

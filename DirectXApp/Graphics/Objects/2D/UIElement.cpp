@@ -64,12 +64,12 @@ void UIElement::resize()
 		//Once the correct location has been found, check to make sure that no part of the element will be 
 		//outside of the screen. If it is, then the element will need to be shrunk so that it remains in 
 		//screen.
-		if (screenBoundaryCheck(element_pixel_center, element_pixel_dimensions))
-		{
-			//Since parent UI Elements are checked before child elements, and the dimensions for
-			//all child elements are contained within the dimensions of the parent element, only
-			//parent elements will actually trigger the screen boundary check.
-		}
+		//if (screenBoundaryCheck(element_pixel_center, element_pixel_dimensions))
+		//{
+		//	//Since parent UI Elements are checked before child elements, and the dimensions for
+		//	//all child elements are contained within the dimensions of the parent element, only
+		//	//parent elements will actually trigger the screen boundary check.
+		//}
 
 		//Once the center drift has been accounted for, size either the m_shape or m_text variable so that
 		//the new pixel center is the exact center of the element. The m_shape variable gets preference over
@@ -263,34 +263,6 @@ uint32_t UIElement::update(InputState* inputState)
 
 
 	return m_state;
-}
-
-winrt::Windows::Foundation::Size UIElement::getCurrentWindowSize()
-{
-	//All UI Elements need the capability of figuring out the current window size without help
-	//from the master renderer. This is done by comparing the absoulte size variable (m_size)
-	//to the current pixel width and height of the m_shape object or m_text object. If the 
-	//UI Element doesn't have its own shape or text, then a child's will be used.
-	if (m_shape.m_shapeType != UIShapeType::END)
-	{
-		auto absoluteSize = getAbsoluteSize();
-		return { (m_shape.m_rectangle.right - m_shape.m_rectangle.left) / absoluteSize.x, (m_shape.m_rectangle.bottom - m_shape.m_rectangle.top) / absoluteSize.y};
-	}
-	else if (m_text.textType != UITextType::END)
-	{
-		//Text height isn't always linked to the m_size.y variable so we calculate the screen height by comparing the
-		//absolute font height vs. its pixel height. On the other hand text width should always be snapped to the 
-		//m_size.x variable
-		return { m_text.renderArea.x / getAbsoluteSize().x, m_text.fontSize / m_fontSize };
-	}
-	else
-	{
-		//If the UI Element doesn't have a shape are text of its own then it must have children that do
-		//so recursively call this method again until we find a suitable child. Looping through all
-		//children shouldn't be necessary as we should always be able to find a shape or text with a depth
-		//first search.
-		return p_children[0]->getCurrentWindowSize();
-	}
 }
 
 bool UIElement::isMouseHovered(DirectX::XMFLOAT2 mousePosition)

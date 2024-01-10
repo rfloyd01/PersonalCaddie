@@ -18,7 +18,7 @@ uint32_t UITestMode::initializeMode(winrt::Windows::Foundation::Size windowSize,
 	m_uiManager.updateScreenSize(windowSize);
 
 	//Create UI Text Elements on the page
-	initializeTextOverlay();
+	//initializeTextOverlay();
 
 	float screen_ratio = MAX_SCREEN_HEIGHT / MAX_SCREEN_WIDTH;
 
@@ -32,8 +32,8 @@ uint32_t UITestMode::initializeMode(winrt::Windows::Foundation::Size windowSize,
 	CheckBox box1(m_uiManager.getScreenSize(), { 0.75f, 0.5f }, { screen_ratio * 0.15f, 0.15f });
 	OutlinedBox box2(m_uiManager.getScreenSize(), { 0.75f, 0.6f }, { 0.1f, 0.1f });
 
-	m_uiManager.addElement<TextButton>(shrink, L"Button 1");
-	m_uiManager.addElement<TextButton>(toggle, L"Button 2");
+	//m_uiManager.addElement<TextButton>(shrink, L"Button 1");
+	//m_uiManager.addElement<TextButton>(toggle, L"Button 2");
 	//m_uiManager.addElement<CheckBox>(box1, L"Device Watcher Text Box");
 	//m_uiManager.addElement<OutlinedBox>(box2, L"Box 2");
 

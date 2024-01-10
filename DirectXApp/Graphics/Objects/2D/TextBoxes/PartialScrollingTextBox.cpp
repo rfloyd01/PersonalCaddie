@@ -123,15 +123,14 @@ void PartialScrollingTextBox::repositionText()
 	//It's possible that at one point the screen was small enough that not all text could fit in the text box,
 	//but we've since made the screen larger and now all the text can fit, but it's no longer all in the box.
 	//Perform a quick check to make sure that the text is all in the correct place.
-	auto currentWindowSize = getCurrentWindowSize();
 	float totalTextHeight = p_children[0]->getChildren()[1]->getText()->renderDPI.y; //the total height of the text layout, including text that's clipped by the bottom of the box
 
 	//Check to see if the bottom of the text is higher than the bottom of the text box
-	float textBoxBottomPixelLocation = currentWindowSize.Height * (m_location.y + m_size.y / (float)2.0);
+	float textBoxBottomPixelLocation = m_screenSize->Height * (m_location.y + m_size.y / (float)2.0);
 	if (pixelCompare(getCurrentTextStartingHeight() + totalTextHeight, textBoxBottomPixelLocation) < 0)
 	{
 		//Check to see if the top of the text is higher than the top of the text box
-		float textBoxTopPixelLocation = currentWindowSize.Height * (m_location.y - m_size.y / (float)2.0);
+		float textBoxTopPixelLocation = m_screenSize->Height * (m_location.y - m_size.y / (float)2.0);
 		if (pixelCompare(getCurrentTextStartingHeight(), textBoxTopPixelLocation) < 0)
 		{
 			//We need to scootch the text downwards until the bottom of the text is as low as it can go.
@@ -144,17 +143,17 @@ void PartialScrollingTextBox::repositionText()
 			//Update the absolute location for the text
 			auto currentTextAbsoluteLocation = p_children[0]->getChildren()[1]->getAbsoluteLocation();
 			auto currentTextAbsoluteSize = p_children[0]->getChildren()[1]->getAbsoluteSize();
-			p_children[0]->getChildren()[1]->setAbsoluteLocation({ currentTextAbsoluteLocation.x, currentTextAbsoluteLocation.y + lesserDistance / ((float) 2.0 * currentWindowSize.Height) });
-			p_children[0]->getChildren()[1]->setAbsoluteSize({ currentTextAbsoluteSize.x, currentTextAbsoluteSize.y - lesserDistance / currentWindowSize.Height });
+			p_children[0]->getChildren()[1]->setAbsoluteLocation({ currentTextAbsoluteLocation.x, currentTextAbsoluteLocation.y + lesserDistance / (2.0f * m_screenSize->Height) });
+			p_children[0]->getChildren()[1]->setAbsoluteSize({ currentTextAbsoluteSize.x, currentTextAbsoluteSize.y - lesserDistance / m_screenSize->Height });
 		}
 	}
 
 	//When text is repositioned because the screen moves it will also effect the size of the scroll
 	//progress bar (since the overall height of the text layout changes). We need to update the 
 	//size and location of the progress bar accordingly.
-	float shadowPixels = (((ShadowedBox*)p_children[2]->getChildren()[0].get())->getShadowWidth() + 1.0) / currentWindowSize.Width; //get the relative width of the shadow box shadow for the buttons
+	float shadowPixels = (((ShadowedBox*)p_children[2]->getChildren()[0].get())->getShadowWidth() + 1.0f) / m_screenSize->Width; //get the relative width of the shadow box shadow for the buttons
 	auto progressBarBackgroundSize = p_children[4]->getAbsoluteSize();
-	float textProgress = m_size.y * currentWindowSize.Height / totalTextHeight;
+	float textProgress = m_size.y * m_screenSize->Height / totalTextHeight;
 
 	if (textProgress > 1.0f) textProgress = 1.0f;
 	p_children[5]->setAbsoluteSize({progressBarBackgroundSize.x - shadowPixels, textProgress * progressBarBackgroundSize.y});

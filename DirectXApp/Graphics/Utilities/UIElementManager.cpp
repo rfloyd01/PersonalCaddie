@@ -9,6 +9,12 @@
 
 UIElementManager::UIElementManager()
 {
+	//Create a shared pointer that will hold the current screen size.This pointer will
+	//be shared by every single UI Element that's managed by the manager class. Any 
+	//time the screen size changes, UI Elements will have direct access to the new size.
+	winrt::Windows::Foundation::Size defaultSize = { 0, 0 };
+	m_screenSize = std::make_shared<winrt::Windows::Foundation::Size>(defaultSize);
+
 	//create the map with an empty entry for each type of UI Element
 	for (int i = 0; i < static_cast<int>(UIElementType::END); i++)
 	{
@@ -84,7 +90,7 @@ void UIElementManager::updateScreenSize(winrt::Windows::Foundation::Size newWind
 { 
 	//This method automatically gets called when the screen changes sizes, it causes all UI elements
 	//on the screen to change proportionally with the new screen size.
-	m_screenSize = std::make_shared<winrt::Windows::Foundation::Size>(newWindowSize); //all UIElements share this smart pointer so they see the change as well
+	*m_screenSize.get() = newWindowSize; //all UIElements share this smart pointer so they see the change as well
 
 	for (int i = 0; i < static_cast<int>(UIElementType::END); i++)
 	{

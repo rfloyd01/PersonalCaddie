@@ -158,7 +158,6 @@ void FullScrollingTextBox::repositionText()
 	//This method gets called whenever the state of the FullScrollingTextBox is set to NeedTextPixels. This
 	//can happen when the object is first created, the window is resized, etc.
 
-	auto currentWindowSize = getCurrentWindowSize();
 	auto currentTextBoxAbsoluteSize = p_children[0]->getAbsoluteSize();
 
 	if (m_dynamicSize)
@@ -193,19 +192,19 @@ void FullScrollingTextBox::repositionText()
 			if (currentWidth > currentTextBoxAbsoluteSize.x) currentTextBoxAbsoluteSize.x = currentWidth;
 		}
 
-		currentTextBoxAbsoluteSize.x /= currentWindowSize.Width; //convert pixels back to absolute size
+		currentTextBoxAbsoluteSize.x /= m_screenSize->Width; //convert pixels back to absolute size
 		currentTextBoxAbsoluteSize.x += 0.005; //give a little breathing room so text isn't right up against the edge of the box
 	}
 
 	//In order to make everything look clean, set the absolute height of the scroll box to 
 	//be a multiple of the text height of the options. Round down when doing this.
-	m_displayedText = round(currentTextBoxAbsoluteSize.y * currentWindowSize.Height / (p_children[m_topText]->getText()->renderDPI.y / p_children[m_topText]->getText()->renderLines)); //round to the nearest integer
+	m_displayedText = round(currentTextBoxAbsoluteSize.y * m_screenSize->Height / (p_children[m_topText]->getText()->renderDPI.y / p_children[m_topText]->getText()->renderLines)); //round to the nearest integer
 	if (m_displayedText < 2) m_displayedText = 2;
-	currentTextBoxAbsoluteSize.y = (float)m_displayedText * (p_children[m_topText]->getText()->renderDPI.y / p_children[m_topText]->getText()->renderLines) / currentWindowSize.Height; //no floor division happens because we're using floats
+	currentTextBoxAbsoluteSize.y = (float)m_displayedText * (p_children[m_topText]->getText()->renderDPI.y / p_children[m_topText]->getText()->renderLines) / m_screenSize->Height; //no floor division happens because we're using floats
 
-	//Before changing anything, copy the size of the font that was used to 
-	//calculate the text pixels.
-	float originalFontSize = m_fontSize * getAbsoluteSize().y * currentWindowSize.Height;
+	//Before changing the size of the element, record the original height of the
+	//text box as this was used to calculate the font size.
+	float textOriginalHeight = p_children[m_topText]->getAbsoluteSize().y;
 
 	//Update the absolute size for the parent element based on the new size
 	//of the text box child element. Add the difference in width of the text
@@ -219,14 +218,15 @@ void FullScrollingTextBox::repositionText()
 	//text box child element that was calculated in the setAbsoluteSize() method right above.
 	auto textBoxAbsoluteLocation = p_children[0]->getAbsoluteLocation();
 	currentTextBoxAbsoluteSize = p_children[0]->getAbsoluteSize();
-	DirectX::XMFLOAT2 topTextAbsoluteLocation = { textBoxAbsoluteLocation.x + 0.001f, textBoxAbsoluteLocation.y - currentTextBoxAbsoluteSize.y / 2.0f + (p_children[m_topText]->getText()->renderDPI.y / currentWindowSize.Height) / 2.0f}; //add a little buffer to x-dimension as a margin
-	DirectX::XMFLOAT2 topTextAbsoluteSize = { currentTextBoxAbsoluteSize.x, p_children[m_topText]->getText()->renderDPI.y / currentWindowSize.Height };
+	DirectX::XMFLOAT2 topTextAbsoluteLocation = { textBoxAbsoluteLocation.x + 0.001f, textBoxAbsoluteLocation.y - currentTextBoxAbsoluteSize.y / 2.0f + (p_children[m_topText]->getText()->renderDPI.y / m_screenSize->Height) / 2.0f}; //add a little buffer to x-dimension as a margin
+	DirectX::XMFLOAT2 topTextAbsoluteSize = { currentTextBoxAbsoluteSize.x, p_children[m_topText]->getText()->renderDPI.y / m_screenSize->Height };
 	p_children[m_topText]->setAbsoluteSize(topTextAbsoluteSize);
 	p_children[m_topText]->setAbsoluteLocation(topTextAbsoluteLocation);
 
 	//The font size of the text overlay needs to be updated to reflect that it's a ratio of the height of the 
 	//entire text box, and not the individual text overlay.
-	p_children[m_topText]->setFontSize(m_fontSize * currentTextBoxAbsoluteSize.y / topTextAbsoluteSize.y);
+	p_children[m_topText]->setFontSize(p_children[m_topText]->getFontSize() * textOriginalHeight / topTextAbsoluteSize.y);
+	int x = 6;
 
 	//Box debugBox(getCurrentWindowSize(), { topTextAbsoluteLocation.x, topTextAbsoluteLocation.y }, { currentTextBoxAbsoluteSize.x, p_children[m_topText]->getText()->renderDPI.y / currentWindowSize.Height }, UIColor::Red, UIShapeFillType::NoFill);
 	//p_children.push_back(std::make_shared<Box>(debugBox));

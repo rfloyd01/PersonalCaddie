@@ -48,8 +48,7 @@ public:
 		//the boxes integrity
 		UIElement::setAbsoluteSize(size);
 
-		auto screen_size = getCurrentWindowSize();
-		DirectX::XMFLOAT2 currentAbsolutePixelSize = { screen_size.Width * m_shadowSizePixels / (MAX_SCREEN_WIDTH * MAX_SCREEN_WIDTH), screen_size.Height * m_shadowSizePixels / (MAX_SCREEN_HEIGHT * MAX_SCREEN_HEIGHT) };
+		DirectX::XMFLOAT2 currentAbsolutePixelSize = { m_screenSize->Width * m_shadowSizePixels / (MAX_SCREEN_WIDTH * MAX_SCREEN_WIDTH), m_screenSize->Height * m_shadowSizePixels / (MAX_SCREEN_HEIGHT * MAX_SCREEN_HEIGHT) };
 		DirectX::XMFLOAT2 newSize = { size.x - currentAbsolutePixelSize.x, size.y - currentAbsolutePixelSize.y };
 		
 		p_children[0]->setAbsoluteSize(newSize);

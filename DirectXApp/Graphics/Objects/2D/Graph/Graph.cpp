@@ -320,9 +320,7 @@ uint32_t Graph::update(InputState* inputState)
 		//Convert the current mouse location into absolute units and figure out 
 		//what quadrant it's in relative to the boxes origin
 
-		//TODO: Need to account for square graphs here as well
-		auto windowSize = getCurrentWindowSize();
-		DirectX::XMFLOAT2 opposite_corner = { inputState->mousePosition.x / windowSize.Width, inputState->mousePosition.y / windowSize.Height };
+		DirectX::XMFLOAT2 opposite_corner = { inputState->mousePosition.x / m_screenSize->Width, inputState->mousePosition.y / m_screenSize->Height };
 
 		//If the user drags the box outside the boundary of the graph, force the box
 		//to stay within the boundary
@@ -356,7 +354,7 @@ void Graph::onMouseClick()
 	//and then dragging the box that pops up over the data to be zoomed in on.
 	if (dynamic_cast<GraphDataSet*>(p_children.back().get()) != nullptr)
 	{
-		m_zoomBoxOrigin = { m_mouseLocation.x / getCurrentWindowSize().Width, m_mouseLocation.y / getCurrentWindowSize().Height }; //set the origin of the zoom box
+		m_zoomBoxOrigin = { m_mouseLocation.x / m_screenSize->Width, m_mouseLocation.y / m_screenSize->Height }; //set the origin of the zoom box
 
 		Box opaque_box(m_screenSize, m_zoomBoxOrigin, { 0.0f, 0.0f }, UIColor::OpaqueBlue); //box starts off with no size
 		p_children.push_back(std::make_shared<Box>(opaque_box));
