@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "TextOverlay.h"
+#include "Graphics/Objects/2D/BasicElements/Box.h"
 
 TextOverlay::TextOverlay(std::shared_ptr<winrt::Windows::Foundation::Size> windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, std::wstring message,
 	float fontSize, std::vector<UIColor> colors, std::vector<unsigned long long> colorLocations, UITextJustification justification, bool useAbsolute)

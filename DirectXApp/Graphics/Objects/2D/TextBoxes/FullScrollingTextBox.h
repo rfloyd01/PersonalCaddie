@@ -40,6 +40,7 @@ public:
 
 protected:
 	float getCurrentTextStartingHeight();
+	void setTextLocationsAndDimensions(float textSize);
 
 	virtual void onScrollUp() override;
 	virtual void onScrollDown() override;
@@ -49,6 +50,8 @@ protected:
 	float m_buttonRatio = 0.125f; //the ratio of the buttons' height to the overall height of the scroll box
 	bool m_highlightableText;
 	bool m_dynamicSize;
+	bool m_heightSet; //When the text box is first created it's height will be changed slightly so that text perfectly fits in the box
+	float m_relativeTextHeight;
 
 	int m_topText; //Represent which line of text is currently at the top of the scroll box
 	int m_displayedText; //Represents how many lines of text are currently displayed in the scroll box

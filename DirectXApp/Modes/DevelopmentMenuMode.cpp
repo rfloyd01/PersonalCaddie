@@ -9,6 +9,10 @@ DevelopmentMenuMode::DevelopmentMenuMode()
 
 uint32_t DevelopmentMenuMode::initializeMode(winrt::Windows::Foundation::Size windowSize, uint32_t initialState)
 {
+	//Take the current screen size and pass it to the UIElementManager, this is so that the manager knows
+	//how large to make each element.
+	m_uiManager.updateScreenSize(windowSize);
+
 	//Initialize all overlay text
 	initializeTextOverlay();
 
