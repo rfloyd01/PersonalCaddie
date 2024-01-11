@@ -111,6 +111,7 @@ void FullScrollingTextBox::addText(std::wstring message, bool highlightable, boo
 	}
 
 	int i = 0, j = 0, currentLine = 0;
+	float adjustedFontHeight = m_fontSize * getAbsoluteSize().y / textSize.y; //font height is based on textbox height, not text overlay height
 
 	while (j != std::string::npos)
 	{
@@ -125,13 +126,13 @@ void FullScrollingTextBox::addText(std::wstring message, bool highlightable, boo
 
 		if (highlightable)
 		{
-			HighlightableTextOverlay newText(m_screenSize, { textLocation.x, textLocation.y + currentLine * existingTextHeight}, textSize, textLine, m_fontSize,
+			HighlightableTextOverlay newText(m_screenSize, { textLocation.x, textLocation.y + currentLine * existingTextHeight}, textSize, textLine, adjustedFontHeight,
 				{ UIColor::Black }, { 0, (unsigned int)textLine.length() }, UITextJustification::CenterLeft, false);
 			p_children.push_back(std::make_shared<HighlightableTextOverlay>(newText));
 		}
 		else
 		{
-			TextOverlay newText(m_screenSize, { textLocation.x, textLocation.y + currentLine * existingTextHeight }, textSize, textLine, m_fontSize,
+			TextOverlay newText(m_screenSize, { textLocation.x, textLocation.y + currentLine * existingTextHeight }, textSize, textLine, adjustedFontHeight,
 				{ UIColor::Black }, { 0, (unsigned int)textLine.length() }, UITextJustification::CenterLeft, false);
 			p_children.push_back(std::make_shared<TextOverlay>(newText));
 		}
@@ -196,14 +197,14 @@ void FullScrollingTextBox::repositionText()
 		}
 
 		currentTextBoxAbsoluteSize.x /= m_screenSize->Width; //convert pixels back to absolute size
-		currentTextBoxAbsoluteSize.x += 0.005; //give a little breathing room so text isn't right up against the edge of the box
+		currentTextBoxAbsoluteSize.x += 0.02f; //give a little breathing room so text isn't right up against the edge of the box
 	}
 
 	if (!m_heightSet)
 	{
 		//In case the size of the whole element changes, record the original height of the
 	    //text box as this was used to calculate the font size.
-		float textOriginalHeight = p_children[m_topText]->getAbsoluteSize().y; //TODO: Remove this
+		//float textOriginalHeight = p_children[m_topText]->getAbsoluteSize().y; //TODO: Remove this
 
 		//We want to make sure that the height of the text overlays is a perfect
 		//multiple of the height of the text box to make sure that things look
@@ -225,7 +226,7 @@ void FullScrollingTextBox::repositionText()
 		//of the text box child element. Add the difference in width of the text
 		//box child to the current width of the parent, and use the new height of
 		//the child text box.
-		setAbsoluteSize({ getAbsoluteSize().x + p_children[0]->getAbsoluteSize().x - currentTextBoxAbsoluteSize.x, currentTextBoxAbsoluteSize.y });
+		setAbsoluteSize({ getAbsoluteSize().x + currentTextBoxAbsoluteSize.x - p_children[0]->getAbsoluteSize().x, currentTextBoxAbsoluteSize.y });
 
 		//The text height is in relation to the height of the text box, not the screen.
 		//Now that the height of the text box is finalized, divide the relative text
@@ -233,13 +234,13 @@ void FullScrollingTextBox::repositionText()
 		//screen.
 		m_relativeTextHeight /= getAbsoluteSize().y;
 
-		setTextLocationsAndDimensions(textOriginalHeight);
+		setTextLocationsAndDimensions();
 	
 		m_heightSet = true;
 	}	
 }
 
-void FullScrollingTextBox::setTextLocationsAndDimensions(float textSize)
+void FullScrollingTextBox::setTextLocationsAndDimensions()
 {
 	//We now need to update the locations for each text element. Whatever element is currently at the top
 	//should have it's location changed to match the top of the text box. All other text elements are then
@@ -331,7 +332,7 @@ void FullScrollingTextBox::setTextLocationsAndDimensions(float textSize)
 	calcualteScrollBarLocation();
 }
 
-void FullScrollingTextBox::onScrollUp()
+void FullScrollingTextBox::onScrollDown()
 {
 	//When the mouse wheel is scrolled up, it has the effect of moving the text downwards. If
 	//the text is already at the top of the scroll box though then scrolling up doesn't do anything.
@@ -363,7 +364,7 @@ void FullScrollingTextBox::onScrollUp()
 	}
 }
 
-void FullScrollingTextBox::onScrollDown()
+void FullScrollingTextBox::onScrollUp()
 {
 	//When the mouse wheel is scrolled down, it has the effect of moving the text upwards. If
 	//the bottom of the text is already inside the scroll box though then scrolling down doesn't do anything.
@@ -403,26 +404,15 @@ void FullScrollingTextBox::calcualteScrollBarLocation()
 	//First, calculate the height of all text overlay children in pixels. Not all of them
 	//are guaranteed to be the same height so this must be done in a loop.
 	float totalAbsoluteTextHeight = 0.0f;
-	for (int i = 5; i < p_children.size(); i++)
-	{
-		totalAbsoluteTextHeight += p_children[i]->getAbsoluteSize().y;
-	}
+	for (int i = 5; i < p_children.size(); i++) totalAbsoluteTextHeight += p_children[i]->getAbsoluteSize().y;
 
 	float ratio = getAbsoluteSize().y * (getAbsoluteSize().y - 2 * m_buttonHeight) / totalAbsoluteTextHeight;
 	p_children[4]->setAbsoluteSize({ p_children[4]->getAbsoluteSize().x, ratio });
 
 	float bottomTextToCenterBox = (p_children.back()->getAbsoluteLocation().y + p_children.back()->getAbsoluteSize().y / 2.0f) - getAbsoluteLocation().y;
-	/*auto scrollProgressBackgroundBarAbsoluteSize = p_children[3]->getAbsoluteSize();
-	auto scrollProgressBarAbsoluteLocation = p_children[4]->getAbsoluteLocation();
-	float shadowHeight = ((ShadowedBox*)p_children[2]->getChildren()[0].get())->getShadowWidth();
-
-	float scrollBarAbsoluteHeightFromBottom = (scrollProgressBackgroundBarAbsoluteSize.y * m_screenSize->Height - shadowHeight) * bottomTextToCenterBox / totalTextHeight;
-	scrollBarAbsoluteHeightFromBottom /= m_screenSize->Height;
-	scrollBarAbsoluteHeightFromBottom -= -shadowHeight / m_screenSize->Height;*/
 	float centerScrollBarToButtonTop = ratio / getAbsoluteSize().y * bottomTextToCenterBox;
 	p_children[4]->setAbsoluteLocation({ p_children[4]->getAbsoluteLocation().x, getAbsoluteLocation().y + getAbsoluteSize().y / 2.0f - m_buttonHeight - centerScrollBarToButtonTop });
 	
-	//p_children[4]->setAbsoluteLocation({ scrollProgressBarAbsoluteLocation.x, (m_location.y + m_size.y / 2.0f) - m_buttonHeight - scrollBarAbsoluteHeightFromBottom });
 	p_children[4]->resize();
 }
 
@@ -437,7 +427,7 @@ uint32_t FullScrollingTextBox::update(InputState* inputState)
 		onScrollUp();
 		onScrollUp();
 	}
-	else if (p_children[1]->getState() & UIElementState::Released)
+	else if (p_children[3]->getState() & UIElementState::Released)
 	{
 		onScrollDown();
 		onScrollDown();
@@ -556,7 +546,7 @@ void FullScrollingTextBox::setAbsoluteSize(DirectX::XMFLOAT2 size)
 	//Next all of the text overlays inside the text box need to be resized
 	if (m_heightSet)
 	{
-		setTextLocationsAndDimensions(p_children[5]->getAbsoluteSize().y);
+		setTextLocationsAndDimensions();
 	}
 
 	//A resize means we need to get text sizes from the renderer again.

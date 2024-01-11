@@ -40,7 +40,7 @@ public:
 
 protected:
 	float getCurrentTextStartingHeight();
-	void setTextLocationsAndDimensions(float textSize);
+	void setTextLocationsAndDimensions();
 
 	virtual void onScrollUp() override;
 	virtual void onScrollDown() override;
