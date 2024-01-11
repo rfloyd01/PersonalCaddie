@@ -75,8 +75,8 @@ void UITestMode::uiElementStateChangeHandler(std::shared_ptr<ManagedUIElement> e
 	if (element->name == L"Button 1")
 	{
 		auto currentSize = m_uiManager.getElement<FullScrollingTextBox>(L"Device Watcher Text Box")->getAbsoluteSize();
-		m_uiManager.getElement<FullScrollingTextBox>(L"Device Watcher Text Box")->setAbsoluteSize({ currentSize.x / 1.2f, currentSize.y / 1.2f });
-		m_uiManager.getElement<FullScrollingTextBox>(L"Device Watcher Text Box")->resize();
+		m_uiManager.getElement<FullScrollingTextBox>(L"Device Watcher Text Box")->setAbsoluteSize({ currentSize.x / 1.2f, currentSize.y / 1.2f }, true);
+		//m_uiManager.getElement<FullScrollingTextBox>(L"Device Watcher Text Box")->resize();
 	}
 	if (element->name == L"Button 2")
 	{

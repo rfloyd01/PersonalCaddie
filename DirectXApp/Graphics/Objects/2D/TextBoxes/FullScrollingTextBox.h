@@ -32,7 +32,7 @@ public:
 	virtual uint32_t update(InputState* inputState) override;
 	virtual std::vector<UIText*> setTextDimension() override;
 
-	virtual void setAbsoluteSize(DirectX::XMFLOAT2 size) override;
+	virtual void setChildrenAbsoluteSize(DirectX::XMFLOAT2 size) override;
 	virtual void repositionText() override;
 
 	std::wstring getLastSelectedText() { return m_lastSelectedText; }

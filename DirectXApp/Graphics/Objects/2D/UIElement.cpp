@@ -1,27 +1,29 @@
 #include "pch.h"
 #include "UIElement.h"
 
+int UIElement::resize_count = 0;
+
 void UIElement::resize()
 {
-	//Recalculate the coordinates for m_shape and m_text based on 
-	//the current size of the screen and the absolute dimensions (m_location
-	//and m_size) of the UI Element. Then resize any child UI Elements
-	//owned by this one.
-	if (m_needTextRenderDimensions && !(m_state & UIElementState::NeedTextPixels))
-	{
-		//This block will only execute if the window is resized and if this UI Element
-		//needs pixel height from the renderer. Essentially all it does is defer the 
-		//resizing lofic until the information needed from the renderer is obtained.
-		m_state |= UIElementState::NeedTextPixels;
-		return;
-	}
+	//The resize() method gets called whenever the size of the physical screen changes.
+	//When the screen size change two things happen to UI Elements. First, they obviously will
+	//shirnk or grow. Second, and less obvious, elements will appear to drift away from or towards
+	//each other. This resize() method handles the changing of the element's size so that the 
+	//width and height stay the same relative size to each other, as well as to the size of 
+	//the screen. It also prevents elements from drifting apart from each other.
 
-	//Resize the element based on either its m_shape or m_text variable and the 
-	//current m_location and m_size variables.
+	//TODO: Resizing all elements every single time the screen size changes is pretty resource
+	//intensive. I should code it up so that a resize will only happen when a certain noticeable
+	//threshold is met (i.e. if the screen gains or loses 5% in area or something like that). Doing
+	//this should greatly reduce the number of times resize() gets called (which is pretty resource
+	//intensive) while not being noticeably different to the user.
+
 	if (m_useAbsoluteCoordinates)
 	{
-		//If the element uses absolute coordinates then now complex
-		//drift calculations need to be carried out.
+		//If the element uses absolute coordinates then no complex
+		//drift calculations need to be carried out. This applies to 
+		//elements (like large text overlays) which are placed relative 
+		//to the edges of the screen as opposed to the center of the screen.
 		if (m_shape.m_shapeType != UIShapeType::END)
 		{
 			m_shape.m_rectangle.left = m_screenSize->Width * (m_location.x - m_size.x / 2.0f);
@@ -34,7 +36,7 @@ void UIElement::resize()
 		{
 			m_text.startLocation = { m_screenSize->Width * (m_location.x - m_size.x / 2.0f), m_screenSize->Height * (m_location.y - m_size.y / 2.0f) }; //text always starts at the top left of the UI Element
 			m_text.renderArea = { m_screenSize->Width * m_size.x, m_screenSize->Height * m_size.y };
-			m_text.fontSize = m_screenSize->Height * m_fontSize; //TODO: This would make more sense to be based on element height, not screen height
+			m_text.fontSize = m_screenSize->Height * m_fontSize; //absolute text is sized against the screen height
 		}
 	}
 	else
@@ -86,20 +88,12 @@ void UIElement::resize()
 		{
 			m_text.startLocation = { element_pixel_center.x - element_pixel_dimensions.x / 2.0f, element_pixel_center.y - element_pixel_dimensions.y / 2.0f }; //text always starts at the top left of the UI Element
 			m_text.renderArea = { element_pixel_dimensions.x, element_pixel_dimensions.y };
-			m_text.fontSize = element_pixel_dimensions.y * m_fontSize;
+			m_text.fontSize = element_pixel_dimensions.y * m_fontSize; //relative text is sized against the element's height
 		}
 	}
 
 	//Resize all child elements as well
 	for (int i = 0; i < p_children.size(); i++) p_children[i]->resize();
-
-	if (m_needTextRenderDimensions)
-	{
-		//If we're at this part of the resize method and this element has a dependency on 
-		//text pixel dimentions it means that the update has occured and we can remove the
-		//need for pixels from the current state
-		m_state ^= UIElementState::NeedTextPixels;
-	}
 }
 
 bool UIElement::screenBoundaryCheck(DirectX::XMFLOAT2& pix_location, DirectX::XMFLOAT2& pix_size)
@@ -224,9 +218,12 @@ uint32_t UIElement::update(InputState* inputState)
 	//the mouse is still hovering over the element or not.
 	if (m_isClickable && (m_state & UIElementState::Clicked) && (inputState->mouseClickState == MouseClickState::MouseReleased))
 	{
-		onMouseRelease();
+		if (!(m_state & UIElementState::Disabled))
+		{
+			onMouseRelease();
+			if (mouseHovered) m_state |= UIElementState::Released; //add the release state if the mouse is hovering the element (this triggers action elsewhere)
+		}
 		m_state &= ~UIElementState::Clicked; //remove the clicked state from the element
-		if (mouseHovered) m_state |= UIElementState::Released; //add the release state if the mouse is hovering the element (this triggers action elsewhere)
 	}
 
 	//After checking the current element for updates, check all of it's children
@@ -366,27 +363,42 @@ DirectX::XMFLOAT2 UIElement::getAbsoluteSize()
 	else return { m_size.x, m_size.y / m_sizeMultiplier.y };
 }
 
-void UIElement::setAbsoluteSize(DirectX::XMFLOAT2 size)
+void UIElement::setAbsoluteSize(DirectX::XMFLOAT2 size, bool resize_element)
 {
-	//This method changes the absolute size of the UI Element. Unlike the 
-	//setAbsoluteLocation method() which translates well to all child elemnts,
-	//this method does not. The reason for this is that elements are sized 
-	//from their center. Shrinking the size of two child elements that are 
-	//supposed to share an edge will cause them to retract from this shared
-	//edge and have a disjointed look.
-
-	//Because of this, all compound UI Elements must implement their own 
-	//version of this method.
-	DirectX::XMFLOAT2 originalAbsoluteSize = getAbsoluteSize();
+	//The setAbsoluteSize() method is similar to the resize() method
+	//in that it changes the size of the current UI Element. Unlike the
+	//resize() method though (which gets called when the screen size
+	//changes), the setAbsoluteSize() method must be overloaded for 
+	//most different UIElements. Compound (and even individual) UI Elements
+	//all have different shapes, and therefore centers. All UI Elements
+	//are situated and resized about their centers, so it goes to follow
+	//that manually resizing elements will need to be different depending
+	//on they layout, size and location of any child elements. Since the
+	//resize() method shifts all elements with the center of the screen 
+	//as a reference, the logic is the exact same regardless of what the
+	//element is, how many children it has, etc.
+	
+	//First, the size parameter (which is given in absolute coordinates)
+	//is converted into relative coordinates and internal variables are
+	//updated.
 	updateLocationAndSize(getAbsoluteLocation(), size);
 
-	/*DirectX::XMFLOAT2 sizeRatio = { size.x / originalAbsoluteSize.x, size.y / originalAbsoluteSize.y };
+	//Then the element can choose how to handle resizing its children. As
+	//mentioned above, since all UI Elements have different layouts and sizes
+	//for their children, the setChildrenAbsoluteSize() method is virtual and
+	//can be overriden by any UIElement class.
+	setChildrenAbsoluteSize(size);
 
-	for (int i = 0; i < p_children.size(); i++)
-	{
-		auto childAbsoluteSize = p_children[i]->getAbsoluteSize();
-		p_children[i]->setAbsoluteSize({ childAbsoluteSize.x * sizeRatio.x, childAbsoluteSize.y * sizeRatio.y});
-	}*/
+	//While this method will resize all elements with respect to themselves,
+	//it does nothing for the element in terms if its relative size to the
+	//window. To make sure that the newly resized element will stay in the 
+	//correct location with respect to the current screen, the resize() 
+	//method needs to be called at the end of it. Since resize() called on 
+	//a top level parent element will automatically call the resize() method
+	//for all of it's children, a boolean can be set to skip resize() calls
+	//of child elements. The resize bool should be set to true at the highest
+	//level call for an element (i.e. when called from outside of the class)
+	if (resize_element) resize();
 }
 
 DirectX::XMFLOAT2 UIElement::getAbsoluteLocation()

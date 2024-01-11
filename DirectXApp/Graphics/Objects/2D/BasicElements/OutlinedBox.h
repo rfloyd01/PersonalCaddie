@@ -22,12 +22,11 @@ public:
 
 	OutlinedBox() {} //empty default constructor
 
-	virtual void setAbsoluteSize(DirectX::XMFLOAT2 size) override
+	virtual void setChildrenAbsoluteSize(DirectX::XMFLOAT2 size) override
 	{
 		//The outlined box consists of two boxes with the exact same location and size
 		//so for this method we just need to call the standard setAbsoluteSize() method
-		//for both elements
-		UIElement::setAbsoluteSize(size);
+		//for the child box
 		p_children[0]->setAbsoluteSize(size);
 	}
 };

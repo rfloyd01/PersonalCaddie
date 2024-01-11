@@ -75,7 +75,8 @@ public:
 	UIText* getText() { return &m_text; }
 
 	DirectX::XMFLOAT2 getAbsoluteSize();
-	virtual void setAbsoluteSize(DirectX::XMFLOAT2 size);
+	void setAbsoluteSize(DirectX::XMFLOAT2 size, bool resize_element = false);
+	virtual void setChildrenAbsoluteSize(DirectX::XMFLOAT2 size) {}; //default implementation does nothing
 
 	DirectX::XMFLOAT2 getAbsoluteLocation();
 	virtual void setAbsoluteLocation(DirectX::XMFLOAT2 location);
@@ -89,6 +90,9 @@ public:
 	void setAlert() { m_isAlert = true; } //deprecated
 
 	void getAllTextNeedingDimensions(std::vector<UIText*>* text);
+
+	//DEBUG: See how often resize() gets called on screen resize
+	static int resize_count;
 
 protected:
 	void updateLocationAndSize(DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size);

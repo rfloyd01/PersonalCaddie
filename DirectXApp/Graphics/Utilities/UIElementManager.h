@@ -178,8 +178,11 @@ private:
 	
 	std::vector<std::shared_ptr<UIElement>> m_updateText; //An array of elements that currently require text dimension info from the Renderer class
 
+	//Screen Size variables
 	std::shared_ptr<winrt::Windows::Foundation::Size> m_screenSize; //Keeps track of the current size of the window. UIElements have dimensions that are relative to the window size
-	//static std::vector<UIElementType> m_textUpdateElements; --deprecated
+	float m_lastScreenResizeArea = 1.0f; //this variable limits the number of times that resizing the screen updates UIElement sizes
+	float m_screenResizeThreshold = 0.015f; //sets the screen area difference between resize events can be triggered
+
 	long long m_alertTimer = 2000; //The amount of time (in milliseconds) that alerts remain on screen before disappearing
 	int m_debugBoxCount = 0; //COunts the number of debugging boxes currently being rendered
 

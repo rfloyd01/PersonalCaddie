@@ -39,13 +39,13 @@ public:
 
 	ArrowButton() {} //empty default constructor
 
-	virtual void setAbsoluteSize(DirectX::XMFLOAT2 size) override
+	virtual void setChildrenAbsoluteSize(DirectX::XMFLOAT2 size) override
 	{
 		//The Arrow Button has three line child elements. One of the lines passes straight
 		//through the center of the button so nothing extra needs to be done to it. The
 		//other two lines are offset though so will need to be repositioned upon
 		//resizing.
-		Button::setAbsoluteSize(size);
+		Button::setChildrenAbsoluteSize(size);
 		p_children[1]->setAbsoluteSize({ 0.0f, size.y / 2.0f });
 
 		//The other two lines need to shrink two match the new button size,

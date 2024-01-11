@@ -91,19 +91,30 @@ void UIElementManager::updateScreenSize(winrt::Windows::Foundation::Size newWind
 	//This method automatically gets called when the screen changes sizes, it causes all UI elements
 	//on the screen to change proportionally with the new screen size.
 	*m_screenSize.get() = newWindowSize; //all UIElements share this smart pointer so they see the change as well
+	float screenArea = newWindowSize.Width * newWindowSize.Height;
 
-	for (int i = 0; i < static_cast<int>(UIElementType::END); i++)
+	if (((screenArea / m_lastScreenResizeArea) >= (1.0f + m_screenResizeThreshold)) || ((screenArea / m_lastScreenResizeArea) <= (1.0f - m_screenResizeThreshold)))
 	{
-		std::vector<std::shared_ptr<ManagedUIElement>>& elements = m_uiElements.at(static_cast<UIElementType>(i));
-		for (int j = 0; j < elements.size(); j++)
+		for (int i = 0; i < static_cast<int>(UIElementType::END); i++)
 		{
-			elements[j]->element->resize();
+			std::vector<std::shared_ptr<ManagedUIElement>>& elements = m_uiElements.at(static_cast<UIElementType>(i));
+			for (int j = 0; j < elements.size(); j++)
+			{
+				elements[j]->element->resize();
 
-			//Some elements are dynamically sized based on the text inside of them. If calling
-			//the resize method on an element causes the NeedTextPixels flag to appear in the 
-			//element's state, the element gets added to the m_updateText vector
-			if (elements[j]->element->getState() & UIElementState::NeedTextPixels) m_updateText.push_back(elements[j]->element);
+				//Some elements are dynamically sized based on the text inside of them. If calling
+				//the resize method on an element causes the NeedTextPixels flag to appear in the 
+				//element's state, the element gets added to the m_updateText vector
+				if (elements[j]->element->getState() & UIElementState::NeedTextPixels) m_updateText.push_back(elements[j]->element);
+			}
 		}
+
+		//Update the m_lastScreenResizeArea variable
+		m_lastScreenResizeArea = screenArea;
+
+		//DEBUG:
+		std::wstring resize_count = L"Resize called " + std::to_wstring(++UIElement::resize_count) + L" times.\n";
+		OutputDebugString(&resize_count[0]);
 	}
 }
 

@@ -7,9 +7,9 @@
 /*
 Order of Child Elements:
 0: Main Text Box
-1: Up Scrolling Button
-2: Down Scrolling Button
-3: Scroll Progress Bar Background
+1: Scroll Progress Bar Background
+2: Up Scrolling Button
+3: Down Scrolling Button
 4: Scroll Progress Bar Foreground
 5+: Text Overlays with content
 */
@@ -355,9 +355,8 @@ void FullScrollingTextBox::onScrollDown()
 		for (int i = 5; i < p_children.size(); i++)
 		{
 			auto currentLocation = p_children[i]->getAbsoluteLocation();
-			//p_children[i]->setAbsoluteLocation({currentLocation.x, currentLocation.y - absoluteTextHeight});
 			p_children[i]->setAbsoluteLocation({ currentLocation.x, currentLocation.y - scrollDistance });
-			p_children[i]->resize();
+			p_children[i]->resize(); //call the resize method on each text overlay to actually shift it as necessary
 		}
 
 		//finally, move the scroll bar
@@ -385,9 +384,8 @@ void FullScrollingTextBox::onScrollUp()
 		for (int i = 5; i < p_children.size(); i++)
 		{
 			auto currentLocation = p_children[i]->getAbsoluteLocation();
-			//p_children[i]->setAbsoluteLocation({ currentLocation.x, currentLocation.y + absoluteTextHeight });
 			p_children[i]->setAbsoluteLocation({ currentLocation.x, currentLocation.y + scrollDistance });
-			p_children[i]->resize();
+			p_children[i]->resize(); //call the resize method on each text overlay to actually shift it as necessary
 		}
 		
 		//finally, move the scroll bar
@@ -408,31 +406,22 @@ void FullScrollingTextBox::calcualteScrollBarLocation()
 	for (int i = 5; i < p_children.size(); i++) totalAbsoluteTextHeight += p_children[i]->getAbsoluteSize().y;
 
 	float ratio = getAbsoluteSize().y * (getAbsoluteSize().y - 2 * m_buttonHeight) / totalAbsoluteTextHeight;
-	p_children[4]->setAbsoluteSize({ p_children[4]->getAbsoluteSize().x, ratio });
-
 	float bottomTextToCenterBox = (p_children.back()->getAbsoluteLocation().y + p_children.back()->getAbsoluteSize().y / 2.0f) - getAbsoluteLocation().y;
 	float centerScrollBarToButtonTop = ratio / getAbsoluteSize().y * bottomTextToCenterBox;
-	p_children[4]->setAbsoluteLocation({ p_children[4]->getAbsoluteLocation().x, getAbsoluteLocation().y + getAbsoluteSize().y / 2.0f - m_buttonHeight - centerScrollBarToButtonTop });
 	
-	p_children[4]->resize();
+	p_children[4]->setAbsoluteLocation({ p_children[4]->getAbsoluteLocation().x, getAbsoluteLocation().y + getAbsoluteSize().y / 2.0f - m_buttonHeight - centerScrollBarToButtonTop });
+	p_children[4]->setAbsoluteSize({ p_children[4]->getAbsoluteSize().x, ratio }, true); //force a resize here to actually move the scroll bar
 }
 
 uint32_t FullScrollingTextBox::update(InputState* inputState)
 {
-	//At the end of the standard update, we check to see if either of the buttons are currently being pressed.
-	//If so, it has the effect of scrolling the text twice.
+	//At the end of the standard update, we check to see if either of the buttons are currently being pressed,
+	//or the scroll bar is being dragged. These actions will cause the box to scroll. We also check to see if
+	//any options inside the scroll box have been selected (if the scroll box supports choosing items)
 	uint32_t currentState = UIElement::update(inputState);
 
-	if (p_children[2]->getState() & UIElementState::Released)
-	{
-		onScrollUp();
-		onScrollUp();
-	}
-	else if (p_children[3]->getState() & UIElementState::Released)
-	{
-		onScrollDown();
-		onScrollDown();
-	}
+	if (p_children[2]->getState() & UIElementState::Released) onScrollUp();
+	else if (p_children[3]->getState() & UIElementState::Released) onScrollDown();
 	else if (p_children[4]->getState() & UIElementState::Clicked)
 	{
 		if (inputState->mouseClickState == MouseClickState::MouseClicked)
@@ -548,13 +537,8 @@ std::vector<UIText*> FullScrollingTextBox::setTextDimension()
 	return text;
 }
 
-void FullScrollingTextBox::setAbsoluteSize(DirectX::XMFLOAT2 size)
+void FullScrollingTextBox::setChildrenAbsoluteSize(DirectX::XMFLOAT2 size)
 {
-	//The Full Scrolling Text box has 4 direct child elements that
-	//need to be positioned about the center of the element when a
-	//manual resize occurs.
-	UIElement::setAbsoluteSize(size); //first resize the element as a whole
-
 	//Calculate the appropriate height and width of the buttons and
 	//set these new sizes
 	float screen_ratio = MAX_SCREEN_HEIGHT / MAX_SCREEN_WIDTH;

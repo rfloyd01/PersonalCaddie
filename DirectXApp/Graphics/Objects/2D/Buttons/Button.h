@@ -13,7 +13,7 @@ public:
 	Button(std::shared_ptr<winrt::Windows::Foundation::Size> windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size,
 		UIColor fillColor = UIColor::ButtonNotPressed, UIColor outlineColor = UIColor::Black, UIColor shadowColor = UIColor::DarkGray, float shadowPixels = 8.0f);
 
-	virtual void setAbsoluteSize(DirectX::XMFLOAT2 size) override;
+	virtual void setChildrenAbsoluteSize(DirectX::XMFLOAT2 size) override;
 
 protected:
 	virtual void onMouseClick() override;

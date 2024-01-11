@@ -176,6 +176,12 @@
     <ClCompile Include="Graphics\Objects\2D\Graph\GraphDataSet.cpp">
       <Filter>Graphics\Objects\2D\Graph</Filter>
     </ClCompile>
+    <ClCompile Include="Graphics\Objects\2D\Graph\GraphData.cpp">
+      <Filter>Graphics\Objects\2D\Graph</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\Objects\2D\Graph\GraphKey.cpp">
+      <Filter>Graphics\Objects\2D\Graph</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -416,6 +422,16 @@
       <Filter>Modes</Filter>
     </ClInclude>
     <ClInclude Include="Graphics\Objects\2D\Graph\GraphDataSet.h">
+      <Filter>Graphics\Objects\2D\Graph</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Objects\2D\BasicElements\RelativeBox.h" />
+    <ClInclude Include="Graphics\Objects\2D\Buttons\CheckBox.h">
+      <Filter>Graphics\Objects\2D\Buttons</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Objects\2D\Graph\GraphData.h">
+      <Filter>Graphics\Objects\2D\Graph</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Objects\2D\Graph\GraphKey.h">
       <Filter>Graphics\Objects\2D\Graph</Filter>
     </ClInclude>
   </ItemGroup>

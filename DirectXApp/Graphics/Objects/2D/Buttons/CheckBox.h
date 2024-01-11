@@ -33,13 +33,13 @@ public:
 
 	CheckBox() {} //empty default constructor
 
-	virtual void setAbsoluteSize(DirectX::XMFLOAT2 size) override
+	virtual void setChildrenAbsoluteSize(DirectX::XMFLOAT2 size) override
 	{
 		//The Check Box is a white button with two lines that cross
 		//through the center. Since all elements have the same center
 		//then nothing special needs to be done here except setting
 		//the same absolute size for everything
-		Button::setAbsoluteSize(size);
+		Button::setChildrenAbsoluteSize(size);
 		p_children[1]->setAbsoluteSize({ size.x, size.y });
 		p_children[2]->setAbsoluteSize({ -size.x, size.y });
 	}

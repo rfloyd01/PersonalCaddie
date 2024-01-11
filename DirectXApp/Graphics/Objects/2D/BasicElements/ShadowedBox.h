@@ -40,14 +40,12 @@ public:
 		resize();
 	}
 
-	virtual void setAbsoluteSize(DirectX::XMFLOAT2 size) override
+	virtual void setChildrenAbsoluteSize(DirectX::XMFLOAT2 size) override
 	{
 		//The shadowed box has two child elements that are smaller and slightly offset
 		//from the center of the element. Shrinking the shadowed box means
 		//that the two children will also need to be translated to maintain
 		//the boxes integrity
-		UIElement::setAbsoluteSize(size);
-
 		DirectX::XMFLOAT2 currentAbsolutePixelSize = { m_screenSize->Width * m_shadowSizePixels / (MAX_SCREEN_WIDTH * MAX_SCREEN_WIDTH), m_screenSize->Height * m_shadowSizePixels / (MAX_SCREEN_HEIGHT * MAX_SCREEN_HEIGHT) };
 		DirectX::XMFLOAT2 newSize = { size.x - currentAbsolutePixelSize.x, size.y - currentAbsolutePixelSize.y };
 		

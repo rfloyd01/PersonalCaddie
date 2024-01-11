@@ -19,12 +19,11 @@ Button::Button(std::shared_ptr<winrt::Windows::Foundation::Size> windowSize, Dir
 	m_state &= ~UIElementState::Dummy; //anything created without the default constructor shouldn't have the dummy state
 }
 
-void Button::setAbsoluteSize(DirectX::XMFLOAT2 size)
+void Button::setChildrenAbsoluteSize(DirectX::XMFLOAT2 size)
 {
 	//The button contains a shadowed box child element that has the 
 	//same dimensions and location as the button iteself. Simply call
-	//the default setAbsoluteSize method() on both objects.
-	UIElement::setAbsoluteSize(size);
+	//the default setAbsoluteSize method() on the child box
 	p_children[0]->setAbsoluteSize(size);
 }
 
