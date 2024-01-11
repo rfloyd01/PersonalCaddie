@@ -52,6 +52,7 @@ protected:
 	bool m_dynamicSize;
 	bool m_heightSet; //When the text box is first created it's height will be changed slightly so that text perfectly fits in the box
 	float m_relativeTextHeight;
+	float m_currentMouseHeight, m_scrollBarClickHeight; //Variables for manual scrolling of the scroll bar
 
 	int m_topText; //Represent which line of text is currently at the top of the scroll box
 	int m_displayedText; //Represents how many lines of text are currently displayed in the scroll box

@@ -50,13 +50,14 @@ FullScrollingTextBox::FullScrollingTextBox(std::shared_ptr<winrt::Windows::Found
 	//been scrolled through. This progress bar is composed of two elements: an outlined box that
 	//acts as a background, and a shadowed box which shows the actual progress.
 	OutlinedBox progressBarBackground(windowSize, { location.x + (size.x - buttonWidth) / 2.0f, location.y}, { buttonWidth, size.y}, UIColor::Gray);
-	ShadowedBox progressBarForeground(windowSize, { location.x + (size.x - buttonWidth) / 2.0f, location.y }, { buttonWidth, (size.y - 2.0f * m_buttonHeight) / 2.0f }, UIColor::PaleGray); //y size and location will change after text is added
+	Button progressBarForeground(windowSize, { location.x + (size.x - buttonWidth) / 2.0f, location.y }, { buttonWidth, (size.y - 2.0f * m_buttonHeight) / 2.0f }, UIColor::PaleGray); //y size and location will change after text is added
+	progressBarForeground.updateState(UIElementState::Disabled); //this is a button that can't be pressed
 
 	p_children.push_back(std::make_shared<OutlinedBox>(textBox));
 	p_children.push_back(std::make_shared<OutlinedBox>(progressBarBackground));
 	p_children.push_back(std::make_shared<ArrowButton>(upButton));
 	p_children.push_back(std::make_shared<ArrowButton>(downButton));
-	p_children.push_back(std::make_shared<ShadowedBox>(progressBarForeground));
+	p_children.push_back(std::make_shared<Button>(progressBarForeground));
 
 	//Set values for class variables
 	m_isScrollable = true; //this enables scrolling detection in the main rendering loop
@@ -431,6 +432,49 @@ uint32_t FullScrollingTextBox::update(InputState* inputState)
 	{
 		onScrollDown();
 		onScrollDown();
+	}
+	else if (p_children[4]->getState() & UIElementState::Clicked)
+	{
+		if (inputState->mouseClickState == MouseClickState::MouseClicked)
+		{
+			//Set the scroll bar click height as well as the current mouse height
+			m_scrollBarClickHeight = inputState->mousePosition.y;
+			m_currentMouseHeight = inputState->mousePosition.y;
+		}
+		else if (inputState->mouseClickState == MouseClickState::MouseHeld)
+		{
+			if (inputState->mousePosition.y != m_currentMouseHeight)
+			{
+				//When dragging the scroll bar upwards, if the absolute change in mouse position
+				//is greater than the absolute height of the bottom text of the scroll box, it initiates
+				//an upward scroll. Likewise when the bar is dragged downwards. We can figure out if 
+				//the scroll threshold has been met by comparing two absolute ratios (i.e absolute scroll distance /
+				//absolute scroll bar height = absolute text overlay height = absolute text box height)
+
+				auto r2a = p_children[4]->getAbsoluteSize().y; //absolute height of scroll bar
+				auto r1b = p_children[m_topText + m_displayedText - 1]->getAbsoluteSize().y; //absolute height of text overlay
+				auto r2b = getAbsoluteSize().y; //absolute height of text box
+
+				if (inputState->mousePosition.y < m_scrollBarClickHeight)
+				{
+					if (((m_scrollBarClickHeight - inputState->mousePosition.y) / m_screenSize->Height) >= (r2a * r1b / r2b))
+					{
+						onScrollUp();
+						m_scrollBarClickHeight = inputState->mousePosition.y;
+					}
+				}
+				else
+				{
+					if (((inputState->mousePosition.y - m_scrollBarClickHeight) / m_screenSize->Height) >= (r2a * r1b / r2b))
+					{
+						onScrollDown();
+						m_scrollBarClickHeight = inputState->mousePosition.y;
+					}
+				}
+				
+				m_currentMouseHeight = inputState->mousePosition.y; //reset the click variable to prevent infinite scrolling
+			}
+		}
 	}
 	else if ((inputState->mouseClickState == MouseClickState::MouseClicked) && isMouseHovered(inputState->mousePosition))
 	{
