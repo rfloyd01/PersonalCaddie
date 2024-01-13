@@ -88,18 +88,18 @@ void Graph::addGraphData(std::vector<DirectX::XMFLOAT2> const& dataPoints, UICol
 	DirectX::XMFLOAT2 absoluteDifference = { m_maximalAbsolutePoint.x - m_minimalAbsolutePoint.x, m_maximalAbsolutePoint.y - m_minimalAbsolutePoint.y };
 	DirectX::XMFLOAT2 previousPoint = { absoluteDifference.x * ((dataPoints[0].x - m_minimalDataPoint.x) / difference.x) + m_minimalAbsolutePoint.x, -1 * (absoluteDifference.y * ((dataPoints[0].y - m_minimalDataPoint.y) / difference.y) - m_maximalAbsolutePoint.y) }, currentPoint = { 0, 0 };
 	
-	//Check to see if the graph is a square graph, if so then all points need to be shifted accordingly
-	//to make sure that they actually fall inside of the box child element
-	float squareGraphRatioCorrection = 1.0f, squareGraphDriftCorrection = 0.0f;
-	auto childBox = ((OutlinedBox*)p_children[0].get());
-	if (childBox->isSquare())
-	{
-		//Get the ratio of the screen width to it's height. Since most screens are in portrait mode
-		//instead of landscape this will almost always result and a ratio less than one, which will
-		//effectively squish the data points along the x-axis to fit into the graph.
-		squareGraphRatioCorrection = m_screenSize->Height / m_screenSize->Width;
-		squareGraphDriftCorrection = childBox->fixSquareBoxDrift();
-	}
+	////Check to see if the graph is a square graph, if so then all points need to be shifted accordingly
+	////to make sure that they actually fall inside of the box child element
+	//float squareGraphRatioCorrection = 1.0f, squareGraphDriftCorrection = 0.0f;
+	//auto childBox = ((OutlinedBox*)p_children[0].get());
+	//if (childBox->isSquare())
+	//{
+	//	//Get the ratio of the screen width to it's height. Since most screens are in portrait mode
+	//	//instead of landscape this will almost always result and a ratio less than one, which will
+	//	//effectively squish the data points along the x-axis to fit into the graph.
+	//	squareGraphRatioCorrection = m_screenSize->Height / m_screenSize->Width;
+	//	squareGraphDriftCorrection = childBox->fixSquareBoxDrift();
+	//}
 
 	//If there's any existing GraphDataSet child element add this new set to it, otherwise
 	//create a new GraphDataSet child element to add lines and or points to. This allows us to alter entire
@@ -125,7 +125,8 @@ void Graph::addGraphData(std::vector<DirectX::XMFLOAT2> const& dataPoints, UICol
 	{
 		for (int i = 1; i < dataPoints.size(); i++)
 		{
-			currentPoint = { squareGraphRatioCorrection * (absoluteDifference.x * ((dataPoints[i].x - m_minimalDataPoint.x) / difference.x)) + m_minimalAbsolutePoint.x + squareGraphDriftCorrection, -1 * (absoluteDifference.y * ((dataPoints[i].y - m_minimalDataPoint.y) / difference.y) - m_maximalAbsolutePoint.y) };
+			//currentPoint = { squareGraphRatioCorrection * (absoluteDifference.x * ((dataPoints[i].x - m_minimalDataPoint.x) / difference.x)) + m_minimalAbsolutePoint.x + squareGraphDriftCorrection, -1 * (absoluteDifference.y * ((dataPoints[i].y - m_minimalDataPoint.y) / difference.y) - m_maximalAbsolutePoint.y) };
+			currentPoint = { absoluteDifference.x * ((dataPoints[i].x - m_minimalDataPoint.x) / difference.x) + m_minimalAbsolutePoint.x, -1 * (absoluteDifference.y * ((dataPoints[i].y - m_minimalDataPoint.y) / difference.y) - m_maximalAbsolutePoint.y) };
 			Line line(m_screenSize, currentPoint, previousPoint, lineColor);
 			newData.addLine(line);
 			previousPoint = currentPoint;
@@ -136,8 +137,8 @@ void Graph::addGraphData(std::vector<DirectX::XMFLOAT2> const& dataPoints, UICol
 		for (int i = 1; i < dataPoints.size(); i++)
 		{
 			//This creates small circles instead of lines to create the graph.
-			currentPoint = { squareGraphRatioCorrection * (absoluteDifference.x * ((dataPoints[i].x - m_minimalDataPoint.x) / difference.x)) + m_minimalAbsolutePoint.x + squareGraphDriftCorrection, -1 * (absoluteDifference.y * ((dataPoints[i].y - m_minimalDataPoint.y) / difference.y) - m_maximalAbsolutePoint.y) };
-			
+			//currentPoint = { squareGraphRatioCorrection * (absoluteDifference.x * ((dataPoints[i].x - m_minimalDataPoint.x) / difference.x)) + m_minimalAbsolutePoint.x + squareGraphDriftCorrection, -1 * (absoluteDifference.y * ((dataPoints[i].y - m_minimalDataPoint.y) / difference.y) - m_maximalAbsolutePoint.y) };
+			currentPoint = { absoluteDifference.x * ((dataPoints[i].x - m_minimalDataPoint.x) / difference.x) + m_minimalAbsolutePoint.x, -1 * (absoluteDifference.y * ((dataPoints[i].y - m_minimalDataPoint.y) / difference.y) - m_maximalAbsolutePoint.y) };
 			Ellipse ell(m_screenSize, currentPoint, { 0.0033f * m_size.y, 0.0033f * m_size.y }, true, lineColor);
 			newData.addEllipse(ell);
 			previousPoint = currentPoint;
@@ -181,13 +182,12 @@ void Graph::addLine(DirectX::XMFLOAT2 point1, DirectX::XMFLOAT2 point2)
 	//to first see if the graph has the square parameter and change the points accordingly. Lines created by this method
 	//persist through different zoom levels which may appear somewhat unexpected.
 
-	//TODO: Need to add the square Graph ratio correction variable at some point
-	float squareGraphCorrection = 0.0f;
+	/*float squareGraphCorrection = 0.0f;
 	auto childBox = ((OutlinedBox*)p_children[0].get());
 	if (childBox->isSquare()) squareGraphCorrection = childBox->fixSquareBoxDrift();
 
 	point1.x += squareGraphCorrection;
-	point2.x += squareGraphCorrection;
+	point2.x += squareGraphCorrection;*/
 
 	Line dataLine(m_screenSize, point1, point2);
 	addUIElementBeforeData(std::make_shared<Line>(dataLine)); //safely add the new line to the child array
@@ -215,16 +215,16 @@ void Graph::addAxisLine(int axis, float location)
 
     //Since thex-axis scale can get distorted if the graph is locked in as a square we need to compensate for
 	//this to make sure the line shows up in the correct location
-	float squareGraphRatioCorrection = 1.0f, squareGraphDriftCorrection = 0.0f;
-	auto childBox = ((OutlinedBox*)p_children[0].get());
-	if (childBox->isSquare())
-	{
-		//Get the ratio of the screen width to it's height. Since most screens are in portrait mode
-		//instead of landscape this will almost always result and a ratio less than one, which will
-		//effectively squish the data points along the x-axis to fit into the graph.
-		squareGraphRatioCorrection = m_screenSize->Height / m_screenSize->Width;
-		squareGraphDriftCorrection = childBox->fixSquareBoxDrift();
-	}
+	//float squareGraphRatioCorrection = 1.0f, squareGraphDriftCorrection = 0.0f;
+	//auto childBox = ((OutlinedBox*)p_children[0].get());
+	//if (childBox->isSquare())
+	//{
+	//	//Get the ratio of the screen width to it's height. Since most screens are in portrait mode
+	//	//instead of landscape this will almost always result and a ratio less than one, which will
+	//	//effectively squish the data points along the x-axis to fit into the graph.
+	//	squareGraphRatioCorrection = m_screenSize->Height / m_screenSize->Width;
+	//	squareGraphDriftCorrection = childBox->fixSquareBoxDrift();
+	//}
 
 	DirectX::XMFLOAT2 point_one = {0.0f, 0.0f}, point_two = { 0.0f, 0.0f };
 
@@ -235,15 +235,19 @@ void Graph::addAxisLine(int axis, float location)
 		//this is the x-axis, so we place a straight horizontal line at the specified y-value.
 		//This line needs to be correct if the graph is a "square"
 		location = -1 * (absoluteDifference.y * ((location - m_minimalDataPoint.y) / difference.y) - m_maximalAbsolutePoint.y); //convert the given location from data coordinates into absolute window coordinates (y-axis is flipped)
-		DirectX::XMFLOAT2 corrected_x_location = { m_minimalAbsolutePoint.x + squareGraphDriftCorrection, squareGraphRatioCorrection * absoluteDifference.x + m_minimalAbsolutePoint.x + squareGraphDriftCorrection };
+		/*DirectX::XMFLOAT2 corrected_x_location = { m_minimalAbsolutePoint.x + squareGraphDriftCorrection, squareGraphRatioCorrection * absoluteDifference.x + m_minimalAbsolutePoint.x + squareGraphDriftCorrection };
 		point_one = { corrected_x_location.x, location };
-		point_two = { corrected_x_location.y, location };
+		point_two = { corrected_x_location.y, location };*/
+		DirectX::XMFLOAT2 x_location = { m_minimalAbsolutePoint.x, absoluteDifference.x + m_minimalAbsolutePoint.x };
+		point_one = { x_location.x, location };
+		point_two = { x_location.y, location };
 		break;
 	}
 	case 1:
 	{
 		//this is the y-axis, so we place a straight vertical line at the specified x-value.
-		location = squareGraphRatioCorrection * (absoluteDifference.x * ((location - m_minimalDataPoint.x) / difference.x)) + m_minimalAbsolutePoint.x + squareGraphDriftCorrection; //convert the given location from data coordinates into absolute window coordinates.
+		//location = squareGraphRatioCorrection * (absoluteDifference.x * ((location - m_minimalDataPoint.x) / difference.x)) + m_minimalAbsolutePoint.x + squareGraphDriftCorrection; //convert the given location from data coordinates into absolute window coordinates.
+		location = absoluteDifference.x * ((location - m_minimalDataPoint.x) / difference.x) + m_minimalAbsolutePoint.x; //convert the given location from data coordinates into absolute window coordinates.
 		point_one = { location,  m_location.y - m_size.y / 2.0f };
 		point_two = { location,  m_location.y + m_size.y / 2.0f };
 		break;
@@ -278,21 +282,22 @@ void Graph::addAxisLabel(std::wstring label, int axis, float location)
 
 		//Like is done for other Graph methods, check if the graph is in a square configuration
 	    //before setting the axis label as the width calculation could become distorted
-		float squareGraphRatioCorrection = 1.0f, squareGraphDriftCorrection = 0.0f;
-		auto childBox = ((OutlinedBox*)p_children[0].get());
-		if (childBox->isSquare())
-		{
-			//Get the ratio of the screen width to it's height. Since most screens are in portrait mode
-			//instead of landscape this will almost always result and a ratio less than one, which will
-			//effectively squish the data points along the x-axis to fit into the graph.
-			squareGraphRatioCorrection = m_screenSize->Height / m_screenSize->Width;
-			squareGraphDriftCorrection = childBox->fixSquareBoxDrift();
-		}
+		//float squareGraphRatioCorrection = 1.0f, squareGraphDriftCorrection = 0.0f;
+		//auto childBox = ((OutlinedBox*)p_children[0].get());
+		//if (childBox->isSquare())
+		//{
+		//	//Get the ratio of the screen width to it's height. Since most screens are in portrait mode
+		//	//instead of landscape this will almost always result and a ratio less than one, which will
+		//	//effectively squish the data points along the x-axis to fit into the graph.
+		//	squareGraphRatioCorrection = m_screenSize->Height / m_screenSize->Width;
+		//	squareGraphDriftCorrection = childBox->fixSquareBoxDrift();
+		//}
 
 		DirectX::XMFLOAT2 difference = { m_maximalDataPoint.x - m_minimalDataPoint.x, m_maximalDataPoint.y - m_minimalDataPoint.y };
 		DirectX::XMFLOAT2 absoluteDifference = { m_maximalAbsolutePoint.x - m_minimalAbsolutePoint.x, m_maximalAbsolutePoint.y - m_minimalAbsolutePoint.y };
 
-		float absoluteXLocation = squareGraphRatioCorrection * (absoluteDifference.x * ((location - m_minimalDataPoint.x) / difference.x)) + m_minimalAbsolutePoint.x + squareGraphDriftCorrection;
+		//float absoluteXLocation = squareGraphRatioCorrection * (absoluteDifference.x * ((location - m_minimalDataPoint.x) / difference.x)) + m_minimalAbsolutePoint.x + squareGraphDriftCorrection;
+		float absoluteXLocation = absoluteDifference.x * ((location - m_minimalDataPoint.x) / difference.x) + m_minimalAbsolutePoint.x;
 
 		TextOverlay graphText(m_screenSize, { absoluteXLocation, m_location.y + m_size.y / 2.0f }, { m_size.x, 0.035 }, label, 0.015, { UIColor::Black }, { 0, (unsigned int)label.length() }, UITextJustification::UpperCenter);
 		addUIElementBeforeData(std::make_shared<TextOverlay>(graphText)); //safely add the text to the child array

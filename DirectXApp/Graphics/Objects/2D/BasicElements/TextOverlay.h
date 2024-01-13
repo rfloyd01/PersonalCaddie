@@ -24,5 +24,9 @@ public:
 		}
 	}
 
-
+	//DEBUG:
+	virtual void setChildrenAbsoluteSize(DirectX::XMFLOAT2 size) override
+	{
+		p_children[0]->setAbsoluteSize(size);
+	}
 };

@@ -24,6 +24,10 @@ TextOverlay::TextOverlay(std::shared_ptr<winrt::Windows::Foundation::Size> windo
 	m_text.colors = colors;
 	m_text.colorLocations = colorLocations;
 
+	//DEBUG:
+	Box debugBox(windowSize, location, size, UIColor::Red, UIShapeFillType::NoFill);
+	p_children.push_back(std::make_shared<Box>(debugBox));
+
 	resize();
 }
 

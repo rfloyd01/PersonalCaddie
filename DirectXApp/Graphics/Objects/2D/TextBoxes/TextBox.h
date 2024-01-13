@@ -19,4 +19,6 @@ public:
 
 	TextBox() {} //empty default constructor
 
+	virtual void setChildrenAbsoluteSize(DirectX::XMFLOAT2 size) override;
+
 };

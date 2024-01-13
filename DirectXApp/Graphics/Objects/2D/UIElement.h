@@ -99,7 +99,7 @@ protected:
 	void convertAbsoluteCoordinatesToRelativeCoordinates();
 	bool screenBoundaryCheck(DirectX::XMFLOAT2& location, DirectX::XMFLOAT2& size);
 
-	int pixelCompare(float pixelOne, float pixelTwo);
+	float absoluteCompare(float pixelOne, float pixelTwo);
 
 	virtual bool isMouseHovered(DirectX::XMFLOAT2 mousePosition);
 

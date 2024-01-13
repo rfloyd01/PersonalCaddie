@@ -48,10 +48,6 @@ void UIElementManager::removeElementType(UIElementType type)
 	//Removes all UI Elements with the given type
 	for (auto it = m_uiElements.at(type).begin(); it != m_uiElements.at(type).end(); it++)
 	{
-		//Remove the UIElement from the render vector first.
-		/*auto render_it = std::find(m_renderElements.begin(), m_renderElements.end(), it->get()->element);
-		m_renderElements.erase(render_it);*/
-
 		for (int i = 0; i < it->get()->grid_locations.size(); i++)
 		{
 			//The grid vectors aren't ordered so we need to search for the appropriate
@@ -60,7 +56,6 @@ void UIElementManager::removeElementType(UIElementType type)
 			//the grid is small enough then there should never be more than a handful of 
 			//pointers in each vector so this should be alright.
 			std::pair<int, int> grid_location = it->get()->grid_locations[i];
-			//auto grid_it = findElementByName(m_gridLocations[it->get()->grid_locations[i].first][it->get()->grid_locations[i].second], it->get()->name);
 			auto grid_it = std::find(m_gridLocations[grid_location.first][grid_location.second].begin(), m_gridLocations[grid_location.first][grid_location.second].end(), *it);
 			if (grid_it != m_gridLocations[grid_location.first][grid_location.second].end()) m_gridLocations[grid_location.first][grid_location.second].erase(grid_it);
 		}
@@ -89,7 +84,10 @@ void UIElementManager::removeAllElements()
 void UIElementManager::updateScreenSize(winrt::Windows::Foundation::Size newWindowSize)
 { 
 	//This method automatically gets called when the screen changes sizes, it causes all UI elements
-	//on the screen to change proportionally with the new screen size.
+	//on the screen to change proportionally with the new screen size. This action can be somewhat
+	//computationally expensive, so to help make things more efficient a resize will only actually
+	//occur if the area of the screen changes by a certain threshold.
+
 	*m_screenSize.get() = newWindowSize; //all UIElements share this smart pointer so they see the change as well
 	float screenArea = newWindowSize.Width * newWindowSize.Height;
 
@@ -111,10 +109,6 @@ void UIElementManager::updateScreenSize(winrt::Windows::Foundation::Size newWind
 
 		//Update the m_lastScreenResizeArea variable
 		m_lastScreenResizeArea = screenArea;
-
-		//DEBUG:
-		std::wstring resize_count = L"Resize called " + std::to_wstring(++UIElement::resize_count) + L" times.\n";
-		OutputDebugString(&resize_count[0]);
 	}
 }
 
@@ -131,12 +125,6 @@ void UIElementManager::updateGridSquareElements(InputState* input)
 
 	if (mouseGridSquare.second < 0) mouseGridSquare.second = 0;
 	else if (mouseGridSquare.second >= GRID_WIDTH) mouseGridSquare.second = GRID_WIDTH - 1;
-
-	/*std::wstring loc = L"Mouse Grid Location: {" + std::to_wstring(mouseGridSquare.first) + L", " + std::to_wstring(mouseGridSquare.second) + L"}\n";
-	OutputDebugString(&loc[0]);*/
-
-	/*std::wstring loc = L"Mouse Location: {" + std::to_wstring(input->mousePosition.x) + L", " + std::to_wstring(input->mousePosition.y) + L"}\n";
-	OutputDebugString(&loc[0]);*/
 
 	for (int i = 0; i < m_gridLocations[mouseGridSquare.first][mouseGridSquare.second].size(); i++)
 	{
@@ -171,9 +159,6 @@ void UIElementManager::updateGridSquareElements(InputState* input)
 			//Any element in the click array will manually be unclicked here. These
 			//elements won't be added to the action list though so their functionality
 			//won't actually happen
-
-			//TODO: There may be some cases where I do want the functionality to happen
-			//so I may need to revisit this method in the future
 			m_clickedElements[i]->element->update(input);
 		}
 		m_clickedElements.clear(); //remove everything from the clicked array when done
@@ -226,44 +211,6 @@ std::vector<std::shared_ptr<ManagedUIElement> >::iterator UIElementManager::find
 	//that make these vectors are compound structs, this helper method is used to search for them.
 	return std::find_if(vec.begin(), vec.end(), [&n = name](const std::shared_ptr<ManagedUIElement>& e) -> bool {return n == e->name; });
 }
-
-//void UIElementManager::checkForTextResize()
-//{
-//  DEPRECATED
-//	//Some UIElements rely on the renderer class to update their dimensions by first rendering text
-//	//and calculating the size in pixels. To make this process more seemless, this method gets called
-//	//during each iteration of the render loop to check whether any UI Elements need an update. As of
-//	//right now the only elements that require this feature are: FullScrollingTextBox, DropDownMenu,
-//	//and PartialScrollingTextBox. As more UI Elements are created they will need to be added to the
-//	//static m_textUpdateElements vector.
-//	
-//	for (int type = 0; type < m_textUpdateElements.size(); type++)
-//	{
-//		for (int i = 0; i < m_uiElements.at(m_textUpdateElements[type]).size(); i++)
-//		{
-//			if (m_uiElements.at(m_textUpdateElements[type])[i]->element->getState() & UIElementState::NeedTextPixels)
-//			{
-//				m_updateText.push_back(m_uiElements.at(m_textUpdateElements[type])[i]->element);
-//			}
-//		}
-//	}
-//}
-
-//std::vector<UIText*> UIElementManager::getResizeText()
-//{
-//   DEPRECATED
-//	//The m_updateText array holds entire UIElements, however, we really only care about the UIText elements inside
-//	//of the UIElements. Extract any UIText that we need, and add it to a new vector which gets returned from this
-//	//method.
-//	std::vector<UIText*> textElements;
-//	for (int i = 0; i < m_updateText.size(); i++)
-//	{
-//		auto elementText = m_updateText[i]->setTextDimension(); //get the actual UIText elements with the text needing updating
-//		for (int j = 0; j < elementText.size(); j++) textElements.push_back(elementText[j]);
-//	}
-//
-//	return textElements; //return a copy of this temporary vector
-//}
 
 void UIElementManager::applyTextResizeUpdates()
 {

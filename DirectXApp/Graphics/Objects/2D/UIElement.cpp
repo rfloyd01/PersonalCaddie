@@ -429,20 +429,20 @@ void UIElement::setAbsoluteLocation(DirectX::XMFLOAT2 location)
 	}
 }
 
-int UIElement::pixelCompare(float pixelOne, float pixelTwo)
+float UIElement::absoluteCompare(float pixelOne, float pixelTwo)
 {
-	//Since floating point numbers are used for all pixel related math then it's possible that
-	//two pixels will occupy the same space, but have slightly different values (for example
+	//Since floating point numbers are used for all absolute coordinate related math then it's possible that
+	//two coordinates will occupy the same space, but have slightly different values (for example
 	//pixel one has an x location of 125.00235 and pixel two has an x location of 125.014).
 	//Some actions require the comparison of two pixel locations to decide the outcome,
 	//so instead of using raw <, <=, ==, >= and > symbols, this method should get called
 	//instead.
 
-	//If the pixels are within 0.1 of each other then they're considered equal. Otherwise,
+	//If the pixels are within 0.001 of each other then they're considered equal. Otherwise,
 	//a negative number means pixelTwo is larger while a positive number means that
 	//pixelOne is largber.
 	float difference = pixelOne - pixelTwo;
-	if (difference <= 0.1 && difference >= -0.1) return 0;
+	if (difference <= 0.001f && difference >= -0.001f) return 0.0f;
 	return difference;
 }
 

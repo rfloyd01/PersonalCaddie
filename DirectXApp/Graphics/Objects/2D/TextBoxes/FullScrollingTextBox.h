@@ -39,7 +39,6 @@ public:
 	void setLastSelectedText(std::wstring text) { m_lastSelectedText = text; } //TODO: May want to look at all text overlays in the child array and confirm the given text actually exists
 
 protected:
-	float getCurrentTextStartingHeight();
 	void setTextLocationsAndDimensions();
 
 	virtual void onScrollUp() override;
@@ -50,7 +49,6 @@ protected:
 	float m_buttonRatio = 0.125f; //the ratio of the buttons' height to the overall height of the scroll box
 	bool m_highlightableText;
 	bool m_dynamicSize;
-	bool m_heightSet; //When the text box is first created it's height will be changed slightly so that text perfectly fits in the box
 	float m_relativeTextHeight;
 	float m_currentMouseHeight, m_scrollBarClickHeight; //Variables for manual scrolling of the scroll bar
 
