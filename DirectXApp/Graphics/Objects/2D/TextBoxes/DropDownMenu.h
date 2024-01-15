@@ -29,6 +29,8 @@ public:
 	void clearAllOptions();
 	void setNewOptions(std::wstring options, bool highlightable);
 
+	virtual void setChildrenAbsoluteSize(DirectX::XMFLOAT2 size) override;
+
 protected:
 	virtual void repositionText() override;
 	int m_optionsDisplayed;

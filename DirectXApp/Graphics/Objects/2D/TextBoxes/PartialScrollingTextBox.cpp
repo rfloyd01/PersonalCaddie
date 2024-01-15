@@ -2,6 +2,20 @@
 #include "PartialScrollingTextBox.h"
 #include "Graphics/Objects/2D/Buttons/ArrowButton.h"
 
+//TODO:
+/*
+There are a few bugs in this class that will need further addressing.
+- The render height of the text in pixels is only calculated once currently.
+  Changing the size of the element, either by changing the screen size, or manually
+  and we can easily calculate the correct text height in pixels, however, the total
+  height of the rendered text doesn't change. This makes it so that shrinking the screen
+  size will let us scroll well beyond the bottom of the text. Not a huge deal but something
+  to be aware of. May want to consider updating the full render height of the text on each
+  resize like I originally used to.
+- Can't scroll the box by dragging the scroll bar, like can be done in the Full Scrolling
+  text box class. Should implement this feature after the above bug is addressed.
+*/
+
 PartialScrollingTextBox::PartialScrollingTextBox(std::shared_ptr<winrt::Windows::Foundation::Size> windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, std::wstring message, float fontSize,
 	UIColor coverBoxColor, std::vector<UIColor> textColor, std::vector<unsigned long long> textColorLocations, UITextJustification justification, UIColor textFillColor, bool isSquare, UIColor outlineColor, UIColor shadowColor)
 {

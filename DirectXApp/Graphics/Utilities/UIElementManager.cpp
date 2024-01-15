@@ -4,9 +4,6 @@
 
 #include <chrono>
 
-//Populate the need text update vector -- deprecated
-//std::vector<UIElementType> UIElementManager::m_textUpdateElements = { UIElementType::DROP_DOWN_MENU, UIElementType::PARTIAL_SCROLLING_TEXT_BOX, UIElementType::FULL_SCROLLING_TEXT_BOX };
-
 UIElementManager::UIElementManager()
 {
 	//Create a shared pointer that will hold the current screen size.This pointer will

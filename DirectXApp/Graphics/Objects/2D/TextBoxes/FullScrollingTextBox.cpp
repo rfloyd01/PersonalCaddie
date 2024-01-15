@@ -66,6 +66,7 @@ FullScrollingTextBox::FullScrollingTextBox(std::shared_ptr<winrt::Windows::Found
 	m_needTextRenderDimensions = true; //alerts the current mode that this element will need text pixels from the renderer at some point
 	m_topText = 5; //Set the first line of text as the current top
 	m_lastSelectedText = L"";
+	m_state &= ~UIElementState::Dummy; //The default constructor wasn't used so this isn't a dummy element
 
 	//Once everything is set we add text to the text box
 	addText(message, m_highlightableText, false);
@@ -202,10 +203,6 @@ void FullScrollingTextBox::repositionText()
 
 	if (m_state & UIElementState::NeedTextPixels)
 	{
-		//In case the size of the whole element changes, record the original height of the
-	    //text box as this was used to calculate the font size.
-		//float textOriginalHeight = p_children[m_topText]->getAbsoluteSize().y; //TODO: Remove this
-
 		//We want to make sure that the height of the text overlays is a perfect
 		//multiple of the height of the text box to make sure that things look
 		//good. When the box is first created and we get the pixel height of the

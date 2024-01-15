@@ -11,6 +11,7 @@ DropDownMenu::DropDownMenu(std::shared_ptr<winrt::Windows::Foundation::Size> win
 	float fontSize, int optionsDisplayed, bool isInverted, std::vector<UIColor> textColor, std::vector<unsigned long long> textColorLocations, UITextJustification justification, UIColor textFillColor, bool isSquare, UIColor outlineColor, UIColor shadowColor)
 {
 	m_screenSize = windowSize;
+	updateLocationAndSize(location, size);
 
 	//The Drop down menu uses a full scrolling text box whose width is determined by the length of
 	//the longest option contained in it. The width of the text box for the drop down menu will
@@ -28,8 +29,6 @@ DropDownMenu::DropDownMenu(std::shared_ptr<winrt::Windows::Foundation::Size> win
 	p_children.push_back(std::make_shared<FullScrollingTextBox>(scrollBox));
 
 	//Set the screen size dependent information for the TextBox
-	m_size = size;
-	m_location = location;
 	m_needTextRenderDimensions = true;
 	m_optionsDisplayed = optionsDisplayed;
 	m_inverted = isInverted;
@@ -41,7 +40,7 @@ DropDownMenu::DropDownMenu(std::shared_ptr<winrt::Windows::Foundation::Size> win
 
 std::vector<UIText*> DropDownMenu::setTextDimension()
 {
-	//We really only care about the text dimensions withing the full scrolling box child element.
+	//We really only care about the text dimensions within the full scrolling box child element.
 	//Since this child also implements the setTextDimension() method we just call that method. The width
 	//of the drop down text box will be sized off of the widest option in the scroll box.
 	return ((FullScrollingTextBox*)p_children[2].get())->setTextDimension();
@@ -81,29 +80,66 @@ void DropDownMenu::repositionText()
 {
 	//When this method gets called we know the dimensions of all the text inside of the full scrolling
 	//text box child element. Resize the scroll box so that the appropriate number of options designated
-	//by the m_optionsDisplayed field will perfectly fit in the box. Then resize the drop down text box
-	//accordingly and place the scroll box directly on top of or below the text box (depending on the value
-	//of the m_inverted field).
-
+	//by the m_optionsDisplayed field will perfectly fit in the box. Then resize the drop down box as a
+	//whole to reflect the full scrolling textbox width and text height.
 	float absoluteTextHeight = p_children[2]->getChildren()[5]->getText()->renderDPI.y / m_screenSize->Height;
-	//p_children[2]->setAbsoluteSize({ p_children[2]->getAbsoluteSize().x, absoluteTextHeight * m_optionsDisplayed }); //the x-dimension will get resized by the scroll box class
-	//p_children[2]->resize(currentWindowSize);
-	p_children[2]->repositionText(); //resize the scroll box
 
+	//Size the height of full scrolling text box to fit m_optionsDisplayed number of items with the given text height.
+	//The width will get auto-set so just put it to 0 for now
+	//p_children[2]->getChildren()[0]->setAbsoluteSize({0.0f, m_optionsDisplayed * absoluteTextHeight});
+	p_children[2]->repositionText(); //this method will size the scroll box and position its text accordingly
+
+	//The m_location variable of the drop down menu is slightly different than other UIElement classes.
+	//Since the full scrolling text box part of the drop down menu will be invisible for most of the 
+	//time it makes more sense to have the location be equal to the center of the option selecting box
+	//as opposed to being the exact center of the element. For UIElements to work properly though, their
+	//m_location variable needs to be at their center. To get around this, change the m_location variable
+	//so that when the selection box is placed, its center will be equal the m_location passed into this
+	//element's constructor. Use the updateLocationandSize() method to update the location to prevent 
+	//updating the locations for child elements as well.
+	auto originalLocation = getAbsoluteLocation();
+	setAbsoluteLocation({ originalLocation.x, originalLocation.y - (m_optionsDisplayed * absoluteTextHeight) / 2.0f });
+
+	//We're now ready to set the size of the DropDownMenu. The width is simply the width of the full scrolling
+	//box calculated above, and the height will be the height of the full scrolling text box plus the height of 
+	//a line of text.
+	setAbsoluteSize({ p_children[2]->getAbsoluteSize().x, absoluteTextHeight + p_children[2]->getAbsoluteSize().y }, true); //bringing in new text will force a resize
+	m_state &= ~UIElementState::NeedTextPixels; //remove the NeedTextPixels state when repositioning is complete
+}
+
+void DropDownMenu::setChildrenAbsoluteSize(DirectX::XMFLOAT2 size)
+{
+	auto optionBoxHeight = getAbsoluteSize().y / ((float)m_optionsDisplayed + 1.0f);
+	if (!(m_state & UIElementState::NeedTextPixels))
+	{
+		//The full scrolling text box needs to be sized in this scenario
+		p_children[2]->setAbsoluteSize({ getAbsoluteSize().x, optionBoxHeight * (float)m_optionsDisplayed });
+	}
+
+	//Set the size for the current option box and the arrow button
+	float buttonWidth = MAX_SCREEN_HEIGHT / MAX_SCREEN_WIDTH * optionBoxHeight;
+	p_children[0]->setAbsoluteSize({ getAbsoluteSize().x, optionBoxHeight });
+	p_children[1]->setAbsoluteSize({ buttonWidth, optionBoxHeight });
+
+	//The full scrolling text box appears above the drop down menu by default,
+	//but it can be inverted.
 	int invert = 1;
 	if (m_inverted) invert *= -1;
 
-	m_size = { p_children[2]->getAbsoluteSize().x, absoluteTextHeight }; //don't use setAbsoluteSize() as it will resize the scroll box
-	p_children[0]->setAbsoluteSize(m_size); //change the text box size to reflect m_size
-	p_children[2]->setAbsoluteLocation({ m_location.x, m_location.y - invert * (m_size.y + p_children[2]->getAbsoluteSize().y) / 2.0f });
+	//Then set the location for each child element
+	auto currentLocation = getAbsoluteLocation();
+	p_children[0]->setAbsoluteLocation({ currentLocation.x, currentLocation.y + optionBoxHeight * (float)m_optionsDisplayed / 2.0f});
+	p_children[1]->setAbsoluteLocation({ currentLocation.x + (getAbsoluteSize().x - buttonWidth) / 2.0f, currentLocation.y + optionBoxHeight * (float)m_optionsDisplayed / 2.0f});
+	p_children[2]->setAbsoluteLocation({ currentLocation.x, currentLocation.y - (getAbsoluteSize().y / (2.0f * ((float)m_optionsDisplayed + 1.0f))) });
 
-	//resize the button to match the height of the drop down text box and move
-	//it to the right side of the text box (making sure to compensate for square
-	//element drift)
-	p_children[1]->setAbsoluteSize({ absoluteTextHeight, absoluteTextHeight });
-	//float driftCorrectedButtonLocation = m_location.x + (m_size.x + absoluteTextHeight) / 2.0f - ((ShadowedBox*)p_children[1]->getChildren()[0].get())->fixSquareBoxDrift(currentWindowSize);
-	float driftCorrectedButtonLocation = 0.0f;
-	p_children[1]->setAbsoluteLocation({driftCorrectedButtonLocation, m_location.y});
+	//The last thing to do here is reposition the selected option text
+	//inside of the option box. We need to do this since the option box
+	//is a text box UIElement which isn't responsible for positioning
+	//its own text.
+	float absoluteFontSize = p_children[2]->getFontSize() * p_children[2]->getAbsoluteSize().y;
+	p_children[0]->getChildren()[1]->setAbsoluteLocation(p_children[0]->getAbsoluteLocation());
+	p_children[0]->getChildren()[1]->setAbsoluteSize(p_children[0]->getAbsoluteSize());
+	p_children[0]->getChildren()[1]->setFontSize(absoluteFontSize / p_children[0]->getAbsoluteSize().y);
 }
 
 uint32_t DropDownMenu::update(InputState* inputState)
@@ -114,10 +150,6 @@ uint32_t DropDownMenu::update(InputState* inputState)
 	//box and make the scroll box invisible.
 	uint32_t currentState = UIElement::update(inputState);
 
-	/*if ((p_children[1]->getState() & UIElementState::Clicked) && inputState->mouseClick)
-	{
-		p_children[2]->setState(p_children[2]->getState() ^ UIElementState::Invisible);
-	}*/
 	if (p_children[1]->getState() & UIElementState::Released)
 	{
 		//Clicking the arrow button toggles the visibility of scrolling text box containing the selectable options

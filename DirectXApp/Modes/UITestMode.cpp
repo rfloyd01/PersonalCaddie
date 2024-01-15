@@ -23,8 +23,8 @@ uint32_t UITestMode::initializeMode(winrt::Windows::Foundation::Size windowSize,
 	float screen_ratio = MAX_SCREEN_HEIGHT / MAX_SCREEN_WIDTH;
 
 	std::wstring scrollText = L"Once upon a time\nit was the best of times\nit was the worst of times\nOnce upon a time\nit was the best of times\nit was the worst of times\nyeet\nyeet\nyote";
-	PartialScrollingTextBox deviceWatcherResults(m_uiManager.getScreenSize(), { 0.65f, 0.575f }, { 0.5f, 0.35f }, scrollText, 0.125f, m_backgroundColor);
-	m_uiManager.addElement<PartialScrollingTextBox>(deviceWatcherResults, L"Device Watcher Text Box");
+	DropDownMenu deviceWatcherResults(m_uiManager.getScreenSize(), { 0.65f, 0.575f }, { 0.5f, 0.35f }, scrollText, 0.125f);
+	m_uiManager.addElement<DropDownMenu>(deviceWatcherResults, L"Device Watcher Text Box");
 	//m_uiManager.drawDebugOutline(m_uiManager.getElement<FullScrollingTextBox>(L"Device Watcher Text Box"), false);
 
 	TextButton shrink(m_uiManager.getScreenSize(), { 0.15f, 0.35f }, { 0.15f, 0.15f }, L"Shrink");
@@ -74,12 +74,12 @@ void UITestMode::uiElementStateChangeHandler(std::shared_ptr<ManagedUIElement> e
 {
 	if (element->name == L"Button 1")
 	{
-		auto currentSize = m_uiManager.getElement<PartialScrollingTextBox>(L"Device Watcher Text Box")->getAbsoluteSize();
-		m_uiManager.getElement<PartialScrollingTextBox>(L"Device Watcher Text Box")->setAbsoluteSize({ currentSize.x / 1.2f, currentSize.y / 1.2f }, true);
+		auto currentSize = m_uiManager.getElement<DropDownMenu>(L"Device Watcher Text Box")->getAbsoluteSize();
+		m_uiManager.getElement<DropDownMenu>(L"Device Watcher Text Box")->setAbsoluteSize({ currentSize.x / 1.2f, currentSize.y / 1.2f }, true);
 	}
 	if (element->name == L"Button 2")
 	{
-		m_uiManager.drawDebugOutline(m_uiManager.getElement<PartialScrollingTextBox>(L"Device Watcher Text Box"), false);
+		m_uiManager.drawDebugOutline(m_uiManager.getElement<DropDownMenu>(L"Device Watcher Text Box"), false);
 	}
 }
 
