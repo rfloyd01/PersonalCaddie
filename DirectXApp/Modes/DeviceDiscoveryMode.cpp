@@ -17,7 +17,7 @@ uint32_t DeviceDiscoveryMode::initializeMode(winrt::Windows::Foundation::Size wi
 	std::wstring buttonText = L"Connect to Device";
 	std::wstring scrollText = L"Start the device watcher to begin enumerating nearby BluetoothLE devices...";
 
-	FullScrollingTextBox deviceWatcherResults(m_uiManager.getScreenSize(), {0.5, 0.575}, {0.85, 0.35}, scrollText, 0.05f, false, false);
+	FullScrollingTextBox deviceWatcherResults(m_uiManager.getScreenSize(), {0.5, 0.575}, {0.85, 0.35}, scrollText, 0.125f, false, false);
 	TextButton deviceWatcherButton(m_uiManager.getScreenSize(), { 0.4, 0.25 }, { 0.12, 0.1 }, L"Start Device Watcher");
 	TextButton connectButton(m_uiManager.getScreenSize(), { 0.6, 0.25 }, { 0.12, 0.1 }, buttonText);
 

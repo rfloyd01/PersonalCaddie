@@ -3,7 +3,7 @@
 
 int UIElement::resize_count = 0;
 
-void UIElement::resize()
+void UIElement::resize(DirectX::XMFLOAT2 pixel_shift)
 {
 	//The resize() method gets called whenever the size of the physical screen changes.
 	//When the screen size change two things happen to UI Elements. First, they obviously will
@@ -66,37 +66,39 @@ void UIElement::resize()
 		//Once the correct location has been found, check to make sure that no part of the element will be 
 		//outside of the screen. If it is, then the element will need to be shrunk so that it remains in 
 		//screen.
-		//if (screenBoundaryCheck(element_pixel_center, element_pixel_dimensions))
-		//{
-		//	//Since parent UI Elements are checked before child elements, and the dimensions for
-		//	//all child elements are contained within the dimensions of the parent element, only
-		//	//parent elements will actually trigger the screen boundary check.
-		//}
+		if ((pixel_shift.x == 0.0f) && (pixel_shift.y == 0.0f))
+		{
+			//Since parent UI Elements are checked before child elements, and the dimensions for
+			//all child elements are contained within the dimensions of the parent element, only
+			//parent elements will actually trigger the screen boundary check. Shift the parent
+			//element
+			screenBoundaryCheck(element_pixel_center, element_pixel_dimensions, pixel_shift);
+		}
 
 		//Once the center drift has been accounted for, size either the m_shape or m_text variable so that
 		//the new pixel center is the exact center of the element. The m_shape variable gets preference over
 		//the m_text variable so check for this variable first.
 		if (m_shape.m_shapeType != UIShapeType::END)
 		{
-			m_shape.m_rectangle.left = element_pixel_center.x - element_pixel_dimensions.x / 2.0f;
-			m_shape.m_rectangle.top = element_pixel_center.y - element_pixel_dimensions.y / 2.0f;
-			m_shape.m_rectangle.right = element_pixel_center.x + element_pixel_dimensions.x / 2.0f;
-			m_shape.m_rectangle.bottom = element_pixel_center.y + element_pixel_dimensions.y / 2.0f;
+			m_shape.m_rectangle.left = element_pixel_center.x - element_pixel_dimensions.x / 2.0f + pixel_shift.x;
+			m_shape.m_rectangle.top = element_pixel_center.y - element_pixel_dimensions.y / 2.0f + pixel_shift.y;
+			m_shape.m_rectangle.right = element_pixel_center.x + element_pixel_dimensions.x / 2.0f + pixel_shift.x;
+			m_shape.m_rectangle.bottom = element_pixel_center.y + element_pixel_dimensions.y / 2.0f + pixel_shift.y;
 		}
 		
 		if (m_text.textType != UITextType::END)
 		{
-			m_text.startLocation = { element_pixel_center.x - element_pixel_dimensions.x / 2.0f, element_pixel_center.y - element_pixel_dimensions.y / 2.0f }; //text always starts at the top left of the UI Element
+			m_text.startLocation = { element_pixel_center.x - element_pixel_dimensions.x / 2.0f + pixel_shift.x, element_pixel_center.y - element_pixel_dimensions.y / 2.0f + pixel_shift.y }; //text always starts at the top left of the UI Element
 			m_text.renderArea = { element_pixel_dimensions.x, element_pixel_dimensions.y };
 			m_text.fontSize = element_pixel_dimensions.y * m_fontSize; //relative text is sized against the element's height
 		}
 	}
 
 	//Resize all child elements as well
-	for (int i = 0; i < p_children.size(); i++) p_children[i]->resize();
+	for (int i = 0; i < p_children.size(); i++) p_children[i]->resize(pixel_shift);
 }
 
-bool UIElement::screenBoundaryCheck(DirectX::XMFLOAT2& pix_location, DirectX::XMFLOAT2& pix_size)
+void UIElement::screenBoundaryCheck(DirectX::XMFLOAT2& pix_location, DirectX::XMFLOAT2& pix_size, DirectX::XMFLOAT2& pixel_shift)
 {
 	//Elements with relative dimensions are placed and sized relative to the center of
 	//the screen, which means the they don't care about their location with respect to
@@ -115,14 +117,17 @@ bool UIElement::screenBoundaryCheck(DirectX::XMFLOAT2& pix_location, DirectX::XM
 			pix_size.x -= 2 * (m_edgeThreshold - pix_location.x) + pix_size.x;
 			pix_size.y = pix_size.x / m_sizeMultiplier.x;
 		}
-		
+		else
+		{
+			//If the element isn't in the center of the screen, we shift it so 
+			//that it stays glued to the boundary
+			pixel_shift.x = (m_edgeThreshold - pix_location.x + pix_size.x / 2.0f);
+		}
 	}
 	else if (pix_location.x + pix_size.x / 2.0f > (m_screenSize->Width - m_edgeThreshold))
 	{
-		//resize the x dimension of the element so that it fits and then 
-		//scale the y dimension to match it.
-		pix_size.x -= 2 * (pix_location.x + m_edgeThreshold - m_screenSize->Width) + pix_size.x;
-		pix_size.y = pix_size.x / m_sizeMultiplier.x;
+		//Shift the element so that it stays glued to the edge boundary
+		pixel_shift.x = (m_screenSize->Width - m_edgeThreshold) - (pix_location.x + pix_size.x / 2.0f);
 	}
 
 	//It's possible that after shrinking the width, the height could
@@ -131,20 +136,25 @@ bool UIElement::screenBoundaryCheck(DirectX::XMFLOAT2& pix_location, DirectX::XM
 	//as well.
 	if (pix_location.y - pix_size.y / 2.0f < m_edgeThreshold)
 	{
-		//resize the x dimension of the element so that it fits and then 
-		//scale the y dimension to match it.
-		pix_size.y -= 2 * (m_edgeThreshold - pix_location.y) + pix_size.y;
-		pix_size.x = pix_size.y * m_sizeMultiplier.x;
+		if (m_location.y == 0.5f)
+		{
+			//If the center of the element is in the center of the screen
+			//then we shrink the element enough so that both edges are within
+			//the threshold
+			pix_size.y -= 2 * (m_edgeThreshold - pix_location.y) + pix_size.y;
+			pix_size.x = pix_size.y * m_sizeMultiplier.x;
+		}
+		else
+		{
+			//Shift the element so that it stays glued to the edge boundary
+			pixel_shift.y = (m_edgeThreshold - pix_location.y + pix_size.y / 2.0f);
+		}
 	}
 	else if (pix_location.y + pix_size.y / 2.0f > (m_screenSize->Height - m_edgeThreshold))
 	{
-		//resize the x dimension of the element so that it fits and then 
-		//scale the y dimension to match it.
-		pix_size.y -= 2 * (pix_location.y + m_edgeThreshold - m_screenSize->Height) + pix_size.y;
-		pix_size.x = pix_size.y * m_sizeMultiplier.x;
+		//Shift the element so that it stays glued to the edge boundary
+		pixel_shift.y = (m_screenSize->Height - m_edgeThreshold) - (pix_location.y + pix_size.y / 2.0f);
 	}
-
-	return false;
 }
 
 uint32_t UIElement::update(InputState* inputState)

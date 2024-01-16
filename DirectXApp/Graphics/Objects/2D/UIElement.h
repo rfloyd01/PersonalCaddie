@@ -57,7 +57,7 @@ public:
 		p_children.clear();
 	}
 
-	virtual void resize();
+	virtual void resize(DirectX::XMFLOAT2 pixel_shift = {0.0f, 0.0f});
 
 	virtual uint32_t update(InputState* inputState);
 
@@ -97,7 +97,7 @@ public:
 protected:
 	void updateLocationAndSize(DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size);
 	void convertAbsoluteCoordinatesToRelativeCoordinates();
-	bool screenBoundaryCheck(DirectX::XMFLOAT2& location, DirectX::XMFLOAT2& size);
+	void screenBoundaryCheck(DirectX::XMFLOAT2& location, DirectX::XMFLOAT2& size, DirectX::XMFLOAT2& pixel_shift);
 
 	float absoluteCompare(float pixelOne, float pixelTwo);
 
@@ -140,5 +140,5 @@ protected:
 	bool                                     m_isScrollable = false;
 	bool                                     m_isHoverable = false;
 	bool                                     m_isAlert = false; //Deprecated
-	bool                                     m_needTextRenderDimensions = false; //lets the current mode know if we need the full height for any elementText items in pixels
+	bool                                     m_needTextRenderDimensions = false; //Deprecated
 };

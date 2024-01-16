@@ -15,7 +15,7 @@ Ellipse::Ellipse(std::shared_ptr<winrt::Windows::Foundation::Size> windowSize, D
 	resize();
 }
 
-void Ellipse::resize()
+void Ellipse::resize(DirectX::XMFLOAT2 pixel_shift)
 {
 	//The ellipse class uses the m_shape variable differently than other UI elements so it needs
 	//its own resize() method

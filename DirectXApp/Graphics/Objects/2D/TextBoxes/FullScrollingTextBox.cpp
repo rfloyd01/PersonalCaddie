@@ -392,6 +392,11 @@ void FullScrollingTextBox::calcualteScrollBarLocation()
 	float totalAbsoluteTextHeight = 0.0f;
 	for (int i = 5; i < p_children.size(); i++) totalAbsoluteTextHeight += p_children[i]->getAbsoluteSize().y;
 
+	//If the height of the text is less than the height of the text box then the scroll bar
+	//will simply be the height between the buttons and in the middle of the element so there's
+	//no reason to update anything.
+	if (totalAbsoluteTextHeight <= getAbsoluteSize().y) return;
+
 	float ratio = getAbsoluteSize().y * (getAbsoluteSize().y - 2 * m_buttonHeight) / totalAbsoluteTextHeight;
 	float bottomTextToCenterBox = (p_children.back()->getAbsoluteLocation().y + p_children.back()->getAbsoluteSize().y / 2.0f) - getAbsoluteLocation().y;
 	float centerScrollBarToButtonTop = ratio / getAbsoluteSize().y * bottomTextToCenterBox;
@@ -430,9 +435,11 @@ uint32_t FullScrollingTextBox::update(InputState* inputState)
 				//an upward scroll. Likewise when the bar is dragged downwards. We can figure out if 
 				//the scroll threshold has been met by comparing two absolute ratios (i.e absolute scroll distance /
 				//absolute scroll bar height = absolute text overlay height = absolute text box height)
+				int bottom_text_index = m_topText + m_displayedText - 1;
+				if (bottom_text_index >= p_children.size()) bottom_text_index = p_children.size() - 1;
 
 				auto r2a = p_children[4]->getAbsoluteSize().y; //absolute height of scroll bar
-				auto r1b = p_children[m_topText + m_displayedText - 1]->getAbsoluteSize().y; //absolute height of text overlay
+				auto r1b = p_children[bottom_text_index]->getAbsoluteSize().y; //absolute height of text overlay at bottom of text box
 				auto r2b = getAbsoluteSize().y; //absolute height of text box
 
 				if (inputState->mousePosition.y < m_scrollBarClickHeight)
@@ -551,7 +558,7 @@ void FullScrollingTextBox::setChildrenAbsoluteSize(DirectX::XMFLOAT2 size)
 	//it's a function of the current text being displayed in the box. Calcualte
 	//the appropriate height of the element, and set the width to be the same
 	//as the button width.
-	p_children[4]->setAbsoluteSize({ buttonWidth, size.y / 4.0f }); //get's fully updated later on
+	p_children[4]->setAbsoluteSize({ buttonWidth, size.y - 2 * m_buttonHeight }); //get's fully updated later on
 
 	//With everything sized appropriately, shift all children to their 
 	//correct locations.

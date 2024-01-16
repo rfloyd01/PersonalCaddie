@@ -71,7 +71,7 @@ public:
 		m_horizontalSizeMultiplier = desired_pixel_width / desired_pixel_height;
 	}
 
-	virtual void resize() override
+	virtual void resize(DirectX::XMFLOAT2 pixel_shift = { 0.0f, 0.0f }) override
 	{
 		//First, calculate the center location of the element and its height and width in pixels
 		DirectX::XMFLOAT2 element_pixel_center = { m_screenSize->Width * m_location.x, m_screenSize->Height * m_location.y };
