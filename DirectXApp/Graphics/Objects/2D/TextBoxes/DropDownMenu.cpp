@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "DropDownMenu.h"
+#include "HighlightableTextOverlay.h"
 
 /*DropDownMenu Children Order
    0: Text Box that displays the currently selected option
@@ -86,8 +87,8 @@ void DropDownMenu::repositionText()
 
 	//Size the height of full scrolling text box to fit m_optionsDisplayed number of items with the given text height.
 	//The width will get auto-set so just put it to 0 for now
-	//p_children[2]->getChildren()[0]->setAbsoluteSize({0.0f, m_optionsDisplayed * absoluteTextHeight});
 	p_children[2]->repositionText(); //this method will size the scroll box and position its text accordingly
+	m_optionsDisplayed = ((FullScrollingTextBox*)p_children[2].get())->getDisplayedOptions(); //make sure the display options variables match
 
 	//The m_location variable of the drop down menu is slightly different than other UIElement classes.
 	//Since the full scrolling text box part of the drop down menu will be invisible for most of the 

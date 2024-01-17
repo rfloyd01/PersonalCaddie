@@ -91,6 +91,10 @@ void UIElement::resize(DirectX::XMFLOAT2 pixel_shift)
 			m_text.startLocation = { element_pixel_center.x - element_pixel_dimensions.x / 2.0f + pixel_shift.x, element_pixel_center.y - element_pixel_dimensions.y / 2.0f + pixel_shift.y }; //text always starts at the top left of the UI Element
 			m_text.renderArea = { element_pixel_dimensions.x, element_pixel_dimensions.y };
 			m_text.fontSize = element_pixel_dimensions.y * m_fontSize; //relative text is sized against the element's height
+
+			//DEBUG:
+			/*std::wstring debug_string = m_text.message + L"\nPixel Font Size = " + std::to_wstring(m_text.fontSize) + L"\n";
+			OutputDebugString(&debug_string[0]);*/
 		}
 	}
 
@@ -373,6 +377,14 @@ DirectX::XMFLOAT2 UIElement::getAbsoluteSize()
 	else return { m_size.x, m_size.y / m_sizeMultiplier.y };
 }
 
+DirectX::XMFLOAT2 UIElement::getPixelDimensions()
+{
+	//Returns the dimensions of the element as it would be rendered on screen 
+	//given the current screen dimensions.
+	float pixel_height = m_size.y / (m_screenSize->Width + m_screenSize->Height) * (2 * m_screenSize->Width * m_screenSize->Height);
+	return { m_sizeMultiplier.x * pixel_height, pixel_height };
+}
+
 void UIElement::setAbsoluteSize(DirectX::XMFLOAT2 size, bool resize_element)
 {
 	//The setAbsoluteSize() method is similar to the resize() method
@@ -483,4 +495,14 @@ void UIElement::updateState(uint32_t state)
 	//anything. Also like the setState method, we leave this is a virtual
 	//method in the case any children need a slightly different implementation
 	m_state |= state;
+}
+
+void UIElement::setFontSize(float size)
+{
+	m_fontSize = size;
+	/*if (m_useAbsoluteCoordinates) m_fontSize = size;
+	else
+	{
+		m_fontSize = size / (m_screenSize->Width + m_screenSize->Height) * (2 * m_screenSize->Width * m_screenSize->Height);
+	}*/
 }

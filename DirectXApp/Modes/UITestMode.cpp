@@ -23,8 +23,10 @@ uint32_t UITestMode::initializeMode(winrt::Windows::Foundation::Size windowSize,
 	float screen_ratio = MAX_SCREEN_HEIGHT / MAX_SCREEN_WIDTH;
 
 	std::wstring scrollText = L"Once upon a time\nit was the best of times\nit was the worst of times\nOnce upon a time\nit was the best of times\nit was the worst of times\nyeet\nyeet\nyote";
-	DropDownMenu deviceWatcherResults(m_uiManager.getScreenSize(), { 0.75f, 0.575f }, { 0.5f, 0.35f }, scrollText, 0.125f);
+	DropDownMenu deviceWatcherResults(m_uiManager.getScreenSize(), { 0.75f, 0.575f }, { 0.15, 0.225 }, scrollText, 0.2f);
+	//FullScrollingTextBox tb(m_uiManager.getScreenSize(), { 0.75f, 0.775f }, { 0.15, 0.125 }, scrollText, 0.2f);
 	m_uiManager.addElement<DropDownMenu>(deviceWatcherResults, L"Device Watcher Text Box");
+	//m_uiManager.addElement<FullScrollingTextBox>(tb, L"Full Scroll Text Box");
 	//m_uiManager.drawDebugOutline(m_uiManager.getElement<FullScrollingTextBox>(L"Device Watcher Text Box"), false);
 
 	TextButton shrink(m_uiManager.getScreenSize(), { 0.15f, 0.35f }, { 0.15f, 0.15f }, L"Shrink");

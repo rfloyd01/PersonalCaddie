@@ -38,6 +38,8 @@ public:
 	std::wstring getLastSelectedText() { return m_lastSelectedText; }
 	void setLastSelectedText(std::wstring text) { m_lastSelectedText = text; } //TODO: May want to look at all text overlays in the child array and confirm the given text actually exists
 
+	int getDisplayedOptions() { return m_displayedText; }
+
 protected:
 	void setTextLocationsAndDimensions();
 
@@ -51,6 +53,7 @@ protected:
 	bool m_dynamicSize;
 	float m_relativeTextHeight;
 	float m_currentMouseHeight, m_scrollBarClickHeight; //Variables for manual scrolling of the scroll bar
+	float m_initialFontPixelSize;
 
 	int m_topText; //Represent which line of text is currently at the top of the scroll box
 	int m_displayedText; //Represents how many lines of text are currently displayed in the scroll box

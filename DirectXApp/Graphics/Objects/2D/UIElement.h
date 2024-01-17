@@ -69,12 +69,13 @@ public:
 	virtual void removeState(uint32_t state);
 
 	float getFontSize() { return m_fontSize; }
-	void setFontSize(float size) { m_fontSize = size; }
+	void setFontSize(float size);
 
 	UIShape* getShape() { return &m_shape; }
 	UIText* getText() { return &m_text; }
 
 	DirectX::XMFLOAT2 getAbsoluteSize();
+	DirectX::XMFLOAT2 getPixelDimensions();
 	void setAbsoluteSize(DirectX::XMFLOAT2 size, bool resize_element = false);
 	virtual void setChildrenAbsoluteSize(DirectX::XMFLOAT2 size) {}; //default implementation does nothing
 

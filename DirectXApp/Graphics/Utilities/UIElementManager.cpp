@@ -28,16 +28,6 @@ UIElementManager::UIElementManager()
 	}
 
 	m_debugBoxCount = 0;
-
-	//DEBUG: Uncomment the below lines to draw lines representing the grid on screen.
-	//This is helpful for confirming which elements can be interacted with by the mouse
-	/*for (int i = 0; i < GRID_WIDTH; i++)
-	{
-		Line vert(m_windowSize, { (float)i / (float)GRID_WIDTH, 0.0f }, { (float)i / (float)GRID_WIDTH, 1.0f }, UIColor::Red, 1.0f);
-		Line hor(m_windowSize, { 0.0f, (float)i / (float)GRID_WIDTH }, { 1.0f, (float)i / (float)GRID_WIDTH }, UIColor::Red, 1.0f);
-		addElement<Line>(vert, L"Vertical Line " + std::to_wstring(i));
-		addElement<Line>(hor, L"Horizontal Line " + std::to_wstring(i));
-	}*/
 }
 
 void UIElementManager::removeElementType(UIElementType type)
@@ -106,6 +96,16 @@ void UIElementManager::updateScreenSize(winrt::Windows::Foundation::Size newWind
 
 		//Update the m_lastScreenResizeArea variable
 		m_lastScreenResizeArea = screenArea;
+	}
+
+	//DEBUG: Uncomment the below lines to draw lines representing the grid on screen.
+	//This is helpful for confirming which elements can be interacted with by the mouse
+	for (int i = 0; i < GRID_WIDTH; i++)
+	{
+		Line vert(m_screenSize, { (float)i / (float)GRID_WIDTH, 0.0f }, { (float)i / (float)GRID_WIDTH, 1.0f }, UIColor::Red, 1.0f);
+		Line hor(m_screenSize, { 0.0f, (float)i / (float)GRID_WIDTH }, { 1.0f, (float)i / (float)GRID_WIDTH }, UIColor::Red, 1.0f);
+		//addElement<Line>(vert, L"Vertical Line " + std::to_wstring(i));
+		addElement<Line>(hor, L"Horizontal Line " + std::to_wstring(i));
 	}
 }
 
@@ -240,14 +240,14 @@ void UIElementManager::populateGridLocations(std::shared_ptr<ManagedUIElement> m
 		std::pair<int, int> top_left = { GRID_WIDTH * (location.x - size.x / 2.0f), GRID_WIDTH * (location.y - size.y / 2.0f) };
 		std::pair<int, int> bottom_right = { GRID_WIDTH * (location.x + size.x / 2.0f), GRID_WIDTH * (location.y + size.y / 2.0f) };
 
-		if (managedElement->type == UIElementType::DROP_DOWN_MENU)
-		{
-			//Drop down menus feature an invisible scroll box which isn't normally included in the size calculation
-			//of the element. To make sure all parts of this scroll box can be interacted with we add the height of
-			//the invisible scroll box when placing grid pointers for the drop down menu. This only effects the
-			//top_left grid location
-			top_left = { GRID_WIDTH * (location.x - size.x / 2.0f), GRID_WIDTH * (location.y - size.y / 2.0f - managedElement->element->getChildren()[2]->getAbsoluteSize().y)};
-		}
+		//if (managedElement->type == UIElementType::DROP_DOWN_MENU)
+		//{
+		//	//Drop down menus feature an invisible scroll box which isn't normally included in the size calculation
+		//	//of the element. To make sure all parts of this scroll box can be interacted with we add the height of
+		//	//the invisible scroll box when placing grid pointers for the drop down menu. This only effects the
+		//	//top_left grid location
+		//	top_left = { GRID_WIDTH * (location.x - size.x / 2.0f), GRID_WIDTH * (location.y - size.y / 2.0f - managedElement->element->getChildren()[2]->getAbsoluteSize().y)};
+		//}
 
 		//Ignore any squares that fall outside of the grid
 		for (int row = top_left.second; row <= bottom_right.second; row++)

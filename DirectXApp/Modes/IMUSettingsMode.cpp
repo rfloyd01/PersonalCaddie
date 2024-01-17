@@ -173,9 +173,9 @@ void IMUSettingsMode::createDropDownMenus(bool use_current)
 		//will be calculated separately.
 
 		//The first drop downs added hold the names of the sensors that we can switch to
-		DropDownMenu acc_menu(m_uiManager.getScreenSize(), { 0.15, 0.43 }, { 0.15, 0.1 }, m_dropDownText[ACC_SENSOR][SENSOR_MODEL], 0.0225); //the locations will get set by a separate method
-		DropDownMenu gyr_menu(m_uiManager.getScreenSize(), { 0.5, 0.43 }, { 0.15, 0.1 }, m_dropDownText[GYR_SENSOR][SENSOR_MODEL], 0.0225); //the locations will get set by a separate method
-		DropDownMenu mag_menu(m_uiManager.getScreenSize(), { 0.85, 0.43 }, { 0.15, 0.1 }, m_dropDownText[MAG_SENSOR][SENSOR_MODEL], 0.0225); //the locations will get set by a separate method
+		DropDownMenu acc_menu(m_uiManager.getScreenSize(), { 0.15, 0.43 }, { 0.15, 0.125 }, m_dropDownText[ACC_SENSOR][SENSOR_MODEL], m_dropDownFontSize); //the locations will get set by a separate method
+		DropDownMenu gyr_menu(m_uiManager.getScreenSize(), { 0.5, 0.43 }, { 0.15, 0.125 }, m_dropDownText[GYR_SENSOR][SENSOR_MODEL], m_dropDownFontSize); //the locations will get set by a separate method
+		DropDownMenu mag_menu(m_uiManager.getScreenSize(), { 0.85, 0.43 }, { 0.15, 0.125 }, m_dropDownText[MAG_SENSOR][SENSOR_MODEL], m_dropDownFontSize); //the locations will get set by a separate method
 
 		m_uiManager.addElement<DropDownMenu>(acc_menu, L"Acc Model Drop Down Menu");
 		m_uiManager.addElement<DropDownMenu>(gyr_menu, L"Gyr Model Drop Down Menu");
@@ -195,7 +195,7 @@ void IMUSettingsMode::createDropDownMenus(bool use_current)
 
 		for (int j = FS_RANGE; j <= EXTRA_2; j++)
 		{
-			DropDownMenu menu(m_uiManager.getScreenSize(), { 0, 0 }, { 0.15, 0.1 }, m_dropDownText[i][j], 0.0225); //the locations will get set by a separate method
+			DropDownMenu menu(m_uiManager.getScreenSize(), { 0, 0 }, { 0.15, 0.125 }, m_dropDownText[i][j], m_dropDownFontSize); //the locations will get set by a separate method
 			m_uiManager.addElement<DropDownMenu>(menu, sensorType + L"Setting Drop Down Menu " + std::to_wstring(j));
 		}
 	}
