@@ -99,7 +99,9 @@ void DropDownMenu::repositionText()
 	//element's constructor. Use the updateLocationandSize() method to update the location to prevent 
 	//updating the locations for child elements as well.
 	auto originalLocation = getAbsoluteLocation();
-	setAbsoluteLocation({ originalLocation.x, originalLocation.y - (m_optionsDisplayed * absoluteTextHeight) / 2.0f });
+	//setAbsoluteLocation({ originalLocation.x, originalLocation.y - (m_optionsDisplayed * absoluteTextHeight) / 2.0f });
+
+	updateLocationAndSize({ originalLocation.x, originalLocation.y - (m_optionsDisplayed * absoluteTextHeight) / 2.0f }, { p_children[2]->getAbsoluteSize().x, absoluteTextHeight + p_children[2]->getAbsoluteSize().y });
 
 	//We're now ready to set the size of the DropDownMenu. The width is simply the width of the full scrolling
 	//box calculated above, and the height will be the height of the full scrolling text box plus the height of 

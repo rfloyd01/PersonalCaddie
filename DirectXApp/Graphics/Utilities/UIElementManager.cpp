@@ -102,9 +102,9 @@ void UIElementManager::updateScreenSize(winrt::Windows::Foundation::Size newWind
 	//This is helpful for confirming which elements can be interacted with by the mouse
 	for (int i = 0; i < GRID_WIDTH; i++)
 	{
-		Line vert(m_screenSize, { (float)i / (float)GRID_WIDTH, 0.0f }, { (float)i / (float)GRID_WIDTH, 1.0f }, UIColor::Red, 1.0f);
-		Line hor(m_screenSize, { 0.0f, (float)i / (float)GRID_WIDTH }, { 1.0f, (float)i / (float)GRID_WIDTH }, UIColor::Red, 1.0f);
-		//addElement<Line>(vert, L"Vertical Line " + std::to_wstring(i));
+		Line vert(m_screenSize, { (float)i / (float)GRID_WIDTH, 0.0f }, { (float)i / (float)GRID_WIDTH, 1.0f }, UIColor::Red, 1.0f, true);
+		Line hor(m_screenSize, { 0.0f, (float)i / (float)GRID_WIDTH }, { 1.0f, (float)i / (float)GRID_WIDTH }, UIColor::Red, 1.0f, true);
+		addElement<Line>(vert, L"Vertical Line " + std::to_wstring(i));
 		addElement<Line>(hor, L"Horizontal Line " + std::to_wstring(i));
 	}
 }
@@ -221,6 +221,11 @@ void UIElementManager::applyTextResizeUpdates()
 
 	//After all updates are made, clear out the m_updateText vector
 	m_updateText.clear();
+
+	//Finally, refresh the locations of each UI Element in the manager's grid.
+	//Updating elements with text sizes may change their total size and or location
+	//so we want to make sure the grid stays up to date.
+	refreshGrid();
 }
 
 void UIElementManager::populateGridLocations(std::shared_ptr<ManagedUIElement> managedElement)
@@ -233,12 +238,20 @@ void UIElementManager::populateGridLocations(std::shared_ptr<ManagedUIElement> m
 		//arises if we move an existing element after creating it.
 		if (managedElement->grid_locations.size() > 0) managedElement->grid_locations.clear();
 
-		//We don't add alerts to the grid as they can't be interacted with
-		auto size = managedElement->element->getAbsoluteSize();
+		//The manager's grid system uses absolute coordinates while UI Elements use relative coordinates
+		//and converting between the two systems can get a little confusing. To help, simply use pixel
+		//coordinates to figure out which elements fall in which grid squares.
+		/*auto size = managedElement->element->getAbsoluteSize();
 		auto location = managedElement->element->getAbsoluteLocation();
 
-		std::pair<int, int> top_left = { GRID_WIDTH * (location.x - size.x / 2.0f), GRID_WIDTH * (location.y - size.y / 2.0f) };
-		std::pair<int, int> bottom_right = { GRID_WIDTH * (location.x + size.x / 2.0f), GRID_WIDTH * (location.y + size.y / 2.0f) };
+		std::pair<int, int> old_top_left = { GRID_WIDTH * (location.x - size.x / 2.0f), GRID_WIDTH * (location.y - size.y / 2.0f) };
+		std::pair<int, int> old_bottom_right = { GRID_WIDTH * (location.x + size.x / 2.0f), GRID_WIDTH * (location.y + size.y / 2.0f) };*/
+
+		auto pixel_size = managedElement->element->getPixelSize();
+		auto pixel_location = managedElement->element->getPixelLocation();
+
+		std::pair<int, int> top_left = { GRID_WIDTH * (pixel_location.x - pixel_size.x / 2.0f) / m_screenSize->Width, GRID_WIDTH * (pixel_location.y - pixel_size.y / 2.0f) / m_screenSize->Height };
+		std::pair<int, int> bottom_right = { GRID_WIDTH * (pixel_location.x + pixel_size.x / 2.0f) / m_screenSize->Width, GRID_WIDTH * (pixel_location.y + pixel_size.y / 2.0f) / m_screenSize->Height};
 
 		//if (managedElement->type == UIElementType::DROP_DOWN_MENU)
 		//{

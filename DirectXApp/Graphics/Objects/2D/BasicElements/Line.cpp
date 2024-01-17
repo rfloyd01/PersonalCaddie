@@ -1,7 +1,8 @@
 #include "pch.h"
 #include "Line.h"
 
-Line::Line(std::shared_ptr<winrt::Windows::Foundation::Size> windowSize, DirectX::XMFLOAT2 firstPointLlocation, DirectX::XMFLOAT2 secondPointLlocation, UIColor color, float width)
+Line::Line(std::shared_ptr<winrt::Windows::Foundation::Size> windowSize, DirectX::XMFLOAT2 firstPointLlocation, DirectX::XMFLOAT2 secondPointLlocation,
+	UIColor color, float width, bool useAbsolute)
 {
 	m_screenSize = windowSize;
 
@@ -10,6 +11,13 @@ Line::Line(std::shared_ptr<winrt::Windows::Foundation::Size> windowSize, DirectX
 	//the mid-point of the line
 	DirectX::XMFLOAT2 location = { (firstPointLlocation.x + secondPointLlocation.x) / 2.0f, (firstPointLlocation.y + secondPointLlocation.y) / 2.0f };
 	DirectX::XMFLOAT2 size = { secondPointLlocation.x - firstPointLlocation.x, secondPointLlocation.y - firstPointLlocation.y };
+
+	m_useAbsoluteCoordinates = useAbsolute;
+
+	//Horizontal lines will have a height component of zero, which will mess up some calculations
+	//in other places. In this case simply give the line a very minimal height.
+	if (m_useAbsoluteCoordinates && (size.y == 0.0f)) size.y = 0.001f;
+	
 	updateLocationAndSize(location, size);
 
 	m_lineColor = color;

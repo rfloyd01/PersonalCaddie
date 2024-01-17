@@ -75,11 +75,12 @@ public:
 	UIText* getText() { return &m_text; }
 
 	DirectX::XMFLOAT2 getAbsoluteSize();
-	DirectX::XMFLOAT2 getPixelDimensions();
+	DirectX::XMFLOAT2 getPixelSize();
 	void setAbsoluteSize(DirectX::XMFLOAT2 size, bool resize_element = false);
 	virtual void setChildrenAbsoluteSize(DirectX::XMFLOAT2 size) {}; //default implementation does nothing
 
 	DirectX::XMFLOAT2 getAbsoluteLocation();
+	DirectX::XMFLOAT2 getPixelLocation(DirectX::XMFLOAT2 pixel_shift = {0.0f, 0.0f});
 	virtual void setAbsoluteLocation(DirectX::XMFLOAT2 location);
 
 	std::vector<std::shared_ptr<UIElement> > const& getChildren() { return p_children; }

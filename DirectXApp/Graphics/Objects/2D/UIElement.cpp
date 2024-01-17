@@ -11,13 +11,6 @@ void UIElement::resize(DirectX::XMFLOAT2 pixel_shift)
 	//each other. This resize() method handles the changing of the element's size so that the 
 	//width and height stay the same relative size to each other, as well as to the size of 
 	//the screen. It also prevents elements from drifting apart from each other.
-
-	//TODO: Resizing all elements every single time the screen size changes is pretty resource
-	//intensive. I should code it up so that a resize will only happen when a certain noticeable
-	//threshold is met (i.e. if the screen gains or loses 5% in area or something like that). Doing
-	//this should greatly reduce the number of times resize() gets called (which is pretty resource
-	//intensive) while not being noticeably different to the user.
-
 	if (m_useAbsoluteCoordinates)
 	{
 		//If the element uses absolute coordinates then no complex
@@ -91,10 +84,6 @@ void UIElement::resize(DirectX::XMFLOAT2 pixel_shift)
 			m_text.startLocation = { element_pixel_center.x - element_pixel_dimensions.x / 2.0f + pixel_shift.x, element_pixel_center.y - element_pixel_dimensions.y / 2.0f + pixel_shift.y }; //text always starts at the top left of the UI Element
 			m_text.renderArea = { element_pixel_dimensions.x, element_pixel_dimensions.y };
 			m_text.fontSize = element_pixel_dimensions.y * m_fontSize; //relative text is sized against the element's height
-
-			//DEBUG:
-			/*std::wstring debug_string = m_text.message + L"\nPixel Font Size = " + std::to_wstring(m_text.fontSize) + L"\n";
-			OutputDebugString(&debug_string[0]);*/
 		}
 	}
 
@@ -377,7 +366,7 @@ DirectX::XMFLOAT2 UIElement::getAbsoluteSize()
 	else return { m_size.x, m_size.y / m_sizeMultiplier.y };
 }
 
-DirectX::XMFLOAT2 UIElement::getPixelDimensions()
+DirectX::XMFLOAT2 UIElement::getPixelSize()
 {
 	//Returns the dimensions of the element as it would be rendered on screen 
 	//given the current screen dimensions.
@@ -430,6 +419,42 @@ DirectX::XMFLOAT2 UIElement::getAbsoluteLocation()
 	//original value before returning.
 	if (m_useAbsoluteCoordinates) return m_location;
 	else return { m_location.x, 0.5f - (0.5f - m_location.y) / m_sizeMultiplier.y };
+}
+
+DirectX::XMFLOAT2 UIElement::getPixelLocation(DirectX::XMFLOAT2 pixel_shift)
+{
+	//NOTE: Although this method can be used on any UI Element, it should only be used on top level
+	//parent UI Elements. Calculating the amount of pixel shift for child elements that would normally
+	//be rendered outside of the screen needs to be done at the parent level (this is to ensure that
+	//all children get shifted appropriately).
+
+	//TODO: Consider adding a UIElement* field to the UIElement class which will keep track of the 
+	//outer most parent for each child element.
+
+	//This method uses the same logic that's in the resize method so comments are left our for 
+	//brevity from this point on.
+	DirectX::XMFLOAT2 element_pixel_center = { m_screenSize->Width * m_location.x, m_screenSize->Height * m_location.y };
+
+	if (!m_useAbsoluteCoordinates)
+	{
+		DirectX::XMFLOAT2 element_pixel_dimensions = getPixelSize();
+
+		float newPixelDistanceToHorizontal = m_horizontalDriftMultiplier * element_pixel_dimensions.y;
+		float newPixelDistanceToVertical = m_absoluteDistanceToScreenCenter.y * element_pixel_dimensions.y / m_size.y;
+
+		element_pixel_center.x += newPixelDistanceToHorizontal - m_absoluteDistanceToScreenCenter.x * m_screenSize->Width;
+		element_pixel_center.y += newPixelDistanceToVertical - m_absoluteDistanceToScreenCenter.y * m_screenSize->Height;
+
+		if ((pixel_shift.x == 0.0f) && (pixel_shift.y == 0.0f))
+		{
+			screenBoundaryCheck(element_pixel_center, element_pixel_dimensions, pixel_shift);
+		}
+
+		element_pixel_center.x += pixel_shift.x;
+		element_pixel_center.y += pixel_shift.y;
+	}
+
+	return element_pixel_center;
 }
 
 void UIElement::setAbsoluteLocation(DirectX::XMFLOAT2 location)

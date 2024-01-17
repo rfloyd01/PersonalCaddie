@@ -151,7 +151,7 @@ void FullScrollingTextBox::addText(std::wstring message, bool highlightable, boo
 	//inside of the text box. To make things easier on us, simply save the pixel height of the font when
 	//the text overlays are first created. This will allow us to dynamically update the absolute font size
 	//to achieve this same pixel size later on
-	m_initialFontPixelSize = adjustedFontHeight * p_children[5]->getPixelDimensions().y;
+	m_initialFontPixelSize = adjustedFontHeight * p_children[5]->getPixelSize().y;
 
 	m_state |= UIElementState::NeedTextPixels; //Let's the renderer know that we currently need the pixel size of text
 }
@@ -263,7 +263,7 @@ void FullScrollingTextBox::setTextLocationsAndDimensions()
 
 	//Update the absolute font height for each text overlay to achieve the same pixel font
 	//height that was used during the original dimension calculations
-	float correctAbsoluteFontHeight = m_initialFontPixelSize / p_children[m_topText]->getPixelDimensions().y;
+	float correctAbsoluteFontHeight = m_initialFontPixelSize / p_children[m_topText]->getPixelSize().y;
 	p_children[m_topText]->setFontSize(correctAbsoluteFontHeight);
 
 	int linesRendered = p_children[m_topText]->getText()->renderLines; //we can only render the number of lines dictated by m_displayedText, keep track with this variable
@@ -287,7 +287,7 @@ void FullScrollingTextBox::setTextLocationsAndDimensions()
 		p_children[i]->setAbsoluteLocation(textOverlayAbsoluteLocation);
 		
 		//set the appropriate font height
-		correctAbsoluteFontHeight = m_initialFontPixelSize / p_children[i]->getPixelDimensions().y;
+		correctAbsoluteFontHeight = m_initialFontPixelSize / p_children[i]->getPixelSize().y;
 		p_children[i]->setFontSize(correctAbsoluteFontHeight);
 
 		//Since all text in this loop comes before the top option, they should all be made invisible
@@ -314,7 +314,7 @@ void FullScrollingTextBox::setTextLocationsAndDimensions()
 		p_children[i]->setAbsoluteLocation(textOverlayAbsoluteLocation);
 
 		//set the appropriate font height
-		correctAbsoluteFontHeight = m_initialFontPixelSize / p_children[i]->getPixelDimensions().y;
+		correctAbsoluteFontHeight = m_initialFontPixelSize / p_children[i]->getPixelSize().y;
 		p_children[i]->setFontSize(correctAbsoluteFontHeight);
 
 		//increment the number of lines being rendered accordingly
