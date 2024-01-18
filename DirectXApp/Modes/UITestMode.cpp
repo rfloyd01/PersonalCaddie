@@ -29,7 +29,7 @@ uint32_t UITestMode::initializeMode(winrt::Windows::Foundation::Size windowSize,
 	//m_uiManager.addElement<FullScrollingTextBox>(tb, L"Full Scroll Text Box");
 	//m_uiManager.drawDebugOutline(m_uiManager.getElement<FullScrollingTextBox>(L"Device Watcher Text Box"), false);
 
-	TextButton shrink(m_uiManager.getScreenSize(), { 0.15f, 0.35f }, { 0.15f, 0.15f }, L"Shrink");
+	TextButton shrink(m_uiManager.getScreenSize(), { 0.15f, 0.35f }, { 0.15f, 0.15f }, L"Enlarge");
 	TextButton toggle(m_uiManager.getScreenSize(), { 0.15f, 0.90f }, { 0.15f, 0.15f }, L"Toggle Outline");
 	CheckBox box1(m_uiManager.getScreenSize(), { 0.75f, 0.5f }, { screen_ratio * 0.15f, 0.15f });
 	OutlinedBox box2(m_uiManager.getScreenSize(), { 0.75f, 0.6f }, { 0.1f, 0.1f });
@@ -77,7 +77,8 @@ void UITestMode::uiElementStateChangeHandler(std::shared_ptr<ManagedUIElement> e
 	if (element->name == L"Button 1")
 	{
 		auto currentSize = m_uiManager.getElement<DropDownMenu>(L"Device Watcher Text Box")->getAbsoluteSize();
-		m_uiManager.getElement<DropDownMenu>(L"Device Watcher Text Box")->setAbsoluteSize({ currentSize.x / 1.2f, currentSize.y / 1.2f }, true);
+		m_uiManager.getElement<DropDownMenu>(L"Device Watcher Text Box")->setAbsoluteSize({ currentSize.x * 1.2f, currentSize.y * 1.2f }, true);
+		m_uiManager.refreshGrid(); //Any top level calls to setAbsoluteSize() require the ui manager's grid system to be refreshed.
 	}
 	if (element->name == L"Button 2")
 	{

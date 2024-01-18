@@ -35,7 +35,9 @@ struct ManagedUIElement
 {
 	std::wstring name;
 	std::shared_ptr<UIElement> element;
-	std::vector<std::pair<int, int> > grid_locations;
+	//std::vector<std::pair<int, int> > grid_locations;
+	std::pair<int, int> top_left_grid_location;
+	std::pair<int, int> bottom_right_grid_location;
 	UIElementType type;
 };
 
@@ -65,7 +67,7 @@ public:
 		//Bottom Right location = {floor(GRID_WIDTH * (location.x + size.x / 2.0)), floor(GRID_WIDTH * (location.y + size.y / 2.0))}
 		//We just iterate over all grid square from the top left to the bottom right
 
-		ManagedUIElement me = { name, std::make_shared<T>(element), {}, type };
+		ManagedUIElement me = { name, std::make_shared<T>(element), { -1, -1 }, { -1, -1 }, type };
 		auto managedElement = std::make_shared<ManagedUIElement>(me); //create a copy of the element so we can get the absolute size and location
 
 		populateGridLocations(managedElement); //Populate the appropriate arrays of m_gridLocation with pointers to this new ManagedUIElement
@@ -89,17 +91,27 @@ public:
 
 		if (it != m_uiElements.at(type).end())
 		{
-			for (int i = 0; i < it->get()->grid_locations.size(); i++)
+			if (type != UIElementType::ALERT)
 			{
-				//The grid vectors aren't ordered so we need to search for the appropriate
-				//smart pointer. This may not seem super effecient, especially because removing
-				//elements from a vector forces all other elements to shift, however, if
-				//the grid is small enough then there should never be more than a handful of 
-				//pointers in each vector so this should be alright.
-				std::pair<int, int> grid_location = { it->get()->grid_locations[i].first, it->get()->grid_locations[i].second };
-				auto grid_it = findElementByName(m_gridLocations[it->get()->grid_locations[i].first][it->get()->grid_locations[i].second], name);
-				m_gridLocations[it->get()->grid_locations[i].first][it->get()->grid_locations[i].second].erase(grid_it);
+				for (int i = it->get()->top_left_grid_location.first; i <= it->get()->bottom_right_grid_location.first; i++)
+				{
+					for (int j = it->get()->top_left_grid_location.second; j <= it->get()->bottom_right_grid_location.second; j++)
+					{
+						//The grid vectors aren't ordered so we need to search for the appropriate
+						//smart pointer. This may not seem super effecient, especially because removing
+						//elements from a vector forces all other elements to shift, however, if
+						//the grid is small enough then there should never be more than a handful of 
+						//pointers in each vector so this should be alright.
+						/*std::pair<int, int> grid_location = { it->get()->grid_locations[i].first, it->get()->grid_locations[i].second };
+						auto grid_it = findElementByName(m_gridLocations[it->get()->grid_locations[i].first][it->get()->grid_locations[i].second], name);
+						m_gridLocations[it->get()->grid_locations[i].first][it->get()->grid_locations[i].second].erase(grid_it);*/
+
+						auto grid_it = std::find(m_gridLocations[j][i].begin(), m_gridLocations[j][i].end(), *it);
+						if (grid_it != m_gridLocations[j][i].end()) m_gridLocations[j][i].erase(grid_it);
+					}
+				}
 			}
+			
 			m_uiElements.at(type).erase(it);
 		}
 		else OutputDebugString(L"Couldn't find the UIElement.");

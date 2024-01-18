@@ -208,7 +208,7 @@ void FullScrollingTextBox::repositionText()
 		}
 
 		currentTextBoxAbsoluteSize.x /= m_screenSize->Width; //convert pixels back to absolute size
-		currentTextBoxAbsoluteSize.x += 0.015f; //give a little breathing room so text isn't right up against the edge of the box
+		currentTextBoxAbsoluteSize.x += 0.02f; //give a little breathing room so text isn't right up against the edge of the box
 	}
 
 	if (m_state & UIElementState::NeedTextPixels)
@@ -261,10 +261,12 @@ void FullScrollingTextBox::setTextLocationsAndDimensions()
 	p_children[m_topText]->setAbsoluteSize(textOverlayAbsoluteSize);
 	p_children[m_topText]->setAbsoluteLocation(textOverlayAbsoluteLocation);
 
-	//Update the absolute font height for each text overlay to achieve the same pixel font
-	//height that was used during the original dimension calculations
+	//When the element is first created we update the absolute font height for each text overlay
+	//to achieve the same pixel font height that was used during the original dimension calculations.
+	//In all other calls to this text resizing method after initial set up we don't need to alter the
+	//font in any way.
 	float correctAbsoluteFontHeight = m_initialFontPixelSize / p_children[m_topText]->getPixelSize().y;
-	p_children[m_topText]->setFontSize(correctAbsoluteFontHeight);
+	if (m_state & UIElementState::NeedTextPixels) p_children[m_topText]->setFontSize(correctAbsoluteFontHeight);
 
 	int linesRendered = p_children[m_topText]->getText()->renderLines; //we can only render the number of lines dictated by m_displayedText, keep track with this variable
 
@@ -286,9 +288,12 @@ void FullScrollingTextBox::setTextLocationsAndDimensions()
 		p_children[i]->setAbsoluteSize(textOverlayAbsoluteSize);
 		p_children[i]->setAbsoluteLocation(textOverlayAbsoluteLocation);
 		
-		//set the appropriate font height
-		correctAbsoluteFontHeight = m_initialFontPixelSize / p_children[i]->getPixelSize().y;
-		p_children[i]->setFontSize(correctAbsoluteFontHeight);
+		//set the appropriate font height during initial set up
+		if (m_state & UIElementState::NeedTextPixels)
+		{
+			correctAbsoluteFontHeight = m_initialFontPixelSize / p_children[i]->getPixelSize().y;
+			p_children[i]->setFontSize(correctAbsoluteFontHeight);
+		}
 
 		//Since all text in this loop comes before the top option, they should all be made invisible
 		if (p_children[i]->getState() & UIElementState::Hovered) p_children[i]->removeState(UIElementState::Hovered); //this makes sure anything that was hovered at creation gets its colors reset
@@ -313,9 +318,12 @@ void FullScrollingTextBox::setTextLocationsAndDimensions()
 		p_children[i]->setAbsoluteSize(textOverlayAbsoluteSize);
 		p_children[i]->setAbsoluteLocation(textOverlayAbsoluteLocation);
 
-		//set the appropriate font height
-		correctAbsoluteFontHeight = m_initialFontPixelSize / p_children[i]->getPixelSize().y;
-		p_children[i]->setFontSize(correctAbsoluteFontHeight);
+		//set the appropriate font height during initial setup
+		if (m_state & UIElementState::NeedTextPixels)
+		{
+			correctAbsoluteFontHeight = m_initialFontPixelSize / p_children[i]->getPixelSize().y;
+			p_children[i]->setFontSize(correctAbsoluteFontHeight);
+		}
 
 		//increment the number of lines being rendered accordingly
 		linesRendered += p_children[i]->getText()->renderLines;

@@ -33,7 +33,8 @@ enum UIElementState
 	Selected = 64,
 	Disabled = 128,
 	Dummy = 256,
-	Released = 512
+	Released = 512,
+	GridUpdate = 1024
 };
 
 //used to make sure all parts of the UI element are rendered

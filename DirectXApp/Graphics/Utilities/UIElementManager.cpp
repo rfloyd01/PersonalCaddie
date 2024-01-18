@@ -35,16 +35,18 @@ void UIElementManager::removeElementType(UIElementType type)
 	//Removes all UI Elements with the given type
 	for (auto it = m_uiElements.at(type).begin(); it != m_uiElements.at(type).end(); it++)
 	{
-		for (int i = 0; i < it->get()->grid_locations.size(); i++)
+		for (int i = it->get()->top_left_grid_location.first; i <= it->get()->bottom_right_grid_location.first; i++)
 		{
-			//The grid vectors aren't ordered so we need to search for the appropriate
-			//smart pointer. This may not seem super effecient, especially because removing
-			//elements from a vector forces all other elements to shift, however, if
-			//the grid is small enough then there should never be more than a handful of 
-			//pointers in each vector so this should be alright.
-			std::pair<int, int> grid_location = it->get()->grid_locations[i];
-			auto grid_it = std::find(m_gridLocations[grid_location.first][grid_location.second].begin(), m_gridLocations[grid_location.first][grid_location.second].end(), *it);
-			if (grid_it != m_gridLocations[grid_location.first][grid_location.second].end()) m_gridLocations[grid_location.first][grid_location.second].erase(grid_it);
+			for (int j = it->get()->top_left_grid_location.second; j <= it->get()->bottom_right_grid_location.second; j++)
+			{
+				//The grid vectors aren't ordered so we need to search for the appropriate
+				//smart pointer. This may not seem super effecient, especially because removing
+				//elements from a vector forces all other elements to shift, however, if
+				//the grid is small enough then there should never be more than a handful of 
+				//pointers in each vector so this should be alright.
+				auto grid_it = std::find(m_gridLocations[j][i].begin(), m_gridLocations[j][i].end(), *it);
+				if (grid_it != m_gridLocations[j][i].end()) m_gridLocations[j][i].erase(grid_it);
+			}
 		}
 	}
 	
@@ -74,7 +76,6 @@ void UIElementManager::updateScreenSize(winrt::Windows::Foundation::Size newWind
 	//on the screen to change proportionally with the new screen size. This action can be somewhat
 	//computationally expensive, so to help make things more efficient a resize will only actually
 	//occur if the area of the screen changes by a certain threshold.
-
 	*m_screenSize.get() = newWindowSize; //all UIElements share this smart pointer so they see the change as well
 	float screenArea = newWindowSize.Width * newWindowSize.Height;
 
@@ -94,19 +95,24 @@ void UIElementManager::updateScreenSize(winrt::Windows::Foundation::Size newWind
 			}
 		}
 
+		//Resizing the screen can cause UI Elements to shift slightly, causing them to move into 
+		//new grid locations. If we still want to be able to interact with UI Elements then we 
+		//also need to refresh the grid on every resize.
+		refreshGrid();
+
 		//Update the m_lastScreenResizeArea variable
 		m_lastScreenResizeArea = screenArea;
 	}
 
 	//DEBUG: Uncomment the below lines to draw lines representing the grid on screen.
 	//This is helpful for confirming which elements can be interacted with by the mouse
-	for (int i = 0; i < GRID_WIDTH; i++)
+	/*for (int i = 0; i < GRID_WIDTH; i++)
 	{
 		Line vert(m_screenSize, { (float)i / (float)GRID_WIDTH, 0.0f }, { (float)i / (float)GRID_WIDTH, 1.0f }, UIColor::Red, 1.0f, true);
 		Line hor(m_screenSize, { 0.0f, (float)i / (float)GRID_WIDTH }, { 1.0f, (float)i / (float)GRID_WIDTH }, UIColor::Red, 1.0f, true);
 		addElement<Line>(vert, L"Vertical Line " + std::to_wstring(i));
 		addElement<Line>(hor, L"Horizontal Line " + std::to_wstring(i));
-	}
+	}*/
 }
 
 void UIElementManager::updateGridSquareElements(InputState* input)
@@ -236,49 +242,78 @@ void UIElementManager::populateGridLocations(std::shared_ptr<ManagedUIElement> m
 	{
 		//Remove any existing grid locations if the grid array for the managed element isn't empty. This situation
 		//arises if we move an existing element after creating it.
-		if (managedElement->grid_locations.size() > 0) managedElement->grid_locations.clear();
+		/*if (managedElement->grid_locations.size() > 0) managedElement->grid_locations.clear();*/
 
 		//The manager's grid system uses absolute coordinates while UI Elements use relative coordinates
 		//and converting between the two systems can get a little confusing. To help, simply use pixel
 		//coordinates to figure out which elements fall in which grid squares.
-		/*auto size = managedElement->element->getAbsoluteSize();
-		auto location = managedElement->element->getAbsoluteLocation();
-
-		std::pair<int, int> old_top_left = { GRID_WIDTH * (location.x - size.x / 2.0f), GRID_WIDTH * (location.y - size.y / 2.0f) };
-		std::pair<int, int> old_bottom_right = { GRID_WIDTH * (location.x + size.x / 2.0f), GRID_WIDTH * (location.y + size.y / 2.0f) };*/
-
 		auto pixel_size = managedElement->element->getPixelSize();
 		auto pixel_location = managedElement->element->getPixelLocation();
 
+		//Calculate the new range of grid locations
 		std::pair<int, int> top_left = { GRID_WIDTH * (pixel_location.x - pixel_size.x / 2.0f) / m_screenSize->Width, GRID_WIDTH * (pixel_location.y - pixel_size.y / 2.0f) / m_screenSize->Height };
 		std::pair<int, int> bottom_right = { GRID_WIDTH * (pixel_location.x + pixel_size.x / 2.0f) / m_screenSize->Width, GRID_WIDTH * (pixel_location.y + pixel_size.y / 2.0f) / m_screenSize->Height};
 
-		//if (managedElement->type == UIElementType::DROP_DOWN_MENU)
-		//{
-		//	//Drop down menus feature an invisible scroll box which isn't normally included in the size calculation
-		//	//of the element. To make sure all parts of this scroll box can be interacted with we add the height of
-		//	//the invisible scroll box when placing grid pointers for the drop down menu. This only effects the
-		//	//top_left grid location
-		//	top_left = { GRID_WIDTH * (location.x - size.x / 2.0f), GRID_WIDTH * (location.y - size.y / 2.0f - managedElement->element->getChildren()[2]->getAbsoluteSize().y)};
-		//}
+		//See if either of the new grid locations is different than the existing grid locations.
+		//If not then there's nothing to update
+		if ((top_left == managedElement->top_left_grid_location) && (bottom_right == managedElement->bottom_right_grid_location)) return;
 
-		//Ignore any squares that fall outside of the grid
-		for (int row = top_left.second; row <= bottom_right.second; row++)
+		//Between the new and old grid locations, select the most extreme left, right, top and 
+		//bottom grid locations and iterate between them. By comparing the old and new upper_left and
+		//bottom_right grid locations vs. the current place in the iteration we can deduce whether
+		//the current spot needs to have a reference added, removed, or simply be left alone.
+		int new_left = top_left.first, old_left = managedElement->top_left_grid_location.first;
+		int new_right = bottom_right.first, old_right = managedElement->bottom_right_grid_location.first;
+		int new_top = top_left.second, old_top = managedElement->top_left_grid_location.second;
+		int new_bottom = bottom_right.second, old_bottom = managedElement->bottom_right_grid_location.second;
+
+		int leftmost_point = new_left < old_left ? new_left : old_left;
+		int rightmost_point = new_right > old_right ? new_right : old_right;
+		int topmost_point = new_top < old_top ? new_top : old_top;
+		int bottommost_point = new_bottom > old_bottom ? new_bottom : old_bottom;
+
+		//If the new element is out of bounds at all update its grid locations
+		//accordingly
+		if (leftmost_point < 0) leftmost_point = top_left.first;
+		if (topmost_point < 0) topmost_point = top_left.second;
+		if (rightmost_point >= GRID_WIDTH) rightmost_point = GRID_WIDTH - 1;
+		if (bottommost_point >= GRID_WIDTH) bottommost_point = GRID_WIDTH - 1;
+
+		for (int i = leftmost_point; i <= rightmost_point; i++)
 		{
-			if (row < 0) continue;
-			else if (row >= GRID_WIDTH) break;
-
-			for (int col = top_left.first; col <= bottom_right.first; col++)
+			for (int j = topmost_point; j <= bottommost_point; j++)
 			{
-				if (col < 0) continue;
-				else if (col >= GRID_WIDTH) break;
+				bool inside_old_location = ((i >= old_left && i <= old_right) && (j >= old_top && j <= old_bottom));
+				bool inside_new_location = ((i >= new_left && i <= new_right) && (j >= new_top && j <= new_bottom));
 
-				//Add the grid location to the managed element, and a reference to the managed element
-				//in the appropriate grid location
-				managedElement->grid_locations.push_back({ row, col });
-				m_gridLocations[row][col].push_back(managedElement);
+				//Check to see if we have a new point. A point is considered new if it lies inside
+				//the new location but not the old location
+				if (inside_new_location && !inside_old_location)
+				{
+					//care needs to be taken when adding pointers to the grid since the 
+					//order is (row, column) which would be (y, x) using normal Cartesean
+					//coordinates
+					m_gridLocations[j][i].push_back(managedElement);
+				}
+				else if (inside_old_location && !inside_new_location)
+				{
+					//Likewise with adding a reference, when we remove one we need
+					//to make sure we properly swap the i and j variables from 
+					//Cartesean coordinates.
+					auto it = std::find(m_gridLocations[j][i].begin(), m_gridLocations[j][i].end(), managedElement);
+					
+					//Make sure the pointer was actually found before erasing it
+					if (it != m_gridLocations[j][i].end()) m_gridLocations[j][i].erase(it);
+				}
+
+				//If neither of the above blocks execues it means that tthe point lies inside both 
+				//locations so nothing needs to be changed
 			}
 		}
+
+		//Finally, update the top left and bottom right grid locations for the Managed Element
+		managedElement->top_left_grid_location = top_left;
+		managedElement->bottom_right_grid_location = bottom_right;
 	}
 }
 
@@ -291,12 +326,6 @@ void UIElementManager::refreshGrid()
 	//longer match its grid location within the UI Management class and we won't be able to interact with it
 	//properly. Calling this method will simply delete the entire grid, and then go over every single UI Element
 	//in the map, re-populating the grid with correct locations.
-
-	//Clear out each vector currently in the grid
-	for (int i = 0; i < GRID_WIDTH; i++)
-	{
-		for (int j = 0; j < GRID_WIDTH; j++) m_gridLocations[i][j].clear();
-	}
 
 	//Iterate through all UI Elements and add new grid locations
 	for (int i = 0; i < static_cast<int>(UIElementType::END); i++)

@@ -370,6 +370,8 @@ DirectX::XMFLOAT2 UIElement::getPixelSize()
 {
 	//Returns the dimensions of the element as it would be rendered on screen 
 	//given the current screen dimensions.
+	if (m_useAbsoluteCoordinates) return { m_size.x * m_screenSize->Width, m_size.y * m_screenSize->Height };
+
 	float pixel_height = m_size.y / (m_screenSize->Width + m_screenSize->Height) * (2 * m_screenSize->Width * m_screenSize->Height);
 	return { m_sizeMultiplier.x * pixel_height, pixel_height };
 }
