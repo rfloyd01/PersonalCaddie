@@ -23,11 +23,15 @@ uint32_t UITestMode::initializeMode(winrt::Windows::Foundation::Size windowSize,
 	float screen_ratio = MAX_SCREEN_HEIGHT / MAX_SCREEN_WIDTH;
 
 	std::wstring scrollText = L"Once upon a time\nit was the best of times\nit was the worst of times\nOnce upon a time\nit was the best of times\nit was the worst of times\nyeet\nyeet\nyote";
-	DropDownMenu deviceWatcherResults(m_uiManager.getScreenSize(), { 0.75f, 0.575f }, { 0.15, 0.225 }, scrollText, 0.2f);
-	//FullScrollingTextBox tb(m_uiManager.getScreenSize(), { 0.75f, 0.775f }, { 0.15, 0.125 }, scrollText, 0.2f);
-	m_uiManager.addElement<DropDownMenu>(deviceWatcherResults, L"Device Watcher Text Box");
-	//m_uiManager.addElement<FullScrollingTextBox>(tb, L"Full Scroll Text Box");
-	//m_uiManager.drawDebugOutline(m_uiManager.getElement<FullScrollingTextBox>(L"Device Watcher Text Box"), false);
+	Graph graph(m_uiManager.getScreenSize(), { 0.65f, 0.5f }, { 0.35f, 0.35f });
+
+	graph.setAxisMaxAndMins({ 0.0f, -1.2f }, { 2.0f * PI, 1.2f });
+
+	std::vector<DirectX::XMFLOAT2> data;
+	for (float i = 0.0f; i <= 2.0f * PI; i += PI / 180.0f) data.push_back({ i, sin(i) });
+	graph.addGraphData(data, UIColor::Red);
+
+	m_uiManager.addElement<Graph>(graph, L"Graph 1");
 
 	TextButton shrink(m_uiManager.getScreenSize(), { 0.15f, 0.35f }, { 0.15f, 0.15f }, L"Enlarge");
 	TextButton toggle(m_uiManager.getScreenSize(), { 0.15f, 0.90f }, { 0.15f, 0.15f }, L"Toggle Outline");
@@ -76,13 +80,13 @@ void UITestMode::uiElementStateChangeHandler(std::shared_ptr<ManagedUIElement> e
 {
 	if (element->name == L"Button 1")
 	{
-		auto currentSize = m_uiManager.getElement<DropDownMenu>(L"Device Watcher Text Box")->getAbsoluteSize();
-		m_uiManager.getElement<DropDownMenu>(L"Device Watcher Text Box")->setAbsoluteSize({ currentSize.x * 1.2f, currentSize.y * 1.2f }, true);
+		auto currentSize = m_uiManager.getElement<Graph>(L"Graph 1")->getAbsoluteSize();
+		m_uiManager.getElement<Graph>(L"Graph 1")->setAbsoluteSize({ currentSize.x * 1.2f, currentSize.y * 1.2f }, true);
 		m_uiManager.refreshGrid(); //Any top level calls to setAbsoluteSize() require the ui manager's grid system to be refreshed.
 	}
 	if (element->name == L"Button 2")
 	{
-		m_uiManager.drawDebugOutline(m_uiManager.getElement<DropDownMenu>(L"Device Watcher Text Box"), false);
+		m_uiManager.drawDebugOutline(m_uiManager.getElement<Graph>(L"Graph 1"), false);
 	}
 }
 

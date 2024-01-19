@@ -2,7 +2,8 @@
 #include "TextBox.h"
 
 TextBox::TextBox(std::shared_ptr<winrt::Windows::Foundation::Size> windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, std::wstring message,
-	float fontSize, std::vector<UIColor> textColor, std::vector<unsigned long long> textColorLocations, UITextJustification justification, UIColor textFillColor, UIColor outlineColor, UIColor shadowColor)
+	float fontSize, std::vector<UIColor> textColor, std::vector<unsigned long long> textColorLocations, UITextJustification justification, UIColor textFillColor,
+	UIColor outlineColor, UIColor shadowColor, float shadow_width)
 {
 	//Set the screen size dependent variables
 	m_screenSize = windowSize;
@@ -10,7 +11,7 @@ TextBox::TextBox(std::shared_ptr<winrt::Windows::Foundation::Size> windowSize, D
 
 	//First create the background of the text box. Normally the background for this box is white, although it
 	//can be changed.
-	ShadowedBox textBackground(windowSize, location, size, textFillColor, outlineColor, shadowColor);
+	ShadowedBox textBackground(windowSize, location, size, textFillColor, outlineColor, shadowColor, shadow_width);
 
 	//Then create the text which gets overlayed over the text box. The text overlay has the same
 	//dimensions and center as the text box. The defautl value for textColorLocations is an empty

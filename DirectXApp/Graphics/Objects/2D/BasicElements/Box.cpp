@@ -1,7 +1,8 @@
 #include "pch.h"
 #include "Box.h"
 
-Box::Box(std::shared_ptr<winrt::Windows::Foundation::Size> windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, UIColor color, UIShapeFillType fill)
+Box::Box(std::shared_ptr<winrt::Windows::Foundation::Size> windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size,
+	UIColor color, UIShapeFillType fill, bool useAbsolute)
 {
 	m_screenSize = windowSize;
 	updateLocationAndSize(location, size);

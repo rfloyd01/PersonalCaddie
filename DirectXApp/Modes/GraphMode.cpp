@@ -19,7 +19,7 @@ uint32_t GraphMode::initializeMode(winrt::Windows::Foundation::Size windowSize, 
 	TextButton recordButton(m_uiManager.getScreenSize(), { 0.1, 0.2 }, { 0.12, 0.1 }, L"Start Recording Data");
 
 	std::wstring options = L"Acceleration\nAngular Velocity\nMagnetic Field\nRaw Acceleration\nRaw Angular Velocity\nRaw Magnetic Field\nLinear Acceleration";
-	DropDownMenu dataSelection(m_uiManager.getScreenSize(), { 0.9, 0.2 }, { 0.2, 0.1 }, options, 0.025, 5, false);
+	DropDownMenu dataSelection(m_uiManager.getScreenSize(), { 0.9, 0.2 }, { 0.2, 0.1 }, options, 0.25, 5, false);
 
 	Graph graph(m_uiManager.getScreenSize(), { 0.5, 0.65 }, { 0.9, 0.6 });
 

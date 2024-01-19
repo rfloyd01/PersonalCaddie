@@ -14,7 +14,11 @@
 class GraphData : public UIElement
 {
 public:
-	GraphData() {} //default no-args constructor
+	GraphData(std::shared_ptr<winrt::Windows::Foundation::Size> windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size)
+	{ 
+		m_screenSize = windowSize;
+		updateLocationAndSize(location, size);
+	}
 
 	void addLine(Line const& l) { p_children.push_back(std::make_shared<Line>(l)); }
 	void addEllipse(Ellipse const& e) { p_children.push_back(std::make_shared<Ellipse>(e)); }

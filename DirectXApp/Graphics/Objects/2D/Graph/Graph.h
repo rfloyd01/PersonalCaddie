@@ -27,6 +27,9 @@ public:
 
 	virtual uint32_t update(InputState* inputState) override;
 
+	//TODO: I should override the setChildrenAbsoluteSize() method to handle 
+	//manual resizing of graphs at some point.
+
 protected:
 	//Click and Release Methods
 	virtual void onMouseClick() override;

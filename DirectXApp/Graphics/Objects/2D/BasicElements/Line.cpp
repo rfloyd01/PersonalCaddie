@@ -16,7 +16,7 @@ Line::Line(std::shared_ptr<winrt::Windows::Foundation::Size> windowSize, DirectX
 
 	//Horizontal lines will have a height component of zero, which will mess up some calculations
 	//in other places. In this case simply give the line a very minimal height.
-	if (m_useAbsoluteCoordinates && (size.y == 0.0f)) size.y = 0.001f;
+	if (size.y == 0.0f) size.y = 0.00001f;
 	
 	updateLocationAndSize(location, size);
 
@@ -32,5 +32,7 @@ Line::Line(std::shared_ptr<winrt::Windows::Foundation::Size> windowSize, DirectX
 std::pair<DirectX::XMFLOAT2, DirectX::XMFLOAT2> Line::getPointsAbsolute()
 {
 	//Returns the two points making up the line with their absolute window coordinates
-	return { {m_location.x - m_size.x / 2.0f, m_location.y - m_size.y / 2.0f}, {m_location.x + m_size.x / 2.0f, m_location.y + m_size.y / 2.0f} };
+	auto location = getAbsoluteLocation();
+	auto size = getAbsoluteSize();
+	return { {location.x - size.x / 2.0f, location.y - size.y / 2.0f}, {location.x + size.x / 2.0f, location.y + size.y / 2.0f} };
 }

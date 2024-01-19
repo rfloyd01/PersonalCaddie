@@ -13,8 +13,7 @@ Graph::Graph(std::shared_ptr<winrt::Windows::Foundation::Size> windowSize, Direc
 	p_children.push_back(std::make_shared<OutlinedBox>(graphBackground));
 
 	//Set the screen size dependent information for the TextBox
-	m_size = size;
-	m_location = location;
+	updateLocationAndSize(location, size);
 
 	m_minimalAbsolutePoint = { location.x - size.x / 2.0f, location.y - size.y / 2.0f };
 	m_maximalAbsolutePoint = { location.x + size.x / 2.0f, location.y + size.y / 2.0f };
@@ -36,12 +35,12 @@ Graph::Graph(std::shared_ptr<winrt::Windows::Foundation::Size> windowSize, Direc
 		//corners of the graph letting the user know that they can zoom, unzoom.
 		std::wstring zoom_message = L"Left click and drag the mouse to select an area of data to zoom in on.";
 		TextOverlay zoom(windowSize, { location.x - size.x / 4.0f + 0.0025f, location.y + size.y / 4.0f }, { size.x / 2.0f, size.y / 2.0f }, zoom_message,
-			size.y * 0.022f, { UIColor::Black }, { 0,  (unsigned int)zoom_message.length() }, UITextJustification::LowerLeft);
+			0.05f, { UIColor::Black }, { 0,  (unsigned int)zoom_message.length() }, UITextJustification::LowerLeft, false);
 		zoom.setState(UIElementState::Invisible);
 
 		std::wstring unzoom_message = L"Right click the mouse to go back a zoom level";
 		TextOverlay unzoom(windowSize, { location.x + size.x / 4.0f - 0.0025f, location.y + size.y / 4.0f }, { size.x / 2.0f, size.y / 2.0f }, unzoom_message,
-			size.y * 0.022f, { UIColor::Black }, { 0,  (unsigned int)unzoom_message.length() }, UITextJustification::LowerRight);
+			0.05f, { UIColor::Black }, { 0,  (unsigned int)unzoom_message.length() }, UITextJustification::LowerRight, false);
 		unzoom.updateState(UIElementState::Invisible);
 
 		p_children.push_back(std::make_shared<TextOverlay>(zoom));
@@ -106,7 +105,7 @@ void Graph::addGraphData(std::vector<DirectX::XMFLOAT2> const& dataPoints, UICol
 	//data sets without needing to change the properties of each individual line or point.
 	if (dynamic_cast<GraphDataSet*>(p_children.back().get()) == nullptr)
 	{
-		GraphDataSet gds(m_screenSize, m_minimalDataPoint, m_maximalDataPoint);
+		GraphDataSet gds(m_screenSize, getAbsoluteLocation(), getAbsoluteSize(), m_minimalDataPoint, m_maximalDataPoint);
 
 		//If we can zoom in on the graph then also add grid lines with labels
 		//which help keep track of the current zoom level
@@ -114,12 +113,13 @@ void Graph::addGraphData(std::vector<DirectX::XMFLOAT2> const& dataPoints, UICol
 		{
 			gds.addGridLines(6, 6, m_maximalAbsolutePoint, m_minimalAbsolutePoint);
 			p_children[1]->removeState(UIElementState::Invisible);
+			gds.resize();
 		}
 
 		p_children.push_back(std::make_shared<GraphDataSet>(gds));
 	}
 
-	GraphData newData;
+	GraphData newData(m_screenSize, getAbsoluteLocation(), getAbsoluteSize());
 
 	if (m_lineGraph)
 	{
@@ -146,7 +146,13 @@ void Graph::addGraphData(std::vector<DirectX::XMFLOAT2> const& dataPoints, UICol
 	}
 
 	//Add the new GraphData object to the current GraphDataSet object
-	if (newData.getChildren().size() > 0) ((GraphDataSet*)p_children.back().get())->addGraphData(newData);
+	if (newData.getChildren().size() > 0)
+	{
+		//Make sure the lines composing the graph data are the appropriate pixel size
+		//before adding to the set
+		newData.resize();
+		((GraphDataSet*)p_children.back().get())->addGraphData(newData);
+	}
 }
 
 void Graph::addUIElementBeforeData(std::shared_ptr<UIElement> element)
@@ -326,14 +332,25 @@ uint32_t Graph::update(InputState* inputState)
 		//what quadrant it's in relative to the boxes origin
 
 		DirectX::XMFLOAT2 opposite_corner = { inputState->mousePosition.x / m_screenSize->Width, inputState->mousePosition.y / m_screenSize->Height };
+		auto graph_size = getAbsoluteSize();
+		auto graph_location = getAbsoluteLocation();
 
 		//If the user drags the box outside the boundary of the graph, force the box
 		//to stay within the boundary
-		if (opposite_corner.x < m_location.x - m_size.x / 2.0f) opposite_corner.x = m_location.x - m_size.x / 2.0f;
+		/*if (opposite_corner.x < m_location.x - m_size.x / 2.0f) opposite_corner.x = m_location.x - m_size.x / 2.0f;
 		else if (opposite_corner.x > m_location.x + m_size.x / 2.0f) opposite_corner.x = m_location.x + m_size.x / 2.0f;
 
 		if (opposite_corner.y < m_location.y - m_size.y / 2.0f) opposite_corner.y = m_location.y - m_size.y / 2.0f;
 		else if (opposite_corner.y > m_location.y + m_size.y / 2.0f) opposite_corner.y = m_location.y + m_size.y / 2.0f;
+
+		DirectX::XMFLOAT2 new_origin = { (opposite_corner.x + m_zoomBoxOrigin.x) / 2.0f, (opposite_corner.y + m_zoomBoxOrigin.y) / 2.0f };
+		DirectX::XMFLOAT2 new_size = { opposite_corner.x - m_zoomBoxOrigin.x, opposite_corner.y - m_zoomBoxOrigin.y };*/
+
+		if (opposite_corner.x < graph_location.x - graph_size.x / 2.0f) opposite_corner.x = graph_location.x - graph_size.x / 2.0f;
+		else if (opposite_corner.x > graph_location.x + graph_size.x / 2.0f) opposite_corner.x = graph_location.x + graph_size.x / 2.0f;
+
+		if (opposite_corner.y < graph_location.y - graph_size.y / 2.0f) opposite_corner.y = graph_location.y - graph_size.y / 2.0f;
+		else if (opposite_corner.y > graph_location.y + graph_size.y / 2.0f) opposite_corner.y = graph_location.y + graph_size.y / 2.0f;
 
 		DirectX::XMFLOAT2 new_origin = { (opposite_corner.x + m_zoomBoxOrigin.x) / 2.0f, (opposite_corner.y + m_zoomBoxOrigin.y) / 2.0f };
 		DirectX::XMFLOAT2 new_size = { opposite_corner.x - m_zoomBoxOrigin.x, opposite_corner.y - m_zoomBoxOrigin.y };
@@ -361,7 +378,7 @@ void Graph::onMouseClick()
 	{
 		m_zoomBoxOrigin = { m_mouseLocation.x / m_screenSize->Width, m_mouseLocation.y / m_screenSize->Height }; //set the origin of the zoom box
 
-		Box opaque_box(m_screenSize, m_zoomBoxOrigin, { 0.0f, 0.0f }, UIColor::OpaqueBlue); //box starts off with no size
+		Box opaque_box(m_screenSize, m_zoomBoxOrigin, { 0.0f, 0.0f }, UIColor::OpaqueBlue, UIShapeFillType::Fill, true); //box starts off with no size
 		p_children.push_back(std::make_shared<Box>(opaque_box));
 		m_zoomBoxActive = true;
 	}
@@ -394,7 +411,7 @@ void Graph::onMouseRelease()
 	//Create the new GraphDataSet UIElement
 	DirectX::XMFLOAT2 new_minimal_points = { new_x_data_min, new_y_data_min };
 	DirectX::XMFLOAT2 new_maximal_points = { new_x_data_max, new_y_data_max };
-	GraphDataSet zoomed_in_data_set(m_screenSize, new_minimal_points, new_maximal_points);
+	GraphDataSet zoomed_in_data_set(m_screenSize, getAbsoluteLocation(), getAbsoluteSize(), new_minimal_points, new_maximal_points);
 
 	//Add the same number of grid lines to the zoomed in view that the 
 	//current view has
@@ -418,7 +435,7 @@ void Graph::onMouseRelease()
 		GraphData* data = dynamic_cast<GraphData*>(data_set_children[i].get());
 		if (data != nullptr)
 		{
-			GraphData zoomed_in_data; //create a new GraphData object
+			GraphData zoomed_in_data(m_screenSize, getAbsoluteLocation(), getAbsoluteSize()); //create a new GraphData object
 			auto existing_data = data->getChildren();
 
 			for (int j = 0; j < existing_data.size(); j++)
@@ -544,12 +561,15 @@ void Graph::calculateGraphEdgeIntercept(DirectX::XMFLOAT2& intercept_point, Dire
 
 	//We don't know if the line will need to be trimmed along a horizontal or vertical edge of the
 	//graph, or which side of the graph at first, so these things need to be figured out.
+	auto location = getAbsoluteLocation();
+	auto size = getAbsoluteSize();
 	int x_location = 0, y_location = 0;
-	if (intercept_point.x < (m_location.x - m_size.x / 2.0f)) x_location = -1; //point is outside left edge of graph
-	else if (intercept_point.x > (m_location.x + m_size.x / 2.0f)) x_location = 1; //point is outside right edge of graph
 
-	if (intercept_point.y < (m_location.y - m_size.y / 2.0f)) y_location = -1; //point is outside top edge of graph
-	else if (intercept_point.y > (m_location.y + m_size.y / 2.0f)) y_location = 1; //point is outside bottom edge of graph
+	if (intercept_point.x < (location.x - size.x / 2.0f)) x_location = -1; //point is outside left edge of graph
+	else if (intercept_point.x > (location.x + size.x / 2.0f)) x_location = 1; //point is outside right edge of graph
+
+	if (intercept_point.y < (location.y - size.y / 2.0f)) y_location = -1; //point is outside top edge of graph
+	else if (intercept_point.y > (location.y + size.y / 2.0f)) y_location = 1; //point is outside bottom edge of graph
 
 	//Split up the slope between the two points into a numerator and denominator
 	DirectX::XMFLOAT2 slope = { intercept_point.x - standard_point.x, intercept_point.y - standard_point.y };
@@ -558,8 +578,8 @@ void Graph::calculateGraphEdgeIntercept(DirectX::XMFLOAT2& intercept_point, Dire
 	{
 		//the line is guaranteed to intersect with either the left or right edge of the graph
 		//so we need to calculate the y-intercept.
-		float x_intercept = (m_location.x - m_size.x / 2.0f);
-		if (x_location == 1) x_intercept = (m_location.x + m_size.x / 2.0f);
+		float x_intercept = (location.x - size.x / 2.0f);
+		if (x_location == 1) x_intercept = (location.x + size.x / 2.0f);
 
 		float k = (x_intercept - intercept_point.x) / slope.x;
 		float y_intercept = intercept_point.y + k * slope.y;
@@ -569,8 +589,8 @@ void Graph::calculateGraphEdgeIntercept(DirectX::XMFLOAT2& intercept_point, Dire
 	{
 		//the line is guaranteed to intersect with either the top or bottom edge of the graph
 		//so we need to calculate the x-intercept.
-		float y_intercept = (m_location.y - m_size.y / 2.0f);
-		if (y_location == 1) y_intercept = (m_location.y + m_size.y / 2.0f);
+		float y_intercept = (location.y - size.y / 2.0f);
+		if (y_location == 1) y_intercept = (location.y + size.y / 2.0f);
 
 		float k = (y_intercept - intercept_point.y) / slope.y;
 		float x_intercept = intercept_point.x + k * slope.x;
@@ -580,9 +600,9 @@ void Graph::calculateGraphEdgeIntercept(DirectX::XMFLOAT2& intercept_point, Dire
 	{
 		//the line can intersect with any edge of the graph at this point, so we start by
 		//eliminating two options
-		DirectX::XMFLOAT2 intersect_edges = { (m_location.x - m_size.x / 2.0f), (m_location.y - m_size.y / 2.0f) };
-		if (x_location == 1) intersect_edges.x = (m_location.x + m_size.x / 2.0f);
-		if (y_location == 1) intersect_edges.y = (m_location.y + m_size.y / 2.0f);
+		DirectX::XMFLOAT2 intersect_edges = { (location.x - size.x / 2.0f), (location.y - size.y / 2.0f) };
+		if (x_location == 1) intersect_edges.x = (location.x + size.x / 2.0f);
+		if (y_location == 1) intersect_edges.y = (location.y + size.y / 2.0f);
 
 		//The line will technically intersect both edges of the graph, but only one of these
 		//intersections will actually occur within the viewing area. Calculate both 
@@ -590,7 +610,7 @@ void Graph::calculateGraphEdgeIntercept(DirectX::XMFLOAT2& intercept_point, Dire
 		float k = (intersect_edges.x - intercept_point.x) / slope.x;
 		DirectX::XMFLOAT2 option_one = { intersect_edges.x, intercept_point.y + k * slope.y };
 
-		if ((option_one.y > (m_location.y - m_size.y / 2.0f)) && (option_one.y < (m_location.y + m_size.y / 2.0f)))
+		if ((option_one.y > (location.y - size.y / 2.0f)) && (option_one.y < (location.y + size.y / 2.0f)))
 		{
 			intercept_point = option_one;
 		}
@@ -609,13 +629,15 @@ bool Graph::calculateGraphEdgeIntercepts(DirectX::XMFLOAT2& intercept_point_one,
 	//the line between them crosses through the viewing area. To start off, if both points are on the 
 	//same side of the graph (i.e. both above it, both to the left side, etc.) then we know the line won't
 	//cross into the viewing area right off the bat.
+	auto location = getAbsoluteLocation();
+	auto size = getAbsoluteSize();
 	bool hit = false;
 
 	//Pre-calculate edges of graph
-	float top_edge    = m_location.y - (m_size.y / 2.0f);
-	float bottom_edge = m_location.y + (m_size.y / 2.0f);
-	float left_edge   = m_location.x - (m_size.x / 2.0f);
-	float right_edge  = m_location.x + (m_size.x / 2.0f);
+	float top_edge    = location.y - (size.y / 2.0f);
+	float bottom_edge = location.y + (size.y / 2.0f);
+	float left_edge   = location.x - (size.x / 2.0f);
+	float right_edge  = location.x + (size.x / 2.0f);
 
 	if ((intercept_point_one.x < left_edge) && (intercept_point_two.x < left_edge)) return hit; //no part of the line is in viewing area
 	else if ((intercept_point_one.x > right_edge) && (intercept_point_two.x > right_edge)) return hit; //no part of the line is in viewing area

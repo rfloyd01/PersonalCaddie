@@ -139,27 +139,27 @@ void IMUSettingsMode::createDropDownMenus(bool use_current)
 		//First split the screen into three columns, each with its own sub-title
 		std::wstring sub_title = L"Accelerometer Settings";
 		TextOverlay acc(m_uiManager.getScreenSize(), { 0.15, 0.35 }, { 0.33, 0.1 },
-			sub_title, UIConstants::SubTitleTextPointSize, { UIColor::White }, { 0,  (unsigned int)sub_title.length() }, UITextJustification::UpperCenter);
+			sub_title, 0.33f, { UIColor::White }, { 0,  (unsigned int)sub_title.length() }, UITextJustification::UpperCenter, false);
 
 		sub_title = L"Gyroscope Settings";
 		TextOverlay gyr(m_uiManager.getScreenSize(), { 0.5, 0.35 }, { 0.33, 0.1 },
-			sub_title, UIConstants::SubTitleTextPointSize, { UIColor::White }, { 0,  (unsigned int)sub_title.length() }, UITextJustification::UpperCenter);
+			sub_title, 0.33f, { UIColor::White }, { 0,  (unsigned int)sub_title.length() }, UITextJustification::UpperCenter, false);
 
 		sub_title = L"Magnetometer Settings";
 		TextOverlay mag(m_uiManager.getScreenSize(), { 0.85, 0.35 }, { 0.33, 0.1 },
-			sub_title, UIConstants::SubTitleTextPointSize, { UIColor::White }, { 0,  (unsigned int)sub_title.length() }, UITextJustification::UpperCenter);
+			sub_title, 0.33f, { UIColor::White }, { 0,  (unsigned int)sub_title.length() }, UITextJustification::UpperCenter, false);
 
 		sub_title = L"Model";
 		TextOverlay acc_mod(m_uiManager.getScreenSize(), { 0.15, 0.42 }, { 0.33, 0.1 },
-			sub_title, 0.025, { UIColor::White }, { 0,  (unsigned int)sub_title.length() }, UITextJustification::UpperCenter);
+			sub_title, 0.25f, { UIColor::White }, { 0,  (unsigned int)sub_title.length() }, UITextJustification::UpperCenter, false);
 
 		//sub_title = L"Gyr. Model";
 		TextOverlay gyr_mod(m_uiManager.getScreenSize(), { 0.5, 0.42 }, { 0.33, 0.1 },
-			sub_title, 0.025, { UIColor::White }, { 0,  (unsigned int)sub_title.length() }, UITextJustification::UpperCenter);
+			sub_title, 0.25f, { UIColor::White }, { 0,  (unsigned int)sub_title.length() }, UITextJustification::UpperCenter, false);
 
 		//sub_title = L"Mag. Model";
 		TextOverlay mag_mod(m_uiManager.getScreenSize(), { 0.85, 0.42 }, { 0.33, 0.1 },
-			sub_title, 0.025, { UIColor::White }, { 0,  (unsigned int)sub_title.length() }, UITextJustification::UpperCenter);
+			sub_title, 0.25f, { UIColor::White }, { 0,  (unsigned int)sub_title.length() }, UITextJustification::UpperCenter, false);
 
 		m_uiManager.addElement<TextOverlay>(acc, L"Acc Setting Text");
 		m_uiManager.addElement<TextOverlay>(gyr, L"Gyr Setting Text");
@@ -685,11 +685,17 @@ void IMUSettingsMode::update()
 						firstDropDown->resize(); //since only the location has changed, not the size, this is ok
 						dropDown->resize(); //since only the location has changed, not the size, this is ok
 
+						//Get the locations and sizes for the options box of each drop down menu
+						auto firstDropDownOptionsLocation = firstDropDown->getChildren()[0]->getAbsoluteLocation();
+						auto dropDownOptionsLocation = dropDown->getChildren()[0]->getAbsoluteLocation();
+						auto firstDropDownOptionsSize = firstDropDown->getChildren()[0]->getAbsoluteSize();
+						auto dropDownOptionsSize = dropDown->getChildren()[0]->getAbsoluteSize();
+
 						//We also place text overlays above each box letting the user know what the options represent
-						TextOverlay one(m_uiManager.getScreenSize(), { dropDown->getAbsoluteLocation().x, dropDown->getAbsoluteLocation().y - dropDown->getAbsoluteSize().y }, { 0.25f, dropDown->getAbsoluteSize().y * 2.0f }, getSettingString(type), 0.025,
-							{ UIColor::White }, { 0, (unsigned int)getSettingString(type).length() }, UITextJustification::UpperCenter);
-						TextOverlay two(m_uiManager.getScreenSize(), { firstDropDown->getAbsoluteLocation().x, firstDropDown->getAbsoluteLocation().y - firstDropDown->getAbsoluteSize().y }, { 0.25f, firstDropDown->getAbsoluteSize().y * 2.0f }, getSettingString(first_index), 0.025,
-							{ UIColor::White }, { 0, (unsigned int)getSettingString(first_index).length() }, UITextJustification::UpperCenter);
+						TextOverlay one(m_uiManager.getScreenSize(), { dropDownOptionsLocation.x, dropDownOptionsLocation.y - dropDownOptionsSize.y }, { dropDownOptionsSize.x, dropDownOptionsSize.y * 2.0f }, getSettingString(type), 0.025f / (dropDownOptionsSize.y * 2.0f),
+							{ UIColor::White }, { 0, (unsigned int)getSettingString(type).length() }, UITextJustification::UpperCenter, false);
+						TextOverlay two(m_uiManager.getScreenSize(), { firstDropDownOptionsLocation.x, firstDropDownOptionsLocation.y - firstDropDownOptionsSize.y }, { firstDropDownOptionsSize.x, firstDropDownOptionsSize.y * 2.0f }, getSettingString(first_index), 0.025f / (firstDropDownOptionsSize.y * 2.0f),
+							{ UIColor::White }, { 0, (unsigned int)getSettingString(first_index).length() }, UITextJustification::UpperCenter, false);
 						
 						m_uiManager.addElement<TextOverlay>(one, title_name + std::to_wstring(type));
 						m_uiManager.addElement<TextOverlay>(two, title_name + std::to_wstring(first_index));
@@ -710,8 +716,11 @@ void IMUSettingsMode::update()
 				dropDown->setAbsoluteLocation({ location, 0.10f * (row + 3.0f) + 0.23f });
 				dropDown->resize();
 
-				TextOverlay one(m_uiManager.getScreenSize(), { dropDown->getAbsoluteLocation().x, dropDown->getAbsoluteLocation().y - dropDown->getAbsoluteSize().y }, { 0.25f, dropDown->getAbsoluteSize().y * 2.0f }, getSettingString(first_index), 0.025,
-					{ UIColor::White }, { 0, (unsigned int)getSettingString(first_index).length() }, UITextJustification::UpperCenter);
+				auto dropDownOptionsLocation = dropDown->getChildren()[0]->getAbsoluteLocation();
+				auto dropDownOptionsSize = dropDown->getChildren()[0]->getAbsoluteSize();
+
+				TextOverlay one(m_uiManager.getScreenSize(), { dropDownOptionsLocation.x, dropDownOptionsLocation.y - dropDownOptionsSize.y }, { dropDownOptionsSize.x, dropDownOptionsSize.y * 2.0f }, getSettingString(first_index), 0.025f / (dropDownOptionsSize.y * 2.0f),
+					{ UIColor::White }, { 0, (unsigned int)getSettingString(first_index).length() }, UITextJustification::UpperCenter, false);
 				m_uiManager.addElement<TextOverlay>(one, title_name + std::to_wstring(first_index));
 			}
 

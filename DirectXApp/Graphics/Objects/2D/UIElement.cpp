@@ -157,10 +157,10 @@ uint32_t UIElement::update(InputState* inputState)
 	//call this method on each of it's children to give us a snap shot of the state for
 	//each element on the page.
 
-	if (m_state & UIElementState::Invisible) return 0; //Invisible elements don't get updated
+	if (m_state & UIElementState::Invisible || m_state & UIElementState::Idlee) return 0; //Invisible and Idle elements don't get updated
 
 	//If the element can't be interacted with in any way then simple return the idle state.
-	if (!m_isClickable && !m_isHoverable && !m_isScrollable) m_state |= UIElementState::Idlee;
+	//if (!m_isClickable && !m_isHoverable && !m_isScrollable) m_state |= UIElementState::Idlee;
 
 	//Only check for hover, click and scroll events if the mouse is
 	//actually over the element
@@ -189,7 +189,7 @@ uint32_t UIElement::update(InputState* inputState)
 				//As of right now there are very few uses for right clicks with very
 				//basic functionality so performing a right click won't effect the
 				//current state of the UIElement
-				if (m_state & UIElementState::Disabled) onMouseRightClick();
+				if (!(m_state & UIElementState::Disabled)) onMouseRightClick();
 			}
 		}
 
