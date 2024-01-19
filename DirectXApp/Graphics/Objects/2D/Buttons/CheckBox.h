@@ -14,7 +14,7 @@ a plain white box with a thin black outline.
 class CheckBox : public Button
 {
 public:
-	CheckBox(std::shared_ptr<winrt::Windows::Foundation::Size> windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size) :
+	CheckBox(std::shared_ptr<winrt::Windows::Foundation::Size> windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, bool isChecked = false) :
 		Button(windowSize, location, size, UIColor::White, UIColor::Black, UIColor::White, 0.0f)
 	{
 		//The X is made up of two lines. One from the bottom left corner to the top right of the button, and the other from the top
@@ -23,10 +23,13 @@ public:
 		Line diagonal_two(windowSize, {location.x - size.x / 2.0f, location.y - size.y / 2.0f }, { location.x + size.x / 2.0f, location.y + size.y / 2.0f });
 
 		//By default checked boxes aren't checked
-		m_isChecked = false;
-		diagonal_one.updateState(UIElementState::Invisible);
-		diagonal_two.updateState(UIElementState::Invisible);
-
+		m_isChecked = isChecked;
+		if (!isChecked)
+		{
+			diagonal_one.updateState(UIElementState::Invisible);
+			diagonal_two.updateState(UIElementState::Invisible);
+		}
+		
 		p_children.push_back(std::make_shared<Line>(diagonal_one));
 		p_children.push_back(std::make_shared<Line>(diagonal_two));
 	}
@@ -68,6 +71,8 @@ public:
 
 		m_isChecked = !m_isChecked;
 	}
+
+	bool isChecked() { return m_isChecked; }
 
 private:
 	bool m_isChecked; //check boxes aren't checked by default

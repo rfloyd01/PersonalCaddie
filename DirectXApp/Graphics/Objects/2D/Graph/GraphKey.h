@@ -1,7 +1,9 @@
 #pragma once
 
-#include "Graphics/Objects/2D/BasicElements/Line.h"
-#include "Graphics/Objects/2D/BasicElements/Ellipse.h"
+#include "GraphData.h"
+#include "Graphics/Objects/2D/BasicElements/OutlinedBox.h"
+#include "Graphics/Objects/2D/BasicElements/TextOverlay.h"
+#include "Graphics/Objects/2D/Buttons/CheckBox.h"
 
 /*
 The GraphKey class is a class for creating dynamic keys for graphs.
@@ -15,8 +17,7 @@ from the key.
 class GraphKey : public UIElement
 {
 public:
-	GraphKey() {} //default no-args constructor
+	GraphKey(std::shared_ptr<winrt::Windows::Foundation::Size> windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size);
 
-	void addLine(Line const& l) { p_children.push_back(std::make_shared<Line>(l)); }
-	void addEllipse(Ellipse const& e) { p_children.push_back(std::make_shared<Ellipse>(e)); }
+	void addGraphData(GraphData const& data);
 };

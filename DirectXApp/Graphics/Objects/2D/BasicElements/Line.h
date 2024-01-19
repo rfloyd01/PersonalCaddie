@@ -14,7 +14,9 @@ public:
 		UIColor color = UIColor::Black, float width = 1.0f, bool useAbsolute = false);
 
 	std::pair<DirectX::XMFLOAT2, DirectX::XMFLOAT2> getPointsAbsolute();
-	UIColor getLineColor() { return m_lineColor; }
+	std::pair<DirectX::XMFLOAT2, DirectX::XMFLOAT2> getPointsRelative();
+
+	UIColor getLineColor() const { return m_lineColor; }
 
 private:
 	UIColor m_lineColor;

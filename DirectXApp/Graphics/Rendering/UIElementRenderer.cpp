@@ -18,17 +18,6 @@ UIElementRenderer::UIElementRenderer(_In_ std::shared_ptr<DX::DeviceResources> c
     for (int i = 0; i < static_cast<int>(UIColor::END); i++) m_solidColorBrushes.push_back(nullptr);
     for (int i = 0; i < static_cast<int>(UIColor::END); i++)
     {
-        //D2D1_BRUSH_PROPERTIES opacity;
-        //opacity.opacity = m_colors.colors.at(static_cast<UIColor>(i)).a; //extract the opacity from the D2D1_COLOR_F struct
-        //opacity.transform = Matrix3x2F::Translation({ 0.0f, 0.0f }); //create a null translation with the d2d1helper.h header
-
-        /*winrt::check_hresult(
-            d2dContext->CreateSolidColorBrush(
-                m_colors.colors.at(static_cast<UIColor>(i)),
-                opacity,
-                m_solidColorBrushes[i].put()
-            )
-        );*/
         winrt::check_hresult(
             d2dContext->CreateSolidColorBrush(
                 m_colors.colors.at(static_cast<UIColor>(i)),

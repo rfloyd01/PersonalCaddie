@@ -11,6 +11,7 @@ Ellipse::Ellipse(std::shared_ptr<winrt::Windows::Foundation::Size> windowSize, D
 
 	m_shape = { {centerLocation.x, centerLocation.y, radii.x, radii.y}, color, UIShapeFillType::Fill, UIShapeType::ELLIPSE};
 	m_circle = circle; //if we want a circle, then on resize we need to make sure that both radii are equal to each other
+	m_color = color;
 
 	resize();
 }

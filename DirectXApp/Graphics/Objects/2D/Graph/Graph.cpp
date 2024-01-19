@@ -3,7 +3,8 @@
 #include "Graphics/Objects/2D/BasicElements/TextOverlay.h"
 #include "Graphics/Objects/2D/Graph/GraphDataSet.h"
 
-Graph::Graph(std::shared_ptr<winrt::Windows::Foundation::Size> windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, bool line,  UIColor fillColor, UIColor outlineColor, bool isSquare, bool canZoom)
+Graph::Graph(std::shared_ptr<winrt::Windows::Foundation::Size> windowSize, DirectX::XMFLOAT2 location, DirectX::XMFLOAT2 size, bool line, 
+	UIColor fillColor, UIColor outlineColor, bool isSquare, bool canZoom, bool hasKey)
 {
 	m_screenSize = windowSize;
 
@@ -28,6 +29,7 @@ Graph::Graph(std::shared_ptr<winrt::Windows::Foundation::Size> windowSize, Direc
 	m_zoomBoxOrigin = { 0.0f, 0.0f };
 	m_currentZoomLevel = 0;
 	m_isClickable = canZoom; //we need to be able to click the graph to zoom in on data
+	m_hasKey = hasKey;
 
 	if (canZoom)
 	{
@@ -71,7 +73,7 @@ void Graph::setAxisMaxAndMins(DirectX::XMFLOAT2 axis_minimums, DirectX::XMFLOAT2
 	m_maximalDataPoint = axis_maximums;
 }
 
-void Graph::addGraphData(std::vector<DirectX::XMFLOAT2> const& dataPoints, UIColor lineColor)
+void Graph::addGraphData(std::vector<DirectX::XMFLOAT2> const& dataPoints, UIColor lineColor, std::wstring name)
 {
 	//Takes a full set of data and creates a line on the graph with it in the indicated color
 
@@ -87,25 +89,15 @@ void Graph::addGraphData(std::vector<DirectX::XMFLOAT2> const& dataPoints, UICol
 	DirectX::XMFLOAT2 absoluteDifference = { m_maximalAbsolutePoint.x - m_minimalAbsolutePoint.x, m_maximalAbsolutePoint.y - m_minimalAbsolutePoint.y };
 	DirectX::XMFLOAT2 previousPoint = { absoluteDifference.x * ((dataPoints[0].x - m_minimalDataPoint.x) / difference.x) + m_minimalAbsolutePoint.x, -1 * (absoluteDifference.y * ((dataPoints[0].y - m_minimalDataPoint.y) / difference.y) - m_maximalAbsolutePoint.y) }, currentPoint = { 0, 0 };
 	
-	////Check to see if the graph is a square graph, if so then all points need to be shifted accordingly
-	////to make sure that they actually fall inside of the box child element
-	//float squareGraphRatioCorrection = 1.0f, squareGraphDriftCorrection = 0.0f;
-	//auto childBox = ((OutlinedBox*)p_children[0].get());
-	//if (childBox->isSquare())
-	//{
-	//	//Get the ratio of the screen width to it's height. Since most screens are in portrait mode
-	//	//instead of landscape this will almost always result and a ratio less than one, which will
-	//	//effectively squish the data points along the x-axis to fit into the graph.
-	//	squareGraphRatioCorrection = m_screenSize->Height / m_screenSize->Width;
-	//	squareGraphDriftCorrection = childBox->fixSquareBoxDrift();
-	//}
+	auto location = getAbsoluteLocation();
+	auto size = getAbsoluteSize();
 
 	//If there's any existing GraphDataSet child element add this new set to it, otherwise
 	//create a new GraphDataSet child element to add lines and or points to. This allows us to alter entire
 	//data sets without needing to change the properties of each individual line or point.
 	if (dynamic_cast<GraphDataSet*>(p_children.back().get()) == nullptr)
 	{
-		GraphDataSet gds(m_screenSize, getAbsoluteLocation(), getAbsoluteSize(), m_minimalDataPoint, m_maximalDataPoint);
+		GraphDataSet gds(m_screenSize, location, size, m_minimalDataPoint, m_maximalDataPoint);
 
 		//If we can zoom in on the graph then also add grid lines with labels
 		//which help keep track of the current zoom level
@@ -119,7 +111,7 @@ void Graph::addGraphData(std::vector<DirectX::XMFLOAT2> const& dataPoints, UICol
 		p_children.push_back(std::make_shared<GraphDataSet>(gds));
 	}
 
-	GraphData newData(m_screenSize, getAbsoluteLocation(), getAbsoluteSize());
+	GraphData newData(m_screenSize, location, size, name);
 
 	if (m_lineGraph)
 	{
@@ -151,6 +143,14 @@ void Graph::addGraphData(std::vector<DirectX::XMFLOAT2> const& dataPoints, UICol
 		//Make sure the lines composing the graph data are the appropriate pixel size
 		//before adding to the set
 		newData.resize();
+
+		if (!((GraphDataSet*)p_children.back().get())->hasKey() && m_hasKey)
+		{
+			//If the graph should have a key and doesn't yet add it now
+			GraphKey key(m_screenSize, { location.x + 2.0f * size.x / 5.0f, location.y - 2.0f * size.y / 5.0f }, { size.x / 5.0f, size.y / 5.0f });
+			((GraphDataSet*)p_children.back().get())->addKey(key);
+		}
+		
 		((GraphDataSet*)p_children.back().get())->addGraphData(newData);
 	}
 }
@@ -328,12 +328,13 @@ uint32_t Graph::update(InputState* inputState)
 		//centers as their point of origin we need to update the absolute size and 
 		//location of the zoom box as the mouse moves to reflect this.
 
-		//Convert the current mouse location into absolute units and figure out 
-		//what quadrant it's in relative to the boxes origin
-
-		DirectX::XMFLOAT2 opposite_corner = { inputState->mousePosition.x / m_screenSize->Width, inputState->mousePosition.y / m_screenSize->Height };
-		auto graph_size = getAbsoluteSize();
-		auto graph_location = getAbsoluteLocation();
+		//The zoom box is drawn using absolute coordinates while the graph is drawn
+		//using relative coordinates. It can get a little confusing trying to do math
+		//between these two coordinate frames, so instead convert everything into pure
+		//pixels to make calculations easier.
+		DirectX::XMFLOAT2 opposite_corner_pixels = { inputState->mousePosition.x, inputState->mousePosition.y };
+		auto graph_size = getPixelSize();
+		auto graph_location = getPixelLocation();
 
 		//If the user drags the box outside the boundary of the graph, force the box
 		//to stay within the boundary
@@ -346,14 +347,14 @@ uint32_t Graph::update(InputState* inputState)
 		DirectX::XMFLOAT2 new_origin = { (opposite_corner.x + m_zoomBoxOrigin.x) / 2.0f, (opposite_corner.y + m_zoomBoxOrigin.y) / 2.0f };
 		DirectX::XMFLOAT2 new_size = { opposite_corner.x - m_zoomBoxOrigin.x, opposite_corner.y - m_zoomBoxOrigin.y };*/
 
-		if (opposite_corner.x < graph_location.x - graph_size.x / 2.0f) opposite_corner.x = graph_location.x - graph_size.x / 2.0f;
-		else if (opposite_corner.x > graph_location.x + graph_size.x / 2.0f) opposite_corner.x = graph_location.x + graph_size.x / 2.0f;
+		if (opposite_corner_pixels.x < graph_location.x - graph_size.x / 2.0f) opposite_corner_pixels.x = graph_location.x - graph_size.x / 2.0f;
+		else if (opposite_corner_pixels.x > graph_location.x + graph_size.x / 2.0f) opposite_corner_pixels.x = graph_location.x + graph_size.x / 2.0f;
 
-		if (opposite_corner.y < graph_location.y - graph_size.y / 2.0f) opposite_corner.y = graph_location.y - graph_size.y / 2.0f;
-		else if (opposite_corner.y > graph_location.y + graph_size.y / 2.0f) opposite_corner.y = graph_location.y + graph_size.y / 2.0f;
+		if (opposite_corner_pixels.y < graph_location.y - graph_size.y / 2.0f) opposite_corner_pixels.y = graph_location.y - graph_size.y / 2.0f;
+		else if (opposite_corner_pixels.y > graph_location.y + graph_size.y / 2.0f) opposite_corner_pixels.y = graph_location.y + graph_size.y / 2.0f;
 
-		DirectX::XMFLOAT2 new_origin = { (opposite_corner.x + m_zoomBoxOrigin.x) / 2.0f, (opposite_corner.y + m_zoomBoxOrigin.y) / 2.0f };
-		DirectX::XMFLOAT2 new_size = { opposite_corner.x - m_zoomBoxOrigin.x, opposite_corner.y - m_zoomBoxOrigin.y };
+		DirectX::XMFLOAT2 new_origin = { (opposite_corner_pixels.x + m_zoomBoxOrigin.x * m_screenSize->Width) / 2.0f, (opposite_corner_pixels.y + m_zoomBoxOrigin.y * m_screenSize->Height) / 2.0f };
+		DirectX::XMFLOAT2 new_size = { opposite_corner_pixels.x - m_zoomBoxOrigin.x * m_screenSize->Width, opposite_corner_pixels.y - m_zoomBoxOrigin.y * m_screenSize->Height };
 
 		if (new_size.x < 0) new_size.x *= -1;
 		if (new_size.y < 0) new_size.y *= -1;
@@ -361,8 +362,8 @@ uint32_t Graph::update(InputState* inputState)
 		//The Zoom box can't be drawn until there's data in the graph so it will be 
 		//the last child element.
 		Box* zoom_box = ((Box*)p_children.back().get());
-		zoom_box->setAbsoluteLocation(new_origin);
-		zoom_box->setAbsoluteSize(new_size);
+		zoom_box->setAbsoluteLocation({ new_origin.x / m_screenSize->Width, new_origin.y / m_screenSize->Height });
+		zoom_box->setAbsoluteSize({ new_size.x / m_screenSize->Width, new_size.y / m_screenSize->Height });
 		zoom_box->resize(); //convert the new absoulte units into actual pixels
 	}
 
@@ -391,9 +392,11 @@ void Graph::onMouseRelease()
 	if (!m_zoomBoxActive) return;
 
 	//Calculate the new max and min data points of the zoomed in section. This is done
-	//by comparing the absoulte value of the zoom box with that of the entire graph 
+	//by comparing the pixel value of the zoom box with that of the entire graph 
 	//and knowing that all minimal points are mapped to the edges of the graph.
 	Box* zoom_box = ((Box*)p_children.back().get());
+
+	DirectX::XMFLOAT2 maximalPixelPoint = { m_maximalAbsolutePoint.x * m_screenSize->Width, m_maximalAbsolutePoint.y * m_screenSize->Height };
 
 	DirectX::XMFLOAT2 absoluteDifference = { m_maximalAbsolutePoint.x - m_minimalAbsolutePoint.x, m_maximalAbsolutePoint.y - m_minimalAbsolutePoint.y };
 	DirectX::XMFLOAT2 difference = { m_maximalDataPoint.x - m_minimalDataPoint.x, m_maximalDataPoint.y - m_minimalDataPoint.y };
@@ -408,16 +411,27 @@ void Graph::onMouseRelease()
 	p_children.back() = nullptr;
 	p_children.pop_back();
 
+	auto location = getAbsoluteLocation();
+	auto size = getAbsoluteSize();
+
 	//Create the new GraphDataSet UIElement
 	DirectX::XMFLOAT2 new_minimal_points = { new_x_data_min, new_y_data_min };
 	DirectX::XMFLOAT2 new_maximal_points = { new_x_data_max, new_y_data_max };
-	GraphDataSet zoomed_in_data_set(m_screenSize, getAbsoluteLocation(), getAbsoluteSize(), new_minimal_points, new_maximal_points);
+	GraphDataSet zoomed_in_data_set(m_screenSize, location, size, new_minimal_points, new_maximal_points);
 
 	//Add the same number of grid lines to the zoomed in view that the 
 	//current view has
 	int vertical_grid_lines = ((GraphDataSet*)p_children.back().get())->getVerticalGridLines();
 	int horizontal_grid_lines = ((GraphDataSet*)p_children.back().get())->getHorizontalGridLines();
 	zoomed_in_data_set.addGridLines(vertical_grid_lines, horizontal_grid_lines, m_maximalAbsolutePoint, m_minimalAbsolutePoint);
+
+	if (m_hasKey)
+	{
+		//If the graph has a key, then the zoomed in data set should
+		//also get a key
+		GraphKey key(m_screenSize, { location.x + 2.0f * size.x / 5.0f, location.y - 2.0f * size.y / 5.0f }, { size.x / 5.0f, size.y / 5.0f });
+		zoomed_in_data_set.addKey(key);
+	}
 
 	//Now iterate through all the child lines and points of the current data set
 	//and create new lines and points for the new zoomed in data set. All the existing data
@@ -435,7 +449,11 @@ void Graph::onMouseRelease()
 		GraphData* data = dynamic_cast<GraphData*>(data_set_children[i].get());
 		if (data != nullptr)
 		{
-			GraphData zoomed_in_data(m_screenSize, getAbsoluteLocation(), getAbsoluteSize()); //create a new GraphData object
+			//If the current graph data has been set to invisible via the interactive key then 
+			//don't bother putting into the zoomed in view
+			if (data->getState() & UIElementState::Invisible) continue;
+
+			GraphData zoomed_in_data(m_screenSize, location, size, data->getName()); //create a new GraphData object
 			auto existing_data = data->getChildren();
 
 			for (int j = 0; j < existing_data.size(); j++)
@@ -446,7 +464,8 @@ void Graph::onMouseRelease()
 					//We're dealing with a line child element. Convert its two points from absolute
 					//coordinates to data coordinates to see if the whole line, part of the line,
 					//or none of the line will appear on the zoomed in graph
-					auto absolute_points = line->getPointsAbsolute();
+					//auto absolute_points = line->getPointsAbsolute();
+					auto absolute_points = line->getPointsRelative();
 
 					//Convert the two absolute points of the line to their original data values
 					DirectX::XMFLOAT2 dataPointOne = { (absolute_points.first.x - m_minimalAbsolutePoint.x) * originalDifference.x / absoluteDifference.x + m_minimalDataPoint.x, (m_maximalAbsolutePoint.y - absolute_points.first.y) * originalDifference.y / absoluteDifference.y + m_minimalDataPoint.y };
@@ -519,7 +538,7 @@ void Graph::onMouseRelease()
 	//be displayed. We also update the m_minimal and m_maximal values for the graph
 	//element. If no actual data points were selected by the zoom box then simply
 	//return from this method without changing anything
-	if (zoomed_in_data_set.getChildren().size() == (2 * (vertical_grid_lines + horizontal_grid_lines))) return;
+	if (zoomed_in_data_set.getChildren().size() == (2 * (vertical_grid_lines + horizontal_grid_lines) + (int)m_hasKey)) return;
 
 	p_children.back()->setState(UIElementState::Invisible); //make the current data set invisible to reduce lines needing rendering
 	p_children.push_back(std::make_shared<GraphDataSet>(zoomed_in_data_set));

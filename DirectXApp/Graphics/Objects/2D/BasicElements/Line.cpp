@@ -36,3 +36,26 @@ std::pair<DirectX::XMFLOAT2, DirectX::XMFLOAT2> Line::getPointsAbsolute()
 	auto size = getAbsoluteSize();
 	return { {location.x - size.x / 2.0f, location.y - size.y / 2.0f}, {location.x + size.x / 2.0f, location.y + size.y / 2.0f} };
 }
+
+std::pair<DirectX::XMFLOAT2, DirectX::XMFLOAT2> Line::getPointsRelative()
+{
+	//NOTE: I've been using the terms "Relative" and "Absolute" in a pretty cavalier way.
+	//I've swapped them at times, and at other times just plain used the terms incorrectly.
+	//With that said, what this method does is give the absolute points of the line. The 
+	//getPointsAbsolute() method above is really giving the relative coordinates. I'll
+	//definitely need to go through all of the UI Elements at some point and clean all of 
+	//these references up, but for now I'm burnt out on working on UI stuff so I'll do this
+	//at some point in the future.
+
+	//Take the pixel coordinates for the line and divide them by the current screen size to
+	//get the true absolute coordinates
+	auto location = getPixelLocation();
+	auto size = getPixelSize();
+
+	location.x /= m_screenSize->Width;
+	location.y /= m_screenSize->Height;
+	size.x /= m_screenSize->Width;
+	size.y /= m_screenSize->Height;
+
+	return { {location.x - size.x / 2.0f, location.y - size.y / 2.0f}, {location.x + size.x / 2.0f, location.y + size.y / 2.0f} };
+}

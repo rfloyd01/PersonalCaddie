@@ -3,6 +3,7 @@
 #include "Graphics/Objects/2D/BasicElements/Line.h"
 #include "Graphics/Objects/2D/BasicElements/Ellipse.h"
 #include "GraphData.h"
+#include "GraphKey.h"
 
 //This class represents multiple points of data that are to 
 //be rendered on a graph. These points can be connected by
@@ -22,7 +23,11 @@ public:
 	int getVerticalGridLines() { return m_vertical_grid_lines; }
 	int getHorizontalGridLines() { return m_horizontal_grid_lines; }
 
-	void addGraphData(GraphData const& data) { p_children.push_back(std::make_shared<GraphData>(data)); }
+	uint32_t update(InputState* inputState) override;
+
+	void addGraphData(GraphData const& data);
+	void addKey(GraphKey const& key);
+	bool hasKey() { return m_hasKey; }
 
 	DirectX::XMFLOAT2 getMinimalDataPoint() { return m_minimalDataPoint; }
 	DirectX::XMFLOAT2 getMaximalDataPoint() { return m_maximalDataPoint; }
@@ -33,4 +38,6 @@ private:
 
 	void addLine(Line const& l) { p_children.push_back(std::make_shared<Line>(l)); }
 	void addEllipse(Ellipse const& e) { p_children.push_back(std::make_shared<Ellipse>(e)); }
+
+	bool m_hasKey = false; //if a key gets added for the data set this boolean is changed to true
 };

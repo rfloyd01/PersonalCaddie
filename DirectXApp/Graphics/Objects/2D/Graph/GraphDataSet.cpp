@@ -15,7 +15,6 @@ GraphDataSet::GraphDataSet(std::shared_ptr<winrt::Windows::Foundation::Size> win
 	m_horizontal_grid_lines = 0;
 
 	m_state &= ~UIElementState::Dummy; //elements created without the default constructor have the dummy flag removed
-	m_state |= UIElementState::Idlee; //Graph Data can't be interacted with, setting this flag will skip the update loop for the data set and all children
 }
 
 void GraphDataSet::addGridLines(int vertical_grid_lines, int horizontal_grid_lines, DirectX::XMFLOAT2 absoluteGraphMaximums, DirectX::XMFLOAT2 absoluteGraphMinimums)
@@ -56,5 +55,71 @@ void GraphDataSet::addGridLines(int vertical_grid_lines, int horizontal_grid_lin
 
 		p_children.push_back(std::make_shared<Line>(grid_line));
 		p_children.push_back(std::make_shared<TextBox>(line_label));
+	}
+}
+
+uint32_t GraphDataSet::update(InputState* inputState)
+{
+	//At the end of the standard update, we check to see if any check boxes inside
+	//of the key of the data set have been clicked. If so, toggle the visibility of 
+	//the appropriate graph data.
+	uint32_t currentState = UIElement::update(inputState);
+
+	if (m_hasKey)
+	{
+		auto keyChildren = p_children.back()->getChildren();
+		int graph_data_number = 0;
+		for (int i = 0; i < keyChildren.size(); i++)
+		{
+			auto check_box = dynamic_cast<CheckBox*>(keyChildren[i].get());
+			if (check_box != nullptr)
+			{
+				//For each check box, check the physical Graph Data object to 
+				//see if the visibility matches what the check box implies. Since
+				//data is added in order, there's no need to do this via a loop.
+				std::wstring data_name = keyChildren[i - 1]->getText()->message;
+				auto graph_data = p_children[2 * (m_vertical_grid_lines + m_horizontal_grid_lines) + graph_data_number];
+
+				if (check_box->isChecked() && (graph_data->getState() & UIElementState::Invisible))
+				{
+					//The check box was just checked so make the graph data visible
+					graph_data->removeState(UIElementState::Invisible);
+				}
+				else if (!check_box->isChecked() && !(graph_data->getState() & UIElementState::Invisible))
+				{
+					//The check box was just un-checked so make the graph data invisible
+					graph_data->updateState(UIElementState::Invisible);
+				}
+
+				graph_data_number++; //iterate to the next graph data child
+			}
+		}
+	}
+
+	return currentState;
+}
+
+void GraphDataSet::addGraphData(GraphData const& data)
+{
+	if (m_hasKey)
+	{
+		//If the graph data set has a key then add this new line
+		//to it. The key should be the last child element in the
+		//array so this new graph data is added just in front of
+		//the key
+		((GraphKey*)p_children.back().get())->addGraphData(data);
+		p_children.insert(p_children.end() - 1, std::make_shared<GraphData>(data));
+	}
+	else p_children.push_back(std::make_shared<GraphData>(data));
+}
+
+void GraphDataSet::addKey(GraphKey const& key)
+{
+	//A graph data set can only have 1 key, so make sure it doesn't have one 
+	//already before adding
+	if (!m_hasKey)
+	{
+		p_children.push_back(std::make_shared<GraphKey>(key));
+		m_hasKey = true;
 	}
 }
