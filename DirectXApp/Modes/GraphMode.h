@@ -27,12 +27,16 @@ private:
 
 	void loadModel();
 
+	void resetData();
+	bool dataTypeSelected(DataType t);
+
 	//Handler Methods
 	virtual void uiElementStateChangeHandler(std::shared_ptr<ManagedUIElement> element) override;
 
 	std::chrono::steady_clock::time_point data_collection_start, data_receieved;
 	bool m_recording;
-	DataType m_currentDataType;
+	DataType m_currentDataType; //deprecated
+	uint32_t m_selectedDataTypes;
 
 	//Variables for detecting Madgwick filter convergence
 	bool m_converged = true;
@@ -48,7 +52,8 @@ private:
 	std::vector<float> m_timeStamps;
 	int computer_axis_from_sensor_axis[3] = { 1, 2, 0 }; //Array used to swap real world coordinates to DirectX coordinates
 
-	std::vector<DirectX::XMFLOAT2> m_graphDataX, m_graphDataY, m_graphDataZ;
+	std::vector<DirectX::XMFLOAT2> m_graphDataX, m_graphDataY, m_graphDataZ; //deprecated
+	std::vector<std::vector<std::vector<DirectX::XMFLOAT2> > > m_graphData = {}; //Holds data from the sensor for all possible data types
 	DirectX::XMFLOAT2 m_minimalPoint, m_maximalPoint; //used for scaling of the graph
 	int m_dataPoints = 1000;
 	int m_sinePeaks = 1;

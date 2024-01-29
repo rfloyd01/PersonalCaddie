@@ -41,6 +41,8 @@ BLE::BLE(std::function<void(BLEState)> function)
     //Set the onConnected() event handler from the Personal Caddie class
     this->state_change_handler = function;
     maintain_connection = false; //This gets set to true when we actually connect to a device
+    m_device_initialized = false;
+    m_is_connected = false;
 }
 
 IAsyncOperation<BluetoothLEDevice> BLE::connectToDevice(uint64_t deviceAddress)
@@ -84,8 +86,9 @@ void BLE::stopBLEAdvertisementWatcher()
 
 bool BLE::isConnected()
 {
-    if (bleDeviceInitialized()) return (this->m_bleDevice.ConnectionStatus() == BluetoothConnectionStatus::Connected);
-    else return false;
+    /*if (bleDeviceInitialized()) return (this->m_bleDevice.ConnectionStatus() == BluetoothConnectionStatus::Connected);
+    else return false;*/
+    return m_is_connected;
 }
 
 bool BLE::isDeviceWatcherOn()
@@ -119,12 +122,12 @@ std::wstring BLE::formatBluetoothAddress(unsigned long long BluetoothAddress)
 bool BLE::bleDeviceInitialized()
 {
     //this method checks to see if m_bleDevice has been changed from a NULL value
-    return (m_bleDevice.as<winrt::Windows::Foundation::IUnknown>() != nullptr);
+    return m_device_initialized;
 }
 
 void BLE::deviceFoundHandler(IAsyncOperation<BluetoothLEDevice> const& sender, AsyncStatus const asyncStatus)
 {
-    //This device gets called when we've successfully created a Windows::Bluetooth::BluetoothLEDevice
+    //This method gets called when we've successfully created a Windows::Bluetooth::BluetoothLEDevice
     m_bleDevice = sender.get(); //nothing gets blocked as the async operation is complete
 
     //check to see if the device was actually found
@@ -134,6 +137,9 @@ void BLE::deviceFoundHandler(IAsyncOperation<BluetoothLEDevice> const& sender, A
     }
     else
     {
+        //Since the m_bleDevice is no longer a null pointer, update the m_device initialized bool
+        m_device_initialized = true;
+
         //set a handler for when the connection status of the device changes.
         m_bleDevice.ConnectionStatusChanged(winrt::Windows::Foundation::TypedEventHandler<BluetoothLEDevice, winrt::Windows::Foundation::IInspectable>(
             [this](BluetoothLEDevice device, winrt::Windows::Foundation::IInspectable eventArgs)
@@ -143,6 +149,7 @@ void BLE::deviceFoundHandler(IAsyncOperation<BluetoothLEDevice> const& sender, A
                 if (device.ConnectionStatus() == Bluetooth::BluetoothConnectionStatus::Connected)
                 {
                     maintain_connection = true; //this will change to false when we manually disconnect from the device
+                    m_is_connected = true;
                     state_change_handler(BLEState::Connected);
 
                     //After making the connection, confirm that the max MTU size is correct (should be 180 bytes)
@@ -162,6 +169,9 @@ void BLE::deviceFoundHandler(IAsyncOperation<BluetoothLEDevice> const& sender, A
                 }
                 else
                 {
+                    //Connection has been lost
+                    m_is_connected = false;
+
                     if (maintain_connection)
                     {
                         //If the maintain_connection boolean is set to true,
@@ -188,6 +198,7 @@ void BLE::terminateConnection()
         maintain_connection = false; //let the BLE connection handler know that this disonnect was on purpose
         m_bleDevice.Close();
         m_bleDevice = nullptr;
+        m_device_initialized = false;
         state_change_handler(BLEState::Disconnect);
     }
 }

@@ -41,7 +41,8 @@ enum class DataType
 	LINEAR_ACCELERATION,
 	VELOCITY,
 	LOCATION,
-	EULER_ANGLES
+	EULER_ANGLES,
+	END
 };
 
 enum class PersonalCaddieEventType

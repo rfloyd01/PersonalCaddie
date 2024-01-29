@@ -25,19 +25,8 @@ PersonalCaddie::PersonalCaddie(std::function<void(PersonalCaddieEventType, void*
 
     //After creating the BLE device, attempt to connect to the most recently paired
     //device. The 64-bit address of the most recently paired device is saved to a 
-    //text file in the resources folder
-    std::ifstream addressFile("../last_connected_device.txt");
-    std::string addressString;
-    uint64_t deviceAddress = 0;
-    if (!addressFile.is_open())
-    {
-        std::getline(addressFile, addressString);
-        if (addressString != "") deviceAddress = std::stoull(addressString);
-        addressFile.close();
-    }
-    else OutputDebugString(L"Couldn't open file with previously connected Personal Caddie address.\n");
-
-    automaticallyConnect(); //attempt to connect to the most recently connected device
+    //local text file
+    automaticallyConnect();
 
     //Set the IMU and characteristic pointers to null, we need to connect to a physical 
     //device before these can be populated
@@ -186,15 +175,29 @@ void PersonalCaddie::BLEDeviceHandler(BLEState state)
         //properly getting rid of the resources, so the next time I start the program the old resources are 
         //maybe still in memory but outdated, so I'm able to access them even though I shouldn't be? This 
         //crash is definitely annoying and I should address it.
-        m_services = this->p_ble->getBLEDevice()->GetGattServicesAsync(BluetoothCacheMode::Uncached).get().Services();
+        auto get_services = this->p_ble->getBLEDevice()->GetGattServicesAsync(BluetoothCacheMode::Uncached);
 
-        //m_services = this->p_ble->getBLEDevice()->GetGattServicesAsync().get().Services();
-        if (m_services.Size() == 0)
-        {
-            message = L"Couldn't connect to the Personal Caddie. Go to the settings menu to manually connect.\n";
-            event_handler(PersonalCaddieEventType::BLE_ALERT, (void*)&message);
-            return;
-        }
+        //TODO: The above method doesn't appear to be running asynchronously. If it was then we should be able
+        //to proceed directly to the break statement below, however, that doesn't happen. The debugger gets
+        //stuck on the above line until the service object is created. Why would this be the case? Other Async
+        //methods don't work this way.
+        get_services.Completed([this](
+            IAsyncOperation<winrt::Windows::Devices::Bluetooth::GenericAttributeProfile::GattDeviceServicesResult> const& sender,
+            AsyncStatus const asyncStatus)
+            {
+                if (asyncStatus != AsyncStatus::Error)
+                {
+                    //Save the returned GattServices object
+                    m_services = sender.GetResults().Services();
+
+                    if (m_services.Size() == 0)
+                    {
+                        std::wstring failure_message = L"Couldn't connect to the Personal Caddie. Go to the settings menu to manually connect.\n";
+                        event_handler(PersonalCaddieEventType::BLE_ALERT, (void*)&failure_message);
+                        return;
+                    }
+                }
+            });
 
         //Successfully reading the Gatt services should initiate a connection with the ble device. If it does then 
         //the connectec block of this handler will execute.

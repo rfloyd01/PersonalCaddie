@@ -21,11 +21,24 @@ uint32_t GraphMode::initializeMode(winrt::Windows::Foundation::Size windowSize, 
 	std::wstring options = L"Acceleration\nAngular Velocity\nMagnetic Field\nRaw Acceleration\nRaw Angular Velocity\nRaw Magnetic Field\nLinear Acceleration";
 	DropDownMenu dataSelection(m_uiManager.getScreenSize(), { 0.9, 0.2 }, { 0.2, 0.1 }, options, 0.25, 5, false);
 
-	Graph graph(m_uiManager.getScreenSize(), { 0.5, 0.65 }, { 0.9, 0.6 });
+	Graph graph(m_uiManager.getScreenSize(), { 0.5, 0.65 }, { 0.9, 0.6 }, true, UIColor::White, UIColor::Black, false, true, true);
 
 	m_uiManager.addElement<TextButton>(recordButton, L"Record Button");
-	m_uiManager.addElement<DropDownMenu>(dataSelection, L"Data Dropdown Menu");
+	//m_uiManager.addElement<DropDownMenu>(dataSelection, L"Data Dropdown Menu");
 	m_uiManager.addElement<Graph>(graph, L"Graph");
+
+	//NEW: Use Check boxes for selecting data type instead of a drop down which
+	//will allow multiple data types to be plotted at the samme time.
+	float square_ratio = MAX_SCREEN_HEIGHT / MAX_SCREEN_WIDTH;
+	CheckBox accelerationCheckBox(m_uiManager.getScreenSize(), { 0.8f, 0.2f }, { square_ratio * 0.025f, 0.025f }, true);
+	CheckBox angularVelocityCheckBox(m_uiManager.getScreenSize(), { 0.8f, 0.235f }, { square_ratio * 0.025f, 0.025f });
+	TextOverlay accelerationBoxLabel(m_uiManager.getScreenSize(), { 0.735f, 0.2f }, { square_ratio * 0.195f, 0.025 }, L"Acceleration", 0.85f, { UIColor::White }, { 0, 12 }, UITextJustification::CenterRight, false);
+	TextOverlay angularVelocityBoxLabel(m_uiManager.getScreenSize(), { 0.735f, 0.235f }, { square_ratio * 0.195f, 0.025 }, L"Angular Velocity", 0.85f, { UIColor::White }, { 0, 12 }, UITextJustification::CenterRight, false);
+
+	m_uiManager.addElement<CheckBox>(accelerationCheckBox, L"Check Box 1");
+	m_uiManager.addElement<TextOverlay>(accelerationBoxLabel, L"Label 1");
+	m_uiManager.addElement<CheckBox>(angularVelocityCheckBox, L"Check Box 2");
+	m_uiManager.addElement<TextOverlay>(angularVelocityBoxLabel, L"Label 2");
 
 	//Initialize all overlay text
 	initializeTextOverlay();
@@ -50,6 +63,9 @@ uint32_t GraphMode::initializeMode(winrt::Windows::Foundation::Size windowSize, 
 	m_state = 0;
 	m_recording = false;
 	m_currentDataType = DataType::ACCELERATION; //Default to graphing acceleration data
+	m_selectedDataTypes = 1; //represents acceleration data only
+
+	resetData(); //make sure the graphData vector has no data in it
 
 	//For this mode we immediately put the Personal Caddie into Sensor Idle mode
 	auto mode = PersonalCaddiePowerMode::SENSOR_IDLE_MODE;
@@ -85,6 +101,7 @@ void GraphMode::uninitializeMode()
 	//Put the sensor back into connected mode before exiting
 	auto mode = PersonalCaddiePowerMode::CONNECTED_MODE;
 	m_mode_screen_handler(ModeAction::PersonalCaddieChangeMode, (void*)&mode);//request the Personal Caddie to be placed into active mode to start recording data
+	m_graphData.clear(); //clear out any recorded data
 }
 
 void GraphMode::initializeTextOverlay()
@@ -178,12 +195,14 @@ void GraphMode::uiElementStateChangeHandler(std::shared_ptr<ManagedUIElement> el
 			m_graphDataX.clear();
 			m_graphDataY.clear();
 			m_graphDataZ.clear();
+			
+			resetData();
 
 			m_graphDataX.push_back({ 0, 0 });
 			m_graphDataY.push_back({ 0, 0 });
 			m_graphDataZ.push_back({ 0, 0 });
 
-			//rest the local minimums and maximums. Use values that are just about guaranteed
+			//reset the local minimums and maximums. Use values that are just about guaranteed
 			//to be overwritten.
 			m_minimalPoint = { 5000.0f, 5000.0f }; //max reading should be from gyroscope at +/-2000 dps
 			m_maximalPoint = { -5000.0f, -5000.0f };
@@ -197,7 +216,7 @@ void GraphMode::uiElementStateChangeHandler(std::shared_ptr<ManagedUIElement> el
 			//If one of these data types is selected set the m_converge variable to false, manually change the 
 			//value of the Madgwick filter's beta value, and alert the Personal Caddie to start calculating the 
 			//specific data type
-			if (static_cast<int>(m_currentDataType) > 5)
+			if (static_cast<int>(m_currentDataType) > 5 || (m_selectedDataTypes >= (1 << static_cast<int>(DataType::LINEAR_ACCELERATION)))) //TODO: remove first part of OR when ready
 			{
 				m_mode_screen_handler(ModeAction::PersonalCaddieToggleCalculatedData, (void*)&m_currentDataType); //Turn on calculations for the extrapolated data type
 				
@@ -209,7 +228,7 @@ void GraphMode::uiElementStateChangeHandler(std::shared_ptr<ManagedUIElement> el
 
 			//DEBUG: If We're currently gathering linear acceleration data, render an image of the sensor with 
 			//quaternions from the Personal Caddie to confirm that convergence has happened
-			if (m_currentDataType == DataType::LINEAR_ACCELERATION) m_needsCamera = true;
+			if (m_currentDataType == DataType::LINEAR_ACCELERATION || (m_selectedDataTypes & (1 << static_cast<int>(DataType::LINEAR_ACCELERATION)))) m_needsCamera = true; //TODO: same as above todo
 		}
 		else
 		{
@@ -244,9 +263,11 @@ void GraphMode::uiElementStateChangeHandler(std::shared_ptr<ManagedUIElement> el
 				//set the min and max data values for the graph
 				m_uiManager.getElement<Graph>(L"Graph")->setAxisMaxAndMins({ m_graphDataX[0].x,  m_minimalPoint.y }, { m_graphDataX.back().x, m_maximalPoint.y });
 
-				m_uiManager.getElement<Graph>(L"Graph")->addGraphData(m_graphDataX, UIColor::Red);
-				m_uiManager.getElement<Graph>(L"Graph")->addGraphData(m_graphDataY, UIColor::Blue);
-				m_uiManager.getElement<Graph>(L"Graph")->addGraphData(m_graphDataZ, UIColor::Green);
+				std::wstring data_type_text = m_uiManager.getElement<DropDownMenu>(L"Data Dropdown Menu")->getSelectedOption();
+
+				m_uiManager.getElement<Graph>(L"Graph")->addGraphData(m_graphDataX, UIColor::Red, data_type_text + L".x");
+				m_uiManager.getElement<Graph>(L"Graph")->addGraphData(m_graphDataY, UIColor::Blue, data_type_text + L".y");
+				m_uiManager.getElement<Graph>(L"Graph")->addGraphData(m_graphDataZ, UIColor::Green, data_type_text + L".z");
 
 				//add a few axis lines to the graph
 				float centerLineLocation = (m_minimalPoint.y + m_maximalPoint.y) / 2.0f; //The average of the highest and lowest data point
@@ -255,7 +276,7 @@ void GraphMode::uiElementStateChangeHandler(std::shared_ptr<ManagedUIElement> el
 			}
 
 			//DEBUG: If We're currently gathering linear acceleration data, stop rendering image of the sensor
-			if (m_currentDataType == DataType::LINEAR_ACCELERATION) m_needsCamera = false;
+			if (m_currentDataType == DataType::LINEAR_ACCELERATION || (m_selectedDataTypes & (1 << static_cast<int>(DataType::LINEAR_ACCELERATION)))) m_needsCamera = false; //TODO: remove first part of OR when ready
 		}
 	}
 	else if (element->name == L"Data Dropdown Menu")
@@ -268,7 +289,33 @@ void GraphMode::uiElementStateChangeHandler(std::shared_ptr<ManagedUIElement> el
 			std::wstring dataType = m_uiManager.getElement<DropDownMenu>(L"Data Dropdown Menu")->getSelectedOption();
 			m_currentDataType = getCurrentlySelectedDataType(dataType);
 		}
-	}
+	} 
+	else if (element->name.find(L"Check Box") != std::string::npos)
+	{
+	    //One of the data type check boxes was selected. If the box is unchecked then remove the appropriate
+		//flag from the m_selectedDataTypes varaible, otherwise add the flag
+		int dataType = (int)(element->name[element->name.length() - 1] - L'1');
+		if (((CheckBox*)element->element.get())->isChecked()) m_selectedDataTypes |= ((1 << static_cast<int>(dataType)));
+		else m_selectedDataTypes &= ~((1 << static_cast<int>(dataType)));
+
+		std::wstring debug = std::to_wstring(m_selectedDataTypes) + L"\n";
+		OutputDebugString(&debug[0]);
+    }
+}
+
+void GraphMode::resetData()
+{
+	//This method simply clears out any data accumlated in the graphData structure and recreates
+	//empty arrays for all of the data types.
+	m_graphData.clear();
+	for (int i = 0; i < static_cast<int>(DataType::END); i++) m_graphData.push_back({});
+}
+
+bool GraphMode::dataTypeSelected(DataType t)
+{
+	//returns true if the given data type is currently set as a flag in the m_selectedDataTypes varaible
+	uint32_t flag = (1 << static_cast<int>(t));
+	return (m_selectedDataTypes & flag);
 }
 
 void GraphMode::addData(std::vector<std::vector<std::vector<float> > > const& sensorData, float sensorODR, float timeStamp, int totalSamples)
@@ -276,7 +323,7 @@ void GraphMode::addData(std::vector<std::vector<std::vector<float> > > const& se
 	//If we're currently recording data, then every time a new set of data is ready this method will
 	//get called and add the selected data to the data set for each axis.
 	if (!m_recording) return; //only add data if we're actually recording
-	if (!m_converged) return; //if the current data type needs to Madgwick filter to converge first don't record data yet
+	if (!m_converged) return; //if the current data type needs the Madgwick filter to converge first don't record data yet
 
 	m_update_in_process = true; //prevent access to data vectors while update is occuring
 

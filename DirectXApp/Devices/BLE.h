@@ -70,6 +70,8 @@ private:
 
 	bool auto_connect;
 	bool maintain_connection;
+	volatile bool m_device_initialized;
+	volatile bool m_is_connected;
 	
 	winrt::event_token connected_event_token;
 
