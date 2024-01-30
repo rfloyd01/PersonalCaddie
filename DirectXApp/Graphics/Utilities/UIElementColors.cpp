@@ -10,6 +10,12 @@ UIElementColors::UIElementColors()
 	colors.insert({ UIColor::Blue, {0.0f, 0.0f, 1.0f, 1.0f} });
 	colors.insert({ UIColor::LightBlue, {0.002f, 0.894f, 0.655f, 1.0f} });
 	colors.insert({ UIColor::Yellow, {1.0f, 0.788f, 0.055f, 1.0f} });
+	colors.insert({ UIColor::Magenta, {0.749f, 0.0f, 0.114f, 1.0f} });
+	colors.insert({ UIColor::Cyan, {0.0f, 0.835f, 0.835f, 1.0f} });
+	colors.insert({ UIColor::Orange, {1.0f, 0.502f, 0.0f, 1.0f} });
+	colors.insert({ UIColor::Purple, {0.0f, 0.502f, 1.0f, 1.0f} });
+	colors.insert({ UIColor::Mint, {0.0f, 1.0f, 0.502f, 1.0f} });
+	colors.insert({ UIColor::Pink, {1.0f, 0.0f, 0.502f, 1.0f} });
 	colors.insert({ UIColor::PaleGray, {0.75f, 0.75f, 0.75f, 1.0f} });
 	colors.insert({ UIColor::Gray, {0.5f, 0.5f, 0.5f, 1.0f} });
 	colors.insert({ UIColor::DarkGray, {0.25f, 0.25f, 0.25f, 1.0f} });

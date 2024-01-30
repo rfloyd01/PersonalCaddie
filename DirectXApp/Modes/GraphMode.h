@@ -24,18 +24,20 @@ private:
 	DataType getCurrentlySelectedDataType(std::wstring dropDownSelection);
 	float testIntegrateData(float p1, float p2, float t);
 	void convergenceCheck();
+	void toggleCalculatedDataTypes();
 
 	void loadModel();
 
 	void resetData();
 	bool dataTypeSelected(DataType t);
+	std::wstring getDataTypeText(DataType t);
 
 	//Handler Methods
 	virtual void uiElementStateChangeHandler(std::shared_ptr<ManagedUIElement> element) override;
 
 	std::chrono::steady_clock::time_point data_collection_start, data_receieved;
 	bool m_recording;
-	DataType m_currentDataType; //deprecated
+	//DataType m_currentDataType; //deprecated
 	uint32_t m_selectedDataTypes;
 
 	//Variables for detecting Madgwick filter convergence
@@ -54,7 +56,10 @@ private:
 
 	std::vector<DirectX::XMFLOAT2> m_graphDataX, m_graphDataY, m_graphDataZ; //deprecated
 	std::vector<std::vector<std::vector<DirectX::XMFLOAT2> > > m_graphData = {}; //Holds data from the sensor for all possible data types
+	//std::vector<std::vector<std::pair<float, float> > > m_graphDataExtremes = {}; //Holds the min/max values for each axes of each data type being recorded
 	DirectX::XMFLOAT2 m_minimalPoint, m_maximalPoint; //used for scaling of the graph
-	int m_dataPoints = 1000;
-	int m_sinePeaks = 1;
+	std::vector<UIColor> m_lineColors; //holds multiple colors to be graphed
+	int m_currentLineColor; //used to select a graph line color from the above vector
+	//int m_dataPoints = 1000;
+	//int m_sinePeaks = 1;
 };
