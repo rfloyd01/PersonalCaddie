@@ -187,14 +187,6 @@ void Graph::addLine(DirectX::XMFLOAT2 point1, DirectX::XMFLOAT2 point2)
 	//Create a line from the given data points and add it to the cild array. Before creating the line we need
 	//to first see if the graph has the square parameter and change the points accordingly. Lines created by this method
 	//persist through different zoom levels which may appear somewhat unexpected.
-
-	/*float squareGraphCorrection = 0.0f;
-	auto childBox = ((OutlinedBox*)p_children[0].get());
-	if (childBox->isSquare()) squareGraphCorrection = childBox->fixSquareBoxDrift();
-
-	point1.x += squareGraphCorrection;
-	point2.x += squareGraphCorrection;*/
-
 	Line dataLine(m_screenSize, point1, point2);
 	addUIElementBeforeData(std::make_shared<Line>(dataLine)); //safely add the new line to the child array
 }
@@ -218,20 +210,6 @@ void Graph::addAxisLine(int axis, float location)
 	//persist through different zoom levels which may appear somewhat unexpected.
 	DirectX::XMFLOAT2 difference = { m_maximalDataPoint.x - m_minimalDataPoint.x, m_maximalDataPoint.y - m_minimalDataPoint.y };
 	DirectX::XMFLOAT2 absoluteDifference = { m_maximalAbsolutePoint.x - m_minimalAbsolutePoint.x, m_maximalAbsolutePoint.y - m_minimalAbsolutePoint.y };
-
-    //Since thex-axis scale can get distorted if the graph is locked in as a square we need to compensate for
-	//this to make sure the line shows up in the correct location
-	//float squareGraphRatioCorrection = 1.0f, squareGraphDriftCorrection = 0.0f;
-	//auto childBox = ((OutlinedBox*)p_children[0].get());
-	//if (childBox->isSquare())
-	//{
-	//	//Get the ratio of the screen width to it's height. Since most screens are in portrait mode
-	//	//instead of landscape this will almost always result and a ratio less than one, which will
-	//	//effectively squish the data points along the x-axis to fit into the graph.
-	//	squareGraphRatioCorrection = m_screenSize->Height / m_screenSize->Width;
-	//	squareGraphDriftCorrection = childBox->fixSquareBoxDrift();
-	//}
-
 	DirectX::XMFLOAT2 point_one = {0.0f, 0.0f}, point_two = { 0.0f, 0.0f };
 
 	switch (axis)
@@ -241,9 +219,6 @@ void Graph::addAxisLine(int axis, float location)
 		//this is the x-axis, so we place a straight horizontal line at the specified y-value.
 		//This line needs to be correct if the graph is a "square"
 		location = -1 * (absoluteDifference.y * ((location - m_minimalDataPoint.y) / difference.y) - m_maximalAbsolutePoint.y); //convert the given location from data coordinates into absolute window coordinates (y-axis is flipped)
-		/*DirectX::XMFLOAT2 corrected_x_location = { m_minimalAbsolutePoint.x + squareGraphDriftCorrection, squareGraphRatioCorrection * absoluteDifference.x + m_minimalAbsolutePoint.x + squareGraphDriftCorrection };
-		point_one = { corrected_x_location.x, location };
-		point_two = { corrected_x_location.y, location };*/
 		DirectX::XMFLOAT2 x_location = { m_minimalAbsolutePoint.x, absoluteDifference.x + m_minimalAbsolutePoint.x };
 		point_one = { x_location.x, location };
 		point_two = { x_location.y, location };
@@ -285,24 +260,8 @@ void Graph::addAxisLabel(std::wstring label, int axis, float location)
 	case 1:
 	{
 		//This is a y-axis label so the location indicates the width that we want the label at
-
-		//Like is done for other Graph methods, check if the graph is in a square configuration
-	    //before setting the axis label as the width calculation could become distorted
-		//float squareGraphRatioCorrection = 1.0f, squareGraphDriftCorrection = 0.0f;
-		//auto childBox = ((OutlinedBox*)p_children[0].get());
-		//if (childBox->isSquare())
-		//{
-		//	//Get the ratio of the screen width to it's height. Since most screens are in portrait mode
-		//	//instead of landscape this will almost always result and a ratio less than one, which will
-		//	//effectively squish the data points along the x-axis to fit into the graph.
-		//	squareGraphRatioCorrection = m_screenSize->Height / m_screenSize->Width;
-		//	squareGraphDriftCorrection = childBox->fixSquareBoxDrift();
-		//}
-
 		DirectX::XMFLOAT2 difference = { m_maximalDataPoint.x - m_minimalDataPoint.x, m_maximalDataPoint.y - m_minimalDataPoint.y };
 		DirectX::XMFLOAT2 absoluteDifference = { m_maximalAbsolutePoint.x - m_minimalAbsolutePoint.x, m_maximalAbsolutePoint.y - m_minimalAbsolutePoint.y };
-
-		//float absoluteXLocation = squareGraphRatioCorrection * (absoluteDifference.x * ((location - m_minimalDataPoint.x) / difference.x)) + m_minimalAbsolutePoint.x + squareGraphDriftCorrection;
 		float absoluteXLocation = absoluteDifference.x * ((location - m_minimalDataPoint.x) / difference.x) + m_minimalAbsolutePoint.x;
 
 		TextOverlay graphText(m_screenSize, { absoluteXLocation, m_location.y + m_size.y / 2.0f }, { m_size.x, 0.035 }, label, 0.015, { UIColor::Black }, { 0, (unsigned int)label.length() }, UITextJustification::UpperCenter);
@@ -338,15 +297,6 @@ uint32_t Graph::update(InputState* inputState)
 
 		//If the user drags the box outside the boundary of the graph, force the box
 		//to stay within the boundary
-		/*if (opposite_corner.x < m_location.x - m_size.x / 2.0f) opposite_corner.x = m_location.x - m_size.x / 2.0f;
-		else if (opposite_corner.x > m_location.x + m_size.x / 2.0f) opposite_corner.x = m_location.x + m_size.x / 2.0f;
-
-		if (opposite_corner.y < m_location.y - m_size.y / 2.0f) opposite_corner.y = m_location.y - m_size.y / 2.0f;
-		else if (opposite_corner.y > m_location.y + m_size.y / 2.0f) opposite_corner.y = m_location.y + m_size.y / 2.0f;
-
-		DirectX::XMFLOAT2 new_origin = { (opposite_corner.x + m_zoomBoxOrigin.x) / 2.0f, (opposite_corner.y + m_zoomBoxOrigin.y) / 2.0f };
-		DirectX::XMFLOAT2 new_size = { opposite_corner.x - m_zoomBoxOrigin.x, opposite_corner.y - m_zoomBoxOrigin.y };*/
-
 		if (opposite_corner_pixels.x < graph_location.x - graph_size.x / 2.0f) opposite_corner_pixels.x = graph_location.x - graph_size.x / 2.0f;
 		else if (opposite_corner_pixels.x > graph_location.x + graph_size.x / 2.0f) opposite_corner_pixels.x = graph_location.x + graph_size.x / 2.0f;
 
@@ -402,12 +352,6 @@ void Graph::onMouseRelease()
 	DirectX::XMFLOAT2 absoluteDifference = { m_maximalAbsolutePoint.x - m_minimalAbsolutePoint.x, m_maximalAbsolutePoint.y - m_minimalAbsolutePoint.y };
 	DirectX::XMFLOAT2 difference = { m_maximalDataPoint.x - m_minimalDataPoint.x, m_maximalDataPoint.y - m_minimalDataPoint.y };
 	
-	/*float new_x_data_min = -1 * ((m_maximalAbsolutePoint.x - (zoom_box->getAbsoluteLocation().x - zoom_box->getAbsoluteSize().x / 2.0f)) / absoluteDifference.x * difference.x - m_maximalDataPoint.x);
-	float new_x_data_max = -1 * ((m_maximalAbsolutePoint.x - (zoom_box->getAbsoluteLocation().x + zoom_box->getAbsoluteSize().x / 2.0f)) / absoluteDifference.x * difference.x - m_maximalDataPoint.x);
-	float new_y_data_min = -1 * (((zoom_box->getAbsoluteLocation().y + zoom_box->getAbsoluteSize().y / 2.0f) - m_minimalAbsolutePoint.y) / absoluteDifference.y * difference.y - m_maximalDataPoint.y);
-	float new_y_data_max = -1 * (((zoom_box->getAbsoluteLocation().y - zoom_box->getAbsoluteSize().y / 2.0f) - m_minimalAbsolutePoint.y) / absoluteDifference.y * difference.y - m_maximalDataPoint.y);*/
-
-	//DEBUG: Calculate same above 4 points but using actual pixel locations instead
 	auto graph_pixel_location = getPixelLocation();
 	auto graph_pixel_size = getPixelSize();
 	auto zoom_pixel_location = zoom_box->getPixelLocation();
@@ -475,15 +419,8 @@ void Graph::onMouseRelease()
 				{
 					//We're dealing with a line child element. Convert its two points from absolute
 					//coordinates to data coordinates to see if the whole line, part of the line,
-					//or none of the line will appear on the zoomed in graph
-					//auto absolute_points = line->getPointsAbsolute();
-					auto absolute_points = line->getPointsRelative();
-
-					//Convert the two absolute points of the line to their original data values
-					//DirectX::XMFLOAT2 dataPointOne = { (absolute_points.first.x - m_minimalAbsolutePoint.x) * originalDifference.x / absoluteDifference.x + m_minimalDataPoint.x, (m_maximalAbsolutePoint.y - absolute_points.first.y) * originalDifference.y / absoluteDifference.y + m_minimalDataPoint.y };
-					//DirectX::XMFLOAT2 dataPointTwo = { (absolute_points.second.x - m_minimalAbsolutePoint.x) * originalDifference.x / absoluteDifference.x + m_minimalDataPoint.x, (m_maximalAbsolutePoint.y - absolute_points.second.y) * originalDifference.y / absoluteDifference.y + m_minimalDataPoint.y };
-
-					//DEBUG: Use pixel values instead of relative values
+					//or none of the line will appear on the zoomed in graph. The first step in this
+					//process is getting the raw data content back from the Line object.
 					auto line_pixel_location = line->getPixelLocation();
 					auto line_pixel_size = line->getPixelSize();
 					DirectX::XMFLOAT2 dataPointOnePixelLocation = { line_pixel_location.x - line_pixel_size.x / 2.0f, line_pixel_location.y - line_pixel_size.y / 2.0f };

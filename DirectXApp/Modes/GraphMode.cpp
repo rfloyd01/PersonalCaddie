@@ -85,7 +85,6 @@ uint32_t GraphMode::initializeMode(winrt::Windows::Foundation::Size windowSize, 
 
 	m_state = 0;
 	m_recording = false;
-	//m_currentDataType = DataType::ACCELERATION; //Default to graphing acceleration data
 	m_selectedDataTypes = 1; //represents acceleration data only
 
 	resetData(); //make sure the graphData vector has no data in it
@@ -219,17 +218,8 @@ void GraphMode::uiElementStateChangeHandler(std::shared_ptr<ManagedUIElement> el
 
 			//Clear out any existing data points
 			m_uiManager.getElement<Graph>(L"Graph")->removeAllLines(); //this will also clear out any text on the graph
-
-			//clear out all existing data, and then add a single dummy point for later use
-			/*m_graphDataX.clear();
-			m_graphDataY.clear();
-			m_graphDataZ.clear();*/
 			
 			resetData();
-
-			/*m_graphDataX.push_back({ 0, 0 });
-			m_graphDataY.push_back({ 0, 0 });
-			m_graphDataZ.push_back({ 0, 0 });*/
 
 			//Put the Personal Caddie into Sensor Active mode to start recording data
 			auto mode = PersonalCaddiePowerMode::SENSOR_ACTIVE_MODE;
@@ -243,26 +233,6 @@ void GraphMode::uiElementStateChangeHandler(std::shared_ptr<ManagedUIElement> el
 			if (m_selectedDataTypes >= (1 << static_cast<int>(DataType::LINEAR_ACCELERATION))) //TODO: remove first part of OR when ready
 			{
 				toggleCalculatedDataTypes();
-				//When turning on the calculated data types, only send the highest numbered one as it cascades into turning on the 
-				//lower calculated data types. This is because the higher order calculated types require the lower ordered ones (i.e.
-				//location depends on velocity, and velocity depends on linear acceleration). Euler angles are turned on separately
-				//uint32_t position_flag = (1 << static_cast<int>(DataType::LOCATION));
-				//for (int i = 0; i < 3; i++)
-				//{
-				//	if (position_flag & m_selectedDataTypes)
-				//	{
-				//		DataType max_calculated_data_type = static_cast<DataType>(position_flag >> 1);
-				//		m_mode_screen_handler(ModeAction::PersonalCaddieToggleCalculatedData, (void*)&max_calculated_data_type); //Turn on calculations for the extrapolated data type
-				//		break;
-				//	}
-				//	position_flag >>= 1;
-				//}
-
-				//if (m_selectedDataTypes & (1 << static_cast<int>(DataType::EULER_ANGLES)))
-				//{
-				//	DataType euler = DataType::EULER_ANGLES;
-				//	m_mode_screen_handler(ModeAction::PersonalCaddieToggleCalculatedData, (void*)&euler);
-				//}
 				
 				//Temporarily increase the beta value for the Madgwick filter
 				float initial_beta_value = 2.5f;
@@ -288,37 +258,7 @@ void GraphMode::uiElementStateChangeHandler(std::shared_ptr<ManagedUIElement> el
 
 			//If an extraploated data type was being recorded, tell the Personal Caddie to stop
 			//calculations on it
-			//m_mode_screen_handler(ModeAction::PersonalCaddieToggleCalculatedData, (void*)&m_currentDataType);
 			toggleCalculatedDataTypes();
-
-			//if (m_graphDataX.size() >= 2)
-			//{
-			//	//Data collection starts as soon as the sensor is turned on, which means that
-			//	//the first half second or so of data will be junk (this is the nature of 
-			//	//IMU readings before they warm up). Because of this, drop the first 25
-			//	//data points. This corresponds to 0.5 seconds of data at 50Hz ODR and 0.25
-			//	//seconds of data at 100Hz ODR.
-			//	if (m_graphDataX.size() > 25)
-			//	{
-			//		m_graphDataX.erase(m_graphDataX.begin(), m_graphDataX.begin() + 25);
-			//		m_graphDataY.erase(m_graphDataY.begin(), m_graphDataY.begin() + 25);
-			//		m_graphDataZ.erase(m_graphDataZ.begin(), m_graphDataZ.begin() + 25);
-			//	}
-
-			//	//set the min and max data values for the graph
-			//	m_uiManager.getElement<Graph>(L"Graph")->setAxisMaxAndMins({ m_graphDataX[0].x,  m_minimalPoint.y }, { m_graphDataX.back().x, m_maximalPoint.y });
-
-			//	std::wstring data_type_text = m_uiManager.getElement<DropDownMenu>(L"Data Dropdown Menu")->getSelectedOption();
-
-			//	m_uiManager.getElement<Graph>(L"Graph")->addGraphData(m_graphDataX, UIColor::Red, data_type_text + L".x");
-			//	m_uiManager.getElement<Graph>(L"Graph")->addGraphData(m_graphDataY, UIColor::Blue, data_type_text + L".y");
-			//	m_uiManager.getElement<Graph>(L"Graph")->addGraphData(m_graphDataZ, UIColor::Green, data_type_text + L".z");
-
-			//	//add a few axis lines to the graph
-			//	float centerLineLocation = (m_minimalPoint.y + m_maximalPoint.y) / 2.0f; //The average of the highest and lowest data point
-			//	float upperLineLocation = m_maximalPoint.y - 0.05f * (m_maximalPoint.y - m_minimalPoint.y); //95% of the highest data point
-			//	float lowerLineLocation = m_minimalPoint.y + 0.05f * (m_maximalPoint.y - m_minimalPoint.y); //95% of the lowest data point
-			//}
 
 			bool mins_maxes_set = false;
 
@@ -346,17 +286,6 @@ void GraphMode::uiElementStateChangeHandler(std::shared_ptr<ManagedUIElement> el
 			if (m_selectedDataTypes & (1 << static_cast<int>(DataType::LINEAR_ACCELERATION))) m_needsCamera = false; //TODO: remove first part of OR when ready
 		}
 	}
-	//else if (element->name == L"Data Dropdown Menu")
-	//{
-	//	//If we've selected a new data type from the drop down menu then we need to 
-	//	//update the data type variable for the mode.
-	//	if (element->element->getChildren()[2]->getState() & UIElementState::Invisible)
-	//	{
-	//		//A new option has been selected
-	//		std::wstring dataType = m_uiManager.getElement<DropDownMenu>(L"Data Dropdown Menu")->getSelectedOption();
-	//		m_currentDataType = getCurrentlySelectedDataType(dataType);
-	//	}
-	//} 
 	else if (element->name.find(L"Check Box") != std::string::npos)
 	{
 	    //One of the data type check boxes was selected. If the box is unchecked then remove the appropriate
@@ -434,29 +363,6 @@ void GraphMode::addData(std::vector<std::vector<std::vector<float> > > const& se
 
 	for (int i = 0; i < totalSamples; i++)
 	{
-		//float x_data = sensorData[static_cast<int>(m_currentDataType)][X][i];
-		//float y_data = sensorData[static_cast<int>(m_currentDataType)][Y][i];
-		//float z_data = sensorData[static_cast<int>(m_currentDataType)][Z][i];
-		//float time_stamp;
-		////Uncomment below two lines to see feed of incoming data
-		///*std::wstring data = std::to_wstring(x_data) + L", " + std::to_wstring(y_data) + L", " + std::to_wstring(z_data) + L"\n";
-		//OutputDebugString(&data[0]);*/
-
-		////overwrite the local maxima and minima if necessary. These are used for 
-		////creating reference lines on the graph
-		//if (x_data > m_maximalPoint.y) m_maximalPoint.y = x_data;
-		//else if (x_data < m_minimalPoint.y) m_minimalPoint.y = x_data;
-
-		//if (y_data > m_maximalPoint.y) m_maximalPoint.y = y_data;
-		//else if (y_data < m_minimalPoint.y) m_minimalPoint.y = y_data;
-
-		//if (z_data > m_maximalPoint.y) m_maximalPoint.y = z_data;
-		//else if (z_data < m_minimalPoint.y) m_minimalPoint.y = z_data;
-
-		//m_graphDataX.push_back({ timeStamp + i / sensorODR, x_data });
-		//m_graphDataY.push_back({ timeStamp + i / sensorODR, y_data });
-		//m_graphDataZ.push_back({ timeStamp + i / sensorODR, z_data });
-
 		for (int j = 0; j < static_cast<int>(DataType::END); j++)
 		{
 			if (!(m_selectedDataTypes & (1 << j))) continue; //skip over any non-selected data types
@@ -514,42 +420,6 @@ void GraphMode::addQuaternions(std::vector<glm::quat> const& quaternions, int qu
 
 	data_start_timer = std::chrono::steady_clock::now(); //set relative time
 	m_update_in_process = false; //grant access to data vectors once update is complete
-
-	//else
-	//{
-	//	//Mark the location in the data vectors where we need to start remove the effects of gravity
-	//	int start = m_graphDataX.size() - quaternion_number;
-
-	//	//The addQuaternions() method gets called directly after the addData() method so there should always be 
-	//	//a fresh batch of acceleration data for us to manipulate
-	//	for (int i = 0; i < quaternion_number; i++)
-	//	{
-	//		//calculate and then remove the acceleration due to gravity obtained from each 
-	//		//rotation quaternion
-	//		float gx = 2 * GRAVITY * (quaternions[i].x * quaternions[i].z - quaternions[i].w * quaternions[i].y);
-	//		float gy = 2 * GRAVITY * (quaternions[i].y * quaternions[i].z + quaternions[i].w * quaternions[i].x);
-	//		float gz = GRAVITY * (quaternions[i].w * quaternions[i].w - quaternions[i].x * quaternions[i].x - quaternions[i].y * quaternions[i].y + quaternions[i].z * quaternions[i].z);
-
-	//		std::wstring tester = L"Total Acceleration Y: " + std::to_wstring(m_graphDataY[start + i].y) + L"\nGravitational Acceleration Y: " + std::to_wstring(gy) + L"\n\n";
-	//		OutputDebugString(&tester[0]);
-
-	//		//Update the minimum and maximum values for the graph accordingly so the graph 
-	//		//doesn't use the raw acceleration values
-	//		/*if (m_graphDataX[start + i].y == m_maximalPoint.y) m_maximalPoint.y -= gx;
-	//		else if (m_graphDataX[start + i].y == m_minimalPoint.y) m_minimalPoint.y -= gx;
-
-	//		if (m_graphDataY[start + i].y == m_maximalPoint.y) m_maximalPoint.y -= gy;
-	//		else if (m_graphDataY[start + i].y == m_minimalPoint.y) m_minimalPoint.y -= gy;
-
-	//		if (m_graphDataZ[start + i].y == m_maximalPoint.y) m_maximalPoint.y -= gz;
-	//		else if (m_graphDataZ[start + i].y == m_minimalPoint.y) m_minimalPoint.y -= gz;*/
-
-	//		//And then update the actual data points
-	//		m_graphDataX[start + i].y -= gx;
-	//		m_graphDataY[start + i].y -= gy;
-	//		m_graphDataZ[start + i].y -= gz;
-	//	}
-	//}
 }
 
 void GraphMode::pc_ModeChange(PersonalCaddiePowerMode newMode)
