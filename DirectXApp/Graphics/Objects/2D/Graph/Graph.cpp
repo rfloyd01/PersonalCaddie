@@ -119,7 +119,7 @@ void Graph::addGraphData(std::vector<DirectX::XMFLOAT2> const& dataPoints, UICol
 		{
 			//currentPoint = { squareGraphRatioCorrection * (absoluteDifference.x * ((dataPoints[i].x - m_minimalDataPoint.x) / difference.x)) + m_minimalAbsolutePoint.x + squareGraphDriftCorrection, -1 * (absoluteDifference.y * ((dataPoints[i].y - m_minimalDataPoint.y) / difference.y) - m_maximalAbsolutePoint.y) };
 			currentPoint = { absoluteDifference.x * ((dataPoints[i].x - m_minimalDataPoint.x) / difference.x) + m_minimalAbsolutePoint.x, -1 * (absoluteDifference.y * ((dataPoints[i].y - m_minimalDataPoint.y) / difference.y) - m_maximalAbsolutePoint.y) };
-			Line line(m_screenSize, currentPoint, previousPoint, lineColor);
+			Line line(m_screenSize, previousPoint, currentPoint, lineColor);
 			newData.addLine(line);
 			previousPoint = currentPoint;
 		}
@@ -131,7 +131,7 @@ void Graph::addGraphData(std::vector<DirectX::XMFLOAT2> const& dataPoints, UICol
 			//This creates small circles instead of lines to create the graph.
 			//currentPoint = { squareGraphRatioCorrection * (absoluteDifference.x * ((dataPoints[i].x - m_minimalDataPoint.x) / difference.x)) + m_minimalAbsolutePoint.x + squareGraphDriftCorrection, -1 * (absoluteDifference.y * ((dataPoints[i].y - m_minimalDataPoint.y) / difference.y) - m_maximalAbsolutePoint.y) };
 			currentPoint = { absoluteDifference.x * ((dataPoints[i].x - m_minimalDataPoint.x) / difference.x) + m_minimalAbsolutePoint.x, -1 * (absoluteDifference.y * ((dataPoints[i].y - m_minimalDataPoint.y) / difference.y) - m_maximalAbsolutePoint.y) };
-			Ellipse ell(m_screenSize, currentPoint, { 0.0033f * m_size.y, 0.0033f * m_size.y }, true, lineColor);
+			Ellipse ell(m_screenSize, { 0.0033f * m_size.y, 0.0033f * m_size.y }, currentPoint, true, lineColor);
 			newData.addEllipse(ell);
 			previousPoint = currentPoint;
 		}
@@ -397,14 +397,26 @@ void Graph::onMouseRelease()
 	Box* zoom_box = ((Box*)p_children.back().get());
 
 	DirectX::XMFLOAT2 maximalPixelPoint = { m_maximalAbsolutePoint.x * m_screenSize->Width, m_maximalAbsolutePoint.y * m_screenSize->Height };
+	DirectX::XMFLOAT2 minimalPixelPoint = { m_minimalAbsolutePoint.x * m_screenSize->Width, m_minimalAbsolutePoint.y * m_screenSize->Height };
 
 	DirectX::XMFLOAT2 absoluteDifference = { m_maximalAbsolutePoint.x - m_minimalAbsolutePoint.x, m_maximalAbsolutePoint.y - m_minimalAbsolutePoint.y };
 	DirectX::XMFLOAT2 difference = { m_maximalDataPoint.x - m_minimalDataPoint.x, m_maximalDataPoint.y - m_minimalDataPoint.y };
 	
-	float new_x_data_min = -1 * ((m_maximalAbsolutePoint.x - (zoom_box->getAbsoluteLocation().x - zoom_box->getAbsoluteSize().x / 2.0f)) / absoluteDifference.x * difference.x - m_maximalDataPoint.x);
+	/*float new_x_data_min = -1 * ((m_maximalAbsolutePoint.x - (zoom_box->getAbsoluteLocation().x - zoom_box->getAbsoluteSize().x / 2.0f)) / absoluteDifference.x * difference.x - m_maximalDataPoint.x);
 	float new_x_data_max = -1 * ((m_maximalAbsolutePoint.x - (zoom_box->getAbsoluteLocation().x + zoom_box->getAbsoluteSize().x / 2.0f)) / absoluteDifference.x * difference.x - m_maximalDataPoint.x);
 	float new_y_data_min = -1 * (((zoom_box->getAbsoluteLocation().y + zoom_box->getAbsoluteSize().y / 2.0f) - m_minimalAbsolutePoint.y) / absoluteDifference.y * difference.y - m_maximalDataPoint.y);
-	float new_y_data_max = -1 * (((zoom_box->getAbsoluteLocation().y - zoom_box->getAbsoluteSize().y / 2.0f) - m_minimalAbsolutePoint.y) / absoluteDifference.y * difference.y - m_maximalDataPoint.y);
+	float new_y_data_max = -1 * (((zoom_box->getAbsoluteLocation().y - zoom_box->getAbsoluteSize().y / 2.0f) - m_minimalAbsolutePoint.y) / absoluteDifference.y * difference.y - m_maximalDataPoint.y);*/
+
+	//DEBUG: Calculate same above 4 points but using actual pixel locations instead
+	auto graph_pixel_location = getPixelLocation();
+	auto graph_pixel_size = getPixelSize();
+	auto zoom_pixel_location = zoom_box->getPixelLocation();
+	auto zoom_pixel_size = zoom_box->getPixelSize();
+
+	float new_x_data_min = -1 * (((graph_pixel_location.x + graph_pixel_size.x / 2.0f) - (zoom_pixel_location.x - zoom_pixel_size.x / 2.0f)) / graph_pixel_size.x * difference.x - m_maximalDataPoint.x);
+	float new_x_data_max = -1 * (((graph_pixel_location.x + graph_pixel_size.x / 2.0f) - (zoom_pixel_location.x + zoom_pixel_size.x / 2.0f)) / graph_pixel_size.x * difference.x - m_maximalDataPoint.x);
+	float new_y_data_min = -1 * (((zoom_pixel_location.y + zoom_pixel_size.y / 2.0f) - (graph_pixel_location.y - graph_pixel_size.y / 2.0f)) / graph_pixel_size.y * difference.y - m_maximalDataPoint.y);
+	float new_y_data_max = -1 * (((zoom_pixel_location.y - zoom_pixel_size.y / 2.0f) - (graph_pixel_location.y - graph_pixel_size.y / 2.0f)) / graph_pixel_size.y * difference.y - m_maximalDataPoint.y);
 
 	//Get rid of the zoom box before after mapping new max and min data points
 	m_zoomBoxActive = false;
@@ -450,7 +462,7 @@ void Graph::onMouseRelease()
 		if (data != nullptr)
 		{
 			//If the current graph data has been set to invisible via the interactive key then 
-			//don't bother putting into the zoomed in view
+			//don't bother putting it into the zoomed in view
 			if (data->getState() & UIElementState::Invisible) continue;
 
 			GraphData zoomed_in_data(m_screenSize, location, size, data->getName()); //create a new GraphData object
@@ -468,8 +480,18 @@ void Graph::onMouseRelease()
 					auto absolute_points = line->getPointsRelative();
 
 					//Convert the two absolute points of the line to their original data values
-					DirectX::XMFLOAT2 dataPointOne = { (absolute_points.first.x - m_minimalAbsolutePoint.x) * originalDifference.x / absoluteDifference.x + m_minimalDataPoint.x, (m_maximalAbsolutePoint.y - absolute_points.first.y) * originalDifference.y / absoluteDifference.y + m_minimalDataPoint.y };
-					DirectX::XMFLOAT2 dataPointTwo = { (absolute_points.second.x - m_minimalAbsolutePoint.x) * originalDifference.x / absoluteDifference.x + m_minimalDataPoint.x, (m_maximalAbsolutePoint.y - absolute_points.second.y) * originalDifference.y / absoluteDifference.y + m_minimalDataPoint.y };
+					//DirectX::XMFLOAT2 dataPointOne = { (absolute_points.first.x - m_minimalAbsolutePoint.x) * originalDifference.x / absoluteDifference.x + m_minimalDataPoint.x, (m_maximalAbsolutePoint.y - absolute_points.first.y) * originalDifference.y / absoluteDifference.y + m_minimalDataPoint.y };
+					//DirectX::XMFLOAT2 dataPointTwo = { (absolute_points.second.x - m_minimalAbsolutePoint.x) * originalDifference.x / absoluteDifference.x + m_minimalDataPoint.x, (m_maximalAbsolutePoint.y - absolute_points.second.y) * originalDifference.y / absoluteDifference.y + m_minimalDataPoint.y };
+
+					//DEBUG: Use pixel values instead of relative values
+					auto line_pixel_location = line->getPixelLocation();
+					auto line_pixel_size = line->getPixelSize();
+					DirectX::XMFLOAT2 dataPointOnePixelLocation = { line_pixel_location.x - line_pixel_size.x / 2.0f, line_pixel_location.y - line_pixel_size.y / 2.0f };
+					DirectX::XMFLOAT2 dataPointTwoPixelLocation = { line_pixel_location.x + line_pixel_size.x / 2.0f, line_pixel_location.y + line_pixel_size.y / 2.0f };
+					DirectX::XMFLOAT2 dataPointOne = { (dataPointOnePixelLocation.x - (graph_pixel_location.x - graph_pixel_size.x / 2.0f)) * originalDifference.x / graph_pixel_size.x + m_minimalDataPoint.x,
+															 ((graph_pixel_location.y + graph_pixel_size.y / 2.0f) - dataPointOnePixelLocation.y) * originalDifference.y / graph_pixel_size.y + m_minimalDataPoint.y };
+					DirectX::XMFLOAT2 dataPointTwo = { (dataPointTwoPixelLocation.x - (graph_pixel_location.x - graph_pixel_size.x / 2.0f)) * originalDifference.x / graph_pixel_size.x + m_minimalDataPoint.x,
+															 ((graph_pixel_location.y + graph_pixel_size.y / 2.0f) - dataPointTwoPixelLocation.y)* originalDifference.y / graph_pixel_size.y + m_minimalDataPoint.y };
 
 					//Calculate the absolute locations of the above data points with the new
 					//zoomed in graph boundaries

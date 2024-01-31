@@ -54,7 +54,7 @@ private:
 	std::vector<float> m_timeStamps;
 	int computer_axis_from_sensor_axis[3] = { 1, 2, 0 }; //Array used to swap real world coordinates to DirectX coordinates
 
-	std::vector<DirectX::XMFLOAT2> m_graphDataX, m_graphDataY, m_graphDataZ; //deprecated
+	//std::vector<DirectX::XMFLOAT2> m_graphDataX, m_graphDataY, m_graphDataZ; //deprecated
 	std::vector<std::vector<std::vector<DirectX::XMFLOAT2> > > m_graphData = {}; //Holds data from the sensor for all possible data types
 	//std::vector<std::vector<std::pair<float, float> > > m_graphDataExtremes = {}; //Holds the min/max values for each axes of each data type being recorded
 	DirectX::XMFLOAT2 m_minimalPoint, m_maximalPoint; //used for scaling of the graph

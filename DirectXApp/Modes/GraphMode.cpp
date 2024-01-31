@@ -591,7 +591,7 @@ void GraphMode::toggleCalculatedDataTypes()
 	{
 		if (position_flag & m_selectedDataTypes)
 		{
-			DataType max_calculated_data_type = static_cast<DataType>(log2(position_flag));
+			DataType max_calculated_data_type = static_cast<DataType>(log2(position_flag)); //instead of using the log here, I may be better off keeping track of the left shifted distance
 			m_mode_screen_handler(ModeAction::PersonalCaddieToggleCalculatedData, (void*)&max_calculated_data_type); //Turn on calculations for the extrapolated data type
 			break;
 		}
