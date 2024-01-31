@@ -23,18 +23,20 @@ uint32_t UITestMode::initializeMode(winrt::Windows::Foundation::Size windowSize,
 	float screen_ratio = MAX_SCREEN_HEIGHT / MAX_SCREEN_WIDTH;
 
 	std::wstring scrollText = L"Once upon a time\nit was the best of times\nit was the worst of times\nOnce upon a time\nit was the best of times\nit was the worst of times\nyeet\nyeet\nyote";
-	Graph graph(m_uiManager.getScreenSize(), { 0.65f, 0.5f }, { 0.35f, 0.35f }, true, UIColor::White, UIColor::Black, false, true, true);
+	Graph graph(m_uiManager.getScreenSize(), { 0.65f, 0.5f }, { 0.35f, 0.35f }, false, UIColor::White, UIColor::Black, false, false);
 
 	graph.setAxisMaxAndMins({ 0.0f, -1.2f }, { 2.0f * PI, 1.2f });
 
-	std::vector<DirectX::XMFLOAT2> data1, data2;
+	std::vector<DirectX::XMFLOAT2> data1, data2, data3;
 	for (float i = 0.0f; i <= 2.0f * PI; i += PI / 180.0f)
 	{
 		data1.push_back({ i, sin(i) });
 		data2.push_back({ i, cos(i) });
+		data3.push_back({ sin(i) + (float)PI, cos(i) });
 	}
-	graph.addGraphData(data1, UIColor::Red, L"y = sin(x)");
-	graph.addGraphData(data2, UIColor::Blue, L"y = cos(x)");
+	//graph.addGraphData(data1, UIColor::Red, L"y = sin(x)");
+	//graph.addGraphData(data2, UIColor::Blue, L"y = cos(x)");
+	graph.addGraphData(data3, UIColor::Green, L"y = circle?");
 
 	m_uiManager.addElement<Graph>(graph, L"Graph 1");
 

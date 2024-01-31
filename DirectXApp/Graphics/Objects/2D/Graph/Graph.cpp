@@ -131,7 +131,7 @@ void Graph::addGraphData(std::vector<DirectX::XMFLOAT2> const& dataPoints, UICol
 			//This creates small circles instead of lines to create the graph.
 			//currentPoint = { squareGraphRatioCorrection * (absoluteDifference.x * ((dataPoints[i].x - m_minimalDataPoint.x) / difference.x)) + m_minimalAbsolutePoint.x + squareGraphDriftCorrection, -1 * (absoluteDifference.y * ((dataPoints[i].y - m_minimalDataPoint.y) / difference.y) - m_maximalAbsolutePoint.y) };
 			currentPoint = { absoluteDifference.x * ((dataPoints[i].x - m_minimalDataPoint.x) / difference.x) + m_minimalAbsolutePoint.x, -1 * (absoluteDifference.y * ((dataPoints[i].y - m_minimalDataPoint.y) / difference.y) - m_maximalAbsolutePoint.y) };
-			Ellipse ell(m_screenSize, { 0.0033f * m_size.y, 0.0033f * m_size.y }, currentPoint, true, lineColor);
+			Ellipse ell(m_screenSize, currentPoint, { 0.0033f * m_size.y, 0.0033f * m_size.y }, true, lineColor);
 			newData.addEllipse(ell);
 			previousPoint = currentPoint;
 		}
