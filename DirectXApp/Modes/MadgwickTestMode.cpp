@@ -3,6 +3,8 @@
 #include "Graphics/Objects/3D/Elements/Model.h"
 #include "Math/quaternion_functions.h"
 
+#define RAD_TO_DEG 180.0f / 3.14159f
+
 MadgwickTestMode::MadgwickTestMode()
 {
 	//set a very light gray background color for the mode
@@ -142,7 +144,7 @@ void MadgwickTestMode::uninitializeMode()
 
 	//If an extrapolated data type has currently been selected, turn off calculations in 
 	//the Personal Caddie now
-	if (m_current_data_type == DataType::LINEAR_ACCELERATION || m_current_data_type == DataType::VELOCITY || m_current_data_type == DataType::LOCATION)
+	if (static_cast<int>(m_current_data_type) >= static_cast<int>(DataType::LINEAR_ACCELERATION))
 		m_mode_screen_handler(ModeAction::PersonalCaddieToggleCalculatedData, (void*)&m_current_data_type);
 
 	//Put the Personal Caddie back into Connected Mode when leaving this page. This can be 
@@ -287,6 +289,15 @@ void MadgwickTestMode::addData(std::vector<std::vector<std::vector<float> > > co
 		m_display_data[0][i] = sensorData[m_display_data_index][0][i];
 		m_display_data[1][i] = sensorData[m_display_data_index][1][i];
 		m_display_data[2][i] = sensorData[m_display_data_index][2][i];
+
+		//Euler angles are calculated in radians by default, for convenience
+		//convert them to degrees here.
+		if (m_current_data_type == DataType::EULER_ANGLES)
+		{
+			m_display_data[0][i] *= RAD_TO_DEG;
+			m_display_data[1][i] *= RAD_TO_DEG;
+			m_display_data[2][i] *= RAD_TO_DEG;
+		}
 	}
 
 	//TESTING of new Madgwick Filter
@@ -375,6 +386,7 @@ void MadgwickTestMode::handleKeyPress(winrt::Windows::System::VirtualKey pressed
 		m_mode_screen_handler(ModeAction::ChangeMode, (void*)&newMode);
 		break;
 	}
+	case winrt::Windows::System::VirtualKey::Number0:
 	case winrt::Windows::System::VirtualKey::Number1:
 	case winrt::Windows::System::VirtualKey::Number2:
 	case winrt::Windows::System::VirtualKey::Number3:
@@ -464,7 +476,7 @@ void MadgwickTestMode::toggleDisplayData()
 
 void MadgwickTestMode::switchDisplayDataType(int n)
 {
-	DataType newDataType = static_cast<DataType>(n - 1);;
+	DataType newDataType = static_cast<DataType>(n - 1);
 
 	switch (n)
 	{
@@ -496,19 +508,27 @@ void MadgwickTestMode::switchDisplayDataType(int n)
 		m_display_data_type = L"Linear Acceleration";
 		m_display_data_units = L" m/s^2";
 		break;
+	case 0:
+		m_display_data_type = L"Euler Angles";
+		m_display_data_units = L" deg.";
+		n = 10;
+		newDataType = DataType::EULER_ANGLES; //handled differently as the key number to turn this on is lower than the enum value
+		break;
 	}
 
 	//After updating the data type, either turn on or turn off
 	//any extrapolated data types as needed
 	if (n <= 6)
 	{
-		if (m_current_data_type == DataType::LINEAR_ACCELERATION || m_current_data_type == DataType::VELOCITY || m_current_data_type == DataType::LOCATION)
+		//We just transitioned from a calculated data type to a non-calculated data type so
+		//turn off excess calculations
+		if (static_cast<int>(m_current_data_type) >= static_cast<int>(DataType::LINEAR_ACCELERATION))
 			m_mode_screen_handler(ModeAction::PersonalCaddieToggleCalculatedData, (void*)&m_current_data_type);
 	}
 	else
 	{
-		//Check to make sure we haven't selected the data type that is currently being displayed
-		if (static_cast<int>(m_current_data_type) != (n - 1))
+		//Check to make sure we haven't selected the same data type that is currently being displayed
+		if (newDataType != m_current_data_type)
 		{
 			//Turn off the current data type and turn on the new one
 			m_mode_screen_handler(ModeAction::PersonalCaddieToggleCalculatedData, (void*)&m_current_data_type);

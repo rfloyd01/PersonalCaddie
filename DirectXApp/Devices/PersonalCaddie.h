@@ -172,12 +172,13 @@ private:
 
 	void updateMadgwick();
 	void updateLinearAcceleration();
+	void updateEulerAngles();
 
 	//    Methods and fields from original BluetoothLE Class     //
 	//Internal Updating Functions
 	//void updateSensorData();
 	//void updatePosition();
-	//void updateEulerAngles();
+	//
 
 	void setDataPoint(DataType dt, Axis a, int sample_number, float data);
 
@@ -187,7 +188,7 @@ private:
 	int current_sample = 0; //when updating rotation quaternion with Madgwick filter, need to know which data point is currently being looked at
 
 	//Boolean flags for calculated data types
-	bool m_linearAcc, m_velocity, m_location;
+	bool m_linearAcc, m_velocity, m_location, m_eulerAngles;
 
 	//the following compound vector holds raw data from the sensors as well as calculated data such as (calibrated acc, gyr and mag readings, linear acceleration,
 	//velocity, etc.). The outermost vector holds everything, the second vector represents a specific data type and the innermost vector represents a specific

@@ -58,6 +58,7 @@ PersonalCaddie::PersonalCaddie(std::function<void(PersonalCaddieEventType, void*
     m_linearAcc = false;
     m_velocity = false;
     m_location = false;
+    m_eulerAngles = false;
 }
 
 void PersonalCaddie::automaticallyConnect()
@@ -1080,7 +1081,7 @@ void PersonalCaddie::dataUpdate()
         updateMadgwick(); //update orientation quaternion
         if (m_linearAcc) updateLinearAcceleration(); //calculate the linear acceleration if we need it
         //updatePosition(); //use newly calculated orientation to get linear acceleration, and then integrate that to get velocity, and again for position
-        //updateEulerAngles(); //use newly calculated orientation quaternion to get Euler Angles of sensor (used in training modes)
+        if (m_eulerAngles) updateEulerAngles(); //use newly calculated orientation quaternion to get Euler Angles of sensor (used in training modes)
 
         m_last_processed_data_time_stamp = m_first_data_time_stamp + 1.0f / this->p_imu->getMaxODR() * (number_of_samples - 1);
 
@@ -1219,6 +1220,9 @@ void PersonalCaddie::toggleCalculatedDataType(DataType dt)
     case DataType::LOCATION:
         m_location = !m_location;
         break;
+    case DataType::EULER_ANGLES:
+        m_eulerAngles = !m_eulerAngles;
+        break;
     default:
         break; //do nothing
     }
@@ -1245,6 +1249,23 @@ void PersonalCaddie::updateLinearAcceleration()
         //if (linear_acceleration[X][current_sample] < lin_acc_threshold && linear_acceleration[X][current_sample] > -lin_acc_threshold) linear_acceleration[X][current_sample] = 0;
         //if (linear_acceleration[Y][current_sample] < lin_acc_threshold && linear_acceleration[Y][current_sample] > -lin_acc_threshold) linear_acceleration[Y][current_sample] = 0;
         //if (linear_acceleration[Z][current_sample] < lin_acc_threshold && linear_acceleration[Z][current_sample] > -lin_acc_threshold) linear_acceleration[Z][current_sample] = 0;
+    }
+}
+
+void PersonalCaddie::updateEulerAngles()
+{
+    //Calculate the roll, pitch and yaw angles based on the quaternions in the orientation_quaternions vector
+    for (int i = 0; i < number_of_samples; i++)
+    {
+        //calculate pitch separately to avoid NaN results
+        float pitch = 2 * (orientation_quaternions[i].w * orientation_quaternions[i].y - orientation_quaternions[i].x * orientation_quaternions[i].z);
+        if (pitch > 1) setDataPoint(DataType::EULER_ANGLES, Y, i, 1.570795); //case for +90 degrees
+        else if (pitch < -1) setDataPoint(DataType::EULER_ANGLES, Y, i, -1.570795); //case for -90 degrees
+        else  setDataPoint(DataType::EULER_ANGLES, Y, i, asinf(pitch)); //all other cases
+
+        //no NaN issues for roll and yaw
+        setDataPoint(DataType::EULER_ANGLES, X, i, atan2f(2 * (orientation_quaternions[i].w * orientation_quaternions[i].x + orientation_quaternions[i].y * orientation_quaternions[i].z), 1 - 2 * (orientation_quaternions[i].x * orientation_quaternions[i].x + orientation_quaternions[i].y * orientation_quaternions[i].y)));
+        setDataPoint(DataType::EULER_ANGLES, Z, i, atan2f(2 * (orientation_quaternions[i].w * orientation_quaternions[i].z + orientation_quaternions[i].x * orientation_quaternions[i].y), 1 - 2 * (orientation_quaternions[i].y * orientation_quaternions[i].y + orientation_quaternions[i].z * orientation_quaternions[i].z)));
     }
 }
 
@@ -1305,23 +1326,6 @@ void PersonalCaddie::updateLinearAcceleration()
 //        else if (lin_z > lin_acc_threshold || lin_z < -lin_acc_threshold) acceleration_event = 1;
 //
 //        if (acceleration_event) position_timer = time_stamp;
-//    }
-//}
-//void PersonalCaddie::updateEulerAngles()
-//{
-//    //TODO: currently calculating these angles every loop which really shouldn't be necessary, look into creating a bool variable that lets BLEDevice know if it should calculate angles
-//
-//    for (int i = 0; i < number_of_samples; i++)
-//    {
-//        //calculate pitch separately to avoid NaN results
-//        float pitch = 2 * (orientation_quaternions[i].w * orientation_quaternions[i].y - orientation_quaternions[i].x * orientation_quaternions[i].z);
-//        if (pitch > 1) setDataPoint(DataType::EULER_ANGLES, Y, i, 1.570795); //case for +90 degrees
-//        else if (pitch < -1) setDataPoint(DataType::EULER_ANGLES, Y, i, -1.570795); //case for -90 degrees
-//        else  setDataPoint(DataType::EULER_ANGLES, Y, i, asinf(pitch)); //all other cases
-//
-//        //no NaN issues for roll and yaw
-//        setDataPoint(DataType::EULER_ANGLES, X, i, atan2f(2 * (orientation_quaternions[i].w * orientation_quaternions[i].x + orientation_quaternions[i].y * orientation_quaternions[i].z), 1 - 2 * (orientation_quaternions[i].x * orientation_quaternions[i].x + orientation_quaternions[i].y * orientation_quaternions[i].y)));
-//        setDataPoint(DataType::EULER_ANGLES, Z, i, atan2f(2 * (orientation_quaternions[i].w * orientation_quaternions[i].z + orientation_quaternions[i].x * orientation_quaternions[i].y), 1 - 2 * (orientation_quaternions[i].y * orientation_quaternions[i].y + orientation_quaternions[i].z * orientation_quaternions[i].z)));
 //    }
 //}
 
