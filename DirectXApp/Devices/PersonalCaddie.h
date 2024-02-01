@@ -197,6 +197,7 @@ private:
 	std::vector<std::vector<std::vector<float> > > sensor_data; 
 	std::vector<glm::quat> orientation_quaternions; //this vector holds number_of_samples quaternions, where each quaternion matches the sensor orientation at a point in time
 	glm::quat m_heading_offset = { 1, 0, 0, 0 }; //This quaternions represents the rotation necessary to have the computer screen pointing due north. This is used to line up the image with the monitor and not the North direction
+	float m_heading_yaw_offset; //Gives the heading offset about the yaw axis in radians
 
 	//Movement variables
 	float lin_acc_threshold = 0.025f; //linear acceleration will be set to zero unless it exceeds this threshold. This will help with location drift with time. This number was obtained experimentally as most white noise falls within +/- .025 of actual readings

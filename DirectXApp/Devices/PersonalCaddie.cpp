@@ -629,6 +629,7 @@ void PersonalCaddie::convertTextToHeadingOffset(winrt::hstring calInfo)
 
     //The last value will be everything from index i to the end of the string
     m_heading_offset.z = std::stof(headingText.substr(i, headingText.length()));
+    m_heading_yaw_offset = asin(m_heading_offset.z * 2.0f);
 }
 
 void PersonalCaddie::updateRawDataWithCalibrationNumbers(DataType rdt, DataType dt, sensor_type_t sensor_type, const float* offset_cal, const float** gain_cal)
@@ -684,6 +685,7 @@ void PersonalCaddie::setHeadingOffset(glm::quat offset)
     //Update the m_heading_offset variable and then persist the
     //change by writing it to the heading offset file
     m_heading_offset = offset;
+    m_heading_yaw_offset = asin(m_heading_offset.z * 2.0f);
     setHeadingOffsetInTextFile();
 }
 
@@ -1265,7 +1267,7 @@ void PersonalCaddie::updateEulerAngles()
 
         //no NaN issues for roll and yaw
         setDataPoint(DataType::EULER_ANGLES, X, i, atan2f(2 * (orientation_quaternions[i].w * orientation_quaternions[i].x + orientation_quaternions[i].y * orientation_quaternions[i].z), 1 - 2 * (orientation_quaternions[i].x * orientation_quaternions[i].x + orientation_quaternions[i].y * orientation_quaternions[i].y)));
-        setDataPoint(DataType::EULER_ANGLES, Z, i, atan2f(2 * (orientation_quaternions[i].w * orientation_quaternions[i].z + orientation_quaternions[i].x * orientation_quaternions[i].y), 1 - 2 * (orientation_quaternions[i].y * orientation_quaternions[i].y + orientation_quaternions[i].z * orientation_quaternions[i].z)));
+        setDataPoint(DataType::EULER_ANGLES, Z, i, atan2f(2 * (orientation_quaternions[i].w * orientation_quaternions[i].z + orientation_quaternions[i].x * orientation_quaternions[i].y), 1 - 2 * (orientation_quaternions[i].y * orientation_quaternions[i].y + orientation_quaternions[i].z * orientation_quaternions[i].z)) + m_heading_yaw_offset);
     }
 }
 
