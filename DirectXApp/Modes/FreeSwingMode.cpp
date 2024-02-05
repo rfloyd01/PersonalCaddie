@@ -28,6 +28,8 @@ uint32_t FreeSwingMode::initializeMode(winrt::Windows::Foundation::Size windowSi
 	for (int i = 0; i < 39; i++)
 	{
 		m_quaternions.push_back({ 1.0f, 0.0f, 0.0f, 0.0f });
+		m_eulerAngles.push_back({ 0.0f, 0.0f, 0.0f });
+		m_angularVelocities.push_back({ 0.0f, 0.0f });
 		m_timeStamps.push_back(0.0f);
 	}
 	m_renderQuaternion = { m_quaternions[0].x, m_quaternions[0].y, m_quaternions[0].z, m_quaternions[0].w };
@@ -39,6 +41,14 @@ uint32_t FreeSwingMode::initializeMode(winrt::Windows::Foundation::Size windowSi
 	//Mode. To get there we need to first put the Sensor into Idle mode
 	auto mode = PersonalCaddiePowerMode::SENSOR_IDLE_MODE;
 	m_mode_screen_handler(ModeAction::PersonalCaddieChangeMode, (void*)&mode);
+
+	//Set the swing phase to be the start of the swing. This will allow
+	//proper initialization of swing start time and club Euler Angles. Since
+	//Euler Angles are going to be used, we also alert the Personal Caddie
+	//to start calculating them for us.
+	m_swing_phase = SwingPhase::START;
+	DataType dt = DataType::EULER_ANGLES;
+	m_mode_screen_handler(ModeAction::PersonalCaddieToggleCalculatedData, (void*)&dt);
 
 	//The NeedMaterial modeState lets the mode screen know that it needs to pass
 	//a list of materials to this mode that it can use to initialize 3d objects
@@ -132,7 +142,7 @@ void FreeSwingMode::addQuaternions(std::vector<glm::quat> const& quaternions, in
 	}
 
 	m_currentQuaternion = -1; //reset the current quaternion to be rendered
-	m_update_in_process = true;
+	m_update_in_process = true; //will get set to false after the addData method below completes
 
 	for (int i = 0; i < quaternion_number; i++)
 	{
@@ -142,8 +152,6 @@ void FreeSwingMode::addQuaternions(std::vector<glm::quat> const& quaternions, in
 
 	data_start_timer = std::chrono::steady_clock::now(); //set relative time
 
-	m_update_in_process = false;
-
 	if (!m_converged)
 	{
 		//if the filter hasn't yet converged add the first quaternion from this set to the convergence array
@@ -151,6 +159,31 @@ void FreeSwingMode::addQuaternions(std::vector<glm::quat> const& quaternions, in
 		m_convergenceQuaternions.push_back(m_quaternions[0]);
 		convergenceCheck();
 	}
+}
+
+void FreeSwingMode::addData(std::vector<std::vector<std::vector<float> > > const& sensorData, float sensorODR, float timeStamp, int totalSamples)
+{
+	//For now the only thing we care about data wise are the Euler Angles as these
+	//tell us what phase of the swing we're currently in.
+
+	//make sure that the length of the m_eulerAngles vector is the same as the total samples coming in.
+	if (m_eulerAngles.size() != totalSamples)
+	{
+		m_eulerAngles.erase(m_eulerAngles.begin() + totalSamples, m_eulerAngles.end());
+		m_angularVelocities.erase(m_angularVelocities.begin() + totalSamples, m_angularVelocities.end());
+	}
+
+	m_sensorODR = sensorODR; //this value should always stay the same, this is just the best place to originally set it
+
+	int euler_angle_index = static_cast<int>(DataType::EULER_ANGLES);
+	int angular_velocity_index = static_cast<int>(DataType::ROTATION);
+	for (int i = 0; i < totalSamples; i++)
+	{
+		m_eulerAngles[i] = { sensorData[euler_angle_index][X][i], sensorData[euler_angle_index][Y][i] , sensorData[euler_angle_index][Z][i] };
+		m_angularVelocities[i] = {sensorData[angular_velocity_index][Y][i], sensorData[angular_velocity_index][Z][i] };
+	}
+
+	m_update_in_process = false; //was initially set to true in the above addQuaternions() method
 }
 
 void FreeSwingMode::update()
@@ -188,10 +221,14 @@ void FreeSwingMode::update()
 		float Q_computer[3] = { Q_sensor[computer_axis_from_sensor_axis[0]], Q_sensor[computer_axis_from_sensor_axis[1]], Q_sensor[computer_axis_from_sensor_axis[2]] };
 
 		m_renderQuaternion = { Q_computer[0], Q_computer[1], Q_computer[2], adjusted_q.w };
+		m_current_club_angles = m_eulerAngles[m_currentQuaternion]; //Update the current euler angles for the club as well
 	}
 
 	//Rotate each face according to the given quaternion
 	for (int i = 0; i < m_volumeElements.size(); i++) ((Model*)m_volumeElements[i].get())->translateAndRotateFace({ 0.0f, 0.0f, 1.0f }, m_renderQuaternion);
+
+	//TEST: Once all visual updates are complete check the current swing phase
+	swingUpdate();
 }
 
 void FreeSwingMode::handleKeyPress(winrt::Windows::System::VirtualKey pressedKey)
@@ -288,5 +325,154 @@ void FreeSwingMode::convergenceCheck()
 		//And do a little clean up
 		m_convergenceQuaternions.clear();
 		m_converged = true; //prevents this convergenceCheck() from being called again
+	}
+}
+
+void FreeSwingMode::swingUpdate()
+{
+	switch (m_swing_phase)
+	{
+	case SwingPhase::START:
+	{
+		//In this phase all we do is set the initial euler angles for the club and
+		//the start time-stamp for the swing. This only happens though if the 
+		//Madgwick filter has properly converged on the club's real world posiiton.
+		if (m_converged)
+		{
+			m_initial_club_angles = m_current_club_angles;
+			m_swing_start_time = std::chrono::steady_clock::now();
+			m_swing_phase = SwingPhase::PRE_ADDRESS;
+		}
+		break;
+	}
+	case SwingPhase::PRE_ADDRESS:
+	{
+		//In this phase of the swing we're waiting for the golfer to put the club head
+		//behind the ball and remain relatively still. Most golfer's have the tendency 
+		//to waggle the club a few times before they fully address the ball, which will
+		//happen in this phase.
+		if (detectAddress(m_initial_club_angles, m_current_club_angles, m_swing_start_time))
+		{
+			//Once the golfer has stopped moving within a certain threshold, we move on
+			//to the address portion of the swing
+			m_swing_phase = SwingPhase::ADDRESS;
+			m_initial_club_angles = m_current_club_angles; //the initial angles now mark the address angles
+
+			Ellipse address_ellipse(m_uiManager.getScreenSize(), { 0.167f, 0.25f }, { MAX_SCREEN_HEIGHT / MAX_SCREEN_WIDTH * 0.033f, 0.033f }, false, UIColor::Red);
+			m_uiManager.addElement<Ellipse>(address_ellipse, L"Ellipse 1");
+
+			//Create a vector pointing along the shaft of the club at address. This will 
+			//help us detect when we're close to impact with the ball later on.
+			m_ball_location = { 1.0f, 0.0f, 0.0f };
+			auto currentQuat = QuaternionMultiply(m_headingOffset, m_quaternions[m_currentQuaternion]);
+			QuatRotate(currentQuat, m_ball_location);
+		}
+		break;
+	}
+	case SwingPhase::ADDRESS:
+	{
+		//In the address phase of the swing all we're really doing is waiting
+		//for the golfer to initiate the swing which is a simple check.
+		if (detectBackswing(m_initial_club_angles, m_current_club_angles))
+		{
+			m_swing_phase = SwingPhase::BACKSWING;
+			m_initial_club_angles = m_current_club_angles; //the initial angles now mark the address angles
+
+			//Set some variables needed during backswing detection
+			m_previous_pitch_average = 0.0f;
+			m_previous_yaw_average = 0.0f;
+			m_current_pitch_average = 0.0f;
+			m_current_yaw_average = 0.0f;
+			m_backswing_point = 0; //set the backswing average index to 0
+
+			Ellipse backswing_ellipse(m_uiManager.getScreenSize(), { 0.333f, 0.25f }, { MAX_SCREEN_HEIGHT / MAX_SCREEN_WIDTH * 0.033f, 0.033f }, false, UIColor::Orange);
+			m_uiManager.addElement<Ellipse>(backswing_ellipse, L"Ellipse 2");
+		}
+		break;
+	}
+	case SwingPhase::BACKSWING:
+	{
+		//During the backswing we look at the angular velocity along the pitch and yaw
+		//axes. They should both increase (in either the positive or negative direction)
+		//before reaching a peak and then going back towards 0. The transition phase is
+		//entered when both of these angular velocities get close enough to 0. Since
+		//the data is noisy a moving average is used.
+		if (m_backswing_point < TRANSITION_MOVING_AVERAGE_POINTS)
+		{
+			m_current_pitch_average += m_angularVelocities[m_currentQuaternion].first;
+			m_current_yaw_average += m_angularVelocities[m_currentQuaternion].second;
+			m_backswing_point++;
+		}
+		else
+		{
+			if (detectTransition(m_previous_pitch_average, m_current_pitch_average, m_previous_yaw_average, m_current_yaw_average, TRANSITION_MOVING_AVERAGE_POINTS / m_sensorODR))
+			{
+				m_swing_phase = SwingPhase::TRANSITION;
+				
+				Ellipse transition_ellipse(m_uiManager.getScreenSize(), { 0.5f, 0.25f }, { MAX_SCREEN_HEIGHT / MAX_SCREEN_WIDTH * 0.033f, 0.033f }, false, UIColor::Yellow);
+				m_uiManager.addElement<Ellipse>(transition_ellipse, L"Ellipse 3");
+			}
+			else
+			{
+				m_backswing_point = 0;
+			}
+
+			m_previous_pitch_average = m_current_pitch_average;
+			m_previous_yaw_average = m_current_yaw_average;
+			m_current_pitch_average = 0.0f;
+			m_current_yaw_average = 0.0f;
+		}
+		break;
+	}
+	case SwingPhase::TRANSITION:
+	{
+		//The transition is usually pretty short in comparison to the backswing and 
+		//downswing. The end of the phase is calculated in a pretty similar way that
+		//the beginning of the phase was. We wait until the angular velocity along the
+		//pitch and yaw axes have both inverted from the beginning of the phase which
+		//signals the start of the downswing.
+		if (detectDownswing(m_previous_pitch_average, m_current_pitch_average, m_previous_yaw_average, m_current_yaw_average, TRANSITION_MOVING_AVERAGE_POINTS / m_sensorODR))
+		{
+			m_swing_phase = SwingPhase::DOWNSWING;
+			
+			Ellipse downswing_ellipse(m_uiManager.getScreenSize(), { 0.667f, 0.25f }, { MAX_SCREEN_HEIGHT / MAX_SCREEN_WIDTH * 0.033f, 0.033f }, false, UIColor::Green);
+			m_uiManager.addElement<Ellipse>(downswing_ellipse, L"Ellipse 4");
+		}
+		else
+		{
+			m_previous_pitch_average = m_current_pitch_average;
+			m_previous_yaw_average = m_current_yaw_average;
+			m_current_pitch_average = 0.0f;
+			m_current_yaw_average = 0.0f;
+			m_backswing_point = 0;
+		}
+		
+		break;
+	}
+	case SwingPhase::DOWNSWING:
+	{
+		//The downswing is everything that occurs between the transition and impact
+		//phases of the swing. Since we want to see a little bit before impact to get
+		//a sense of what direction the club is travelling, the downswing phase ends
+		//a few milliseconds before the club actually hits the ball. Furthermore,
+		//since the club is moving so fast in the downswing we want to use every single
+		//quaternion that's available to us, not just the one being rendered on the screen.
+		//Because of this, we iterate directly through the quaternion vector when sensing
+		//proximity to impact.
+		for (int i = 0; i < m_quaternions.size(); i++)
+		{
+			//Remember to rotate the current quaternion by the heading offset before checking
+			//for impact
+			if (detectImpact(m_ball_location, QuaternionMultiply(m_headingOffset, m_quaternions[0])))
+			{
+				m_swing_phase = SwingPhase::IMPACT;
+
+				Ellipse impact_ellipse(m_uiManager.getScreenSize(), { 0.833f, 0.25f }, { MAX_SCREEN_HEIGHT / MAX_SCREEN_WIDTH * 0.033f, 0.033f }, false, UIColor::Blue);
+				m_uiManager.addElement<Ellipse>(impact_ellipse, L"Ellipse 5");
+			}
+		}
+
+		break;
+	}
 	}
 }

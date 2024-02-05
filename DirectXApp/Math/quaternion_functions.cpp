@@ -58,7 +58,8 @@ void Normalize(std::vector<float> &vec)
 //Quaternion Manipulation functions
 void QuatRotate(glm::quat q, std::vector<float>& data)
 {
-    //Takes the float vector data and rotates it according to quaternion q
+    //Takes the float vector data and rotates it according to quaternion q. This method expects
+    //that the input vector has 3 elements.
 
     double w, x, y, z;
 

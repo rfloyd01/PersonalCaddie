@@ -182,6 +182,9 @@
     <ClCompile Include="Graphics\Objects\2D\Graph\GraphKey.cpp">
       <Filter>Graphics\Objects\2D\Graph</Filter>
     </ClCompile>
+    <ClCompile Include="Golf\SwingPhaseDetection.cpp">
+      <Filter>Golf</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -434,6 +437,9 @@
     <ClInclude Include="Graphics\Objects\2D\Graph\GraphKey.h">
       <Filter>Graphics\Objects\2D\Graph</Filter>
     </ClInclude>
+    <ClInclude Include="Golf\SwingPhaseDetection.h">
+      <Filter>Golf</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Assets\Wide310x150Logo.scale-200.png">
@@ -560,6 +566,9 @@
     </Filter>
     <Filter Include="Assets\Models">
       <UniqueIdentifier>{3e51b76e-6dca-4045-8507-73b546bdee52}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Golf">
+      <UniqueIdentifier>{f3c3c1fa-f581-43d6-87e1-2f9e4287a96b}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
