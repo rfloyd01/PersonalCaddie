@@ -34,6 +34,8 @@ private:
 
 	void swingUpdate();
 
+	float calculateSwingSpeed();
+
 	std::chrono::steady_clock::time_point data_start_timer;
 
 	volatile int m_currentQuaternion;
@@ -59,6 +61,7 @@ private:
 	float m_previous_yaw_average, m_current_yaw_average;
 	std::vector<DirectX::XMFLOAT2> m_swingPath; //Tracks the club path through the impact zone
 	volatile bool m_newQuaternions = false;
+	float m_tangential_swing_speed, m_radial_swing_speed;
 
 	//Array used to swap real world coordinates to DirectX coordinates
 	int computer_axis_from_sensor_axis[3] = {1, 2, 0};

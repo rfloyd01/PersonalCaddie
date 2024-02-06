@@ -50,10 +50,16 @@ uint32_t FreeSwingMode::initializeMode(winrt::Windows::Foundation::Size windowSi
 	DataType dt = DataType::EULER_ANGLES;
 	m_mode_screen_handler(ModeAction::PersonalCaddieToggleCalculatedData, (void*)&dt);
 
-	//Add a graph for displaying swing path through impact with the ball
+	//Add a graph for displaying swing path through impact with the ball,
+	//as well as some text overlays to display calculated stats
 	Graph graph(m_uiManager.getScreenSize(), { 0.25, 0.45 }, { 0.2, 0.2 }, true, UIColor::White, UIColor::Black, false, false);
 	m_uiManager.addElement<Graph>(graph, L"Graph");
 	m_uiManager.getElement<Graph>(L"Graph")->updateState(UIElementState::Invisible);
+
+	TextOverlay calculated_swing_speed(m_uiManager.getScreenSize(), { 0.25, 0.65 }, { 0.35, 0.075 }, L"Swing Speed = ",
+		0.5f, { UIColor::White }, { 0, 14 }, UITextJustification::CenterLeft, false);
+	m_uiManager.addElement<TextOverlay>(calculated_swing_speed, L"Swing Speed Text");
+	m_uiManager.getElement<TextOverlay>(L"Swing Speed Text")->updateState(UIElementState::Invisible);
 
 	//The NeedMaterial modeState lets the mode screen know that it needs to pass
 	//a list of materials to this mode that it can use to initialize 3d objects
@@ -385,6 +391,9 @@ void FreeSwingMode::swingUpdate()
 			m_uiManager.getElement<Graph>(L"Graph")->removeAllLines();
 			m_uiManager.getElement<Graph>(L"Graph")->updateState(UIElementState::Invisible);
 			m_swingPath.clear();
+			m_tangential_swing_speed = 0.0f;
+			m_radial_swing_speed = 0.0f;
+			m_uiManager.getElement<TextOverlay>(L"Swing Speed Text")->updateState(UIElementState::Invisible);
 
 			//At each stage of the swing we draw a large colored circle as an indicator
 			Ellipse address_ellipse(m_uiManager.getScreenSize(), { 0.1429f, 0.25f }, { MAX_SCREEN_HEIGHT / MAX_SCREEN_WIDTH * 0.033f, 0.033f }, false, UIColor::Red);
@@ -536,6 +545,8 @@ void FreeSwingMode::swingUpdate()
 			//the flight of the golf ball. Shift data points so that the golf ball will be at 
 			//the center of the graph
 			m_swingPath.push_back({ club_orientation[1] - m_ball_location[1], club_orientation[0] - m_ball_location[0]});
+			m_tangential_swing_speed += m_angularVelocities[i].first;
+			m_radial_swing_speed += m_angularVelocities[i].second;
 
 			/*std::wstring debug = L"Club Head Location = [" + std::to_wstring(club_orientation[1]) + L", " + std::to_wstring(club_orientation[1]) + L", " + std::to_wstring(club_orientation[2]) + L"]\n";
 			OutputDebugString(&debug[0]);*/
@@ -560,6 +571,12 @@ void FreeSwingMode::swingUpdate()
 			m_uiManager.getElement<Graph>(L"Graph")->addAxisLine(1, 0.0f);
 			m_uiManager.getElement<Graph>(L"Graph")->addGraphData(m_swingPath, UIColor::Red);
 			m_uiManager.getElement<Graph>(L"Graph")->removeState(UIElementState::Invisible);
+
+			//Calculate the speed of the swing
+			float swing_speed = calculateSwingSpeed();
+			m_uiManager.getElement<TextOverlay>(L"Swing Speed Text")->updateText(L"Swing Speed = " + std::to_wstring(swing_speed) + L" mph");
+			m_uiManager.getElement<TextOverlay>(L"Swing Speed Text")->removeState(UIElementState::Invisible);
+			
 		}
 		else
 		{
@@ -579,4 +596,27 @@ void FreeSwingMode::swingUpdate()
 		break;
 	}
 	}
+}
+
+float FreeSwingMode::calculateSwingSpeed()
+{
+	//First take the average of the angular velocities recorded during the 
+	//impact phase of the swing.
+	m_tangential_swing_speed /= m_swingPath.size();
+	m_radial_swing_speed /= m_swingPath.size();
+
+	//Convert these averages to linear velocities based on the distance
+	//from the golfer's hands to the club face.
+	float radius_in_inches = 32.0f; //This is based on my pitching wedge and will obviously change from club to club and golfer to golfer
+
+	//With the exception of pi, the numbers in the below equations are for
+	//the conversion from degrees to inches and then to miles
+	float tangential_velocity = 7200.0f * 3.14159f * radius_in_inches * m_tangential_swing_speed / 22809600.0f;
+	float radial_velocity = 7200.0f * 3.14159f * radius_in_inches * m_radial_swing_speed / 22809600.0f;
+
+	//It doesn't matter what direction the club is moving at impact, the 
+	//tangential velocity and radial velocity will always be 90 degrees
+	//apart from each other. Combine these two perpendicular velocity
+	//vectors to get the final velocity.
+	return sqrt(tangential_velocity * tangential_velocity + radial_velocity * radial_velocity);
 }
