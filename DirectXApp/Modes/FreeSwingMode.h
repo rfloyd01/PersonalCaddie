@@ -57,6 +57,8 @@ private:
 	int m_backswing_point; //keeps track of which point is being looked at for the data average
 	float m_previous_pitch_average, m_current_pitch_average;
 	float m_previous_yaw_average, m_current_yaw_average;
+	std::vector<DirectX::XMFLOAT2> m_swingPath; //Tracks the club path through the impact zone
+	volatile bool m_newQuaternions = false;
 
 	//Array used to swap real world coordinates to DirectX coordinates
 	int computer_axis_from_sensor_axis[3] = {1, 2, 0};

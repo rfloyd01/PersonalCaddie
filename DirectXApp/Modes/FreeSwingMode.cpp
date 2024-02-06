@@ -50,6 +50,11 @@ uint32_t FreeSwingMode::initializeMode(winrt::Windows::Foundation::Size windowSi
 	DataType dt = DataType::EULER_ANGLES;
 	m_mode_screen_handler(ModeAction::PersonalCaddieToggleCalculatedData, (void*)&dt);
 
+	//Add a graph for displaying swing path through impact with the ball
+	Graph graph(m_uiManager.getScreenSize(), { 0.25, 0.45 }, { 0.2, 0.2 }, true, UIColor::White, UIColor::Black, false, false);
+	m_uiManager.addElement<Graph>(graph, L"Graph");
+	m_uiManager.getElement<Graph>(L"Graph")->updateState(UIElementState::Invisible);
+
 	//The NeedMaterial modeState lets the mode screen know that it needs to pass
 	//a list of materials to this mode that it can use to initialize 3d objects
 	return (ModeState::CanTransfer | ModeState::NeedMaterial | ModeState::Active);
@@ -78,6 +83,9 @@ void FreeSwingMode::uninitializeMode()
 
 	for (int i = 0; i < m_volumeElements.size(); i++) m_volumeElements[i] = nullptr;
 	m_volumeElements.clear();
+
+	//Clear out any existing swing data
+	m_swingPath.clear();
 
 	//Put the Personal Caddie back into Connected Mode when leaving this page. This can be 
 	//done without going into Sensor Idle Mode first.
@@ -150,6 +158,7 @@ void FreeSwingMode::addQuaternions(std::vector<glm::quat> const& quaternions, in
 		m_timeStamps[i] = time_stamp + i * delta_t;
 	}
 
+	m_newQuaternions = true; //this variable is used for adding rotation quaternions to current swing path only a single time
 	data_start_timer = std::chrono::steady_clock::now(); //set relative time
 
 	if (!m_converged)
@@ -330,6 +339,12 @@ void FreeSwingMode::convergenceCheck()
 
 void FreeSwingMode::swingUpdate()
 {
+	//DEBUG: Print out the location of the clubhead at all times
+	/*std::vector<float> club_orientation = { 1.0f, 0.0f, 0.0f };
+	QuatRotate(QuaternionMultiply(m_headingOffset, m_quaternions[m_currentQuaternion]), club_orientation);
+	std::wstring debug = L"Club Head Location = [" + std::to_wstring(club_orientation[0]) + L", " + std::to_wstring(club_orientation[1]) + L", " + std::to_wstring(club_orientation[2]) + L"]\n";
+	OutputDebugString(&debug[0]);*/
+
 	switch (m_swing_phase)
 	{
 	case SwingPhase::START:
@@ -358,14 +373,22 @@ void FreeSwingMode::swingUpdate()
 			m_swing_phase = SwingPhase::ADDRESS;
 			m_initial_club_angles = m_current_club_angles; //the initial angles now mark the address angles
 
-			Ellipse address_ellipse(m_uiManager.getScreenSize(), { 0.167f, 0.25f }, { MAX_SCREEN_HEIGHT / MAX_SCREEN_WIDTH * 0.033f, 0.033f }, false, UIColor::Red);
-			m_uiManager.addElement<Ellipse>(address_ellipse, L"Ellipse 1");
-
 			//Create a vector pointing along the shaft of the club at address. This will 
 			//help us detect when we're close to impact with the ball later on.
 			m_ball_location = { 1.0f, 0.0f, 0.0f };
 			auto currentQuat = QuaternionMultiply(m_headingOffset, m_quaternions[m_currentQuaternion]);
 			QuatRotate(currentQuat, m_ball_location);
+
+			//In case this isn't the first swing that's been taken so far, now is a good time
+			//to reset any kind of swing data.
+			for (int i = 1; i < 7; i++) m_uiManager.removeElement<Ellipse>(L"Ellipse " + std::to_wstring(i));
+			m_uiManager.getElement<Graph>(L"Graph")->removeAllLines();
+			m_uiManager.getElement<Graph>(L"Graph")->updateState(UIElementState::Invisible);
+			m_swingPath.clear();
+
+			//At each stage of the swing we draw a large colored circle as an indicator
+			Ellipse address_ellipse(m_uiManager.getScreenSize(), { 0.1429f, 0.25f }, { MAX_SCREEN_HEIGHT / MAX_SCREEN_WIDTH * 0.033f, 0.033f }, false, UIColor::Red);
+			m_uiManager.addElement<Ellipse>(address_ellipse, L"Ellipse 1");
 		}
 		break;
 	}
@@ -385,7 +408,7 @@ void FreeSwingMode::swingUpdate()
 			m_current_yaw_average = 0.0f;
 			m_backswing_point = 0; //set the backswing average index to 0
 
-			Ellipse backswing_ellipse(m_uiManager.getScreenSize(), { 0.333f, 0.25f }, { MAX_SCREEN_HEIGHT / MAX_SCREEN_WIDTH * 0.033f, 0.033f }, false, UIColor::Orange);
+			Ellipse backswing_ellipse(m_uiManager.getScreenSize(), { 0.2857f, 0.25f }, { MAX_SCREEN_HEIGHT / MAX_SCREEN_WIDTH * 0.033f, 0.033f }, false, UIColor::Orange);
 			m_uiManager.addElement<Ellipse>(backswing_ellipse, L"Ellipse 2");
 		}
 		break;
@@ -409,7 +432,7 @@ void FreeSwingMode::swingUpdate()
 			{
 				m_swing_phase = SwingPhase::TRANSITION;
 				
-				Ellipse transition_ellipse(m_uiManager.getScreenSize(), { 0.5f, 0.25f }, { MAX_SCREEN_HEIGHT / MAX_SCREEN_WIDTH * 0.033f, 0.033f }, false, UIColor::Yellow);
+				Ellipse transition_ellipse(m_uiManager.getScreenSize(), { 0.4286f, 0.25f }, { MAX_SCREEN_HEIGHT / MAX_SCREEN_WIDTH * 0.033f, 0.033f }, false, UIColor::Yellow);
 				m_uiManager.addElement<Ellipse>(transition_ellipse, L"Ellipse 3");
 			}
 			else
@@ -435,7 +458,7 @@ void FreeSwingMode::swingUpdate()
 		{
 			m_swing_phase = SwingPhase::DOWNSWING;
 			
-			Ellipse downswing_ellipse(m_uiManager.getScreenSize(), { 0.667f, 0.25f }, { MAX_SCREEN_HEIGHT / MAX_SCREEN_WIDTH * 0.033f, 0.033f }, false, UIColor::Green);
+			Ellipse downswing_ellipse(m_uiManager.getScreenSize(), { 0.5714f, 0.25f }, { MAX_SCREEN_HEIGHT / MAX_SCREEN_WIDTH * 0.033f, 0.033f }, false, UIColor::Green);
 			m_uiManager.addElement<Ellipse>(downswing_ellipse, L"Ellipse 4");
 		}
 		else
@@ -459,19 +482,100 @@ void FreeSwingMode::swingUpdate()
 		//quaternion that's available to us, not just the one being rendered on the screen.
 		//Because of this, we iterate directly through the quaternion vector when sensing
 		//proximity to impact.
+		if (!m_newQuaternions) return; //no need to recheck the same quaternions
+
 		for (int i = 0; i < m_quaternions.size(); i++)
 		{
 			//Remember to rotate the current quaternion by the heading offset before checking
 			//for impact
-			if (detectImpact(m_ball_location, QuaternionMultiply(m_headingOffset, m_quaternions[0])))
+			if (detectImpact(m_ball_location, QuaternionMultiply(m_headingOffset, m_quaternions[i])))
 			{
 				m_swing_phase = SwingPhase::IMPACT;
 
-				Ellipse impact_ellipse(m_uiManager.getScreenSize(), { 0.833f, 0.25f }, { MAX_SCREEN_HEIGHT / MAX_SCREEN_WIDTH * 0.033f, 0.033f }, false, UIColor::Blue);
+				Ellipse impact_ellipse(m_uiManager.getScreenSize(), { 0.7143f, 0.25f }, { MAX_SCREEN_HEIGHT / MAX_SCREEN_WIDTH * 0.033f, 0.033f }, false, UIColor::Blue);
 				m_uiManager.addElement<Ellipse>(impact_ellipse, L"Ellipse 5");
 			}
 		}
 
+		m_newQuaternions = false; //setting this bool prevents from checking the same points over and over
+
+		break;
+	}
+	case SwingPhase::IMPACT:
+	{
+		//This phase is very similar to the downswing phase in that it happens very quickly
+		//so we look at every single quaternion for information. The difference here is we
+		//save position data from each of these quaternions to get important info about
+		//the contact with the ball (things like swing speed and direction of the club head).
+		//Once the club travels a certain distance past the ball we move on to the final 
+		//phase of the swing
+		if (!m_newQuaternions) return; //no need to recheck the same quaternions
+
+		for (int i = 0; i < m_quaternions.size(); i++)
+		{
+			std::vector<float> club_orientation = { 1.0f, 0.0f, 0.0f }; //will get rotated according to the current quaternion
+
+			if (detectFollowThrough(m_ball_location, club_orientation, QuaternionMultiply(m_headingOffset, m_quaternions[i])))
+			{
+				m_swing_phase = SwingPhase::FOLLOW_THROUGH;
+
+				Ellipse follow_through_ellipse(m_uiManager.getScreenSize(), { 0.8571f, 0.25f }, { MAX_SCREEN_HEIGHT / MAX_SCREEN_WIDTH * 0.033f, 0.033f }, false, UIColor::Purple);
+				m_uiManager.addElement<Ellipse>(follow_through_ellipse, L"Ellipse 6");
+
+				//Set some variables needed for follow through end detection
+				m_previous_pitch_average = 0.0f;
+				m_previous_yaw_average = 0.0f;
+				m_current_pitch_average = 0.0f;
+				m_current_yaw_average = 0.0f;
+				m_backswing_point = 0;
+			}
+
+			//First, save information about the rotation quaternions rate of change along the
+			//XY plane. This will let us know if the club is swinging down the target line,
+			//on an out-to-in path or on an in-to-out path which has large implications for 
+			//the flight of the golf ball. Shift data points so that the golf ball will be at 
+			//the center of the graph
+			m_swingPath.push_back({ club_orientation[1] - m_ball_location[1], club_orientation[0] - m_ball_location[0]});
+
+			/*std::wstring debug = L"Club Head Location = [" + std::to_wstring(club_orientation[1]) + L", " + std::to_wstring(club_orientation[1]) + L", " + std::to_wstring(club_orientation[2]) + L"]\n";
+			OutputDebugString(&debug[0]);*/
+		}
+
+		m_newQuaternions = false; //setting this bool prevents from checking/adding the same points over and over
+
+		break;
+	}
+	case SwingPhase::FOLLOW_THROUGH:
+	{
+		//After impact, the club will travel upwards some distance before coming to a stop, this
+		//is known as the follow through. We use this phase of the swing to create graphs from the 
+		//information gathered during impact.
+
+		if (detectSwingEnd(m_previous_pitch_average, m_current_pitch_average, m_previous_yaw_average, m_current_yaw_average, TRANSITION_MOVING_AVERAGE_POINTS / m_sensorODR))
+		{
+			m_swing_phase = SwingPhase::END;
+
+			m_uiManager.getElement<Graph>(L"Graph")->setAxisMaxAndMins({ -1.0f,  -1.0f }, { 1.0f, 1.0f });
+			m_uiManager.getElement<Graph>(L"Graph")->addAxisLine(0, 0.0f);
+			m_uiManager.getElement<Graph>(L"Graph")->addAxisLine(1, 0.0f);
+			m_uiManager.getElement<Graph>(L"Graph")->addGraphData(m_swingPath, UIColor::Red);
+			m_uiManager.getElement<Graph>(L"Graph")->removeState(UIElementState::Invisible);
+		}
+		else
+		{
+			m_previous_pitch_average = m_current_pitch_average;
+			m_previous_yaw_average = m_current_yaw_average;
+			m_current_pitch_average = 0.0f;
+			m_current_yaw_average = 0.0f;
+			m_backswing_point = 0;
+		}
+
+		break;
+	}
+	case SwingPhase::END:
+	{
+		//Once the swing is over we simply go back to the start and do everything again.
+		m_swing_phase = SwingPhase::START;
 		break;
 	}
 	}

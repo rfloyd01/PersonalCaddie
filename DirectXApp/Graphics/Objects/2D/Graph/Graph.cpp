@@ -209,8 +209,13 @@ void Graph::addAxisLine(int axis, float location)
 	//actually be displayed. The location must be given in absolute coordinates. Lines created by this method
 	//persist through different zoom levels which may appear somewhat unexpected.
 	DirectX::XMFLOAT2 difference = { m_maximalDataPoint.x - m_minimalDataPoint.x, m_maximalDataPoint.y - m_minimalDataPoint.y };
-	DirectX::XMFLOAT2 absoluteDifference = { m_maximalAbsolutePoint.x - m_minimalAbsolutePoint.x, m_maximalAbsolutePoint.y - m_minimalAbsolutePoint.y };
 	DirectX::XMFLOAT2 point_one = {0.0f, 0.0f}, point_two = { 0.0f, 0.0f };
+	auto pixel_location = getPixelLocation();
+	auto pixel_size = getPixelSize();
+	DirectX::XMFLOAT2 absoluteMaximums = { (pixel_location.x + pixel_size.x / 2.0f) / m_screenSize->Width, (pixel_location.y + pixel_size.y / 2.0f) / m_screenSize->Height };
+	DirectX::XMFLOAT2 absoluteMinimums = { (pixel_location.x - pixel_size.x / 2.0f) / m_screenSize->Width, (pixel_location.y - pixel_size.y / 2.0f) / m_screenSize->Height };
+	auto absoluteDifference = getAbsoluteSize();
+	auto absoluteLocation = getAbsoluteLocation();
 
 	switch (axis)
 	{
@@ -218,19 +223,18 @@ void Graph::addAxisLine(int axis, float location)
 	{
 		//this is the x-axis, so we place a straight horizontal line at the specified y-value.
 		//This line needs to be correct if the graph is a "square"
-		location = -1 * (absoluteDifference.y * ((location - m_minimalDataPoint.y) / difference.y) - m_maximalAbsolutePoint.y); //convert the given location from data coordinates into absolute window coordinates (y-axis is flipped)
-		DirectX::XMFLOAT2 x_location = { m_minimalAbsolutePoint.x, absoluteDifference.x + m_minimalAbsolutePoint.x };
-		point_one = { x_location.x, location };
-		point_two = { x_location.y, location };
+		location = -1 * (absoluteDifference.y * ((location - m_minimalDataPoint.y) / difference.y) - absoluteMaximums.y);
+		DirectX::XMFLOAT2 x_location = { absoluteMinimums.x, absoluteDifference.x + absoluteMinimums.x };
+		point_one = { absoluteLocation.x - absoluteDifference.x / 2.0f, location };
+		point_two = { absoluteLocation.x + absoluteDifference.x / 2.0f, location };
 		break;
 	}
 	case 1:
 	{
 		//this is the y-axis, so we place a straight vertical line at the specified x-value.
-		//location = squareGraphRatioCorrection * (absoluteDifference.x * ((location - m_minimalDataPoint.x) / difference.x)) + m_minimalAbsolutePoint.x + squareGraphDriftCorrection; //convert the given location from data coordinates into absolute window coordinates.
-		location = absoluteDifference.x * ((location - m_minimalDataPoint.x) / difference.x) + m_minimalAbsolutePoint.x; //convert the given location from data coordinates into absolute window coordinates.
-		point_one = { location,  m_location.y - m_size.y / 2.0f };
-		point_two = { location,  m_location.y + m_size.y / 2.0f };
+		location = absoluteDifference.x * ((location - m_minimalDataPoint.x) / difference.x) + absoluteMinimums.x;
+		point_one = { location,  absoluteLocation.y - absoluteDifference.y / 2.0f };
+		point_two = { location, absoluteLocation.y + absoluteDifference.y / 2.0f };
 		break;
 	}
 	}

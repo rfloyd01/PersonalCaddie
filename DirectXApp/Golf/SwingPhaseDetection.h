@@ -47,3 +47,5 @@ bool detectBackswing(ClubEulerAngles& initial_angles, ClubEulerAngles& current_a
 bool detectTransition(float previous_pitch, float current_pitch, float previous_yaw, float current_yaw, float delta_t);
 bool detectDownswing(float previous_pitch, float current_pitch, float previous_yaw, float current_yaw, float delta_t);
 bool detectImpact(std::vector<float> const& ball_location, glm::quat const& quaternion);
+bool detectFollowThrough(std::vector<float> const& ball_location, std::vector<float>& club_orientation, glm::quat const& quaternion);
+bool detectSwingEnd(float previous_pitch, float current_pitch, float previous_yaw, float current_yaw, float delta_t);

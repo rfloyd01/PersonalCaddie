@@ -59,7 +59,9 @@ bool detectBackswing(ClubEulerAngles& initial_angles, ClubEulerAngles& current_a
 	//angle.
 
 	//TODO: This currently only makes sense for a righty golfer. At some point in the future
-	//I should add a lefty option (but this is obviously quite a ways off)
+	//I should add a lefty option (but this is obviously quite a ways off). I should also 
+	//add some way to detect a club waggle vs. an actual swing, but again, this will be further
+	//off into the future.
 	if (current_angles.yaw >= (initial_angles.yaw + ADDRESS_ANGLE_THRESHOLD))
 	{
 		return true;
@@ -128,9 +130,35 @@ bool detectImpact(std::vector<float> const& ball_location, glm::quat const& quat
 	float z_distance = club_vector[2] - ball_location[2];
 	float total_distance = sqrt(x_distance * x_distance + y_distance * y_distance + z_distance * z_distance);
 
-	std::wstring debug = L"Distance from ball = " + std::to_wstring(total_distance) + L"\n";
-	OutputDebugString(&debug[0]);
-
 	if (total_distance <= IMPACT_DISTANCE_THRESHOLD) return true;
 	return false;
+}
+
+bool detectFollowThrough(std::vector<float> const& ball_location, std::vector<float>& club_orientation, glm::quat const& quaternion)
+{
+	//This method uses pretty much the exact same logic as was used for detecting impact,
+	//but instead of waiting for the club to be within a certain proximity of the ball,
+	//we wait for the club to leave a certain proximity of the ball.
+	QuatRotate(quaternion, club_orientation);
+
+	float x_distance = club_orientation[0] - ball_location[0];
+	float y_distance = club_orientation[1] - ball_location[1];
+	float z_distance = club_orientation[2] - ball_location[2];
+	float total_distance = sqrt(x_distance * x_distance + y_distance * y_distance + z_distance * z_distance);
+
+	if (total_distance > IMPACT_DISTANCE_THRESHOLD) return true;
+	return false;
+}
+
+bool detectSwingEnd(float previous_pitch, float current_pitch, float previous_yaw, float current_yaw, float delta_t)
+{
+	//After hitting the ball the golf club will travel some distance up into the air. On 
+	//short swings like a chip it won't be very far while during a full swing it will be
+	//up near the golfer's head. In either scenario though, the club must come back down
+	//to the ground. Transitioning from the follow through to the end of the swing will
+	//exhibit very similar properties in the club's angular velocity to what was seen
+	//when going from the backswing to the transition phase of the swing. In fact, the 
+	//properties should be identical (just opposite as the swing is moving forwards now)
+	//so we simply call the existing method.
+	return detectTransition(previous_pitch, current_pitch, previous_yaw, current_yaw, delta_t);
 }
