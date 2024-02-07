@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Mode.h"
+#include "../Mode.h"
 #include "Devices/PersonalCaddie.h"
 
 class GraphMode : public Mode

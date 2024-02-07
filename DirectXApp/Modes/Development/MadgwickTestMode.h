@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Mode.h"
+#include "../Mode.h"
 
 #include "Math/SensorFusion/FusionAhrs.h"
 #include "Math/SensorFusion/FusionOffset.h"

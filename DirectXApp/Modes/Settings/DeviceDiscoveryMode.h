@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Mode.h"
+#include "../Mode.h"
 
 class DeviceDiscoveryMode : public Mode
 {

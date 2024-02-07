@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Mode.h"
+#include "../Mode.h"
 #include "Math/ellipse_math.h"
 
 enum class SensorCalibrationAction

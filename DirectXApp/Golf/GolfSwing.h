@@ -62,12 +62,13 @@ protected:
 	virtual void preFollowThroughAction() {};
 	virtual void preSwingEndAction() {};
 
-	//Reference Variables
-	volatile int* p_currentQuaternion; //keeps track of the quaternion currently being rendered on the screen
+	//Reference Variables -- These are variables which are owned by the class which extends
+	//the golf swing class, however, can't be directly accessed here
+	volatile int* p_currentQuaternion;
 	glm::quat* p_headingOffset;
 	volatile bool* p_newQuaternions;
 	std::vector<glm::quat>* p_quaternions;
-	std::vector<std::pair<float, float> >* p_angularVelocities; //each pair holds the pitch and yaw angular velocities as read from the sensor
+	std::vector<std::pair<float, float> >* p_angularVelocities;
 	bool* p_converged;
 	float* p_sensorODR;
 

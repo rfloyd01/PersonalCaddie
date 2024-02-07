@@ -46,7 +46,6 @@ uint32_t FreeSwingMode::initializeMode(winrt::Windows::Foundation::Size windowSi
 	//proper initialization of swing start time and club Euler Angles. Since
 	//Euler Angles are going to be used, we also alert the Personal Caddie
 	//to start calculating them for us.
-	//m_swing_phase = SwingPhase::START;
 	DataType dt = DataType::EULER_ANGLES;
 	m_mode_screen_handler(ModeAction::PersonalCaddieToggleCalculatedData, (void*)&dt);
 
@@ -108,7 +107,7 @@ void FreeSwingMode::uninitializeMode()
 void FreeSwingMode::initializeTextOverlay()
 {
 	//Title information
-	std::wstring title_message = L"Madgwick Filter Testing";
+	std::wstring title_message = L"Freeswing Mode";
 	TextOverlay title(m_uiManager.getScreenSize(), { UIConstants::TitleTextLocationX, UIConstants::TitleTextLocationY }, { UIConstants::TitleTextSizeX, UIConstants::TitleTextSizeY },
 		title_message, UIConstants::TitleTextPointSize, { UIColor::White }, { 0,  (unsigned int)title_message.length() }, UITextJustification::CenterCenter);
 	m_uiManager.addElement<TextOverlay>(title, L"Title Text");

@@ -231,20 +231,20 @@
     <ClInclude Include="Math\SensorFusion\FusionMath.h" />
     <ClInclude Include="Math\SensorFusion\FusionOffset.h" />
     <ClInclude Include="Math\sensor_fusion.h" />
-    <ClInclude Include="Modes\CalibrationMode.h" />
-    <ClInclude Include="Modes\DevelopmentMenuMode.h" />
-    <ClInclude Include="Modes\DeviceDiscoveryMode.h" />
+    <ClInclude Include="Modes\Development\DevelopmentMenuMode.h" />
+    <ClInclude Include="Modes\Development\GraphMode.h" />
+    <ClInclude Include="Modes\Development\MadgwickTestMode.h" />
+    <ClInclude Include="Modes\Development\UITestMode.h" />
     <ClInclude Include="Modes\FreeSwingMode.h" />
-    <ClInclude Include="Modes\GraphMode.h" />
-    <ClInclude Include="Modes\IMUSettingsMode.h" />
-    <ClInclude Include="Modes\MadgwickTestMode.h" />
     <ClInclude Include="Modes\MainMenuMode.h" />
     <ClInclude Include="Modes\Mode.h" />
     <ClInclude Include="Modes\ModeScreen.h" />
-    <ClInclude Include="Modes\SettingsMenuMode.h" />
+    <ClInclude Include="Modes\Settings\CalibrationMode.h" />
+    <ClInclude Include="Modes\Settings\DeviceDiscoveryMode.h" />
+    <ClInclude Include="Modes\Settings\IMUSettingsMode.h" />
+    <ClInclude Include="Modes\Settings\SettingsMenuMode.h" />
     <ClInclude Include="Modes\Training\SwingPathTrainingMode.h" />
     <ClInclude Include="Modes\Training\TrainingMenuMode.h" />
-    <ClInclude Include="Modes\UITestMode.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="UIConstants.h" />
   </ItemGroup>
@@ -334,20 +334,20 @@
     <ClCompile Include="Math\SensorFusion\FusionAhrs.cpp" />
     <ClCompile Include="Math\SensorFusion\FusionOffset.cpp" />
     <ClCompile Include="Math\sensor_fusion.cpp" />
-    <ClCompile Include="Modes\CalibrationMode.cpp" />
-    <ClCompile Include="Modes\DevelopmentMenuMode.cpp" />
-    <ClCompile Include="Modes\DeviceDiscoveryMode.cpp" />
+    <ClCompile Include="Modes\Development\DevelopmentMenuMode.cpp" />
+    <ClCompile Include="Modes\Development\GraphMode.cpp" />
+    <ClCompile Include="Modes\Development\MadgwickTestMode.cpp" />
+    <ClCompile Include="Modes\Development\UITestMode.cpp" />
     <ClCompile Include="Modes\FreeSwingMode.cpp" />
-    <ClCompile Include="Modes\GraphMode.cpp" />
-    <ClCompile Include="Modes\IMUSettingsMode.cpp" />
-    <ClCompile Include="Modes\MadgwickTestMode.cpp" />
     <ClCompile Include="Modes\MainMenuMode.cpp" />
     <ClCompile Include="Modes\Mode.cpp" />
     <ClCompile Include="Modes\ModeScreen.cpp" />
-    <ClCompile Include="Modes\SettingsMenuMode.cpp" />
+    <ClCompile Include="Modes\Settings\CalibrationMode.cpp" />
+    <ClCompile Include="Modes\Settings\DeviceDiscoveryMode.cpp" />
+    <ClCompile Include="Modes\Settings\IMUSettingsMode.cpp" />
+    <ClCompile Include="Modes\Settings\SettingsMenuMode.cpp" />
     <ClCompile Include="Modes\Training\SwingPathTrainingMode.cpp" />
     <ClCompile Include="Modes\Training\TrainingMenuMode.cpp" />
-    <ClCompile Include="Modes\UITestMode.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>

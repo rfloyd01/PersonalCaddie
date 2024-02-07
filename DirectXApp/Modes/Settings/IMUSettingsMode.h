@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Mode.h"
+#include "../Mode.h"
 #include "../Firmware/MEMs_Drivers/sensor_settings.h"
 
 class IMUSettingsMode : public Mode
