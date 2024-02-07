@@ -49,7 +49,7 @@ void TrainingMenuMode::handleKeyPress(winrt::Windows::System::VirtualKey pressed
 	}
 	case winrt::Windows::System::VirtualKey::Number1:
 	{
-		if (m_connected) createAlert(L"This mode hasn't been implemented yet.", UIColor::Red);
+		if (m_connected) newMode = ModeType::SWING_PATH_TRAINING;
 		else createAlert(L"Must be connected to a Personal Caddie to go to Graph Mode.", UIColor::Red);
 		break;
 	}

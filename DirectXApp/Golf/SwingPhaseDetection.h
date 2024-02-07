@@ -1,3 +1,5 @@
+#pragma once
+
 /*
 The golf swing can be broken up into a few distinct phases: address, backswing,
 transition, downswing, impact and follow through. This class has methods that

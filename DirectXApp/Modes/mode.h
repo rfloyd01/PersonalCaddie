@@ -28,7 +28,8 @@ enum class ModeType
 	GRAPH_MODE = 8,
 	IMU_SETTINGS = 9,
 	MADGWICK = 10,
-	END = 11 //allows for looping through of ModeType enum class. This number should be one more than previous value
+	SWING_PATH_TRAINING = 11,
+	END = 12 //allows for looping through of ModeType enum class. This number should be one more than previous value
 };
 
 //The ModeState enum keeps track of what the current state of the app is. Each of these

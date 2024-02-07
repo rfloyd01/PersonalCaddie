@@ -11,7 +11,8 @@
 #include "MadgwickTestMode.h"
 #include "CalibrationMode.h"
 #include "FreeSwingMode.h"
-#include "TrainingMenuMode.h"
+#include "Training/TrainingMenuMode.h"
+#include "Training/SwingPathTrainingMode.h"
 
 #include "Graphics/Rendering/MasterRenderer.h"
 
@@ -37,6 +38,7 @@ ModeScreen::ModeScreen() :
 	m_modes[static_cast<int>(ModeType::MADGWICK)] = std::make_shared<MadgwickTestMode>();
 	m_modes[static_cast<int>(ModeType::CALIBRATION)] = std::make_shared<CalibrationMode>();
 	m_modes[static_cast<int>(ModeType::TRAINING_MENU)] = std::make_shared<TrainingMenuMode>();
+	m_modes[static_cast<int>(ModeType::SWING_PATH_TRAINING)] = std::make_shared<SwingPathTrainingMode>();
 
 	//After creating the modes, bind the mode handler method to the mode class so that all
 	//different mode types can use it
@@ -307,15 +309,13 @@ void ModeScreen::PersonalCaddieHandler(PersonalCaddieEventType pcEvent, void* ev
 	{
 		//The imu on the personal caddie has finished taking readings and has sent the data over.
 		//Send the data to the current mode if it needs it.
-
-		//TODO: Remove the mode specific logic, it should be the same regardless of the mode
-		
 		if (m_currentMode == ModeType::GRAPH_MODE || m_currentMode == ModeType::CALIBRATION)
 		{
+			//These two modes need data before looking at quaternions so they're handled separately
 			m_modes[static_cast<int>(m_currentMode)]->addData(m_personalCaddie->getSensorData(), m_personalCaddie->getMaxODR(), m_personalCaddie->getDataTimeStamp(), m_personalCaddie->getNumberOfSamples());
 			m_modes[static_cast<int>(m_currentMode)]->addQuaternions(m_personalCaddie->getQuaternions(), m_personalCaddie->getNumberOfSamples(), m_personalCaddie->getCurrentTime(), 1.0f / m_personalCaddie->getMaxODR());
 		}
-		else if (m_currentMode == ModeType::MADGWICK || m_currentMode == ModeType::FREE)
+		else
 		{
 			m_modes[static_cast<int>(m_currentMode)]->addQuaternions(m_personalCaddie->getQuaternions(), m_personalCaddie->getNumberOfSamples(), m_personalCaddie->getCurrentTime(), 1.0f / m_personalCaddie->getMaxODR());
 			m_modes[static_cast<int>(m_currentMode)]->addData(m_personalCaddie->getSensorData(), m_personalCaddie->getMaxODR(), m_personalCaddie->getDataTimeStamp(), m_personalCaddie->getNumberOfSamples());
