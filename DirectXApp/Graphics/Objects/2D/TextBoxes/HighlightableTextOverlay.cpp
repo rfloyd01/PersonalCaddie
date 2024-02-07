@@ -44,5 +44,8 @@ void HighlightableTextOverlay::removeState(uint32_t state)
 		else m_text.colors[0] = m_primaryColor;
 	}
 
-	m_state ^= state;
+	//Call the parent removeState() method to make sure the 
+	//state get's removed from the element and any potential
+	//children
+	UIElement::removeState(state);
 }

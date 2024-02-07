@@ -18,6 +18,7 @@ enum class UIElementType
 	PARTIAL_SCROLLING_TEXT_BOX,
 	FULL_SCROLLING_TEXT_BOX,
 	TEXT_OVERLAY,
+	CLICKABLE_TEXT_OVERLAY,
 	HIGHLIGHTABLE_TEXT_OVERLAY,
 	DROP_DOWN_MENU,
 	GRAPH,
@@ -245,6 +246,9 @@ private:
 
 	template<>
 	UIElementType type_to_UIElementType<TextOverlay>() { return UIElementType::TEXT_OVERLAY; }
+
+	template<>
+	UIElementType type_to_UIElementType<ClickableTextOverlay>() { return UIElementType::CLICKABLE_TEXT_OVERLAY; }
 
 	template<>
 	UIElementType type_to_UIElementType<HighlightableTextOverlay>() { return UIElementType::HIGHLIGHTABLE_TEXT_OVERLAY; }

@@ -137,8 +137,9 @@ void UIElementManager::updateGridSquareElements(InputState* input)
 		//If the given UIElement has been clicked then add it to the UIElementManager's
 		//clicked list. This list keeps track of elements that have been clicked even 
 		//if the mouse moves to another grid square before being released. If the mouse 
-		//is released over one of these clicked items then it gets added to the action list
-		//which will cause the current mode to perform some kind of action.
+		//is released over one of these clicked items, or if the mouse is hovering over a
+		//hoverable item, then it gets added to the action list. This will cause the current
+		//mode to perform an action of its own choosing.
 		if ((input->mouseClickState == MouseClickState::MouseClicked) && (uiElementState & UIElementState::Clicked))
 		{
 			//Only add elements to the clickedElement array during a physical click event
@@ -148,6 +149,10 @@ void UIElementManager::updateGridSquareElements(InputState* input)
 		{
 			m_clickedElements.erase(std::find(m_clickedElements.begin(), m_clickedElements.end(), uiElement));//remove the element from the clicked list
 			m_actionElements.push_back(uiElement); //and add it to the action list
+		}
+		else if (uiElementState & UIElementState::Hovered)
+		{
+			m_actionElements.push_back(uiElement); //add to action list without removing from clicked list
 		}
 	}
 
@@ -166,6 +171,9 @@ void UIElementManager::updateGridSquareElements(InputState* input)
 		}
 		m_clickedElements.clear(); //remove everything from the clicked array when done
 	}
+
+	//TODO: If the mouse moves off of a hovered item too quickly the item will remain hovered
+	//sometimes. I should put in some check to prevent this from happening.
 }
 
 void UIElementManager::checkAlerts()

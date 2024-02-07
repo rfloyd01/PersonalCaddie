@@ -24,6 +24,10 @@ TextOverlay::TextOverlay(std::shared_ptr<winrt::Windows::Foundation::Size> windo
 	m_text.colors = colors;
 	m_text.colorLocations = colorLocations;
 
+	//Any UI Element created with a non-default constructor
+	//has the 'Dummy' flag removed from its state
+	removeState(UIElementState::Dummy);
+
 	resize();
 }
 

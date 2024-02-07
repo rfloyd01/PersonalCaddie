@@ -14,4 +14,8 @@ public:
 
 private:
 	void initializeTextOverlay();
+	void initializeToolTips();
+
+	//Handler Methods
+	virtual void uiElementStateChangeHandler(std::shared_ptr<ManagedUIElement> element) override;
 };

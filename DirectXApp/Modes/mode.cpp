@@ -37,15 +37,21 @@ void Mode::uiUpdate()
 	
 	//If any clickable UI Elements have been clicked, their effects
 	//on the current mode happens here.
-	auto actionElements = m_uiManager.getActionElements();
+	std::vector<std::shared_ptr<ManagedUIElement> >& actionElements = m_uiManager.getActionElements();
 	for (int i = actionElements.size() - 1; i >= 0; i--) //iterate backwards so we can pop each action from the back when complete
 	{
 		uiElementStateChangeHandler(actionElements[i]);
 
 		//Elements must be clicked and released to be added to the actionElements array. Remove
-		//the released state from elements after their actions have been complete.
-		actionElements[i]->element->removeState(UIElementState::Released);
-		m_uiManager.getActionElements().pop_back();
+		//the released state from elements after their actions have been complete. It's possible
+		//to change modes via clicking certain objects. If this happens then the list of action
+		//elements will get reset to 0 while still in this method so we need to check for this
+		//case before removing any action elements.
+		if (actionElements.size() > 0)
+		{
+			actionElements[i]->element->removeState(UIElementState::Released);
+			actionElements.pop_back();
+		}
 	}
 }
 
