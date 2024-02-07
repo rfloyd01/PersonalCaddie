@@ -1,13 +1,13 @@
 #include "pch.h"
-#include "DevelopmentMenuMode.h"
+#include "TrainingMenuMode.h"
 
-DevelopmentMenuMode::DevelopmentMenuMode()
+TrainingMenuMode::TrainingMenuMode()
 {
 	//set a gray background color for the mode
-	m_backgroundColor = UIColor::Gray;
+	m_backgroundColor = UIColor::TrainingModeLight;
 }
 
-uint32_t DevelopmentMenuMode::initializeMode(winrt::Windows::Foundation::Size windowSize, uint32_t initialState)
+uint32_t TrainingMenuMode::initializeMode(winrt::Windows::Foundation::Size windowSize, uint32_t initialState)
 {
 	//Take the current screen size and pass it to the UIElementManager, this is so that the manager knows
 	//how large to make each element.
@@ -26,20 +26,20 @@ uint32_t DevelopmentMenuMode::initializeMode(winrt::Windows::Foundation::Size wi
 	return ModeState::CanTransfer;
 }
 
-void DevelopmentMenuMode::uninitializeMode()
+void TrainingMenuMode::uninitializeMode()
 {
 	//The only thing to do when leaving the main menu mode is to clear
 	//out all text in the text map and color map
 	m_uiManager.removeAllElements();
 }
 
-void DevelopmentMenuMode::handleKeyPress(winrt::Windows::System::VirtualKey pressedKey)
+void TrainingMenuMode::handleKeyPress(winrt::Windows::System::VirtualKey pressedKey)
 {
 	//Like the main menu mode the only thing we can really do here with key presses is 
 	//transfer to a different mode. The difference here though, is that some of the modes
 	//we can traverse to require an active connection to the Personal Caddie device. 
 
-	ModeType newMode = ModeType::DEVELOPER_TOOLS;
+	ModeType newMode = ModeType::TRAINING_MENU;
 	switch (pressedKey)
 	{
 	case winrt::Windows::System::VirtualKey::Escape:
@@ -49,53 +49,54 @@ void DevelopmentMenuMode::handleKeyPress(winrt::Windows::System::VirtualKey pres
 	}
 	case winrt::Windows::System::VirtualKey::Number1:
 	{
-		newMode = ModeType::UI_TEST_MODE;
+		if (m_connected) createAlert(L"This mode hasn't been implemented yet.", UIColor::Red);
+		else createAlert(L"Must be connected to a Personal Caddie to go to Graph Mode.", UIColor::Red);
 		break;
 	}
 	case winrt::Windows::System::VirtualKey::Number2:
 	{
-		if (m_connected) newMode = ModeType::GRAPH_MODE;
-		else createAlert(L"Must be connected to a Personal Caddie to go to Graph Mode.", UIColor::Red);
+		if (m_connected) createAlert(L"This mode hasn't been implemented yet.", UIColor::Red);
+		else createAlert(L"Must be connected to a Personal Caddie to go to Madgwick Mode.", UIColor::Red);
 		break;
 	}
 	case winrt::Windows::System::VirtualKey::Number3:
 	{
-		if (m_connected) newMode = ModeType::MADGWICK;
+		if (m_connected) createAlert(L"This mode hasn't been implemented yet.", UIColor::Red);
 		else createAlert(L"Must be connected to a Personal Caddie to go to Madgwick Mode.", UIColor::Red);
 		break;
 	}
 	}
 
-	if (newMode != ModeType::DEVELOPER_TOOLS) m_mode_screen_handler(ModeAction::ChangeMode, (void*)&newMode);
+	if (newMode != ModeType::TRAINING_MENU) m_mode_screen_handler(ModeAction::ChangeMode, (void*)&newMode);
 }
 
-void DevelopmentMenuMode::initializeTextOverlay()
+void TrainingMenuMode::initializeTextOverlay()
 {
 	//Title information
-	std::wstring title_message = L"Developer Tools";
+	std::wstring title_message = L"Training Menu";
 	TextOverlay title(m_uiManager.getScreenSize(), {UIConstants::TitleTextLocationX, UIConstants::TitleTextLocationY}, {UIConstants::TitleTextSizeX, UIConstants::TitleTextSizeY},
 		title_message, UIConstants::TitleTextPointSize, { UIColor::White }, { 0,  (unsigned int)title_message.length() }, UITextJustification::CenterCenter);
 	m_uiManager.addElement<TextOverlay>(title, L"Title Text");
 
 	//Sub-Title information
-	std::wstring subtitle_message = L"Modes to aid in the development of the Personal Caddie";
+	std::wstring subtitle_message = L"Modes to aid in the Training of the Personal Caddie";
 	TextOverlay subtitle(m_uiManager.getScreenSize(), { UIConstants::SubTitleTextLocationX, UIConstants::SubTitleTextLocationY }, { UIConstants::SubTitleTextSizeX, UIConstants::SubTitleTextSizeY },
 		subtitle_message, UIConstants::SubTitleTextPointSize, { UIColor::White }, { 0,  (unsigned int)subtitle_message.length() }, UITextJustification::CenterCenter);
 	m_uiManager.addElement<TextOverlay>(subtitle, L"Subtitle Text");
 
 	//Body information
-	std::wstring body_message_1 = L"1. UI Element Testing";
-	std::wstring body_message_2 = L"2. Graph IMU Data";
-	std::wstring body_message_3 = L"3. Madgwick Filter Testing";
+	std::wstring body_message_1 = L"1. Swing Path Control";
+	std::wstring body_message_2 = L"2. Face Squareness Control";
+	std::wstring body_message_3 = L"3. Downswing Shallowness";
 	
 	ClickableTextOverlay body1(m_uiManager.getScreenSize(), { UIConstants::BodyTextLocationX, 0.3f }, { UIConstants::BodyTextSizeX,  0.1f },
-		body_message_1, 0.75f, { UIColor::FreeSwingMode }, { 0,  (unsigned int)body_message_1.length() }, UITextJustification::CenterLeft, false);
+		body_message_1, 0.75f, { UIColor::Brown }, { 0,  (unsigned int)body_message_1.length() }, UITextJustification::CenterLeft, false);
 
 	ClickableTextOverlay body2(m_uiManager.getScreenSize(), { UIConstants::BodyTextLocationX, 0.4f }, { UIConstants::BodyTextSizeX, 0.1f },
-		body_message_2, 0.75f, { UIColor::SwingAnalysisMode }, { 0, (unsigned int)body_message_2.length() }, UITextJustification::CenterLeft, false);
+		body_message_2, 0.75f, { UIColor::Orange }, { 0, (unsigned int)body_message_2.length() }, UITextJustification::CenterLeft, false);
 
 	ClickableTextOverlay body3(m_uiManager.getScreenSize(), { UIConstants::BodyTextLocationX, 0.5f }, { UIConstants::BodyTextSizeX, 0.1f },
-		body_message_3, 0.75f, { UIColor::TrainingMode }, { 0, (unsigned int)body_message_3.length() }, UITextJustification::CenterLeft, false);
+		body_message_3, 0.75f, { UIColor::Yellow }, { 0, (unsigned int)body_message_3.length() }, UITextJustification::CenterLeft, false);
 
 	m_uiManager.addElement<ClickableTextOverlay>(body1, L"Body Text 1");
 	m_uiManager.addElement<ClickableTextOverlay>(body2, L"Body Text 2");
@@ -108,38 +109,44 @@ void DevelopmentMenuMode::initializeTextOverlay()
 	m_uiManager.addElement<TextOverlay>(footnote, L"Footnote Text");
 }
 
-void DevelopmentMenuMode::initializeToolTips()
+void TrainingMenuMode::initializeToolTips()
 {
 	//Create tool tips that contain information about each mode
-	std::wstring tool_tip1 = L"A sandbox mode for the development of UI Elements and their logic.";
+	for (int i = 0; i < 3; i++)
+	{
+		std::wstring tip_text;
+		if (i == 0)
+		{
+			tip_text = L"Swing path is the direction that the club head is traveling at impact with regards to the target line. The swing path"
+				L" has a large outcome on the curve of the ball, for example swinging over the top of the target line produces a fade while swinging from inside"
+				L" the target line produces a draw. This mode will ask you to try and swing the club through a certain window, and will get harder as you improve.";
+		}
+		else if (i == 1)
+		{
+			tip_text = L"The direction that the club face points at impact dictates the majority of the direction for the ball flight. If the club face"
+				L" is pointing left of the target line then the ball will go to the left, if the club face is pointint to the right then the ball will go"
+				L" to the right, etc. This training module will tell you how many degrees open or closed the clubface should be at impact and you need"
+				L" to try and match it.";
+		}
+		else if (i == 2)
+		{
+			tip_text = L"Having a shallow club shaft during the downsing is beneficial for a few reasons. Namely, it promotes a good angle of attack into"
+				L" the ball at impact which produces a low ball flight that will rise over time, but it will also reduce the negative effects of hitting a fat"
+				L" shot. In this mode when you line up to the ball two lines will appear on teh screen. The goal is to have the club stay between these"
+				L" two lines during the down swing";
+		}
 
-	std::wstring tool_tip2 = L"This mode allows for graphing of data from the IMU sensors of the Personal Caddie. Individual or multiple data types"
-		L" can be graphed simultaneously. This mode is very useful to help develop algorithms that are specific to a golf swing, and also for testing that"
-		L" the IMU sensors are operating as expected.";
+		TextBox textBox(m_uiManager.getScreenSize(), { 0.75f, 0.55f }, { 0.45f, 0.5f }, tip_text, 0.065f,
+			{ UIColor::Black }, { 0, (unsigned long long)tip_text.length() });
 
-	std::wstring tool_tip3 = L"Madgwick's filter is used for fusing data from the three IMU sensors together to figure out the current orientation of"
-		L" the golf club in space. It's possible to change certain variables to achieve different performance from the filter so this mode is used as"
-		L" a means for fine tuning the filter.";
-
-	TextBox textBox1(m_uiManager.getScreenSize(), { 0.7f, 0.6f }, { 0.45f, 0.5f }, tool_tip1, 0.065f,
-		{ UIColor::Black }, { 0, (unsigned long long)tool_tip1.length() });
-	TextBox textBox2(m_uiManager.getScreenSize(), { 0.7f, 0.6f }, { 0.45f, 0.5f }, tool_tip2, 0.065f,
-		{ UIColor::Black }, { 0, (unsigned long long)tool_tip2.length() });
-	TextBox textBox3(m_uiManager.getScreenSize(), { 0.7f, 0.6f }, { 0.45f, 0.5f }, tool_tip3, 0.065f,
-		{ UIColor::Black }, { 0, (unsigned long long)tool_tip3.length() });
-
-	m_uiManager.addElement<TextBox>(textBox1, L"Tool Tip 1");
-	m_uiManager.addElement<TextBox>(textBox2, L"Tool Tip 2");
-	m_uiManager.addElement<TextBox>(textBox3, L"Tool Tip 3");
-
-	m_uiManager.getElement<TextBox>(L"Tool Tip 1")->updateState(UIElementState::Invisible);
-	m_uiManager.getElement<TextBox>(L"Tool Tip 2")->updateState(UIElementState::Invisible);
-	m_uiManager.getElement<TextBox>(L"Tool Tip 3")->updateState(UIElementState::Invisible);
+		m_uiManager.addElement<TextBox>(textBox, L"Tool Tip " + std::to_wstring(i + 1));
+		m_uiManager.getElement<TextBox>(L"Tool Tip " + std::to_wstring(i + 1))->updateState(UIElementState::Invisible);
+	}
 }
 
-void DevelopmentMenuMode::getBLEConnectionStatus(bool status) { m_connected = status; }
+void TrainingMenuMode::getBLEConnectionStatus(bool status) { m_connected = status; }
 
-void DevelopmentMenuMode::handlePersonalCaddieConnectionEvent(bool connectionStatus)
+void TrainingMenuMode::handlePersonalCaddieConnectionEvent(bool connectionStatus)
 {
 	//In the case that the Personal Caddie becomes asynchronously connected or disconnected
 	//while in this mode, this method will get called and updated the m_connected variable.
@@ -147,7 +154,7 @@ void DevelopmentMenuMode::handlePersonalCaddieConnectionEvent(bool connectionSta
 	m_connected = connectionStatus;
 }
 
-void DevelopmentMenuMode::uiElementStateChangeHandler(std::shared_ptr<ManagedUIElement> element)
+void TrainingMenuMode::uiElementStateChangeHandler(std::shared_ptr<ManagedUIElement> element)
 {
 	//When one of the available modes is hovered over it will reveal a tool tip
 	//with information about that specific mode.

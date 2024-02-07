@@ -19,13 +19,20 @@ UIElementColors::UIElementColors()
 	colors.insert({ UIColor::PaleGray, {0.75f, 0.75f, 0.75f, 1.0f} });
 	colors.insert({ UIColor::Gray, {0.5f, 0.5f, 0.5f, 1.0f} });
 	colors.insert({ UIColor::DarkGray, {0.25f, 0.25f, 0.25f, 1.0f} });
+	colors.insert({ UIColor::Brown, {0.529f, 0.255f, 0.004f, 1.0f} });
 
 	colors.insert({ UIColor::ButtonPressed, {0.35f, 0.35f, 0.35f, 1.0f} });
 	colors.insert({ UIColor::ButtonNotPressed, {0.9f, 0.9f, 0.9f, 1.0f} });
 
 	colors.insert({ UIColor::FreeSwingMode, { 0.39f, 0.592f, 0.592f, 1.0f} });
 	colors.insert({ UIColor::SwingAnalysisMode, { 0.58f, 0.93f, 0.588f, 1.0f } });
+
 	colors.insert({ UIColor::TrainingMode, { 0.71f, 0.541f, 0.416f, 1.0f } });
+	colors.insert({ UIColor::TrainingModeLight, { 0.855f, 0.745f, 0.545f, 1.0f } });
+	colors.insert({ UIColor::SwingPathTraining, { 0.71f, 0.541f, 0.416f, 1.0f } });
+	colors.insert({ UIColor::FaceAquarenessTraining, { 0.725f, 0.478f, 0.341f, 1.0f } });
+	colors.insert({ UIColor::ShallownessTraining, { 1.0f, 0.875f, 0.443f, 1.0f } });
+
 	colors.insert({ UIColor::CalibrationMode, { 0.498f, 0.498f, 0.498f, 1.0f } });
 
 	colors.insert({ UIColor::OpaqueBlue, { 0.6f, 0.851f, 0.918f, 0.5f } });

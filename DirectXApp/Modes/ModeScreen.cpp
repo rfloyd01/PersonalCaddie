@@ -11,6 +11,7 @@
 #include "MadgwickTestMode.h"
 #include "CalibrationMode.h"
 #include "FreeSwingMode.h"
+#include "TrainingMenuMode.h"
 
 #include "Graphics/Rendering/MasterRenderer.h"
 
@@ -35,6 +36,7 @@ ModeScreen::ModeScreen() :
 	m_modes[static_cast<int>(ModeType::IMU_SETTINGS)] = std::make_shared<IMUSettingsMode>();
 	m_modes[static_cast<int>(ModeType::MADGWICK)] = std::make_shared<MadgwickTestMode>();
 	m_modes[static_cast<int>(ModeType::CALIBRATION)] = std::make_shared<CalibrationMode>();
+	m_modes[static_cast<int>(ModeType::TRAINING_MENU)] = std::make_shared<TrainingMenuMode>();
 
 	//After creating the modes, bind the mode handler method to the mode class so that all
 	//different mode types can use it

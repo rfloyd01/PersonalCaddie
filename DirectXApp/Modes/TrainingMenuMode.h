@@ -2,10 +2,10 @@
 
 #include "Mode.h"
 
-class MainMenuMode : public Mode
+class TrainingMenuMode : public Mode
 {
 public:
-	MainMenuMode();
+	TrainingMenuMode();
 
 	virtual uint32_t initializeMode(winrt::Windows::Foundation::Size windowSize, uint32_t initialState = 0) override;
 	virtual void uninitializeMode() override;
@@ -13,6 +13,7 @@ public:
 	virtual void handleKeyPress(winrt::Windows::System::VirtualKey pressedKey) override;
 
 	//Connection Handling Methods
+	virtual void getBLEConnectionStatus(bool status) override;
 	virtual void handlePersonalCaddieConnectionEvent(bool connectionStatus) override;
 
 private:
@@ -22,5 +23,5 @@ private:
 	//Handler Methods
 	virtual void uiElementStateChangeHandler(std::shared_ptr<ManagedUIElement> element) override;
 
-	bool m_connected = false;
+	bool m_connected;
 };

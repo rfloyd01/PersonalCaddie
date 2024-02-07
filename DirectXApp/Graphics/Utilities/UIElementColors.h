@@ -29,6 +29,7 @@ enum class UIColor
 	PaleGray,
 	Gray,
 	DarkGray,
+	Brown,
 
 	//UI Element Specific Colors
 	ButtonPressed,
@@ -37,7 +38,13 @@ enum class UIColor
 	//Mode Specific Colors
 	FreeSwingMode,
 	SwingAnalysisMode,
+
 	TrainingMode,
+	TrainingModeLight,
+	SwingPathTraining,
+	FaceAquarenessTraining,
+	ShallownessTraining,
+
 	CalibrationMode,
 
 	//OPAQUE COLORS

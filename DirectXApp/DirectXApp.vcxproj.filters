@@ -185,6 +185,9 @@
     <ClCompile Include="Golf\SwingPhaseDetection.cpp">
       <Filter>Golf</Filter>
     </ClCompile>
+    <ClCompile Include="Modes\TrainingMenuMode.cpp">
+      <Filter>Modes</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -442,6 +445,9 @@
     </ClInclude>
     <ClInclude Include="Graphics\Objects\2D\TextBoxes\ClickableTextOverlay.h">
       <Filter>Graphics\Objects\2D\TextBoxes</Filter>
+    </ClInclude>
+    <ClInclude Include="Modes\TrainingMenuMode.h">
+      <Filter>Modes</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

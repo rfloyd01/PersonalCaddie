@@ -43,15 +43,20 @@ void MainMenuMode::handleKeyPress(winrt::Windows::System::VirtualKey pressedKey)
 	}
 	case winrt::Windows::System::VirtualKey::Number1:
 	{
-		newMode = ModeType::FREE;
+		if (m_connected) newMode = ModeType::FREE;
+		else createAlert(L"Must be connected to a Personal Caddie to go to the IMU Settings Mode.", UIColor::Red);
 		break;
 	}
 	case winrt::Windows::System::VirtualKey::Number2:
-	case winrt::Windows::System::VirtualKey::Number3:
 	{
 		//These modes haven't been implemented yet so for now just display
 		//an alert letting the user know.
 		createAlert(L"This mode hasn't been implemented yet.", UIColor::Red);
+		break;
+	}
+	case winrt::Windows::System::VirtualKey::Number3:
+	{
+		newMode = ModeType::TRAINING_MENU;
 		break;
 	}
 	case winrt::Windows::System::VirtualKey::Number4:
@@ -72,7 +77,7 @@ void MainMenuMode::handleKeyPress(winrt::Windows::System::VirtualKey pressedKey)
 void MainMenuMode::initializeTextOverlay()
 {
 	//Title information
-	std::wstring title_message = L"Personal Caddie v1.0";
+	std::wstring title_message = L"Personal Caddie v1.1";
 	TextOverlay title(m_uiManager.getScreenSize(), { UIConstants::TitleTextLocationX, UIConstants::TitleTextLocationY }, { UIConstants::TitleTextSizeX, UIConstants::TitleTextSizeY },
 		title_message, UIConstants::TitleTextPointSize, { UIColor::White }, { 0,  (unsigned int)title_message.length() }, UITextJustification::CenterCenter);
 	m_uiManager.addElement<TextOverlay>(title, L"Title Text");
@@ -140,13 +145,13 @@ void MainMenuMode::initializeToolTips()
 	TextBox textBox1(m_uiManager.getScreenSize(), { 0.7f, 0.525f }, { 0.45f, 0.5f }, tool_tip1, 0.065f,
 		{ UIColor::Black }, { 0, (unsigned long long)tool_tip1.length() });
 	TextBox textBox2(m_uiManager.getScreenSize(), { 0.7f, 0.525f }, { 0.45f, 0.5f }, tool_tip2, 0.065f,
-		{ UIColor::Black }, { 0, (unsigned long long)tool_tip1.length() });
+		{ UIColor::Black }, { 0, (unsigned long long)tool_tip2.length() });
 	TextBox textBox3(m_uiManager.getScreenSize(), { 0.7f, 0.525f }, { 0.45f, 0.5f }, tool_tip3, 0.065f,
-		{ UIColor::Black }, { 0, (unsigned long long)tool_tip1.length() });
+		{ UIColor::Black }, { 0, (unsigned long long)tool_tip3.length() });
 	TextBox textBox4(m_uiManager.getScreenSize(), { 0.7f, 0.525f }, { 0.45f, 0.5f }, tool_tip4, 0.065f,
-		{ UIColor::Black }, { 0, (unsigned long long)tool_tip1.length() });
+		{ UIColor::Black }, { 0, (unsigned long long)tool_tip4.length() });
 	TextBox textBox5(m_uiManager.getScreenSize(), { 0.7f, 0.525f }, { 0.45f, 0.5f }, tool_tip5, 0.065f,
-		{ UIColor::Black }, { 0, (unsigned long long)tool_tip1.length() });
+		{ UIColor::Black }, { 0, (unsigned long long)tool_tip5.length() });
 
 	m_uiManager.addElement<TextBox>(textBox1, L"Tool Tip 1");
 	m_uiManager.addElement<TextBox>(textBox2, L"Tool Tip 2");
@@ -188,4 +193,12 @@ void MainMenuMode::uiElementStateChangeHandler(std::shared_ptr<ManagedUIElement>
 			m_uiManager.getElement<TextBox>(tool_tips[i]->name)->updateState(UIElementState::Invisible);
 		}
 	}
+}
+
+void MainMenuMode::handlePersonalCaddieConnectionEvent(bool connectionStatus)
+{
+	//In the case that the Personal Caddie becomes asynchronously connected or disconnected
+	//while in this mode, this method will get called and updated the m_connected variable.
+	//This will in turn allow us, or prevent us, from travelling to certain modes
+	m_connected = connectionStatus;
 }
