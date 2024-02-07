@@ -4,10 +4,9 @@
 
 #include "Math/SensorFusion/FusionAhrs.h"
 #include "Math/SensorFusion/FusionOffset.h"
-//#include "Math/quaternion_functions.h"
-#include "Golf/SwingPhaseDetection.h"
+#include "Golf/GolfSwing.h"
 
-class FreeSwingMode : public Mode
+class FreeSwingMode : public Mode, GolfSwing
 {
 public:
 	FreeSwingMode();
@@ -32,14 +31,33 @@ private:
 
 	void convergenceCheck();
 
-	void swingUpdate();
+	//void swingUpdate();
 
 	float calculateSwingSpeed();
+
+	//Overridden Golf Swing Methods
+	/*virtual void swingStartAction() {};
+	virtual void pre_AddressAction() {};
+	virtual void addressAction() {};
+	virtual void backswingAction() {};
+	virtual void transitionAction() {};
+	virtual void downswingAction() {};*/
+	virtual void impactAction() override;
+	/*virtual void followThroughAction() {};
+	virtual void swingEndAction() {};*/
+
+	virtual void preAddressAction() override;
+	virtual void preBackswingAction() override;
+	virtual void preTransitionAction() override;
+	virtual void preDownswingAction() override;
+	virtual void preImpactAction() override;
+	virtual void preFollowThroughAction() override;
+	virtual void preSwingEndAction() override;
 
 	std::chrono::steady_clock::time_point data_start_timer;
 
 	volatile int m_currentQuaternion;
-	volatile bool m_update_in_process;
+	volatile bool m_update_in_process, m_newQuaternions = false;;
 	DirectX::XMVECTOR m_renderQuaternion; //the current quaternion to be applied on screen
 	std::vector<glm::quat> m_quaternions;
 	std::vector<ClubEulerAngles> m_eulerAngles; //holds euler angles coming from the Personal Caddie
@@ -51,16 +69,19 @@ private:
 	bool m_converged;
 	std::vector<glm::quat> m_convergenceQuaternions;
 
+	//std::unique_ptr<GolfSwing> m_golfSwing;
+
 	//Swing phase variables
-	SwingPhase m_swing_phase;
-	ClubEulerAngles m_current_club_angles, m_initial_club_angles;
-	std::chrono::time_point<std::chrono::steady_clock> m_swing_start_time;
-	std::vector<float> m_ball_location;
-	int m_backswing_point; //keeps track of which point is being looked at for the data average
-	float m_previous_pitch_average, m_current_pitch_average;
-	float m_previous_yaw_average, m_current_yaw_average;
+	//SwingPhase m_swing_phase;
+	//ClubEulerAngles m_current_club_angles, m_initial_club_angles;
+	//std::chrono::time_point<std::chrono::steady_clock> m_swing_start_time;
+	//std::vector<float> m_ball_location;
+	//int m_backswing_point; //keeps track of which point is being looked at for the data average
+	//float m_previous_pitch_average, m_current_pitch_average;
+	//float m_previous_yaw_average, m_current_yaw_average;
+
+	//Freeswing Mode Specific Swing phase variables
 	std::vector<DirectX::XMFLOAT2> m_swingPath; //Tracks the club path through the impact zone
-	volatile bool m_newQuaternions = false;
 	float m_tangential_swing_speed, m_radial_swing_speed;
 
 	//Array used to swap real world coordinates to DirectX coordinates

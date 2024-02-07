@@ -14,20 +14,27 @@ if any, need to occur at each phase of the golf swing.
 class GolfSwing
 {
 public:
-	GolfSwing(volatile int* currentQuaternion, volatile bool* newQuaternions, bool* converged, glm::quat* headingOffset,
+	GolfSwing() {} //empty default constructor
+
+	void setGolfSwingReferenceVariables(volatile int* currentQuaternion, volatile bool* newQuaternions, bool* converged, glm::quat* headingOffset,
 		std::vector<glm::quat>* quaternions, std::vector<std::pair<float, float> >* angularVelocities, float* sensorODR)
 	{
 		//For the golf swing to progress properly there are a few reference variables
 		//that the swing will need from the mode that's inheriting it
-		m_currentQuaternion = currentQuaternion;
-		m_converged = converged;
-		m_headingOffset = headingOffset;
-		m_newQuaternions = newQuaternions;
-		m_quaternions = quaternions;
-		m_angularVelocities = angularVelocities;
-		m_sensorODR = sensorODR;
+		p_currentQuaternion = currentQuaternion;
+		p_converged = converged;
+		p_headingOffset = headingOffset;
+		p_newQuaternions = newQuaternions;
+		p_quaternions = quaternions;
+		p_angularVelocities = angularVelocities;
+		p_sensorODR = sensorODR;
 	}
+
 	void swingUpdate();
+	void setInitialClubAngles(ClubEulerAngles& club_angles);
+	void updateClubAngles(ClubEulerAngles& club_angles);
+	void updateEulerPitchAverage(float pitch_average);
+	void updateEulerYawAverage(float yaw_average);
 
 protected:
 
@@ -55,25 +62,23 @@ protected:
 	virtual void preFollowThroughAction() {};
 	virtual void preSwingEndAction() {};
 
-private:
-
 	//Reference Variables
-	volatile int* m_currentQuaternion; //keeps track of the quaternion currently being rendered on the screen
-	glm::quat* m_headingOffset;
-	volatile bool* m_newQuaternions;
-	std::vector<glm::quat>* m_quaternions;
-	std::vector<std::pair<float, float> >* m_angularVelocities; //each pair holds the pitch and yaw angular velocities as read from the sensor
-	bool* m_converged;
-	float* m_sensorODR;
+	volatile int* p_currentQuaternion; //keeps track of the quaternion currently being rendered on the screen
+	glm::quat* p_headingOffset;
+	volatile bool* p_newQuaternions;
+	std::vector<glm::quat>* p_quaternions;
+	std::vector<std::pair<float, float> >* p_angularVelocities; //each pair holds the pitch and yaw angular velocities as read from the sensor
+	bool* p_converged;
+	float* p_sensorODR;
+
+	//Data Variables
+	ClubEulerAngles m_current_club_angles, m_initial_club_angles;
+	float m_previous_pitch_average, m_current_pitch_average;
+	float m_previous_yaw_average, m_current_yaw_average;
 
 	//Phase detection variables
 	SwingPhase m_swing_phase;
-	ClubEulerAngles m_current_club_angles, m_initial_club_angles;
 	std::chrono::time_point<std::chrono::steady_clock> m_swing_start_time;
 	std::vector<float> m_ball_location;
 	int m_backswing_point; //keeps track of which point is being looked at for the data average
-	float m_previous_pitch_average, m_current_pitch_average;
-	float m_previous_yaw_average, m_current_yaw_average;
-	std::vector<DirectX::XMFLOAT2> m_swingPath; //Tracks the club path through the impact zone
-	float m_tangential_swing_speed, m_radial_swing_speed;
 };

@@ -5,12 +5,6 @@
 
 void GolfSwing::swingUpdate()
 {
-	//DEBUG: Print out the location of the clubhead at all times
-	/*std::vector<float> club_orientation = { 1.0f, 0.0f, 0.0f };
-	QuatRotate(QuaternionMultiply(m_headingOffset, m_quaternions[m_currentQuaternion]), club_orientation);
-	std::wstring debug = L"Club Head Location = [" + std::to_wstring(club_orientation[0]) + L", " + std::to_wstring(club_orientation[1]) + L", " + std::to_wstring(club_orientation[2]) + L"]\n";
-	OutputDebugString(&debug[0]);*/
-
 	switch (m_swing_phase)
 	{
 	case SwingPhase::START:
@@ -18,7 +12,7 @@ void GolfSwing::swingUpdate()
 		//In this phase all we do is set the initial euler angles for the club and
 		//the start time-stamp for the swing. This only happens though if the 
 		//Madgwick filter has properly converged on the club's real world posiiton.
-		if (m_converged)
+		if (p_converged)
 		{
 			m_initial_club_angles = m_current_club_angles;
 			m_swing_start_time = std::chrono::steady_clock::now();
@@ -43,7 +37,7 @@ void GolfSwing::swingUpdate()
 			//Create a vector pointing along the shaft of the club at address. This will 
 			//help us detect when we're close to impact with the ball later on.
 			m_ball_location = { 1.0f, 0.0f, 0.0f };
-			auto currentQuat = QuaternionMultiply(*m_headingOffset, m_quaternions->at(*m_currentQuaternion));
+			auto currentQuat = QuaternionMultiply(*p_headingOffset, p_quaternions->at(*p_currentQuaternion));
 			QuatRotate(currentQuat, m_ball_location);
 
 			preAddressAction(); //One time action before address starts
@@ -87,13 +81,13 @@ void GolfSwing::swingUpdate()
 		//the data is noisy a moving average is used.
 		if (m_backswing_point < TRANSITION_MOVING_AVERAGE_POINTS)
 		{
-			m_current_pitch_average += m_angularVelocities->at(*m_currentQuaternion).first;
-			m_current_yaw_average += m_angularVelocities->at(*m_currentQuaternion).second;
+			m_current_pitch_average += p_angularVelocities->at(*p_currentQuaternion).first;
+			m_current_yaw_average += p_angularVelocities->at(*p_currentQuaternion).second;
 			m_backswing_point++;
 		}
 		else
 		{
-			if (detectTransition(m_previous_pitch_average, m_current_pitch_average, m_previous_yaw_average, m_current_yaw_average, TRANSITION_MOVING_AVERAGE_POINTS / *m_sensorODR))
+			if (detectTransition(m_previous_pitch_average, m_current_pitch_average, m_previous_yaw_average, m_current_yaw_average, TRANSITION_MOVING_AVERAGE_POINTS / *p_sensorODR))
 			{
 				m_swing_phase = SwingPhase::TRANSITION;
 
@@ -120,7 +114,7 @@ void GolfSwing::swingUpdate()
 		//the beginning of the phase was. We wait until the angular velocity along the
 		//pitch and yaw axes have both inverted from the beginning of the phase which
 		//signals the start of the downswing.
-		if (detectDownswing(m_previous_pitch_average, m_current_pitch_average, m_previous_yaw_average, m_current_yaw_average, TRANSITION_MOVING_AVERAGE_POINTS / *m_sensorODR))
+		if (detectDownswing(m_previous_pitch_average, m_current_pitch_average, m_previous_yaw_average, m_current_yaw_average, TRANSITION_MOVING_AVERAGE_POINTS / *p_sensorODR))
 		{
 			m_swing_phase = SwingPhase::DOWNSWING;
 
@@ -149,13 +143,13 @@ void GolfSwing::swingUpdate()
 		//quaternion that's available to us, not just the one being rendered on the screen.
 		//Because of this, we iterate directly through the quaternion vector when sensing
 		//proximity to impact.
-		if (!m_newQuaternions) return; //no need to recheck the same quaternions
+		if (!(*p_newQuaternions)) return; //no need to recheck the same quaternions
 
-		for (int i = 0; i < m_quaternions->size(); i++)
+		for (int i = 0; i < p_quaternions->size(); i++)
 		{
 			//Remember to rotate the current quaternion by the heading offset before checking
 			//for impact
-			if (detectImpact(m_ball_location, QuaternionMultiply(*m_headingOffset, m_quaternions->at(i))))
+			if (detectImpact(m_ball_location, QuaternionMultiply(*p_headingOffset, p_quaternions->at(i))))
 			{
 				m_swing_phase = SwingPhase::IMPACT;
 
@@ -166,7 +160,7 @@ void GolfSwing::swingUpdate()
 
 		downswingAction(); //Action that gets called in every iteration during downswing
 
-		m_newQuaternions = false; //setting this bool prevents from checking the same points over and over
+		*p_newQuaternions = false; //setting this bool prevents from checking the same points over and over
 
 		break;
 	}
@@ -178,13 +172,13 @@ void GolfSwing::swingUpdate()
 		//the contact with the ball (things like swing speed and direction of the club head).
 		//Once the club travels a certain distance past the ball we move on to the final 
 		//phase of the swing
-		if (!m_newQuaternions) return; //no need to recheck the same quaternions
+		if (!(*p_newQuaternions)) return; //no need to recheck the same quaternions
 
-		for (int i = 0; i < m_quaternions->size(); i++)
+		for (int i = 0; i < p_quaternions->size(); i++)
 		{
 			std::vector<float> club_orientation = { 1.0f, 0.0f, 0.0f }; //will get rotated according to the current quaternion
 
-			if (detectFollowThrough(m_ball_location, club_orientation, QuaternionMultiply(*m_headingOffset, m_quaternions->at(i))))
+			if (detectFollowThrough(m_ball_location, club_orientation, QuaternionMultiply(*p_headingOffset, p_quaternions->at(i))))
 			{
 				m_swing_phase = SwingPhase::FOLLOW_THROUGH;
 
@@ -201,7 +195,7 @@ void GolfSwing::swingUpdate()
 
 		impactAction(); //Action that gets called in every iteration during impact
 
-		m_newQuaternions = false; //setting this bool prevents from checking/adding the same points over and over
+		*p_newQuaternions = false; //setting this bool prevents from checking/adding the same points over and over
 
 		break;
 	}
@@ -211,7 +205,7 @@ void GolfSwing::swingUpdate()
 		//is known as the follow through. We use this phase of the swing to create graphs from the 
 		//information gathered during impact.
 
-		if (detectSwingEnd(m_previous_pitch_average, m_current_pitch_average, m_previous_yaw_average, m_current_yaw_average, TRANSITION_MOVING_AVERAGE_POINTS / *m_sensorODR))
+		if (detectSwingEnd(m_previous_pitch_average, m_current_pitch_average, m_previous_yaw_average, m_current_yaw_average, TRANSITION_MOVING_AVERAGE_POINTS / *p_sensorODR))
 		{
 			m_swing_phase = SwingPhase::END;
 
@@ -238,4 +232,26 @@ void GolfSwing::swingUpdate()
 		break;
 	}
 	}
+}
+
+void GolfSwing::setInitialClubAngles(ClubEulerAngles& club_angles)
+{
+	m_initial_club_angles = club_angles;
+}
+
+void GolfSwing::updateClubAngles(ClubEulerAngles& club_angles)
+{
+	m_current_club_angles = club_angles;
+}
+
+void GolfSwing::updateEulerPitchAverage(float pitch_average)
+{
+	m_previous_pitch_average = m_current_pitch_average;
+	m_current_pitch_average = pitch_average;
+}
+
+void GolfSwing::updateEulerYawAverage(float yaw_average)
+{
+	m_previous_yaw_average = m_current_yaw_average;
+	m_current_yaw_average = yaw_average;
 }

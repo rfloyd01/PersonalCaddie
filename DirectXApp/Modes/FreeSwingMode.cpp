@@ -46,7 +46,7 @@ uint32_t FreeSwingMode::initializeMode(winrt::Windows::Foundation::Size windowSi
 	//proper initialization of swing start time and club Euler Angles. Since
 	//Euler Angles are going to be used, we also alert the Personal Caddie
 	//to start calculating them for us.
-	m_swing_phase = SwingPhase::START;
+	//m_swing_phase = SwingPhase::START;
 	DataType dt = DataType::EULER_ANGLES;
 	m_mode_screen_handler(ModeAction::PersonalCaddieToggleCalculatedData, (void*)&dt);
 
@@ -60,6 +60,12 @@ uint32_t FreeSwingMode::initializeMode(winrt::Windows::Foundation::Size windowSi
 		0.5f, { UIColor::White }, { 0, 14 }, UITextJustification::CenterLeft, false);
 	m_uiManager.addElement<TextOverlay>(calculated_swing_speed, L"Swing Speed Text");
 	m_uiManager.getElement<TextOverlay>(L"Swing Speed Text")->updateState(UIElementState::Invisible);
+
+	//Initialize golfswing specific variables
+	setGolfSwingReferenceVariables(&m_currentQuaternion, &m_newQuaternions, & m_converged, &m_headingOffset,
+		&m_quaternions, &m_angularVelocities, &m_sensorODR);
+
+	m_swing_phase = SwingPhase::START;
 
 	//The NeedMaterial modeState lets the mode screen know that it needs to pass
 	//a list of materials to this mode that it can use to initialize 3d objects
@@ -91,7 +97,7 @@ void FreeSwingMode::uninitializeMode()
 	m_volumeElements.clear();
 
 	//Clear out any existing swing data
-	m_swingPath.clear();
+	//m_golfSwing = nullptr;
 
 	//Put the Personal Caddie back into Connected Mode when leaving this page. This can be 
 	//done without going into Sensor Idle Mode first.
@@ -242,7 +248,7 @@ void FreeSwingMode::update()
 	//Rotate each face according to the given quaternion
 	for (int i = 0; i < m_volumeElements.size(); i++) ((Model*)m_volumeElements[i].get())->translateAndRotateFace({ 0.0f, 0.0f, 1.0f }, m_renderQuaternion);
 
-	//TEST: Once all visual updates are complete check the current swing phase
+	//Use the GolfSwing class to update information about the swing
 	swingUpdate();
 }
 
@@ -343,259 +349,97 @@ void FreeSwingMode::convergenceCheck()
 	}
 }
 
-void FreeSwingMode::swingUpdate()
+void FreeSwingMode::preAddressAction()
 {
-	//DEBUG: Print out the location of the clubhead at all times
-	/*std::vector<float> club_orientation = { 1.0f, 0.0f, 0.0f };
-	QuatRotate(QuaternionMultiply(m_headingOffset, m_quaternions[m_currentQuaternion]), club_orientation);
-	std::wstring debug = L"Club Head Location = [" + std::to_wstring(club_orientation[0]) + L", " + std::to_wstring(club_orientation[1]) + L", " + std::to_wstring(club_orientation[2]) + L"]\n";
-	OutputDebugString(&debug[0]);*/
+	//In case this isn't the first swing that's been taken so far, we use this opportunity 
+	//to clear out any data from the previous swing
+	for (int i = 1; i < 7; i++) m_uiManager.removeElement<Ellipse>(L"Ellipse " + std::to_wstring(i));
+	m_uiManager.getElement<Graph>(L"Graph")->removeAllLines();
+	m_uiManager.getElement<Graph>(L"Graph")->updateState(UIElementState::Invisible);
+	m_swingPath.clear();
+	m_tangential_swing_speed = 0.0f;
+	m_radial_swing_speed = 0.0f;
+	m_uiManager.getElement<TextOverlay>(L"Swing Speed Text")->updateState(UIElementState::Invisible);
 
-	switch (m_swing_phase)
+	//At each stage of the swing we draw a large colored circle as an indicator of where we are.
+	//Draw a red circle when entering the address phase
+	Ellipse address_ellipse(m_uiManager.getScreenSize(), { 0.1429f, 0.25f }, { MAX_SCREEN_HEIGHT / MAX_SCREEN_WIDTH * 0.033f, 0.033f }, false, UIColor::Red);
+	m_uiManager.addElement<Ellipse>(address_ellipse, L"Ellipse 1");
+}
+
+void FreeSwingMode::preBackswingAction()
+{
+	//At each stage of the swing we draw a large colored circle as an indicator of where we are.
+	//Draw a orange circle when entering the backswing phase
+	Ellipse backswing_ellipse(m_uiManager.getScreenSize(), { 0.2857f, 0.25f }, { MAX_SCREEN_HEIGHT / MAX_SCREEN_WIDTH * 0.033f, 0.033f }, false, UIColor::Orange);
+	m_uiManager.addElement<Ellipse>(backswing_ellipse, L"Ellipse 2");
+}
+
+void FreeSwingMode::preTransitionAction()
+{
+	//At each stage of the swing we draw a large colored circle as an indicator of where we are.
+	//Draw a yellow circle when entering the transition phase
+	Ellipse transition_ellipse(m_uiManager.getScreenSize(), { 0.4286f, 0.25f }, { MAX_SCREEN_HEIGHT / MAX_SCREEN_WIDTH * 0.033f, 0.033f }, false, UIColor::Yellow);
+	m_uiManager.addElement<Ellipse>(transition_ellipse, L"Ellipse 3");
+}
+
+void FreeSwingMode::preDownswingAction()
+{
+	//At each stage of the swing we draw a large colored circle as an indicator of where we are.
+	//Draw a green circle when entering the downswing phase
+	Ellipse downswing_ellipse(m_uiManager.getScreenSize(), { 0.5714f, 0.25f }, { MAX_SCREEN_HEIGHT / MAX_SCREEN_WIDTH * 0.033f, 0.033f }, false, UIColor::Green);
+	m_uiManager.addElement<Ellipse>(downswing_ellipse, L"Ellipse 4");
+}
+
+void FreeSwingMode::preImpactAction()
+{
+	//At each stage of the swing we draw a large colored circle as an indicator of where we are.
+	//Draw a blue circle when entering the impact phase
+	Ellipse impact_ellipse(m_uiManager.getScreenSize(), { 0.7143f, 0.25f }, { MAX_SCREEN_HEIGHT / MAX_SCREEN_WIDTH * 0.033f, 0.033f }, false, UIColor::Blue);
+	m_uiManager.addElement<Ellipse>(impact_ellipse, L"Ellipse 5");
+}
+
+void FreeSwingMode::impactAction()
+{
+	//Whenever we get a new set of quaternions we extract info from them about the
+	//club right before impact.
+
+	//First, save information about the rotation quaternions rate of change along the
+	//XY plane. This will let us know if the club is swinging down the target line,
+	//on an out-to-in path or on an in-to-out path which has large implications for 
+	//the flight of the golf ball. Shift data points so that the golf ball will be at 
+	//the center of the graph
+	for (int i = 0; i < m_quaternions.size(); i++)
 	{
-	case SwingPhase::START:
-	{
-		//In this phase all we do is set the initial euler angles for the club and
-		//the start time-stamp for the swing. This only happens though if the 
-		//Madgwick filter has properly converged on the club's real world posiiton.
-		if (m_converged)
-		{
-			m_initial_club_angles = m_current_club_angles;
-			m_swing_start_time = std::chrono::steady_clock::now();
-			m_swing_phase = SwingPhase::PRE_ADDRESS;
-		}
-		break;
+		std::vector<float> club_orientation = { 1.0f, 0.0f, 0.0f }; //will get rotated according to the current quaternion
+		detectFollowThrough(m_ball_location, club_orientation, QuaternionMultiply(*p_headingOffset, p_quaternions->at(i))); //redundant as this is already checked in GolfSwing class, but leave for now
+		m_swingPath.push_back({ club_orientation[1] - m_ball_location[1], club_orientation[0] - m_ball_location[0] });
+		m_tangential_swing_speed += m_angularVelocities[i].first;
+		m_radial_swing_speed += m_angularVelocities[i].second;
 	}
-	case SwingPhase::PRE_ADDRESS:
-	{
-		//In this phase of the swing we're waiting for the golfer to put the club head
-		//behind the ball and remain relatively still. Most golfer's have the tendency 
-		//to waggle the club a few times before they fully address the ball, which will
-		//happen in this phase.
-		if (detectAddress(m_initial_club_angles, m_current_club_angles, m_swing_start_time))
-		{
-			//Once the golfer has stopped moving within a certain threshold, we move on
-			//to the address portion of the swing
-			m_swing_phase = SwingPhase::ADDRESS;
-			m_initial_club_angles = m_current_club_angles; //the initial angles now mark the address angles
+}
 
-			//Create a vector pointing along the shaft of the club at address. This will 
-			//help us detect when we're close to impact with the ball later on.
-			m_ball_location = { 1.0f, 0.0f, 0.0f };
-			auto currentQuat = QuaternionMultiply(m_headingOffset, m_quaternions[m_currentQuaternion]);
-			QuatRotate(currentQuat, m_ball_location);
+void FreeSwingMode::preFollowThroughAction()
+{
+	//At each stage of the swing we draw a large colored circle as an indicator of where we are.
+	//Draw a purple circle when entering the follow through phase
+	Ellipse follow_through_ellipse(m_uiManager.getScreenSize(), { 0.8571f, 0.25f }, { MAX_SCREEN_HEIGHT / MAX_SCREEN_WIDTH * 0.033f, 0.033f }, false, UIColor::Purple);
+	m_uiManager.addElement<Ellipse>(follow_through_ellipse, L"Ellipse 6");
+}
 
-			//In case this isn't the first swing that's been taken so far, now is a good time
-			//to reset any kind of swing data.
-			for (int i = 1; i < 7; i++) m_uiManager.removeElement<Ellipse>(L"Ellipse " + std::to_wstring(i));
-			m_uiManager.getElement<Graph>(L"Graph")->removeAllLines();
-			m_uiManager.getElement<Graph>(L"Graph")->updateState(UIElementState::Invisible);
-			m_swingPath.clear();
-			m_tangential_swing_speed = 0.0f;
-			m_radial_swing_speed = 0.0f;
-			m_uiManager.getElement<TextOverlay>(L"Swing Speed Text")->updateState(UIElementState::Invisible);
+void FreeSwingMode::preSwingEndAction()
+{
+	//Display a graph showing the relative path of the clubhead vs. the target line
+	m_uiManager.getElement<Graph>(L"Graph")->setAxisMaxAndMins({ -1.0f,  -1.0f }, { 1.0f, 1.0f });
+	m_uiManager.getElement<Graph>(L"Graph")->addAxisLine(0, 0.0f);
+	m_uiManager.getElement<Graph>(L"Graph")->addAxisLine(1, 0.0f);
+	m_uiManager.getElement<Graph>(L"Graph")->addGraphData(m_swingPath, UIColor::Red);
+	m_uiManager.getElement<Graph>(L"Graph")->removeState(UIElementState::Invisible);
 
-			//At each stage of the swing we draw a large colored circle as an indicator
-			Ellipse address_ellipse(m_uiManager.getScreenSize(), { 0.1429f, 0.25f }, { MAX_SCREEN_HEIGHT / MAX_SCREEN_WIDTH * 0.033f, 0.033f }, false, UIColor::Red);
-			m_uiManager.addElement<Ellipse>(address_ellipse, L"Ellipse 1");
-		}
-		break;
-	}
-	case SwingPhase::ADDRESS:
-	{
-		//In the address phase of the swing all we're really doing is waiting
-		//for the golfer to initiate the swing which is a simple check.
-		if (detectBackswing(m_initial_club_angles, m_current_club_angles))
-		{
-			m_swing_phase = SwingPhase::BACKSWING;
-			m_initial_club_angles = m_current_club_angles; //the initial angles now mark the address angles
-
-			//Set some variables needed during backswing detection
-			m_previous_pitch_average = 0.0f;
-			m_previous_yaw_average = 0.0f;
-			m_current_pitch_average = 0.0f;
-			m_current_yaw_average = 0.0f;
-			m_backswing_point = 0; //set the backswing average index to 0
-
-			Ellipse backswing_ellipse(m_uiManager.getScreenSize(), { 0.2857f, 0.25f }, { MAX_SCREEN_HEIGHT / MAX_SCREEN_WIDTH * 0.033f, 0.033f }, false, UIColor::Orange);
-			m_uiManager.addElement<Ellipse>(backswing_ellipse, L"Ellipse 2");
-		}
-		break;
-	}
-	case SwingPhase::BACKSWING:
-	{
-		//During the backswing we look at the angular velocity along the pitch and yaw
-		//axes. They should both increase (in either the positive or negative direction)
-		//before reaching a peak and then going back towards 0. The transition phase is
-		//entered when both of these angular velocities get close enough to 0. Since
-		//the data is noisy a moving average is used.
-		if (m_backswing_point < TRANSITION_MOVING_AVERAGE_POINTS)
-		{
-			m_current_pitch_average += m_angularVelocities[m_currentQuaternion].first;
-			m_current_yaw_average += m_angularVelocities[m_currentQuaternion].second;
-			m_backswing_point++;
-		}
-		else
-		{
-			if (detectTransition(m_previous_pitch_average, m_current_pitch_average, m_previous_yaw_average, m_current_yaw_average, TRANSITION_MOVING_AVERAGE_POINTS / m_sensorODR))
-			{
-				m_swing_phase = SwingPhase::TRANSITION;
-				
-				Ellipse transition_ellipse(m_uiManager.getScreenSize(), { 0.4286f, 0.25f }, { MAX_SCREEN_HEIGHT / MAX_SCREEN_WIDTH * 0.033f, 0.033f }, false, UIColor::Yellow);
-				m_uiManager.addElement<Ellipse>(transition_ellipse, L"Ellipse 3");
-			}
-			else
-			{
-				m_backswing_point = 0;
-			}
-
-			m_previous_pitch_average = m_current_pitch_average;
-			m_previous_yaw_average = m_current_yaw_average;
-			m_current_pitch_average = 0.0f;
-			m_current_yaw_average = 0.0f;
-		}
-		break;
-	}
-	case SwingPhase::TRANSITION:
-	{
-		//The transition is usually pretty short in comparison to the backswing and 
-		//downswing. The end of the phase is calculated in a pretty similar way that
-		//the beginning of the phase was. We wait until the angular velocity along the
-		//pitch and yaw axes have both inverted from the beginning of the phase which
-		//signals the start of the downswing.
-		if (detectDownswing(m_previous_pitch_average, m_current_pitch_average, m_previous_yaw_average, m_current_yaw_average, TRANSITION_MOVING_AVERAGE_POINTS / m_sensorODR))
-		{
-			m_swing_phase = SwingPhase::DOWNSWING;
-			
-			Ellipse downswing_ellipse(m_uiManager.getScreenSize(), { 0.5714f, 0.25f }, { MAX_SCREEN_HEIGHT / MAX_SCREEN_WIDTH * 0.033f, 0.033f }, false, UIColor::Green);
-			m_uiManager.addElement<Ellipse>(downswing_ellipse, L"Ellipse 4");
-		}
-		else
-		{
-			m_previous_pitch_average = m_current_pitch_average;
-			m_previous_yaw_average = m_current_yaw_average;
-			m_current_pitch_average = 0.0f;
-			m_current_yaw_average = 0.0f;
-			m_backswing_point = 0;
-		}
-		
-		break;
-	}
-	case SwingPhase::DOWNSWING:
-	{
-		//The downswing is everything that occurs between the transition and impact
-		//phases of the swing. Since we want to see a little bit before impact to get
-		//a sense of what direction the club is travelling, the downswing phase ends
-		//a few milliseconds before the club actually hits the ball. Furthermore,
-		//since the club is moving so fast in the downswing we want to use every single
-		//quaternion that's available to us, not just the one being rendered on the screen.
-		//Because of this, we iterate directly through the quaternion vector when sensing
-		//proximity to impact.
-		if (!m_newQuaternions) return; //no need to recheck the same quaternions
-
-		for (int i = 0; i < m_quaternions.size(); i++)
-		{
-			//Remember to rotate the current quaternion by the heading offset before checking
-			//for impact
-			if (detectImpact(m_ball_location, QuaternionMultiply(m_headingOffset, m_quaternions[i])))
-			{
-				m_swing_phase = SwingPhase::IMPACT;
-
-				Ellipse impact_ellipse(m_uiManager.getScreenSize(), { 0.7143f, 0.25f }, { MAX_SCREEN_HEIGHT / MAX_SCREEN_WIDTH * 0.033f, 0.033f }, false, UIColor::Blue);
-				m_uiManager.addElement<Ellipse>(impact_ellipse, L"Ellipse 5");
-			}
-		}
-
-		m_newQuaternions = false; //setting this bool prevents from checking the same points over and over
-
-		break;
-	}
-	case SwingPhase::IMPACT:
-	{
-		//This phase is very similar to the downswing phase in that it happens very quickly
-		//so we look at every single quaternion for information. The difference here is we
-		//save position data from each of these quaternions to get important info about
-		//the contact with the ball (things like swing speed and direction of the club head).
-		//Once the club travels a certain distance past the ball we move on to the final 
-		//phase of the swing
-		if (!m_newQuaternions) return; //no need to recheck the same quaternions
-
-		for (int i = 0; i < m_quaternions.size(); i++)
-		{
-			std::vector<float> club_orientation = { 1.0f, 0.0f, 0.0f }; //will get rotated according to the current quaternion
-
-			if (detectFollowThrough(m_ball_location, club_orientation, QuaternionMultiply(m_headingOffset, m_quaternions[i])))
-			{
-				m_swing_phase = SwingPhase::FOLLOW_THROUGH;
-
-				Ellipse follow_through_ellipse(m_uiManager.getScreenSize(), { 0.8571f, 0.25f }, { MAX_SCREEN_HEIGHT / MAX_SCREEN_WIDTH * 0.033f, 0.033f }, false, UIColor::Purple);
-				m_uiManager.addElement<Ellipse>(follow_through_ellipse, L"Ellipse 6");
-
-				//Set some variables needed for follow through end detection
-				m_previous_pitch_average = 0.0f;
-				m_previous_yaw_average = 0.0f;
-				m_current_pitch_average = 0.0f;
-				m_current_yaw_average = 0.0f;
-				m_backswing_point = 0;
-			}
-
-			//First, save information about the rotation quaternions rate of change along the
-			//XY plane. This will let us know if the club is swinging down the target line,
-			//on an out-to-in path or on an in-to-out path which has large implications for 
-			//the flight of the golf ball. Shift data points so that the golf ball will be at 
-			//the center of the graph
-			m_swingPath.push_back({ club_orientation[1] - m_ball_location[1], club_orientation[0] - m_ball_location[0]});
-			m_tangential_swing_speed += m_angularVelocities[i].first;
-			m_radial_swing_speed += m_angularVelocities[i].second;
-
-			/*std::wstring debug = L"Club Head Location = [" + std::to_wstring(club_orientation[1]) + L", " + std::to_wstring(club_orientation[1]) + L", " + std::to_wstring(club_orientation[2]) + L"]\n";
-			OutputDebugString(&debug[0]);*/
-		}
-
-		m_newQuaternions = false; //setting this bool prevents from checking/adding the same points over and over
-
-		break;
-	}
-	case SwingPhase::FOLLOW_THROUGH:
-	{
-		//After impact, the club will travel upwards some distance before coming to a stop, this
-		//is known as the follow through. We use this phase of the swing to create graphs from the 
-		//information gathered during impact.
-
-		if (detectSwingEnd(m_previous_pitch_average, m_current_pitch_average, m_previous_yaw_average, m_current_yaw_average, TRANSITION_MOVING_AVERAGE_POINTS / m_sensorODR))
-		{
-			m_swing_phase = SwingPhase::END;
-
-			m_uiManager.getElement<Graph>(L"Graph")->setAxisMaxAndMins({ -1.0f,  -1.0f }, { 1.0f, 1.0f });
-			m_uiManager.getElement<Graph>(L"Graph")->addAxisLine(0, 0.0f);
-			m_uiManager.getElement<Graph>(L"Graph")->addAxisLine(1, 0.0f);
-			m_uiManager.getElement<Graph>(L"Graph")->addGraphData(m_swingPath, UIColor::Red);
-			m_uiManager.getElement<Graph>(L"Graph")->removeState(UIElementState::Invisible);
-
-			//Calculate the speed of the swing
-			float swing_speed = calculateSwingSpeed();
-			m_uiManager.getElement<TextOverlay>(L"Swing Speed Text")->updateText(L"Swing Speed = " + std::to_wstring(swing_speed) + L" mph");
-			m_uiManager.getElement<TextOverlay>(L"Swing Speed Text")->removeState(UIElementState::Invisible);
-			
-		}
-		else
-		{
-			m_previous_pitch_average = m_current_pitch_average;
-			m_previous_yaw_average = m_current_yaw_average;
-			m_current_pitch_average = 0.0f;
-			m_current_yaw_average = 0.0f;
-			m_backswing_point = 0;
-		}
-
-		break;
-	}
-	case SwingPhase::END:
-	{
-		//Once the swing is over we simply go back to the start and do everything again.
-		m_swing_phase = SwingPhase::START;
-		break;
-	}
-	}
+	//Calculate and display the speed of the swing
+	float swing_speed = calculateSwingSpeed();
+	m_uiManager.getElement<TextOverlay>(L"Swing Speed Text")->updateText(L"Swing Speed = " + std::to_wstring(swing_speed) + L" mph");
+	m_uiManager.getElement<TextOverlay>(L"Swing Speed Text")->removeState(UIElementState::Invisible);
 }
 
 float FreeSwingMode::calculateSwingSpeed()
