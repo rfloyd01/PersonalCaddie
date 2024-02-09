@@ -208,14 +208,12 @@ void Graph::addAxisLine(int axis, float location)
 	//and specified location. If the location is outside of the current min/max of the graph then it won't
 	//actually be displayed. The location must be given in absolute coordinates. Lines created by this method
 	//persist through different zoom levels which may appear somewhat unexpected.
-	DirectX::XMFLOAT2 difference = { m_maximalDataPoint.x - m_minimalDataPoint.x, m_maximalDataPoint.y - m_minimalDataPoint.y };
-	DirectX::XMFLOAT2 point_one = {0.0f, 0.0f}, point_two = { 0.0f, 0.0f };
-	auto pixel_location = getPixelLocation();
-	auto pixel_size = getPixelSize();
-	DirectX::XMFLOAT2 absoluteMaximums = { (pixel_location.x + pixel_size.x / 2.0f) / m_screenSize->Width, (pixel_location.y + pixel_size.y / 2.0f) / m_screenSize->Height };
-	DirectX::XMFLOAT2 absoluteMinimums = { (pixel_location.x - pixel_size.x / 2.0f) / m_screenSize->Width, (pixel_location.y - pixel_size.y / 2.0f) / m_screenSize->Height };
 	auto absoluteDifference = getAbsoluteSize();
 	auto absoluteLocation = getAbsoluteLocation();
+	DirectX::XMFLOAT2 absoluteMinimums = { absoluteLocation.x - absoluteDifference.x / 2.0f, absoluteLocation.y - absoluteDifference.y / 2.0f };
+	DirectX::XMFLOAT2 absoluteMaximums = { absoluteLocation.x + absoluteDifference.x / 2.0f, absoluteLocation.y + absoluteDifference.y / 2.0f };
+	DirectX::XMFLOAT2 difference = { m_maximalDataPoint.x - m_minimalDataPoint.x, m_maximalDataPoint.y - m_minimalDataPoint.y };
+	DirectX::XMFLOAT2 point_one = { 0.0f, 0.0f }, point_two = { 0.0f, 0.0f };
 
 	switch (axis)
 	{
@@ -224,7 +222,6 @@ void Graph::addAxisLine(int axis, float location)
 		//this is the x-axis, so we place a straight horizontal line at the specified y-value.
 		//This line needs to be correct if the graph is a "square"
 		location = -1 * (absoluteDifference.y * ((location - m_minimalDataPoint.y) / difference.y) - absoluteMaximums.y);
-		DirectX::XMFLOAT2 x_location = { absoluteMinimums.x, absoluteDifference.x + absoluteMinimums.x };
 		point_one = { absoluteLocation.x - absoluteDifference.x / 2.0f, location };
 		point_two = { absoluteLocation.x + absoluteDifference.x / 2.0f, location };
 		break;

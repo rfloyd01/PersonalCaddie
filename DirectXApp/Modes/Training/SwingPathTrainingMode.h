@@ -27,11 +27,15 @@ public:
 
 private:
 	void initializeTextOverlay();
+	void loadTrainingUI();
 	void loadModel();
 
 	void convergenceCheck();
 
 	float calculateSwingSpeed();
+
+	//Handler Methods
+	virtual void uiElementStateChangeHandler(std::shared_ptr<ManagedUIElement> element) override;
 
 	//Overridden Golf Swing Methods
 	virtual void impactAction() override;
@@ -42,6 +46,12 @@ private:
 	virtual void preImpactAction() override;
 	virtual void preFollowThroughAction() override;
 	virtual void preSwingEndAction() override;
+
+	//Training Module Specific Methods
+	void switchMode();
+	void levelUp();
+	void updateGameText();
+	void createGoalAngle();
 
 	std::chrono::steady_clock::time_point data_start_timer;
 
@@ -57,9 +67,14 @@ private:
 	bool m_converged;
 	std::vector<glm::quat> m_convergenceQuaternions;
 
-	//Swing Path Training Mode Specific Swing phase variables
+	//Swing Path Training Mode Specific Variables
 	std::vector<DirectX::XMFLOAT2> m_swingPath; //Tracks the club path through the impact zone
 	float m_tangential_swing_speed, m_radial_swing_speed;
+	int m_modeType; //there are both training and game modes
+	int m_currentLevel, m_currentStreak, m_toLevelUp;
+	std::pair<float, float> m_threshold; //the upper and lower limit (in degrees) that the swing can be off by and still get a pass
+	std::pair<float, float> m_goalLimits; //the upper and lower bound that the goal angle stays between
+	float m_goalAngle;
 
 	//Array used to swap real world coordinates to DirectX coordinates
 	int computer_axis_from_sensor_axis[3] = {1, 2, 0};

@@ -22,6 +22,7 @@ public:
 
 	virtual uint32_t update(InputState* inputState) override;
 	virtual std::vector<UIText*> setTextDimension() override;
+	void removeState(uint32_t state) override;
 
 	//Get and Set Options
 	void setSelectedOption(std::wstring option);
@@ -30,6 +31,8 @@ public:
 	void setNewOptions(std::wstring options, bool highlightable);
 
 	virtual void setChildrenAbsoluteSize(DirectX::XMFLOAT2 size) override;
+
+	bool selectionInProcess() { return !(p_children[2]->getState() & UIElementState::Invisible); }
 
 protected:
 	virtual void repositionText() override;

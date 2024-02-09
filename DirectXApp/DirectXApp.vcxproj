@@ -172,7 +172,6 @@
     <ClInclude Include="Graphics\Objects\2D\BasicElements\Ellipse.h" />
     <ClInclude Include="Graphics\Objects\2D\BasicElements\Line.h" />
     <ClInclude Include="Graphics\Objects\2D\BasicElements\OutlinedBox.h" />
-    <ClInclude Include="Graphics\Objects\2D\BasicElements\RelativeBox.h" />
     <ClInclude Include="Graphics\Objects\2D\BasicElements\ShadowedBox.h" />
     <ClInclude Include="Graphics\Objects\2D\BasicElements\TextOverlay.h" />
     <ClInclude Include="Graphics\Objects\2D\Buttons\ArrowButton.h" />

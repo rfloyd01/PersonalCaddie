@@ -4,7 +4,6 @@
 #include "BasicElements/Box.h"
 #include "BasicElements/OutlinedBox.h"
 #include "BasicElements/ShadowedBox.h"
-#include "BasicElements/RelativeBox.h"
 #include "BasicElements/Ellipse.h"
 #include "Buttons/Button.h"
 #include "Buttons/TextButton.h"

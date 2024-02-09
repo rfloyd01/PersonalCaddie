@@ -21,6 +21,7 @@
 //put into a static variable in the UIElement class
 #define MAX_SCREEN_HEIGHT 2160.0f
 #define MAX_SCREEN_WIDTH 3840.0f
+#define SCREEN_RATIO MAX_SCREEN_HEIGHT / MAX_SCREEN_WIDTH //useful for creating square shaped elements
 
 enum UIElementState
 {

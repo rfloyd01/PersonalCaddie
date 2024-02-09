@@ -47,6 +47,21 @@ std::vector<UIText*> DropDownMenu::setTextDimension()
 	return ((FullScrollingTextBox*)p_children[2].get())->setTextDimension();
 }
 
+void DropDownMenu::removeState(uint32_t state)
+{
+	//This method is the same as the parent method, with the exception that
+	//if the passed in state is UIElementState::Invisible then it doesn't
+	//propogate to child elements. This is because by default, the scroll
+	//box child element is invisible while the drop down parent is visible.
+	m_state &= ~state;
+	if (state == UIElementState::Invisible) return;
+
+	for (int i = 0; i < p_children.size(); i++)
+	{
+		if (p_children[i]->getState() & state) p_children[i]->removeState(state);
+	}
+}
+
 void DropDownMenu::setSelectedOption(std::wstring option)
 {
 	//This method gives a way to set the selected option of the drop down box without
@@ -140,7 +155,11 @@ void DropDownMenu::setChildrenAbsoluteSize(DirectX::XMFLOAT2 size)
 	float pixelFontSize = p_children[2]->getFontSize() * p_children[2]->getPixelSize().y;
 	p_children[0]->getChildren()[1]->setAbsoluteLocation(p_children[0]->getAbsoluteLocation());
 	p_children[0]->getChildren()[1]->setAbsoluteSize(p_children[0]->getAbsoluteSize());
-	p_children[0]->getChildren()[1]->setFontSize(pixelFontSize / p_children[0]->getPixelSize().y);
+
+	//The text in the main text box should be slightly smaller than in the
+	//scrolling text box so it will fit (the button removes some of the renderable
+	//area to display text)
+	p_children[0]->getChildren()[1]->setFontSize(pixelFontSize / p_children[0]->getPixelSize().y * 0.65f);
 }
 
 uint32_t DropDownMenu::update(InputState* inputState)

@@ -52,12 +52,6 @@
     <ClCompile Include="Modes\MainMenuMode.cpp">
       <Filter>Modes</Filter>
     </ClCompile>
-    <ClCompile Include="Modes\SettingsMenuMode.cpp">
-      <Filter>Modes</Filter>
-    </ClCompile>
-    <ClCompile Include="Modes\DeviceDiscoveryMode.cpp">
-      <Filter>Modes</Filter>
-    </ClCompile>
     <ClCompile Include="Graphics\Objects\2D\UIText.cpp">
       <Filter>Graphics\Objects\2D</Filter>
     </ClCompile>
@@ -69,9 +63,6 @@
     </ClCompile>
     <ClCompile Include="Graphics\Utilities\UIElementColors.cpp">
       <Filter>Graphics\Utilities</Filter>
-    </ClCompile>
-    <ClCompile Include="Modes\UITestMode.cpp">
-      <Filter>Modes</Filter>
     </ClCompile>
     <ClCompile Include="Graphics\Objects\2D\BasicElements\Box.cpp">
       <Filter>Graphics\Objects\2D\BasicElements</Filter>
@@ -100,20 +91,11 @@
     <ClCompile Include="Graphics\Objects\2D\TextBoxes\TextBox.cpp">
       <Filter>Graphics\Objects\2D\TextBoxes</Filter>
     </ClCompile>
-    <ClCompile Include="Modes\DevelopmentMenuMode.cpp">
-      <Filter>Modes</Filter>
-    </ClCompile>
-    <ClCompile Include="Modes\GraphMode.cpp">
-      <Filter>Modes</Filter>
-    </ClCompile>
     <ClCompile Include="Graphics\Objects\2D\Graph\Graph.cpp">
       <Filter>Graphics\Objects\2D\Graph</Filter>
     </ClCompile>
     <ClCompile Include="Graphics\Objects\2D\TextBoxes\DropDownMenu.cpp">
       <Filter>Graphics\Objects\2D\TextBoxes</Filter>
-    </ClCompile>
-    <ClCompile Include="Modes\IMUSettingsMode.cpp">
-      <Filter>Modes</Filter>
     </ClCompile>
     <ClCompile Include="Graphics\Objects\3D\Meshes\FaceMesh.cpp">
       <Filter>Graphics\Objects\3D\Meshes</Filter>
@@ -136,9 +118,6 @@
     <ClCompile Include="Graphics\Objects\3D\Camera.cpp">
       <Filter>Graphics\Objects\3D</Filter>
     </ClCompile>
-    <ClCompile Include="Modes\MadgwickTestMode.cpp">
-      <Filter>Modes</Filter>
-    </ClCompile>
     <ClCompile Include="Graphics\Utilities\BasicLoader.cpp">
       <Filter>Graphics\Utilities</Filter>
     </ClCompile>
@@ -150,10 +129,6 @@
     </ClCompile>
     <ClCompile Include="Graphics\Objects\2D\BasicElements\Ellipse.cpp">
       <Filter>Graphics\Objects\2D\BasicElements</Filter>
-    </ClCompile>
-    <ClCompile Include="Math\ellipse_math.cpp" />
-    <ClCompile Include="Modes\CalibrationMode.cpp">
-      <Filter>Modes</Filter>
     </ClCompile>
     <ClCompile Include="Math\SensorFusion\FusionAhrs.cpp">
       <Filter>Math\SensorFusion</Filter>
@@ -185,8 +160,41 @@
     <ClCompile Include="Golf\SwingPhaseDetection.cpp">
       <Filter>Golf</Filter>
     </ClCompile>
-    <ClCompile Include="Modes\TrainingMenuMode.cpp">
-      <Filter>Modes</Filter>
+    <ClCompile Include="Modes\Settings\CalibrationMode.cpp">
+      <Filter>Modes\Settings</Filter>
+    </ClCompile>
+    <ClCompile Include="Modes\Development\DevelopmentMenuMode.cpp">
+      <Filter>Modes\Development</Filter>
+    </ClCompile>
+    <ClCompile Include="Modes\Settings\DeviceDiscoveryMode.cpp">
+      <Filter>Modes\Settings</Filter>
+    </ClCompile>
+    <ClCompile Include="Golf\GolfSwing.cpp">
+      <Filter>Golf</Filter>
+    </ClCompile>
+    <ClCompile Include="Modes\Development\GraphMode.cpp">
+      <Filter>Modes\Development</Filter>
+    </ClCompile>
+    <ClCompile Include="Modes\Development\MadgwickTestMode.cpp">
+      <Filter>Modes\Development</Filter>
+    </ClCompile>
+    <ClCompile Include="Modes\Settings\IMUSettingsMode.cpp">
+      <Filter>Modes\Settings</Filter>
+    </ClCompile>
+    <ClCompile Include="Modes\Settings\SettingsMenuMode.cpp">
+      <Filter>Modes\Settings</Filter>
+    </ClCompile>
+    <ClCompile Include="Modes\Training\SwingPathTrainingMode.cpp">
+      <Filter>Modes\Training</Filter>
+    </ClCompile>
+    <ClCompile Include="Modes\Training\TrainingMenuMode.cpp">
+      <Filter>Modes\Training</Filter>
+    </ClCompile>
+    <ClCompile Include="Modes\Development\UITestMode.cpp">
+      <Filter>Modes\Development</Filter>
+    </ClCompile>
+    <ClCompile Include="Math\ellipse_math.cpp">
+      <Filter>Math</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -251,12 +259,6 @@
     <ClInclude Include="Modes\MainMenuMode.h">
       <Filter>Modes</Filter>
     </ClInclude>
-    <ClInclude Include="Modes\SettingsMenuMode.h">
-      <Filter>Modes</Filter>
-    </ClInclude>
-    <ClInclude Include="Modes\DeviceDiscoveryMode.h">
-      <Filter>Modes</Filter>
-    </ClInclude>
     <ClInclude Include="Graphics\Objects\2D\Interfaces\IScrollableUI.h">
       <Filter>Graphics\Objects\2D\Interfaces</Filter>
     </ClInclude>
@@ -280,9 +282,6 @@
     </ClInclude>
     <ClInclude Include="Graphics\Utilities\UIElementColors.h">
       <Filter>Graphics\Utilities</Filter>
-    </ClInclude>
-    <ClInclude Include="Modes\UITestMode.h">
-      <Filter>Modes</Filter>
     </ClInclude>
     <ClInclude Include="Graphics\Objects\2D\BasicElements\Box.h">
       <Filter>Graphics\Objects\2D\BasicElements</Filter>
@@ -326,20 +325,11 @@
     <ClInclude Include="Graphics\Objects\2D\TextBoxes\TextBox.h">
       <Filter>Graphics\Objects\2D\TextBoxes</Filter>
     </ClInclude>
-    <ClInclude Include="Modes\DevelopmentMenuMode.h">
-      <Filter>Modes</Filter>
-    </ClInclude>
-    <ClInclude Include="Modes\GraphMode.h">
-      <Filter>Modes</Filter>
-    </ClInclude>
     <ClInclude Include="Graphics\Objects\2D\Graph\Graph.h">
       <Filter>Graphics\Objects\2D\Graph</Filter>
     </ClInclude>
     <ClInclude Include="Graphics\Objects\2D\TextBoxes\DropDownMenu.h">
       <Filter>Graphics\Objects\2D\TextBoxes</Filter>
-    </ClInclude>
-    <ClInclude Include="Modes\IMUSettingsMode.h">
-      <Filter>Modes</Filter>
     </ClInclude>
     <ClInclude Include="Graphics\Objects\3D\Meshes\FaceMesh.h">
       <Filter>Graphics\Objects\3D\Meshes</Filter>
@@ -364,9 +354,6 @@
     </ClInclude>
     <ClInclude Include="Graphics\Objects\3D\Camera.h">
       <Filter>Graphics\Objects\3D</Filter>
-    </ClInclude>
-    <ClInclude Include="Modes\MadgwickTestMode.h">
-      <Filter>Modes</Filter>
     </ClInclude>
     <ClInclude Include="Graphics\Utilities\BasicLoader.h">
       <Filter>Graphics\Utilities</Filter>
@@ -394,11 +381,6 @@
     </ClInclude>
     <ClInclude Include="Graphics\Objects\2D\BasicElements\Ellipse.h">
       <Filter>Graphics\Objects\2D\BasicElements</Filter>
-    </ClInclude>
-    <ClInclude Include="Math\eigen.h" />
-    <ClInclude Include="Math\ellipse_math.h" />
-    <ClInclude Include="Modes\CalibrationMode.h">
-      <Filter>Modes</Filter>
     </ClInclude>
     <ClInclude Include="Math\SensorFusion\FusionAhrs.h">
       <Filter>Math\SensorFusion</Filter>
@@ -430,7 +412,6 @@
     <ClInclude Include="Graphics\Objects\2D\Graph\GraphDataSet.h">
       <Filter>Graphics\Objects\2D\Graph</Filter>
     </ClInclude>
-    <ClInclude Include="Graphics\Objects\2D\BasicElements\RelativeBox.h" />
     <ClInclude Include="Graphics\Objects\2D\Buttons\CheckBox.h">
       <Filter>Graphics\Objects\2D\Buttons</Filter>
     </ClInclude>
@@ -446,8 +427,44 @@
     <ClInclude Include="Graphics\Objects\2D\TextBoxes\ClickableTextOverlay.h">
       <Filter>Graphics\Objects\2D\TextBoxes</Filter>
     </ClInclude>
-    <ClInclude Include="Modes\TrainingMenuMode.h">
-      <Filter>Modes</Filter>
+    <ClInclude Include="Modes\Settings\CalibrationMode.h">
+      <Filter>Modes\Settings</Filter>
+    </ClInclude>
+    <ClInclude Include="Modes\Development\DevelopmentMenuMode.h">
+      <Filter>Modes\Development</Filter>
+    </ClInclude>
+    <ClInclude Include="Modes\Settings\DeviceDiscoveryMode.h">
+      <Filter>Modes\Settings</Filter>
+    </ClInclude>
+    <ClInclude Include="Golf\GolfSwing.h">
+      <Filter>Golf</Filter>
+    </ClInclude>
+    <ClInclude Include="Modes\Development\GraphMode.h">
+      <Filter>Modes\Development</Filter>
+    </ClInclude>
+    <ClInclude Include="Modes\Development\MadgwickTestMode.h">
+      <Filter>Modes\Development</Filter>
+    </ClInclude>
+    <ClInclude Include="Modes\Settings\IMUSettingsMode.h">
+      <Filter>Modes\Settings</Filter>
+    </ClInclude>
+    <ClInclude Include="Modes\Settings\SettingsMenuMode.h">
+      <Filter>Modes\Settings</Filter>
+    </ClInclude>
+    <ClInclude Include="Modes\Training\SwingPathTrainingMode.h">
+      <Filter>Modes\Training</Filter>
+    </ClInclude>
+    <ClInclude Include="Modes\Training\TrainingMenuMode.h">
+      <Filter>Modes\Training</Filter>
+    </ClInclude>
+    <ClInclude Include="Modes\Development\UITestMode.h">
+      <Filter>Modes\Development</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\eigen.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\ellipse_math.h">
+      <Filter>Math</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -578,6 +595,15 @@
     </Filter>
     <Filter Include="Golf">
       <UniqueIdentifier>{f3c3c1fa-f581-43d6-87e1-2f9e4287a96b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Modes\Development">
+      <UniqueIdentifier>{a0b23904-cf29-477a-a146-1aea1a9a4c68}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Modes\Settings">
+      <UniqueIdentifier>{e1f651d8-b36c-44a9-a09d-846b82278fb9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Modes\Training">
+      <UniqueIdentifier>{73c6814f-06e4-4333-b2fe-6c48cafe81df}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

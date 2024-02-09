@@ -3,10 +3,16 @@
 #include "Graphics/Objects/3D/Elements/Model.h"
 #include "Math/quaternion_functions.h"
 
+#include <random>
+#include <chrono>
+
 SwingPathTrainingMode::SwingPathTrainingMode()
 {
 	//set a very light gray background color for the mode
 	m_backgroundColor = UIColor::SwingPathTraining;
+
+	//set the seed for the random number generator
+	srand(std::chrono::steady_clock::now().time_since_epoch().count());
 }
 
 uint32_t SwingPathTrainingMode::initializeMode(winrt::Windows::Foundation::Size windowSize, uint32_t initialState)
@@ -17,6 +23,7 @@ uint32_t SwingPathTrainingMode::initializeMode(winrt::Windows::Foundation::Size 
 
 	//Create UI Elements on the page
 	initializeTextOverlay();
+	loadTrainingUI();
 
 	//load the model of the golf club
 	loadModel();
@@ -51,14 +58,14 @@ uint32_t SwingPathTrainingMode::initializeMode(winrt::Windows::Foundation::Size 
 
 	//Add a graph for displaying swing path through impact with the ball,
 	//as well as some text overlays to display calculated stats
-	Graph graph(m_uiManager.getScreenSize(), { 0.25, 0.45 }, { 0.2, 0.2 }, true, UIColor::White, UIColor::Black, false, false);
+	/*Graph graph(m_uiManager.getScreenSize(), { 0.25, 0.45 }, { 0.2, 0.2 }, true, UIColor::White, UIColor::Black, false, false);
 	m_uiManager.addElement<Graph>(graph, L"Graph");
-	m_uiManager.getElement<Graph>(L"Graph")->updateState(UIElementState::Invisible);
+	m_uiManager.getElement<Graph>(L"Graph")->updateState(UIElementState::Invisible);*/
 
-	TextOverlay calculated_swing_speed(m_uiManager.getScreenSize(), { 0.25, 0.65 }, { 0.35, 0.075 }, L"Swing Speed = ",
-		0.5f, { UIColor::White }, { 0, 14 }, UITextJustification::CenterLeft, false);
-	m_uiManager.addElement<TextOverlay>(calculated_swing_speed, L"Swing Speed Text");
-	m_uiManager.getElement<TextOverlay>(L"Swing Speed Text")->updateState(UIElementState::Invisible);
+	//TextOverlay calculated_swing_speed(m_uiManager.getScreenSize(), { 0.25, 0.65 }, { 0.35, 0.075 }, L"Swing Speed = ",
+	//	0.5f, { UIColor::White }, { 0, 14 }, UITextJustification::CenterLeft, false);
+	//m_uiManager.addElement<TextOverlay>(calculated_swing_speed, L"Swing Speed Text");
+	//m_uiManager.getElement<TextOverlay>(L"Swing Speed Text")->updateState(UIElementState::Invisible);
 
 	//Initialize golfswing specific variables
 	setGolfSwingReferenceVariables(&m_currentQuaternion, &m_newQuaternions, &m_converged, &m_headingOffset,
@@ -122,6 +129,167 @@ void SwingPathTrainingMode::initializeTextOverlay()
 	TextOverlay view_data(m_uiManager.getScreenSize(), { UIConstants::FootNoteTextLocationX - 0.33f, UIConstants::FootNoteTextLocationY }, { UIConstants::FootNoteTextSizeX, UIConstants::FootNoteTextSizeY },
 		view_data_message, UIConstants::FootNoteTextPointSize, { UIColor::White }, { 0,  (unsigned int)view_data_message.length() }, UITextJustification::LowerCenter);
 	m_uiManager.addElement<TextOverlay>(view_data, L"View Data Text");
+}
+
+void SwingPathTrainingMode::loadTrainingUI()
+{
+	//This method is for loading UI Elements that are strictly for
+	//SwingPathTrainingMode.
+	Graph graph(m_uiManager.getScreenSize(), { 0.15f, 0.4f }, { SCREEN_RATIO * 0.25f, 0.25f }, false, UIColor::White, UIColor::Black, false, false);
+
+	graph.setAxisMaxAndMins({ -1.0f, -1.0f }, { 1.0f, 1.0f });
+
+	std::vector<DirectX::XMFLOAT2> data1, data2, data3;
+	for (float i = -0.5f; i <= 0.5f; i += 0.01f)
+	{
+		data1.push_back({ i, i / 3.0f });
+		data2.push_back({ i, i / -2.0f });
+	}
+
+	for (float i = -PI; i <= PI; i += PI / 50.0f) data3.push_back({ sin(i) / 10.0f, cos(i) / 10.0f });
+
+	graph.addGraphData(data3, UIColor::Black, L"Golf Ball");
+	graph.addGraphData(data1, UIColor::Green, L"Goal Line");
+	graph.addGraphData(data2, UIColor::Red, L"Actual Line");
+
+	m_uiManager.addElement<Graph>(graph, L"Graph");
+
+	m_uiManager.getElement<Graph>(L"Graph")->addAxisLine(0, 0.0f);
+	m_uiManager.getElement<Graph>(L"Graph")->addAxisLine(1, 0.0f);
+
+	std::wstring options = L"Training Mode\nGame Mode";
+	DropDownMenu mode_selection(m_uiManager.getScreenSize(), { 0.15f, 0.85f }, { 0.2f, 0.08f }, options, 0.5f, 2);
+
+	m_uiManager.addElement<DropDownMenu>(mode_selection, L"Dropdown Menu 1");
+
+	std::wstring level_message = L"Current Level:";
+	std::wstring threshold_message = L"Degree Threshold:";
+	std::wstring streak_message = L"Current Streak:";
+	std::wstring swing_message = L"Swings to Next Level:";
+	std::wstring goal_message = L"Current Goal:";
+
+	TextOverlay level(m_uiManager.getScreenSize(), { 0.85f, 0.35f }, { 0.2f, 0.08f }, level_message, UIConstants::SubTitleTextPointSize,
+		{ UIColor::White }, { 0,  (unsigned int)level_message.length() }, UITextJustification::CenterLeft);
+	TextOverlay threshold(m_uiManager.getScreenSize(), { 0.85f, 0.425f }, { 0.2f, 0.08f }, threshold_message, UIConstants::SubTitleTextPointSize,
+		{ UIColor::White }, { 0,  (unsigned int)threshold_message.length() }, UITextJustification::CenterLeft);
+	TextOverlay streak(m_uiManager.getScreenSize(), { 0.85f, 0.50f }, { 0.2f, 0.08f }, streak_message, UIConstants::SubTitleTextPointSize,
+		{ UIColor::White }, { 0,  (unsigned int)streak_message.length() }, UITextJustification::CenterLeft);
+	TextOverlay swing(m_uiManager.getScreenSize(), { 0.85f, 0.575f }, { 0.2f, 0.08f }, swing_message, UIConstants::SubTitleTextPointSize,
+		{ UIColor::White }, { 0,  (unsigned int)swing_message.length() }, UITextJustification::CenterLeft);
+	TextOverlay goal(m_uiManager.getScreenSize(), { 0.85f, 0.65f }, { 0.2f, 0.08f }, goal_message, UIConstants::SubTitleTextPointSize,
+		{ UIColor::White }, { 0,  (unsigned int)goal_message.length() }, UITextJustification::CenterLeft);
+
+	m_uiManager.addElement<TextOverlay>(level, L"Game Level Message");
+	m_uiManager.addElement<TextOverlay>(threshold, L"Game Threshold Message");
+	m_uiManager.addElement<TextOverlay>(streak, L"Game Streak Message");
+	m_uiManager.addElement<TextOverlay>(swing, L"Game Swing Message");
+	m_uiManager.addElement<TextOverlay>(goal, L"Game Goal Message");
+
+	std::wstring threshold_options = L"+/- 1\n+/- 5\n+ 3\n- 2\n- 5";
+	DropDownMenu threshold_selection(m_uiManager.getScreenSize(), { 0.85f, 0.425f }, { 0.2f, 0.08f }, threshold_options, 0.5f, 2);
+
+	std::wstring target_options = L"-10 deg.\n-5 deg.\n0 deg.\n2 deg.\n4 deg.";
+	DropDownMenu target_selection(m_uiManager.getScreenSize(), { 0.85f, 0.525f }, { 0.2f, 0.08f }, target_options, 0.5f, 2);
+
+	m_uiManager.addElement<DropDownMenu>(threshold_selection, L"Dropdown Menu 2");
+	m_uiManager.addElement<DropDownMenu>(target_selection, L"Dropdown Menu 3");
+
+	//Initialize variables that are specific to this training module
+	m_modeType = 0; //represents training mode
+	switchMode(); //will load training mode by default
+
+	//Set the upper and lower limits for the goal angle. The goal is randomized after each swing
+	//so we want to make sure nothing unrealistic pops up like 90 degrees
+	m_goalLimits = { -10.0f, 10.0f };
+}
+
+void SwingPathTrainingMode::switchMode()
+{
+	//This method swaps out necessary UI elements and resets variables
+	//as necessary when switching from training mode to game mode.
+	if (m_modeType == 0)
+	{
+		//This represents training mode
+
+		//Make the game mode elements invisible
+		m_uiManager.getElement<TextOverlay>(L"Game Level Message")->updateState(UIElementState::Invisible);
+		m_uiManager.getElement<TextOverlay>(L"Game Threshold Message")->updateState(UIElementState::Invisible);
+		m_uiManager.getElement<TextOverlay>(L"Game Streak Message")->updateState(UIElementState::Invisible);
+		m_uiManager.getElement<TextOverlay>(L"Game Swing Message")->updateState(UIElementState::Invisible);
+		m_uiManager.getElement<TextOverlay>(L"Game Goal Message")->updateState(UIElementState::Invisible);
+
+		//And make training mode elements visible
+		m_uiManager.getElement<DropDownMenu>(L"Dropdown Menu 2")->removeState(UIElementState::Invisible);
+		m_uiManager.getElement<DropDownMenu>(L"Dropdown Menu 3")->removeState(UIElementState::Invisible);
+	}
+	else
+	{
+		//This represents game mode, reset the game variables and display the appropriate UI Elements
+		m_currentLevel = 0;
+		m_currentStreak = 0;
+		createGoalAngle(); //come up with a target goal to swing at
+		levelUp(); //leveling up will increase the level to 1 and set the goal threshold appropriately
+
+		//Make the game mode elements visible
+		m_uiManager.getElement<TextOverlay>(L"Game Level Message")->removeState(UIElementState::Invisible);
+		m_uiManager.getElement<TextOverlay>(L"Game Threshold Message")->removeState(UIElementState::Invisible);
+		m_uiManager.getElement<TextOverlay>(L"Game Streak Message")->removeState(UIElementState::Invisible);
+		m_uiManager.getElement<TextOverlay>(L"Game Swing Message")->removeState(UIElementState::Invisible);
+		m_uiManager.getElement<TextOverlay>(L"Game Goal Message")->removeState(UIElementState::Invisible);
+
+		//And make training mode elements invisible
+		m_uiManager.getElement<DropDownMenu>(L"Dropdown Menu 2")->updateState(UIElementState::Invisible);
+		m_uiManager.getElement<DropDownMenu>(L"Dropdown Menu 3")->updateState(UIElementState::Invisible);
+
+		//With the game messages visible, make sure they hold the correct values
+		updateGameText();
+	}
+}
+
+void SwingPathTrainingMode::levelUp()
+{
+	//When leveling up the acceptable threshold for error drops, making it harder to move on
+	m_currentLevel++;
+	m_toLevelUp = 5; //it takes 5 successful swings to level up
+
+	if (m_currentLevel > 5) m_currentLevel = 5; //for right now 5 is the highest level
+
+	switch (m_currentLevel)
+	{
+	case 1:
+		m_threshold = { -10.0f, 10.0f };
+		break;
+	case 2:
+		m_threshold = { -7.5f, 7.5f };
+		break;
+	case 3:
+		m_threshold = { -5.0f, 5.0f };
+		break;
+	case 4:
+		m_threshold = { -2.5f, 2.5f };
+		break;
+	default:
+	case 5:
+		m_threshold = { -1.0f, 1.0f };
+		break;
+	}
+}
+
+void SwingPathTrainingMode::updateGameText()
+{
+	//Updates the game text to reflect the current state of the game variables
+	m_uiManager.getElement<TextOverlay>(L"Game Level Message")->updateText(L"Current Level: " + std::to_wstring(m_currentLevel));
+	m_uiManager.getElement<TextOverlay>(L"Game Threshold Message")->updateText(L"Degree Threshold: +/- " + std::to_wstring(m_threshold.second));
+	m_uiManager.getElement<TextOverlay>(L"Game Streak Message")->updateText(L"Current Streak: " + std::to_wstring(m_currentStreak));
+	m_uiManager.getElement<TextOverlay>(L"Game Swing Message")->updateText(L"Swings to Next Level: " + std::to_wstring(m_toLevelUp));
+	m_uiManager.getElement<TextOverlay>(L"Game Goal Message")->updateText(L"Current Goal: " + std::to_wstring(m_goalAngle) + L" deg.");
+}
+
+void SwingPathTrainingMode::createGoalAngle()
+{
+	//A short function for coming up with a random goal angle
+	SwingPathTrainingMode::m_goalAngle = (rand() % 101) / 10.0f; //generate a random goal angle between 0.0 and 10.0 degrees
+	if (rand() % 100 >= 50) m_goalAngle *= -1; //50-50 chance for a positive or negative angle
 }
 
 void SwingPathTrainingMode::pc_ModeChange(PersonalCaddiePowerMode newMode)
@@ -246,6 +414,7 @@ void SwingPathTrainingMode::update()
 	//Rotate each face according to the given quaternion
 	for (int i = 0; i < m_volumeElements.size(); i++) ((Model*)m_volumeElements[i].get())->translateAndRotateFace({ 0.0f, 0.0f, 1.0f }, m_renderQuaternion);
 
+	//After all graphical updates are complete, update teh state of the golf swing
 	swingUpdate();
 }
 
@@ -346,21 +515,53 @@ void SwingPathTrainingMode::convergenceCheck()
 	}
 }
 
+void SwingPathTrainingMode::uiElementStateChangeHandler(std::shared_ptr<ManagedUIElement> element)
+{
+	if (element->name == L"Dropdown Menu 1")
+	{
+		//This is the drop down menu used for switching between training and game mode. If a new option
+		//has been selected, update variables and swap UI Elements as necessary.
+		auto dropdown_menu = (DropDownMenu*)(element->element.get());
+		if (!(dropdown_menu->selectionInProcess()))
+		{
+			auto new_mode = dropdown_menu->getSelectedOption();
+			if (new_mode == L"Training Mode" && m_modeType != 0)
+			{
+				//Training mode has been selected and we're currently in game mode
+				m_modeType = 0;
+				switchMode();
+			}
+			else if (new_mode == L"Game Mode" && m_modeType != 1)
+			{
+				m_modeType = 1;
+				switchMode();
+			}
+		}
+	}
+}
+
 void SwingPathTrainingMode::preAddressAction()
 {
 	//In case this isn't the first swing that's been taken so far, we use this opportunity 
 	//to clear out any data from the previous swing
-	for (int i = 1; i < 7; i++) m_uiManager.removeElement<Ellipse>(L"Ellipse " + std::to_wstring(i));
+	m_uiManager.removeElement<Ellipse>(L"Ellipse 1");
 	m_uiManager.getElement<Graph>(L"Graph")->removeAllLines();
 	m_uiManager.getElement<Graph>(L"Graph")->updateState(UIElementState::Invisible);
 	m_swingPath.clear();
-	m_tangential_swing_speed = 0.0f;
-	m_radial_swing_speed = 0.0f;
-	m_uiManager.getElement<TextOverlay>(L"Swing Speed Text")->updateState(UIElementState::Invisible);
 
-	//At each stage of the swing we draw a large colored circle as an indicator of where we are.
-	//Draw a red circle when entering the address phase
-	Ellipse address_ellipse(m_uiManager.getScreenSize(), { 0.1429f, 0.25f }, { MAX_SCREEN_HEIGHT / MAX_SCREEN_WIDTH * 0.033f, 0.033f }, false, UIColor::Red);
+	//Once the old swing data is cleared out, update any game variables that need it
+	if (m_modeType == 1)
+	{
+		//Come up with a new goal angle
+		createGoalAngle();
+
+		//Update the game text to reflect the change in game variables since last swing
+		updateGameText();
+	}
+
+	//When the golfer has successfully come to address, draw a red circle to let them know it's
+	//ok to swing.
+	Ellipse address_ellipse(m_uiManager.getScreenSize(), { 0.5f, 0.25f }, { MAX_SCREEN_HEIGHT / MAX_SCREEN_WIDTH * 0.033f, 0.033f }, false, UIColor::Red);
 	m_uiManager.addElement<Ellipse>(address_ellipse, L"Ellipse 1");
 }
 
@@ -432,11 +633,6 @@ void SwingPathTrainingMode::preSwingEndAction()
 	m_uiManager.getElement<Graph>(L"Graph")->addAxisLine(1, 0.0f);
 	m_uiManager.getElement<Graph>(L"Graph")->addGraphData(m_swingPath, UIColor::Red);
 	m_uiManager.getElement<Graph>(L"Graph")->removeState(UIElementState::Invisible);
-
-	//Calculate and display the speed of the swing
-	float swing_speed = calculateSwingSpeed();
-	m_uiManager.getElement<TextOverlay>(L"Swing Speed Text")->updateText(L"Swing Speed = " + std::to_wstring(swing_speed) + L" mph");
-	m_uiManager.getElement<TextOverlay>(L"Swing Speed Text")->removeState(UIElementState::Invisible);
 }
 
 float SwingPathTrainingMode::calculateSwingSpeed()

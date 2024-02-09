@@ -269,9 +269,6 @@ private:
 	UIElementType type_to_UIElementType<Box>() { return UIElementType::COVER_BOX; }
 
 	template<>
-	UIElementType type_to_UIElementType<RelativeBox>() { return UIElementType::RELATIVE_BOX; }
-
-	template<>
 	UIElementType type_to_UIElementType<ShadowedBox>() { return UIElementType::SHADOWED_BOX; }
 
 	template<>

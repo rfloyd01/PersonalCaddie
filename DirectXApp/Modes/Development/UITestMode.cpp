@@ -23,32 +23,64 @@ uint32_t UITestMode::initializeMode(winrt::Windows::Foundation::Size windowSize,
 	float screen_ratio = MAX_SCREEN_HEIGHT / MAX_SCREEN_WIDTH;
 
 	std::wstring scrollText = L"Once upon a time\nit was the best of times\nit was the worst of times\nOnce upon a time\nit was the best of times\nit was the worst of times\nyeet\nyeet\nyote";
-	Graph graph(m_uiManager.getScreenSize(), { 0.65f, 0.5f }, { 0.35f, 0.35f }, false, UIColor::White, UIColor::Black, false, false);
+	Graph graph(m_uiManager.getScreenSize(), { 0.15f, 0.4f }, { screen_ratio * 0.25f, 0.25f }, false, UIColor::White, UIColor::Black, false, false);
 
-	graph.setAxisMaxAndMins({ 0.0f, -1.2f }, { 2.0f * PI, 1.2f });
+	graph.setAxisMaxAndMins({ -1.0f, -1.0f }, { 1.0f, 1.0f });
 
 	std::vector<DirectX::XMFLOAT2> data1, data2, data3;
-	for (float i = 0.0f; i <= 2.0f * PI; i += PI / 180.0f)
+	for (float i = -0.5f; i <= 0.5f; i += 0.01f)
 	{
-		data1.push_back({ i, sin(i) });
-		data2.push_back({ i, cos(i) });
-		data3.push_back({ sin(i) + (float)PI, cos(i) });
+		data1.push_back({ i, i / 3.0f });
+		data2.push_back({ i, i / -2.0f });
 	}
-	//graph.addGraphData(data1, UIColor::Red, L"y = sin(x)");
-	//graph.addGraphData(data2, UIColor::Blue, L"y = cos(x)");
-	graph.addGraphData(data3, UIColor::Green, L"y = circle?");
+
+	for (float i = -PI; i <= PI; i += PI / 50.0f) data3.push_back({ sin(i) / 10.0f, cos(i) / 10.0f });
+
+	graph.addGraphData(data3, UIColor::Black, L"Golf Ball");
+	graph.addGraphData(data1, UIColor::Green, L"Goal Line");
+	graph.addGraphData(data2, UIColor::Red, L"Actual Line");
 
 	m_uiManager.addElement<Graph>(graph, L"Graph 1");
 
-	TextButton shrink(m_uiManager.getScreenSize(), { 0.15f, 0.35f }, { 0.15f, 0.15f }, L"Enlarge");
-	TextButton toggle(m_uiManager.getScreenSize(), { 0.15f, 0.90f }, { 0.15f, 0.15f }, L"Toggle Outline");
-	CheckBox box1(m_uiManager.getScreenSize(), { 0.75f, 0.5f }, { screen_ratio * 0.15f, 0.15f });
-	OutlinedBox box2(m_uiManager.getScreenSize(), { 0.75f, 0.6f }, { 0.1f, 0.1f });
+	m_uiManager.getElement<Graph>(L"Graph 1")->addAxisLine(0, 0.0f);
+	m_uiManager.getElement<Graph>(L"Graph 1")->addAxisLine(1, 0.0f);
 
-	m_uiManager.addElement<TextButton>(shrink, L"Button 1");
-	m_uiManager.addElement<TextButton>(toggle, L"Button 2");
-	//m_uiManager.addElement<CheckBox>(box1, L"Device Watcher Text Box");
-	//m_uiManager.addElement<OutlinedBox>(box2, L"Box 2");
+	std::wstring options = L"Game Mode\nTraining Mode";
+	DropDownMenu mode_selection(m_uiManager.getScreenSize(), { 0.15f, 0.85f }, { 0.2f, 0.08f }, options, 0.5f, 2);
+
+	m_uiManager.addElement<DropDownMenu>(mode_selection, L"Dropdown Menu 1");
+
+	std::wstring level_message = L"Current Level: 2";
+	std::wstring threshold_message = L"Degree Threshold: +/- 5";
+	std::wstring streak_message = L"Current Streak: 3";
+	std::wstring swing_message = L"Swings to Next Level: 3";
+	std::wstring goal_message = L"Current Goal: -2 deg.";
+
+	TextOverlay level(m_uiManager.getScreenSize(), { 0.85f, 0.35f }, { 0.2f, 0.08f }, level_message, UIConstants::SubTitleTextPointSize,
+		{ UIColor::White }, { 0,  (unsigned int)level_message.length() }, UITextJustification::CenterLeft);
+	TextOverlay threshold(m_uiManager.getScreenSize(), { 0.85f, 0.425f }, { 0.2f, 0.08f }, threshold_message, UIConstants::SubTitleTextPointSize,
+		{ UIColor::White }, { 0,  (unsigned int)threshold_message.length() }, UITextJustification::CenterLeft);
+	TextOverlay streak(m_uiManager.getScreenSize(), { 0.85f, 0.50f }, { 0.2f, 0.08f }, streak_message, UIConstants::SubTitleTextPointSize,
+		{ UIColor::White }, { 0,  (unsigned int)streak_message.length() }, UITextJustification::CenterLeft);
+	TextOverlay swing(m_uiManager.getScreenSize(), { 0.85f, 0.575f }, { 0.2f, 0.08f }, swing_message, UIConstants::SubTitleTextPointSize,
+		{ UIColor::White }, { 0,  (unsigned int)swing_message.length() }, UITextJustification::CenterLeft);
+	TextOverlay goal(m_uiManager.getScreenSize(), { 0.85f, 0.65f }, { 0.2f, 0.08f }, goal_message, UIConstants::SubTitleTextPointSize,
+		{ UIColor::White }, { 0,  (unsigned int)goal_message.length() }, UITextJustification::CenterLeft);
+
+	/*m_uiManager.addElement<TextOverlay>(level, L"Game Message 1");
+	m_uiManager.addElement<TextOverlay>(threshold, L"Game Message 2");
+	m_uiManager.addElement<TextOverlay>(streak, L"Game Message 3");
+	m_uiManager.addElement<TextOverlay>(swing, L"Game Message 4");
+	m_uiManager.addElement<TextOverlay>(goal, L"Game Message 5");*/
+
+	std::wstring threshold_options = L"+/- 1\n+/- 5\n+ 3\n- 2\n- 5";
+	DropDownMenu threshold_selection(m_uiManager.getScreenSize(), { 0.85f, 0.425f }, { 0.2f, 0.08f }, threshold_options, 0.5f, 2);
+
+	std::wstring target_options = L"-10 deg.\n-5 deg.\n0 deg.\n2 deg.\n4 deg.";
+	DropDownMenu target_selection(m_uiManager.getScreenSize(), { 0.85f, 0.525f }, { 0.2f, 0.08f }, target_options, 0.5f, 2);
+
+	m_uiManager.addElement<DropDownMenu>(threshold_selection, L"Dropdown Menu 2");
+	m_uiManager.addElement<DropDownMenu>(target_selection, L"Dropdown Menu 3");
 
 	return ModeState::CanTransfer;
 }
@@ -72,7 +104,7 @@ void UITestMode::initializeTextOverlay()
 
 	//Sub-Title information
 	std::wstring subtitle_message = L"A place to develop custom UI Elements (hover over the title to see some stuff in action!)";
-	TextOverlay subtitle(m_uiManager.getScreenSize(), { UIConstants::SubTitleTextLocationX, UIConstants::SubTitleTextLocationY }, { UIConstants::SubTitleTextSizeX, UIConstants::SubTitleTextSizeY },
+	TextOverlay subtitle(m_uiManager.getScreenSize(), { UIConstants::SubTitleTextLocationX, UIConstants::SubTitleTextLocationY - 0.04f }, { UIConstants::SubTitleTextSizeX, UIConstants::SubTitleTextSizeY },
 		subtitle_message, UIConstants::SubTitleTextPointSize, { UIColor::White }, { 0,  (unsigned int)subtitle_message.length() }, UITextJustification::CenterCenter);
 	m_uiManager.addElement<TextOverlay>(subtitle, L"Sub-Title");
 
