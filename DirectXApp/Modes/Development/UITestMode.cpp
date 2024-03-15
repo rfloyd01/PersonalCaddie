@@ -37,8 +37,9 @@ uint32_t UITestMode::initializeMode(winrt::Windows::Foundation::Size windowSize,
 	for (float i = -PI; i <= PI; i += PI / 50.0f) data3.push_back({ sin(i) / 10.0f, cos(i) / 10.0f });
 
 	graph.addGraphData(data3, UIColor::Black, L"Golf Ball");
-	graph.addGraphData(data1, UIColor::Green, L"Goal Line");
+	//graph.addGraphData(data1, UIColor::Green, L"Goal Line");
 	graph.addGraphData(data2, UIColor::Red, L"Actual Line");
+	graph.addGraphData(data1, UIColor::Yellow, L"Test Line");
 
 	m_uiManager.addElement<Graph>(graph, L"Graph 1");
 
