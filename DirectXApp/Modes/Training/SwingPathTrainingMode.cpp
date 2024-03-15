@@ -136,26 +136,8 @@ void SwingPathTrainingMode::loadTrainingUI()
 	//This method is for loading UI Elements that are strictly for
 	//SwingPathTrainingMode.
 	Graph graph(m_uiManager.getScreenSize(), { 0.15f, 0.4f }, { SCREEN_RATIO * 0.25f, 0.25f }, false, UIColor::White, UIColor::Black, false, false);
-
 	graph.setAxisMaxAndMins({ -1.0f, -1.0f }, { 1.0f, 1.0f });
-
-	std::vector<DirectX::XMFLOAT2> data1, data2, data3;
-	for (float i = -0.5f; i <= 0.5f; i += 0.01f)
-	{
-		data1.push_back({ i, i / 3.0f });
-		data2.push_back({ i, i / -2.0f });
-	}
-
-	for (float i = -PI; i <= PI; i += PI / 50.0f) data3.push_back({ sin(i) / 10.0f, cos(i) / 10.0f });
-
-	graph.addGraphData(data3, UIColor::Black, L"Golf Ball");
-	graph.addGraphData(data1, UIColor::Green, L"Goal Line");
-	graph.addGraphData(data2, UIColor::Red, L"Actual Line");
-
 	m_uiManager.addElement<Graph>(graph, L"Graph");
-
-	m_uiManager.getElement<Graph>(L"Graph")->addAxisLine(0, 0.0f);
-	m_uiManager.getElement<Graph>(L"Graph")->addAxisLine(1, 0.0f);
 
 	std::wstring options = L"Training Mode\nGame Mode";
 	DropDownMenu mode_selection(m_uiManager.getScreenSize(), { 0.15f, 0.85f }, { 0.2f, 0.08f }, options, 0.5f, 2);
@@ -218,6 +200,14 @@ void SwingPathTrainingMode::switchMode()
 		m_uiManager.getElement<TextOverlay>(L"Game Swing Message")->updateState(UIElementState::Invisible);
 		m_uiManager.getElement<TextOverlay>(L"Game Goal Message")->updateState(UIElementState::Invisible);
 
+		//Initialize the graph with the current value from the goal drop down menu
+		std::wstring goal_angle_text = m_uiManager.getElement<DropDownMenu>(L"Dropdown Menu 3")->getSelectedOption();
+		goal_angle_text = goal_angle_text.substr(0, goal_angle_text.find(L" ")); //the actual number is everything from the beginning to the first space
+		wchar_t* endString;
+		m_goalAngle = std::wcstol(&goal_angle_text[0], &endString, 10); //convert the wide string representation of the address to an uint64_t
+		 
+		initializeGraph();
+
 		//And make training mode elements visible
 		m_uiManager.getElement<DropDownMenu>(L"Dropdown Menu 2")->removeState(UIElementState::Invisible);
 		m_uiManager.getElement<DropDownMenu>(L"Dropdown Menu 3")->removeState(UIElementState::Invisible);
@@ -228,6 +218,7 @@ void SwingPathTrainingMode::switchMode()
 		m_currentLevel = 0;
 		m_currentStreak = 0;
 		createGoalAngle(); //come up with a target goal to swing at
+		initializeGraph();
 		levelUp(); //leveling up will increase the level to 1 and set the goal threshold appropriately
 
 		//Make the game mode elements visible
@@ -290,6 +281,25 @@ void SwingPathTrainingMode::createGoalAngle()
 	//A short function for coming up with a random goal angle
 	SwingPathTrainingMode::m_goalAngle = (rand() % 101) / 10.0f; //generate a random goal angle between 0.0 and 10.0 degrees
 	if (rand() % 100 >= 50) m_goalAngle *= -1; //50-50 chance for a positive or negative angle
+}
+
+void SwingPathTrainingMode::initializeGraph()
+{
+	//This method erases everything currently on the graph, draws new 0 lines,
+	//and then draws a green line representing the target line to swing down.
+	m_uiManager.getElement<Graph>(L"Graph")->removeAllLines();
+	m_uiManager.getElement<Graph>(L"Graph")->addAxisLine(0, 0.0f);
+	m_uiManager.getElement<Graph>(L"Graph")->addAxisLine(1, 0.0f);
+
+	float goal_slope = tan(m_goalAngle * DEGREES_TO_RADIANS);
+
+	//Draw a green line representing the goal target line, and a black line representing the golf ball
+	std::vector<DirectX::XMFLOAT2> data1, data2;
+	for (float i = -0.5f; i <= 0.5f; i += 0.01f) data1.push_back({ i, i * goal_slope });
+	for (float i = -PI; i <= PI; i += PI / 50.0f) data2.push_back({ sin(i) / 10.0f, cos(i) / 10.0f });
+
+	m_uiManager.getElement<Graph>(L"Graph")->addGraphData(data2, UIColor::Black, L"Golf Ball");
+	m_uiManager.getElement<Graph>(L"Graph")->addGraphData(data1, UIColor::Green, L"Goal Line");
 }
 
 void SwingPathTrainingMode::pc_ModeChange(PersonalCaddiePowerMode newMode)
@@ -538,17 +548,44 @@ void SwingPathTrainingMode::uiElementStateChangeHandler(std::shared_ptr<ManagedU
 			}
 		}
 	}
+	else if (element->name == L"Dropdown Menu 2")
+	{
+		//This is the drop down menu used for changing the target threshold in training mode.
+		auto dropdown_menu = (DropDownMenu*)(element->element.get());
+		if (!(dropdown_menu->selectionInProcess()))
+		{
+			//Simply update the values of m_threshold. The angle threshold
+			//can be written as a +/- angle, only a + angle or only a - angle
+			std::wstring threshold_text = dropdown_menu->getSelectedOption();
+			std::wstring threshold_polarity = threshold_text.substr(0, 2);
+			std::wstring threshold_value_text = threshold_text.substr(threshold_text.find(L" ") + 1);
+			wchar_t* endString;
+			float threshold_value = std::wcstof(&threshold_value_text[0], &endString);
+
+			if (threshold_polarity == L"+/") m_threshold = { -threshold_value, threshold_value };
+			else if (threshold_polarity == L"+ ") m_threshold = { 0.0f, threshold_value };
+			else if (threshold_polarity == L"- ") m_threshold = { -threshold_value, 0.0f };
+		}
+	}
+	else if (element->name == L"Dropdown Menu 3")
+	{
+		//This is the drop down menu used for changing the target angle in training mode.
+		auto dropdown_menu = (DropDownMenu*)(element->element.get());
+		if (!(dropdown_menu->selectionInProcess()))
+		{
+			//Update the m_goalAngle field and update the graph with the current value from the goal drop down menu
+			std::wstring goal_angle_text = dropdown_menu->getSelectedOption();
+			goal_angle_text = goal_angle_text.substr(0, goal_angle_text.find(L" ")); //the actual number is everything from the beginning to the first space
+			wchar_t* endString;
+			m_goalAngle = std::wcstof(&goal_angle_text[0], &endString);
+
+			initializeGraph();
+		}
+	}
 }
 
 void SwingPathTrainingMode::preAddressAction()
 {
-	//In case this isn't the first swing that's been taken so far, we use this opportunity 
-	//to clear out any data from the previous swing
-	m_uiManager.removeElement<Ellipse>(L"Ellipse 1");
-	m_uiManager.getElement<Graph>(L"Graph")->removeAllLines();
-	m_uiManager.getElement<Graph>(L"Graph")->updateState(UIElementState::Invisible);
-	m_swingPath.clear();
-
 	//Once the old swing data is cleared out, update any game variables that need it
 	if (m_modeType == 1)
 	{
@@ -559,42 +596,12 @@ void SwingPathTrainingMode::preAddressAction()
 		updateGameText();
 	}
 
+	initializeGraph();
+
 	//When the golfer has successfully come to address, draw a red circle to let them know it's
 	//ok to swing.
 	Ellipse address_ellipse(m_uiManager.getScreenSize(), { 0.5f, 0.25f }, { MAX_SCREEN_HEIGHT / MAX_SCREEN_WIDTH * 0.033f, 0.033f }, false, UIColor::Red);
 	m_uiManager.addElement<Ellipse>(address_ellipse, L"Ellipse 1");
-}
-
-void SwingPathTrainingMode::preBackswingAction()
-{
-	//At each stage of the swing we draw a large colored circle as an indicator of where we are.
-	//Draw a orange circle when entering the backswing phase
-	Ellipse backswing_ellipse(m_uiManager.getScreenSize(), { 0.2857f, 0.25f }, { MAX_SCREEN_HEIGHT / MAX_SCREEN_WIDTH * 0.033f, 0.033f }, false, UIColor::Orange);
-	m_uiManager.addElement<Ellipse>(backswing_ellipse, L"Ellipse 2");
-}
-
-void SwingPathTrainingMode::preTransitionAction()
-{
-	//At each stage of the swing we draw a large colored circle as an indicator of where we are.
-	//Draw a yellow circle when entering the transition phase
-	Ellipse transition_ellipse(m_uiManager.getScreenSize(), { 0.4286f, 0.25f }, { MAX_SCREEN_HEIGHT / MAX_SCREEN_WIDTH * 0.033f, 0.033f }, false, UIColor::Yellow);
-	m_uiManager.addElement<Ellipse>(transition_ellipse, L"Ellipse 3");
-}
-
-void SwingPathTrainingMode::preDownswingAction()
-{
-	//At each stage of the swing we draw a large colored circle as an indicator of where we are.
-	//Draw a green circle when entering the downswing phase
-	Ellipse downswing_ellipse(m_uiManager.getScreenSize(), { 0.5714f, 0.25f }, { MAX_SCREEN_HEIGHT / MAX_SCREEN_WIDTH * 0.033f, 0.033f }, false, UIColor::Green);
-	m_uiManager.addElement<Ellipse>(downswing_ellipse, L"Ellipse 4");
-}
-
-void SwingPathTrainingMode::preImpactAction()
-{
-	//At each stage of the swing we draw a large colored circle as an indicator of where we are.
-	//Draw a blue circle when entering the impact phase
-	Ellipse impact_ellipse(m_uiManager.getScreenSize(), { 0.7143f, 0.25f }, { MAX_SCREEN_HEIGHT / MAX_SCREEN_WIDTH * 0.033f, 0.033f }, false, UIColor::Blue);
-	m_uiManager.addElement<Ellipse>(impact_ellipse, L"Ellipse 5");
 }
 
 void SwingPathTrainingMode::impactAction()
@@ -617,43 +624,13 @@ void SwingPathTrainingMode::impactAction()
 	}
 }
 
-void SwingPathTrainingMode::preFollowThroughAction()
-{
-	//At each stage of the swing we draw a large colored circle as an indicator of where we are.
-	//Draw a purple circle when entering the follow through phase
-	Ellipse follow_through_ellipse(m_uiManager.getScreenSize(), { 0.8571f, 0.25f }, { MAX_SCREEN_HEIGHT / MAX_SCREEN_WIDTH * 0.033f, 0.033f }, false, UIColor::Purple);
-	m_uiManager.addElement<Ellipse>(follow_through_ellipse, L"Ellipse 6");
-}
-
 void SwingPathTrainingMode::preSwingEndAction()
 {
-	//Display a graph showing the relative path of the clubhead vs. the target line
-	m_uiManager.getElement<Graph>(L"Graph")->setAxisMaxAndMins({ -1.0f,  -1.0f }, { 1.0f, 1.0f });
-	m_uiManager.getElement<Graph>(L"Graph")->addAxisLine(0, 0.0f);
-	m_uiManager.getElement<Graph>(L"Graph")->addAxisLine(1, 0.0f);
+	//Add the actual swing path to the graph
 	m_uiManager.getElement<Graph>(L"Graph")->addGraphData(m_swingPath, UIColor::Red);
-	m_uiManager.getElement<Graph>(L"Graph")->removeState(UIElementState::Invisible);
-}
 
-float SwingPathTrainingMode::calculateSwingSpeed()
-{
-	//First take the average of the angular velocities recorded during the 
-	//impact phase of the swing.
-	m_tangential_swing_speed /= m_swingPath.size();
-	m_radial_swing_speed /= m_swingPath.size();
-
-	//Convert these averages to linear velocities based on the distance
-	//from the golfer's hands to the club face.
-	float radius_in_inches = 32.0f; //This is based on my pitching wedge and will obviously change from club to club and golfer to golfer
-
-	//With the exception of pi, the numbers in the below equations are for
-	//the conversion from degrees to inches and then to miles
-	float tangential_velocity = 7200.0f * 3.14159f * radius_in_inches * m_tangential_swing_speed / 22809600.0f;
-	float radial_velocity = 7200.0f * 3.14159f * radius_in_inches * m_radial_swing_speed / 22809600.0f;
-
-	//It doesn't matter what direction the club is moving at impact, the 
-	//tangential velocity and radial velocity will always be 90 degrees
-	//apart from each other. Combine these two perpendicular velocity
-	//vectors to get the final velocity.
-	return sqrt(tangential_velocity * tangential_velocity + radial_velocity * radial_velocity);
+	//Remove the red 'at-address' ellipse and clear the swing path data for
+	//the next swing
+	m_uiManager.removeElement<Ellipse>(L"Ellipse 1");
+	m_swingPath.clear();
 }

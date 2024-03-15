@@ -32,7 +32,7 @@ private:
 
 	void convergenceCheck();
 
-	float calculateSwingSpeed();
+	//float calculateSwingSpeed();
 
 	//Handler Methods
 	virtual void uiElementStateChangeHandler(std::shared_ptr<ManagedUIElement> element) override;
@@ -40,11 +40,12 @@ private:
 	//Overridden Golf Swing Methods
 	virtual void impactAction() override;
 	virtual void preAddressAction() override;
-	virtual void preBackswingAction() override;
-	virtual void preTransitionAction() override;
-	virtual void preDownswingAction() override;
-	virtual void preImpactAction() override;
-	virtual void preFollowThroughAction() override;
+	virtual void pre_AddressAction() override;
+	//virtual void preBackswingAction() override;
+	//virtual void preTransitionAction() override;
+	//virtual void preDownswingAction() override;
+	//virtual void preImpactAction() override;
+	//virtual void preFollowThroughAction() override;
 	virtual void preSwingEndAction() override;
 
 	//Training Module Specific Methods
@@ -52,6 +53,7 @@ private:
 	void levelUp();
 	void updateGameText();
 	void createGoalAngle();
+	void initializeGraph();
 
 	std::chrono::steady_clock::time_point data_start_timer;
 

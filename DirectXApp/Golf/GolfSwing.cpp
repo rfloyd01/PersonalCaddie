@@ -255,3 +255,9 @@ void GolfSwing::updateEulerYawAverage(float yaw_average)
 	m_previous_yaw_average = m_current_yaw_average;
 	m_current_yaw_average = yaw_average;
 }
+
+void GolfSwing::setTargetLine(glm::quat const& target_heading)
+{
+	//It's possible that when the golfer comes to address that they aren't perfectly
+	//in line with the computer screen. This can potentially skew any swing path data
+}

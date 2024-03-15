@@ -35,6 +35,7 @@ public:
 	void updateClubAngles(ClubEulerAngles& club_angles);
 	void updateEulerPitchAverage(float pitch_average);
 	void updateEulerYawAverage(float yaw_average);
+	void setTargetLine(glm::quat const& target_heading);
 
 protected:
 
@@ -76,6 +77,7 @@ protected:
 	ClubEulerAngles m_current_club_angles, m_initial_club_angles;
 	float m_previous_pitch_average, m_current_pitch_average;
 	float m_previous_yaw_average, m_current_yaw_average;
+	glm::quat m_targetLineHeading = { 1.0f, 0.0f, 0.0f, 0.0f }; //heading difference between target line at address and heading offset
 
 	//Phase detection variables
 	SwingPhase m_swing_phase;
